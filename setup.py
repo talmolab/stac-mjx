@@ -9,7 +9,6 @@ setup(
         "six >= 1.12.0",
         "clize >= 4.0.3",
         "absl-py >= 0.7.1",
-        # "mujoco >= 3.0.0",
         "mujoco-mjx >= 3.0.0",
         "enum34",
         "future",

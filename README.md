@@ -4,9 +4,8 @@ Implementation of STAC using MJX for GPU acceleration. Part of VNL project.
 ## Requirements and Installation
 `stac-mjx` relies on `jax`, which has different versions based on your platform (CPU/GPU/TPU), so build within an environment with `jax` installed. 
 
-Then install prerequisites using the included setup script:
+* Install the rest of the prerequisites using the included setup script with
 ```
-python setup.py install
+pip install .
 ```
-> **Note**
-> Currently doesn't work, getting `AttributeError: module 'mujoco' has no attribute 'mjtDisableBit'` when running setup_test.py
+* temp: to make sure the environment works, run `python3 setup_test.py`; if there are no errors, you're all set!

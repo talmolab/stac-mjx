@@ -1,19 +1,16 @@
 import mujoco
 from mujoco import mjx
+import jax
 import jax.numpy as jnp
 from jax import grad, jit, vmap
 from jax import random
 from jax import device_put
 import numpy as np 
 
-print("mujoco-mjx and jax successfully imported")
-
 size = 3000
 
 x = np.random.normal(size=(size, size)).astype(np.float32)
 x = device_put(x)
-
-print(x)
 
 XML=r"""
  <mujoco>
@@ -39,4 +36,3 @@ def batched_step(vel):
 
 vel = jax.numpy.arange(0.0, 1.0, 0.01)
 pos = jax.jit(batched_step)(vel)
-print(pos)
