@@ -144,7 +144,7 @@
     <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06508957263119967">
       <freejoint name="root"/>
       <site name="tracking[torso]" class="tracking_site" />
-      # <light name="tracking_light" mode="trackcom" pos="0 0 3"/>
+      <light name="tracking_light" mode="trackcom" pos="0 0 3"/>
       <camera name="back" mode="trackcom" pos="-1 0 0.5" xyaxes="0 -1 0 1 0 2"/>
       <camera name="side" mode="trackcom" pos="0 -1 0.5" xyaxes="1 0 0 0 1 2"/>
       <camera name="side_alt" mode="trackcom" pos="0.5 -0.561 0.199" xyaxes="0.766 0.643 0.000 -0.162 0.192 0.968"/>
