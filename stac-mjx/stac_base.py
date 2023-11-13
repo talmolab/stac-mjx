@@ -2,7 +2,6 @@
 import mujoco
 from mujoco import mjx
 import numpy as np
-import scipy.optimize
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
@@ -16,7 +15,8 @@ class _TestNoneArgs(BaseException):
 
 def q_loss(
     q: jnp.ndarray,
-    env,
+    mjx_model,
+    mjx_data,
     kp_data: jnp.ndarray,
     sites: jnp.ndarray,
     qs_to_opt: jnp.ndarray = None,
@@ -42,13 +42,13 @@ def q_loss(
         q_copy[qs_to_opt] = q.copy()
         q = jnp.copy(q_copy)
 
-    residual = kp_data - q_joints_to_markers(q, env, sites)
+    residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data, sites)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
     return residual
 
 
-def q_joints_to_markers(q: jnp.ndarray, env, sites: jnp.ndarray) -> jnp.ndarray:
+def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, sites: jnp.ndarray) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -59,20 +59,22 @@ def q_joints_to_markers(q: jnp.ndarray, env, sites: jnp.ndarray) -> jnp.ndarray:
     Returns:
         jnp.ndarray: Array of marker positions.
     """
-    env.named.data.qpos[:] = q.copy()
+    mjx_data.qpos[:] = q.copy()
 
     # Forward kinematics
-    mjx.forward(env.model.ptr, env.data.ptr)
+    mjx.forward(mjx_model, mjx_data)
 
     # Center of mass position
-    mjlib.mj_comPos(env.model.ptr, env.data.ptr)
+    # This might not be necessary because we're using mj.forward instead of mjlib.mj_kinematics
+    # https://github.com/google-deepmind/mujoco/issues/411#issuecomment-1211001685 
+    # mjlib.mj_comPos(env.model.ptr, env.data.ptr)
 
     return jnp.array(env.bind(sites).xpos).flatten()
 
 
-# TODO: Refactor
 def q_phase(
-    env,
+    mjx_model,
+    mjx_data,
     marker_ref_arr: jnp.ndarray,
     sites: jnp.ndarray,
     params: Dict,
@@ -100,11 +102,11 @@ def q_phase(
         root_only (bool, optional If True, only optimize the root.
         trunk_only (bool, optional If True, only optimize the trunk.
     """
-    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), env.named.model.jnt_range[1:][:, 0]])
+    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
     lb = jnp.minimum(lb, 0.0)
-    ub = jnp.concatenate([jnp.inf * jnp.ones(7), env.named.model.jnt_range[1:][:, 1]])
+    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
     # Define initial position of the optimization
-    q0 = jnp.copy(env.named.data.qpos[:])
+    q0 = jnp.copy(mjx_data.qpos[:])
     q_copy = jnp.copy(q0)
 
     # Set the center to help with finding the optima (does not need to be exact)
@@ -135,7 +137,8 @@ def q_phase(
         q_opt_param = jax.scipy.optimize.minimize(
             lambda q: q_loss(
                 q,
-                env,
+                mjx_model,
+                mjx_data,
                 marker_ref_arr.T,
                 sites,
                 qs_to_opt=qs_to_opt,
@@ -152,23 +155,24 @@ def q_phase(
 
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
-            env.named.data.qpos[:] = q_opt_param.x
+            mjx_data.qpos[:] = q_opt_param.x
         else:
             q_copy[qs_to_opt] = q_opt_param.x
-            env.named.data.qpos[:] = q_copy.copy()
+            mjx_data.qpos[:] = q_copy.copy()
 
-        mjx.forward(env.model.ptr, env.data.ptr)
+        mjx.forward(mjx_model, mjx_data)
 
     except ValueError:
         print("Warning: optimization failed.", flush=True)
         q_copy[jnp.isnan(q_copy)] = 0.0
-        env.named.data.qpos[:] = q_copy.copy()
-        mjx.forward(env.model.ptr, env.data.ptr)
+        mjx_data.qpos[:] = q_copy.copy()
+        mjx.forward(mjx_model, mjx_data)
 
 
 def m_loss(
     offset: jnp.ndarray,
-    env,
+    mjx_model,
+    mjx_data,
     kp_data: jnp.ndarray,
     time_indices: List,
     sites: jnp.ndarray,
@@ -197,16 +201,16 @@ def m_loss(
     # print(time_indices)
     # print(offset.shape)
     for i, frame in enumerate(time_indices):
-        env.named.data.qpos[:] = q[i].copy()
+        mjx_data.qpos[:] = q[i].copy()
 
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
         reg_term += ((offset - initial_offsets.flatten()) ** 2) * is_regularized
-        residual += (kp_data[:, i] - m_joints_to_markers(offset, env, sites)) ** 2
+        residual += (kp_data[:, i] - m_joints_to_markers(offset, mjx_model, mjx_data, sites)) ** 2
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
 
-def m_joints_to_markers(offset, env, sites) -> jnp.ndarray:
+def m_joints_to_markers(offset, mjx_model, mjx_data, sites) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -220,16 +224,17 @@ def m_joints_to_markers(offset, env, sites) -> jnp.ndarray:
     env.bind(sites).pos[:] = jnp.reshape(offset.copy(), (-1, 3))
 
     # Forward kinematics
-    mjx.forward(env.model.ptr, env.data.ptr)
+    mjx.forward(mjx_model, mjx_data)
 
     # Center of mass position
-    mjlib.mj_comPos(env.model.ptr, env.data.ptr)
+    # mjlib.mj_comPos(env.model.ptr, env.data.ptr)
 
     return jnp.array(env.bind(sites).xpos).flatten()
 
 
 def m_phase(
-    env,
+    mjx_model,
+    mjx_data,
     kp_data: jnp.ndarray,
     sites: jnp.ndarray,
     time_indices: List,
@@ -267,10 +272,11 @@ def m_phase(
     # Optimize dm
     keypoints = kp_data[time_indices, :].T
     q = [q[i] for i in time_indices]
-    offset_opt_param = scipy.optimize.minimize(
+    offset_opt_param = jax.scipy.optimize.minimize(
         lambda offset: m_loss(
             offset,
-            env,
+            mjx_model,
+            mjx_data,
             keypoints,
             time_indices,
             sites,
@@ -280,15 +286,15 @@ def m_phase(
             reg_coef=reg_coef,
         ),
         offset0,
-        method="L-BFGS-B",
-        tol=params["ROOT_FTOL"],
-        options={"maxiter": maxiter},
+        method="BFGS",
+        # tol=params["ROOT_FTOL"],
+        # options={"maxiter": maxiter},
     )
 
     # Set pose to the optimized m and step forward.
     env.bind(sites).pos[:] = jnp.reshape(offset_opt_param.x, (-1, 3))
 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx.forward(env.model.ptr, env.data.ptr)
+    mjx.forward(mjx_model, mjx_data)
     for n_site, p in enumerate(env.bind(sites).pos):
         sites[n_site].pos = p

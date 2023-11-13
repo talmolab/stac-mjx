@@ -4,6 +4,10 @@ import jax
 from jax import numpy as jp
 from typing import Any, Dict, Tuple, Union
 
+"""
+Is it even necessary to have an environment class?
+maybe just so we have some place to store the body sites and name-to-index mapping..
+"""
 class MjxEnv():
   """API for driving an MJX system for training and inference in brax."""
 
