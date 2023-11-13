@@ -2,7 +2,6 @@
 import mujoco
 from mujoco import mjx
 import numpy as np
-import scipy.optimize
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
@@ -65,6 +64,7 @@ def q_joints_to_markers(q: jnp.ndarray, env, sites: jnp.ndarray) -> jnp.ndarray:
     mjx.forward(env.model.ptr, env.data.ptr)
 
     # Center of mass position
+    # TODO 
     mjlib.mj_comPos(env.model.ptr, env.data.ptr)
 
     return jnp.array(env.bind(sites).xpos).flatten()
@@ -223,6 +223,7 @@ def m_joints_to_markers(offset, env, sites) -> jnp.ndarray:
     mjx.forward(env.model.ptr, env.data.ptr)
 
     # Center of mass position
+    # TODO 
     mjlib.mj_comPos(env.model.ptr, env.data.ptr)
 
     return jnp.array(env.bind(sites).xpos).flatten()
@@ -267,7 +268,7 @@ def m_phase(
     # Optimize dm
     keypoints = kp_data[time_indices, :].T
     q = [q[i] for i in time_indices]
-    offset_opt_param = scipy.optimize.minimize(
+    offset_opt_param = jax.scipy.optimize.minimize(
         lambda offset: m_loss(
             offset,
             env,
@@ -280,9 +281,9 @@ def m_phase(
             reg_coef=reg_coef,
         ),
         offset0,
-        method="L-BFGS-B",
-        tol=params["ROOT_FTOL"],
-        options={"maxiter": maxiter},
+        method="BFGS",
+        # tol=params["ROOT_FTOL"],
+        # options={"maxiter": maxiter},
     )
 
     # Set pose to the optimized m and step forward.
