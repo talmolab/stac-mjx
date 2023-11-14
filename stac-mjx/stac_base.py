@@ -64,11 +64,6 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, sites: jnp.ndarray)
     # Forward kinematics
     mjx.forward(mjx_model, mjx_data)
 
-    # Center of mass position
-    # This might not be necessary because we're using mj.forward instead of mjlib.mj_kinematics
-    # https://github.com/google-deepmind/mujoco/issues/411#issuecomment-1211001685 
-    # mjlib.mj_comPos(env.model.ptr, env.data.ptr)
-
     return jnp.array(env.bind(sites).xpos).flatten()
 
 
@@ -225,9 +220,6 @@ def m_joints_to_markers(offset, mjx_model, mjx_data, sites) -> jnp.ndarray:
 
     # Forward kinematics
     mjx.forward(mjx_model, mjx_data)
-
-    # Center of mass position
-    # mjlib.mj_comPos(env.model.ptr, env.data.ptr)
 
     return jnp.array(env.bind(sites).xpos).flatten()
 
