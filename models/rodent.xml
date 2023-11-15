@@ -149,7 +149,7 @@
       <camera name="side" mode="trackcom" pos="0 -1 0.5" xyaxes="1 0 0 0 1 2"/>
       <camera name="side_alt" mode="trackcom" pos="0.5 -0.561 0.199" xyaxes="0.766 0.643 0.000 -0.162 0.192 0.968"/>
       <camera name="top" mode="trackcom" fovy="100.0" pos="0 0 1" zaxis="0 -0.2 1"/>
-      <geom name="collision_torso" class="nonself_collision_primitive" type="sphere" size="0.01" density="468.251260009" pos="-0.008200000000000001 0 0" euler="0 0.1745329251994329 0"/>
+      <geom name="collision_torso" class="nonself_collision_primitive" type="sphere" size="0.035" density="468.251260009" pos="-0.008200000000000001 0 0" euler="0 0.1745329251994329 0"/>
       <body name="vertebra_1" pos="-0.01917944366660853 -1.880335592758969e-07 0.01684645690649089">
         <site name="tracking[vertebra_1]" class="tracking_site" />
         <geom name="vertebra_1_collision" class="nonself_collision_primitive" type="sphere" size="0.01" pos="0 0 -0.00164"/>
@@ -421,8 +421,8 @@
                     <joint name="vertebra_atlant_extend" class="cervical_extend" pos="2.740582919998361e-05 -4.955377833772316e-08 -0.0002115292895827232" axis="0 1 0"/>
                     <body name="skull" pos="0.02595506911814188 4.202354324468666e-09 0.001770509875790047">
                       <site name="tracking[skull]" class="tracking_site" />
-                      <geom name="skull_0_collision" class="collision_primitive" type="sphere" size="0.02209522800796732 0.01669565217391304 0.01" density="703.10773841" pos="-0.0090590434832666 0 0.00082" euler="0 0.1745329251994329 0"/>
-                      <geom name="skull_0b_collision" class="collision_primitive" type="sphere" size="0.02209522800796732 0.01669565217391304 0.01" density="1.40621547682" pos="-0.0090590434832666 0 0.00328" euler="0 0.1745329251994329 0"/>
+                      <geom name="skull_0_collision" class="collision_primitive" type="sphere" size="0.01209522800796732 0.01669565217391304 0.01" density="703.10773841" pos="-0.0090590434832666 0 0.00082" euler="0 0.1745329251994329 0"/>
+                      <geom name="skull_0b_collision" class="collision_primitive" type="sphere" size="0.01209522800796732 0.01669565217391304 0.01" density="1.40621547682" pos="-0.0090590434832666 0 0.00328" euler="0 0.1745329251994329 0"/>
                       <geom name="skull_F_collision" class="collision_primitive" type="sphere" size="0.007180949102589378 0.008904347826086957 0.02" density="703.10773841" pos="0.01449446957322656 0 -0.00082" euler="0 1.919862177193763 0"/>
                       <geom name="skull_Fb_collision" class="collision_primitive" type="sphere" size="0.007180949102589378 0.008904347826086957 0.02" density="1.40621547682" pos="0.01449446957322656 0 0.00164" euler="0 1.919862177193763 0"/>
                       <geom name="skull_L_collision" class="collision_primitive" type="sphere" size="0.007180949102589378 0.01335652173913044 0.014" density="703.10773841" pos="0.005435426089959959 0.004563478260869566 -0.00082" euler="0 1.919862177193763 0"/>

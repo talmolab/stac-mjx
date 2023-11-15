@@ -145,9 +145,7 @@ def build_env(kp_data: jnp.ndarray, params: Dict):
     Returns:
         : The environment
     """
-    # TODO move the path outside
-    rodent_path = "./models/rodent.xml"
-    model = mujoco.MjModel.from_xml_path(rodent_path)
+    model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
     mjx_model = mjx.device_put(model)
     mjx_data = mjx.make_data(mjx_model)
 

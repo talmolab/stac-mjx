@@ -1,0 +1,169 @@
+# Difference step for the root and full model/limbs.
+ROOT_DIFF_STEP: 1.0e-08
+DIFF_STEP: 3.0e-08
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+FTOL: 0.001
+LIMB_FTOL: 1.0e-06
+ROOT_FTOL: 1.0e-04
+
+# The model sites used to register the keypoints.
+KEYPOINT_MODEL_PAIRS:
+  AnkleL: lower_leg_L
+  AnkleR: lower_leg_R
+  EarL: skull
+  EarR: skull
+  ElbowL: upper_arm_L
+  ElbowR: upper_arm_R
+  FootL: foot_L
+  FootR: foot_R
+  HandL: hand_L
+  HandR: hand_R
+  HipL: pelvis
+  HipR: pelvis
+  KneeL: upper_leg_L
+  KneeR: upper_leg_R
+  ShoulderL: scapula_L
+  ShoulderR: scapula_R
+  Snout: skull
+  SpineF: vertebra_cervical_5
+  SpineL: pelvis
+  SpineM: vertebra_1
+  TailBase: pelvis
+  WristL: lower_arm_L
+  WristR: lower_arm_R
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  AnkleL: -0.03230154033783406 -0.004727054683585472 -0.02205958852339887
+  AnkleR: -0.03230154033783406 0.004727054683585472 -0.02205958852339887
+  EarL: 0. 0. 0.
+  EarR: 0. 0. 0.
+  ElbowL: -0.01593120836133218 0.01035528543486592 -0.02230369170586505
+  ElbowR: -0.01593120836133218 -0.01035528543486592 -0.02230369170586505
+  FootL: 0.02109994311367263 0.007614327297542731 -0.002752166493087734
+  FootR: 0.02109994311367263 -0.007614327297542731 -0.002752166493087734
+  HandL: 0.003031746915839468 0.001515873457919734 -0.008337304018558537
+  HandR: 0.003031746915839468 -0.001515873457919734 -0.008337304018558537
+  HipL: -0.015 0.015 0.
+  HipR: -0.015 -0.015 0.
+  KneeL: 0.01542264534586861 0.01747899805865108 -0.02570440890978101
+  KneeR: 0.01542264534586861 -0.01747899805865108 -0.02570440890978101
+  ShoulderL: 0.0287 0.00984 -0.02542
+  ShoulderR: 0.0287 -0.00984 -0.02542
+  Snout: 0. 0. 0.
+  SpineF: -0.015 0. 0.0
+  SpineL: 0. 0. 0.0
+  SpineM: 0. 0. 0.0
+  TailBase: 0. 0. 0.
+  WristL: 0. 0. 0.0
+  WristR: 0. 0. 0.0
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  AnkleL: 0 0 .3 1
+  AnkleR: .3 0 0 1
+  EarL: 0 0 .8 1
+  EarR: .8 0 0 1
+  ElbowL: 0 0 .8 1
+  ElbowR: .8 0 0 1
+  FootL: 0 0 .3 1
+  FootR: .3 0 0 1
+  HandL: 0 0 .8 1
+  HandR: .8 0 0 1
+  HipL: 0 0 .3 1
+  HipR: .3 0 0 1
+  KneeL: 0 0 .3 1
+  KneeR: .3 0 0 1
+  ShoulderL: 0 0 .8 1
+  ShoulderR: .8 0 0 1
+  Snout: .8 .8 .8 1
+  SpineF: .8 .8 .8 1
+  SpineL: .8 .8 .8 1
+  SpineM: .8 .8 .8 1
+  TailBase: .8 .8 .8 1
+  WristL: 0 0 .8 1
+  WristR: .8 0 0 1
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+  - "Spine"
+  - "Hip"
+  - "Shoulder"
+  - "TailBase"
+  
+INDIVIDUAL_PART_OPTIMIZATION:
+  "r_leg": [
+    "vertebra_1",
+    "vertebra_2",
+    "vertebra_3",
+    "vertebra_4",
+    "vertebra_5",
+    "vertebra_6",
+    "hip_R",
+    "knee_R",
+    "ankle_R",
+    "foot_R"
+    ]
+  "l_leg": [
+    "vertebra_1",
+    "vertebra_2",
+    "vertebra_3",
+    "vertebra_4",
+    "vertebra_5",
+    "vertebra_6",
+    "hip_L",
+    "knee_L",
+    "ankle_L",
+    "foot_L"
+    ]
+  "r_arm": [
+    "scapula_R",
+    "shoulder_R",
+    "elbow_R",
+    "hand_R",
+    "finger_R"
+    ]
+  "l_arm": [
+    "scapula_L",
+    "shoulder_L",
+    "elbow_L",
+    "hand_L",
+    "finger_L"
+    ]
+  "head": [
+    "atlas",
+    "cervical",
+    "atlant_extend"
+  ]
+
+
+# OPTIONAL Lock the mandible to a position if there is no jaw tracking
+MANDIBLE_POS: -0.297
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
+SITES_TO_REGULARIZE:
+- HandL
+- HandR
+- SpineF
+- SpineL
+- SpineM
+N_SAMPLE_FRAMES: 50
+
+# Time of each frame in seconds.
+TIME_BINS: 0.02
+
+# If you want to use a different arena, you can specify it here.
+ARENA_TYPE: DannceArena
+Z_OFFSET: 0.00
+
+# Path to the model file.
+XML_PATH: "./models/rodent.xml"
+SKELETON_PATH: "./models/rat23.mat"
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: .9
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 3
