@@ -21,25 +21,53 @@ mjx_model = mjx.device_put(model)
 
 # minimal example code--this is supposed to work
 # @jax.vmap
-# def batched_step(vel):
+# def batched_step(vel, mjx_model):
 #     mjx_data = mjx.make_data(mjx_model)
 #     qvel = mjx_data.qvel.at[0].set(vel)
 #     mjx_data = mjx_data.replace(qvel=qvel)
 #     pos = mjx.step(mjx_model, mjx_data).qpos[0]
 #     return pos
 
-# vel = jax.numpy.linspace(0.0, 0.2, 5)
-# pos = jax.jit(batched_step)(vel)
 def serial_step(vel):
     data = mujoco.MjData(model)
-    print(data.xpos)
+    print(data.qpos)
     data.qvel[0] = 0
     # qvel[0] = vel
     # data = data.replace(qvel=qvel)
     mujoco.mj_step(model, data)
     
-    return data.xpos
+    return data.qpos
 
-pos = serial_step(.1)
+def serial_step_mjx(vel):
+    mjx_data = mjx.make_data(mjx_model)    
+    print(mjx_data.qpos)
+    qvel = mjx_data.qvel.at[0].set(vel)
+    mjx_data = mjx_data.replace(qvel=qvel)
+    mjx_data = mjx.step(mjx_model, mjx_data)
+    # mjx.forward(model, mjx_data)
+    
+    return mjx_data.qpos
 
-print(pos)
+# jit compile and simulate one step 5 times parallely!
+# vel = jax.numpy.linspace(0.0, 0.2, 5)
+# pos = jax.jit(batched_step)(vel)
+#12:56
+import time
+print("Compilation done: " + str(time.time()))
+def step_function(vel, mjx_model):
+    mjx_data = mjx.make_data(mjx_model)
+    qvel = mjx_data.qvel.at[0].set(vel)
+    mjx_data = mjx_data.replace(qvel=qvel)
+    mjx.step(mjx_model, mjx_data)
+
+# Wrap the step function with jax.vmap for vectorization over vel
+batched_step = jax.vmap(step_function, in_axes=(0, None))
+start_time = prev_time = time.time()
+vel = jnp.linspace(0.0, 0.2, 2048)
+for i in range(100):    
+    jax.jit(lambda v: batched_step(v, mjx_model), backend="gpu")(vel)
+    print(f"batch {i}: {time.time() - prev_time}")
+    prev_time = time.time()
+
+end_time = time.time()
+print(f"Time to complete {100 * len(vel)} steps: {end_time - start_time}")

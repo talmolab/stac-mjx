@@ -4,6 +4,7 @@ from scipy.io import savemat
 import mujoco
 from mujoco import mjx
 import jax
+from jax import jit, vmap
 import jax.numpy as jnp
 import stac.stac_base as stac_base
 import stac.rodent_environments as rodent_environments
@@ -51,7 +52,9 @@ def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
 # TODO This will need to be reimplementated since we dont have the names anymore in mjdata
 def get_part_ids(mjx_model, mjx_data, parts: List) -> jnp.ndarray:
     """Get the part ids given a list of parts.
-
+This code creates a JAX NumPy-like Boolean array where each element 
+represents whether any of the strings in the parts list is found as a substring in 
+the corresponding name from the part_names list.
     Args:
         env (TYPE): Environment
         parts (List): List of part names
@@ -203,6 +206,7 @@ class STAC:
 
         # Default ordering of mj sites is alphabetical, so we reorder to match
         self._properties["kp_names"] = util.loadmat(self._properties["SKELETON_PATH"])["joint_names"]
+        # argsort returns the indices that would sort the array
         self._properties["stac_keypoint_order"] = jnp.argsort(
             self._properties["kp_names"]
         )
