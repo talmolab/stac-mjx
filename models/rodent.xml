@@ -1,4 +1,11 @@
 <mujoco model="rat">
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512"/>
+    <texture name="body" type="cube" builtin="flat" mark="cross" width="128" height="128" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
+    <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 .4 1"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+  </asset>
   <compiler angle="radian"/>
   <size njmax="8000" nconmax="4000"/>
   <default>
@@ -140,7 +147,7 @@
   </visual>
   <statistic meansize="0.003"/>
   <worldbody>
-    <geom name="floor" type="plane" conaffinity="1" size="50 50 .05"/>
+    <geom name="floor" size="0 0 .05" type="plane" material="grid" condim="3"/>
     <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06508957263119967">
       <freejoint name="root"/>
       <site name="tracking[torso]" class="tracking_site" />
@@ -568,6 +575,15 @@
     <exclude name="upper_arm_R:torso" body1="upper_arm_R" body2="torso"/>
     <exclude name="lower_leg_L:pelvis" body1="lower_leg_L" body2="pelvis"/>
     <exclude name="lower_leg_R:pelvis" body1="lower_leg_R" body2="pelvis"/>
+    <pair geom1="foot_L_collision" geom2="floor"/>
+    <pair geom1="foot_R_collision" geom2="floor"/>
+    <pair geom1="toe_L0_collision" geom2="floor"/>
+    <pair geom1="toe_L1_collision" geom2="floor"/>
+    <pair geom1="toe_L2_collision" geom2="floor"/>
+    <pair geom1="toe_R0_collision" geom2="floor"/>
+    <pair geom1="toe_R1_collision" geom2="floor"/>
+    <pair geom1="toe_R2_collision" geom2="floor"/>
+    
   </contact>
   <actuator>
     <general name="hip_L_supinate" forcerange="-0.2 0.2" joint="hip_L_supinate" dyntype="filter" biastype="affine" dynprm="0.04" gainprm="0.2443460952792061" biasprm="-0.0349065850398866 -0.4"/>
