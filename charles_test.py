@@ -8,7 +8,9 @@ from jax import device_put
 import numpy as np 
 import yaml
 from typing import List, Dict, Text
+import time
 
+start_time = time.time()
 
 def load_params(param_path: Text) -> Dict:
     with open(param_path, "rb") as file:
@@ -48,26 +50,42 @@ def serial_step_mjx(vel):
     
     return mjx_data.qpos
 
-# jit compile and simulate one step 5 times parallely!
+# jit compile and simulate one step 5 times parallely
 # vel = jax.numpy.linspace(0.0, 0.2, 5)
 # pos = jax.jit(batched_step)(vel)
-#12:56
-import time
-print("Compilation done: " + str(time.time()))
-def step_function(vel, mjx_model):
-    mjx_data = mjx.make_data(mjx_model)
-    qvel = mjx_data.qvel.at[0].set(vel)
-    mjx_data = mjx_data.replace(qvel=qvel)
-    mjx.step(mjx_model, mjx_data)
 
-# Wrap the step function with jax.vmap for vectorization over vel
-batched_step = jax.vmap(step_function, in_axes=(0, None))
-start_time = prev_time = time.time()
-vel = jnp.linspace(0.0, 0.2, 2048)
-for i in range(100):    
-    jax.jit(lambda v: batched_step(v, mjx_model), backend="gpu")(vel)
-    print(f"batch {i}: {time.time() - prev_time}")
-    prev_time = time.time()
+def take_steps(ctrl, steps, mjx_model):
+    # ctrl = network(obs)
+    mjx_data = mjx.make_data(mjx_model)
+    mjx_data = mjx_data.replace(ctrl=ctrl)
+    def f(data, _):
+      return (
+          mjx.step(mjx_model, data),
+          None,
+      )
+      
+    mjx_data, _ = jax.lax.scan(f, mjx_data, (), steps)
+    return mjx_data.qpos
+
+steps = 10
+n_envs_small = 1
+n_envs_large = 512
+batched_steps = vmap(lambda ctrl: take_steps(ctrl, steps, mjx_model), in_axes=0)
+
+key = random.PRNGKey(0)
+small_ctrl = random.uniform(key, shape=(n_envs_small, mjx_model.nu))
+
+jit_batch_step = jit(batched_steps)
+
+batch_end_data = jit_batch_step(small_ctrl)
+initial_time = time.time() - start_time
+print(f"compilation (first execution) done in: {initial_time}")
+two = time.time()
+print("starting second run")
+large_ctrl = random.uniform(key, shape=(n_envs_large, mjx_model.nu))
+
+batch_end_data = jit_batch_step(large_ctrl)
 
 end_time = time.time()
-print(f"Time to complete {100 * len(vel)} steps: {end_time - start_time}")
+print(f"second run duration: {end_time - two}")
+print(f"Time to complete {steps * n_envs_large} steps: {end_time - start_time}")
