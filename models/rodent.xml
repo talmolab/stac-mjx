@@ -21,7 +21,7 @@
       <default class="collision_primitive">
         <geom type="capsule" group="2" rgba="0 0.5 0.5 1" density="500.0"/>
         <default class="collision_primitive_paw">
-          <geom condim="3" priority="1" rgba="0 0.6 0.7 1" friction="1.5 0.005 0.0001"/>
+          <geom g condim="3" priority="1" rgba="0 0.6 0.7 1" friction="1.5 0.005 0.0001"/>
         </default>
         <default class="nonself_collision_primitive">
           <geom conaffinity="0"/>
@@ -147,7 +147,7 @@
   </visual>
   <statistic meansize="0.003"/>
   <worldbody>
-    <geom name="floor" size="0 0 .05" type="plane" material="grid" condim="3"/>
+    <geom name="floor" size="0 0 .05" type="plane" material="grid" condim="3" contype="1"/>
     <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06508957263119967">
       <freejoint name="root"/>
       <site name="tracking[torso]" class="tracking_site" />
@@ -575,6 +575,7 @@
     <exclude name="upper_arm_R:torso" body1="upper_arm_R" body2="torso"/>
     <exclude name="lower_leg_L:pelvis" body1="lower_leg_L" body2="pelvis"/>
     <exclude name="lower_leg_R:pelvis" body1="lower_leg_R" body2="pelvis"/>
+
     <pair geom1="foot_L_collision" geom2="floor"/>
     <pair geom1="foot_R_collision" geom2="floor"/>
     <pair geom1="toe_L0_collision" geom2="floor"/>
@@ -583,7 +584,7 @@
     <pair geom1="toe_R0_collision" geom2="floor"/>
     <pair geom1="toe_R1_collision" geom2="floor"/>
     <pair geom1="toe_R2_collision" geom2="floor"/>
-    
+    <pair geom1="collision_torso" geom2="floor"/>
   </contact>
   <actuator>
     <general name="hip_L_supinate" forcerange="-0.2 0.2" joint="hip_L_supinate" dyntype="filter" biastype="affine" dynprm="0.04" gainprm="0.2443460952792061" biasprm="-0.0349065850398866 -0.4"/>
