@@ -22,13 +22,12 @@ model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
 mjx_model = mjx.device_put(model)
 
 # minimal example code--this is supposed to work
-# @jax.vmap
-# def batched_step(vel, mjx_model):
-#     mjx_data = mjx.make_data(mjx_model)
-#     qvel = mjx_data.qvel.at[0].set(vel)
-#     mjx_data = mjx_data.replace(qvel=qvel)
-#     pos = mjx.step(mjx_model, mjx_data).qpos[0]
-#     return pos
+@jax.vmap
+def single_batch_step(ctrl, mjx_model):
+    mjx_data = mjx.make_data(mjx_model)
+    mjx_data = mjx_data.replace(ctrl=ctrl)
+    qpos = mjx.step(mjx_model, mjx_data).qpos
+    return qpos
 
 def serial_step(vel):
     data = mujoco.MjData(model)
@@ -67,7 +66,7 @@ def take_steps(ctrl, steps, mjx_model):
     mjx_data, _ = jax.lax.scan(f, mjx_data, (), steps)
     return mjx_data.qpos
 
-steps = 10
+steps = 1
 n_envs_small = 1
 n_envs_large = 512
 batched_steps = vmap(lambda ctrl: take_steps(ctrl, steps, mjx_model), in_axes=0)
