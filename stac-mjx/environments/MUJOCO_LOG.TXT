@@ -1,3 +1,0 @@
-Wed Nov 22 20:57:08 2023
-WARNING: mju_openResource: unknown file './models/rodent.xml'
-
