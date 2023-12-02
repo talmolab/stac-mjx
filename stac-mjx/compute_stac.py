@@ -14,6 +14,7 @@ import pickle
 import os
 from typing import List, Dict, Tuple, Text
 from tqdm import tqdm
+import state
 
 def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
     """Optimize only the root.
