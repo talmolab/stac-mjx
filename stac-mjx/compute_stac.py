@@ -16,6 +16,8 @@ from typing import List, Dict, Tuple, Text
 from tqdm import tqdm
 import state
 
+"""The optimization functions are vmapped, so the functions in stac_base dont need to be. So now we need to ensure the args are vectorizable"""
+@vmap
 def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
     """Optimize only the root.
 
@@ -24,7 +26,7 @@ def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    # TODO how to store kp_data (keypoint data) and body sites?
+    # TODO how to store kp_data (keypoint data) and body sites? Find out what kp_data looks like and use jax arrays and/or dataclass?
     stac_base.q_phase(
         mjx_model, 
         mjx_data,
@@ -50,7 +52,7 @@ def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
         kps_to_opt=trunk_kps,
     )
 
-# TODO This will need to be reimplementated since we dont have the names anymore in mjdata
+# TODO: revert this to how it was before since it's part of preprocessing. can do all preprocessing like before and move to mjx only for optimization
 def get_part_ids(mjx_model, mjx_data, parts: List) -> jnp.ndarray:
     """Get the part ids given a list of parts.
 This code creates a JAX NumPy-like Boolean array where each element 
@@ -84,7 +86,7 @@ def offset_optimization(mjx_model, mjx_data, offsets, q, params: Dict, maxiter: 
         maxiter=maxiter,
     )
 
-
+@vmap
 def pose_optimization(mjx_model, mjx_data, params: Dict) -> Tuple:
     """Perform q_phase over the entire clip.
 
@@ -311,6 +313,10 @@ class STAC:
         env.physics.bind(sites).pos[:] = in_dict["offsets"]
         for n_site, p in enumerate(env.physics.bind(sites).pos):
             sites[n_site].pos = p
+
+        # TODO: these three function calls need to be vmapped and jitted somehow. 
+        # the batch size will be some factor of the total clips (clips=short chunks), or if possible, the entire set
+        # will need to vectorize kp_data
 
         # Optimize the root position
         root_optimization(mjx_model, mjx_data, self._properties)
