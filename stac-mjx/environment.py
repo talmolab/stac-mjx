@@ -5,8 +5,7 @@ from jax import numpy as jp
 from typing import Any, Dict, Tuple, Union
 
 """
-Is it even necessary to have an environment class?
-maybe just so we have some place to store the body sites and name-to-index mapping..
+What is needed in an environment class?
 """
 class MjxEnv():
   """API for driving an MJX system for training and inference in brax."""
@@ -83,9 +82,9 @@ class Rodent(MjxEnv):
     # TODO: take this from params instead
     path = "./models/rodent.xml"
     mj_model = mujoco.MjModel.from_xml_path(path)
-    mj_model.opt.solver = mujoco.mjtSolver.mjSOL_CG
-    mj_model.opt.iterations = 6
-    mj_model.opt.ls_iterations = 6
+    mj_model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
+    mj_model.opt.iterations = 1
+    mj_model.opt.ls_iterations = 1
 
     physics_steps_per_control_step = 5
     kwargs['physics_steps_per_control_step'] = kwargs.get(

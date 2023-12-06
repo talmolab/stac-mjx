@@ -1,12 +1,12 @@
 """Compute stac optimization on data."""
 from scipy.io import savemat
-# from dm_control.locomotion.walkers import rescale
+from dm_control.locomotion.walkers import rescale
 import mujoco
 from mujoco import mjx
 import jax
 from jax import jit, vmap
 import jax.numpy as jnp
-import stac.stac_base as stac_base
+import stac_base
 import stac.rodent_environments as rodent_environments
 import stac.util as util
 import numpy as jnp
@@ -26,12 +26,15 @@ def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    # TODO how to store kp_data (keypoint data) and body sites? Find out what kp_data looks like and use jax arrays and/or dataclass?
+    # TODO how to store kp_data (keypoint data) and body sites? kp_data is simply an array so that's easy and can be passed as a batch of kp_datas
+    # body_sites 
     stac_base.q_phase(
         mjx_model, 
         mjx_data,
-        env.task.kp_data[frame, :],
-        env.task._walker.body_sites,
+        # env.task.kp_data[frame, :],
+        # env.task._walker.body_sites,
+        kp_data,
+
         params,
         root_only=True,
     )
@@ -155,12 +158,11 @@ def build_env(kp_data: jnp.ndarray, params: Dict):
     mjx_model = mjx.device_put(model)
     mjx_data = mjx.make_data(mjx_model)
 
-    # TODO: implement rescaling
-    # rescale.rescale_subtree(
-    #     env.task._walker._mjcf_root,
-    #     params["SCALE_FACTOR"],
-    #     params["SCALE_FACTOR"],
-    # )
+    rescale.rescale_subtree(
+        env.task._walker._mjcf_root,
+        params["SCALE_FACTOR"],
+        params["SCALE_FACTOR"],
+    )
     
     mjx.forward(mjx_model, mjx_data)
 

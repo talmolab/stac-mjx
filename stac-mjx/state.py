@@ -145,10 +145,11 @@ def _tree_replace(
 
 @struct.dataclass
 class State(Base):
-  """A minimal state class (only containing mjx.Data).
+  """A minimal state class.
 
   Args:
-    pipeline_state: the physics state, mjx.Data
+    data: the physics state, mjx.Data
+
   """
 
   data: mjx.Data
