@@ -159,7 +159,7 @@ ARENA_TYPE: DannceArena
 Z_OFFSET: 0.00
 
 # Path to the model file.
-XML_PATH: "./models/rodent.xml"
+XML_PATH: "./models/rodent_modified.xml"
 SKELETON_PATH: "./models/rat23.mat"
 
 # What is the size of the animal you'd like to register, relative to the model?
