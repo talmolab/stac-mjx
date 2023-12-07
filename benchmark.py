@@ -180,7 +180,7 @@ def single_step(state, ctrl):
     return state
 
 n_envs_small = 1
-n_envs_large = 512
+n_envs_large = 256
 key = random.PRNGKey(0)
 small_ctrl = random.uniform(key, shape=(n_envs_small, mjx_model.nu))
 large_ctrl = random.uniform(key, shape=(n_envs_large, mjx_model.nu))

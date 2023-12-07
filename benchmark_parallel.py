@@ -224,7 +224,7 @@ print(f"{steps * total_envs} steps completed in {time.time()-start_time} seconds
 
 print("Running single step for loop")
 
-start_time = prev = time.time()
+start_time = time.time()
 
 # jit_single_batch_step(env_state, large_ctrl)
 # prev = time.time()
@@ -233,8 +233,8 @@ def loop_steps(large_ctrl):
     env_state = reset_fn(per_gpu)
     for _ in range(steps):
         env_state = jit_single_batch_step(env_state, large_ctrl)
-        print(f"{time.time()-prev}")
-        prev = time.time()
+        # print(f"{time.time()-prev}")
+        # prev = time.time()
     # d = mujoco.MjData(model)
     # mjx.device_get_into(d, env_state.data)
     return 

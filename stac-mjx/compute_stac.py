@@ -26,7 +26,9 @@ def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    # TODO how to store kp_data (keypoint data) and body sites? kp_data is simply an array so that's easy and can be passed as a batch of kp_datas
+    # TODO how to store kp_data (keypoint data) and body sites? 
+    # kp_data is simply an array so that's easy and can be passed as a 
+    # batch of kp_datas
     # body_sites 
     stac_base.q_phase(
         mjx_model, 
@@ -264,7 +266,7 @@ class STAC:
         offsets *= self.SCALE_FACTOR
         env.physics.bind(env.task._walker.body_sites).pos[:] = offsets
         
-        mjx.forward(mjx_model, mjx_data)
+        mjx_data = mjx.forward(mjx_model, mjx_data)
 
         for n_site, p in enumerate(env.physics.bind(env.task._walker.body_sites).pos):
             env.task._walker.body_sites[n_site].pos = p
