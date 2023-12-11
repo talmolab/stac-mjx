@@ -10,6 +10,7 @@ setup(
         "clize >= 4.0.3",
         "absl-py >= 0.7.1",
         "mujoco-mjx >= 3.0.0",
+        "dm_control",
         "flax",
         "enum34",
         "future",

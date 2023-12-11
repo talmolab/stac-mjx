@@ -18,7 +18,7 @@ import state
 
 """The optimization functions are vmapped, so the functions in stac_base dont need to be. So now we need to ensure the args are vectorizable"""
 @vmap
-def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
+def root_optimization(mjx_model, mjx_data, kp_data, sites, params: Dict, frame: int = 0):
     """Optimize only the root.
 
     Args:
@@ -33,10 +33,8 @@ def root_optimization(mjx_model, mjx_data, params: Dict, frame: int = 0):
     stac_base.q_phase(
         mjx_model, 
         mjx_data,
-        # env.task.kp_data[frame, :],
-        # env.task._walker.body_sites,
         kp_data,
-
+        sites,
         params,
         root_only=True,
     )
