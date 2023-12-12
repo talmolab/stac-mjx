@@ -167,3 +167,6 @@ SCALE_FACTOR: .9
 
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 3
+
+# Number of GPUs to be used
+N_GPUS: 1

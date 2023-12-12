@@ -5,20 +5,58 @@ import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
-
+from jax import jit
 
 class _TestNoneArgs(BaseException):
     """Simple base exception"""
 
     pass
 
+def get_sites_xpos(mjx_data, site_index_map):
+    """Returns mjdata.site_xpos of keypoint body sites
+
+    Args:
+        mjx_data (_type_): _description_
+        site_index_map (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return jnp.array([mjx_data.site_xpos[i] for i in site_index_map.values()])
+
+def get_sites_pos(mjx_model, site_index_map):
+    """Returns mjmodel.site_pos of keypoint body sites
+
+    Args:
+        mjx_data (_type_): _description_
+        site_index_map (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    return jnp.array([mjx_model.site_pos[i] for i in site_index_map.values()])
+
+def set_sites_pos(mjx_model, site_index_map, offsets):
+    """Sets model.sites_pos to offets and returns
+
+    Args:
+        mjx_data (_type_): _description_
+        site_index_map (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    for offset, i in zip(offsets, site_index_map.values()):
+        mjx_model.sites_pos[i] = offset
+        
+    return mjx_model
 
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
-    sites: jnp.ndarray,
+    site_index_map: jnp.ndarray,
     qs_to_opt: jnp.ndarray = None,
     q_copy: jnp.ndarray = None,
     kps_to_opt: jnp.ndarray = None,
@@ -42,13 +80,13 @@ def q_loss(
         q_copy[qs_to_opt] = q.copy()
         q = jnp.copy(q_copy)
 
-    residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data, sites)
+    residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data, site_index_map)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
     return residual
 
 
-def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, sites: jnp.ndarray) -> jnp.ndarray:
+def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, site_index_map) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -59,19 +97,19 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, sites: jnp.ndarray)
     Returns:
         jnp.ndarray: Array of marker positions.
     """
-    mjx_data.qpos[:] = q.copy()
-
+    mjx_data.replace(qpos=q.copy())
     # Forward kinematics
-    mjx.forward(mjx_model, mjx_data)
+    mjx_data = jit_forward(mjx_model, mjx_data)
 
-    return jnp.array(env.bind(sites).xpos).flatten()
+    return get_sites_xpos(mjx_data, site_index_map).flatten()
 
-
+# q_phase is jit-compiled
+@jit
 def q_phase(
     mjx_model,
     mjx_data,
     marker_ref_arr: jnp.ndarray,
-    sites: jnp.ndarray,
+    site_index_map: jnp.ndarray,
     params: Dict,
     qs_to_opt: jnp.ndarray = None,
     kps_to_opt: jnp.ndarray = None,
@@ -135,7 +173,7 @@ def q_phase(
                 mjx_model,
                 mjx_data,
                 marker_ref_arr.T,
-                sites,
+                site_index_map,
                 qs_to_opt=qs_to_opt,
                 q_copy=q_copy,
                 kps_to_opt=kps_to_opt,
@@ -150,18 +188,20 @@ def q_phase(
 
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
-            mjx_data.qpos[:] = q_opt_param.x
+            mjx_data.replace(qpos=q_opt_param.x)
         else:
             q_copy[qs_to_opt] = q_opt_param.x
-            mjx_data.qpos[:] = q_copy.copy()
+            mjx_data.replace(qpos=q_copy.copy())
 
-        mjx.forward(mjx_model, mjx_data)
+        mjx_data = jit_forward(mjx_model, mjx_data)
 
     except ValueError:
         print("Warning: optimization failed.", flush=True)
         q_copy[jnp.isnan(q_copy)] = 0.0
-        mjx_data.qpos[:] = q_copy.copy()
-        mjx.forward(mjx_model, mjx_data)
+        mjx_data.replace(qpos=q_copy.copy()) 
+        mjx_data = jit_forward(mjx_model, mjx_data)
+        
+    return mjx_data
 
 
 def m_loss(
@@ -205,7 +245,7 @@ def m_loss(
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
 
-def m_joints_to_markers(offset, mjx_model, mjx_data, sites) -> jnp.ndarray:
+def m_joints_to_markers(offset, mjx_model, mjx_data, site_index_map) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -216,19 +256,19 @@ def m_joints_to_markers(offset, mjx_model, mjx_data, sites) -> jnp.ndarray:
     Returns:
         TYPE: Array of marker positions
     """
-    env.bind(sites).pos[:] = jnp.reshape(offset.copy(), (-1, 3))
+    mjx_model = set_sites_pos(mjx_model, site_index_map, jnp.reshape(offset.copy(), (-1, 3))) 
 
     # Forward kinematics
-    mjx.forward(mjx_model, mjx_data)
+    mjx_data = jit_forward(mjx_model, mjx_data)
 
-    return jnp.array(env.bind(sites).xpos).flatten()
+    return get_sites_xpos(mjx_data, site_index_map).flatten()
 
 
 def m_phase(
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
-    sites: jnp.ndarray,
+    site_index_map: jnp.ndarray,
     time_indices: List,
     q: jnp.ndarray,
     initial_offsets: jnp.ndarray,
@@ -250,12 +290,12 @@ def m_phase(
         maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
     # Define initial position of the optimization
-    offset0 = jnp.copy(env.bind(sites).pos[:]).flatten()
+    offset0 = jnp.copy(get_sites_pos(mjx_model, site_index_map)).flatten()
 
     # Define which offsets to regularize
     is_regularized = []
-    for site in sites:
-        if any(n in site.name for n in params["SITES_TO_REGULARIZE"]):
+    for k, v in site_index_map.items():
+        if any(n == k for n in params["SITES_TO_REGULARIZE"]):
             is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
         else:
             is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
@@ -271,7 +311,7 @@ def m_phase(
             mjx_data,
             keypoints,
             time_indices,
-            sites,
+            site_index_map,
             q,
             initial_offsets,
             is_regularized=is_regularized,
@@ -284,9 +324,15 @@ def m_phase(
     )
 
     # Set pose to the optimized m and step forward.
-    env.bind(sites).pos[:] = jnp.reshape(offset_opt_param.x, (-1, 3))
-
+    mjx_model = set_sites_pos(mjx_model, site_index_map, jnp.reshape(offset_opt_param.x, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx.forward(mjx_model, mjx_data)
-    for n_site, p in enumerate(env.bind(sites).pos):
-        sites[n_site].pos = p
+    mjx_data = jit_forward(mjx_model, mjx_data)
+    # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
+    #     sites[n_site].pos = p
+        
+    return mjx_data, mjx_model
+
+@jit
+def jit_forward(mjx_model, mjx_data):
+    return mjx.forward(mjx_model, mjx_data)
+    

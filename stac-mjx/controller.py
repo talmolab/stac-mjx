@@ -7,8 +7,11 @@ from typing import Text, Dict
 import utils
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
+import numpy as np
+import functools
+from compute_stac import *
+import stac_base
 
-from compute_stac import root_optimization, pose_optimization, initialize_part_names
 """
 This file should serve the same purpose as the logic for executing SLURM jobs. 
 However, instead of executing SLURM jobs for individual clips, it:
@@ -45,40 +48,52 @@ def set_body_sites(root, params):
     )
     physics = mjcf.Physics.from_mjcf_model(root)
     # Usage of physics: binding = physics.bind(body_sites)
-    # TODO: is getting new mjmodel using mjcf_root necessary?
-    
-    
-    part_names = initialize_part_names(mjmodel, mjdata)
 
-    return physics, body_sites, part_names, mjx_model
+    axis = physics.named.model.site_pos._axes[0]
+    site_index_map = {key: axis.convert_key_item(key) for key in params["KEYPOINT_MODEL_PAIRS"].keys()}
+    
+    part_names = initialize_part_names(physics)
 
-# TODO mjmodel cant be vectorized so fix (vectorize a lamba func of smth)
-@vmap
-def prep_data(model, kp_data, stac_keypoint_order, params):
-    """Data preparation for kp_data and mjxdata: 1. prepare_data() 2. build_env()
-        This function is vmapped so the usage will be to pass in the args with a leading batch dim.
-        i.e: kp_data.shape = (batch_size, kp_data.shape)
-             stac_keypoint_order.shape = (batch_size, stac_keypoint_order.shape)
+    # What's the difference btwn returning physics.data and physics.model?
+    return site_index_map, part_names, physics.model
+
+def prep_kp_data(kp_data, stac_keypoint_order, params):
+    """Data preparation for kp_data: splits kp_data into 1k frame chunks.
+        Makes sure that the total chunks is divisible by the number of gpus
+        not vmapped but essentially vectorizes kpdata via chunking
 
     Returns:
         model: mjModel
         mjx_data: MjData with batch dimension; (batch, dim of attr)
-        kp_data:
-        body_sites: 
+        kp_data: kp_data chunks with a leading batch dimension
     """
     
     kp_data = kp_data[:, :, stac_keypoint_order]
     kp_data = jnp.transpose(kp_data, (0, 2, 1))
     kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
     
+    return kp_data 
+
+def chunk_kp_data(kp_data, params):
+    N_FRAMES_PER_CLIP = 1000
     n_frames = kp_data.shape[0]
+
+    n_chunks = int((n_frames / N_FRAMES_PER_CLIP) // params['N_GPUS'] * params['N_GPUS'])
     
-    mjx_model = mjx.device_put(model)
+    kp_data = kp_data[:int(n_chunks) * N_FRAMES_PER_CLIP]
+    
+    # Reshape the array to create chunks
+    kp_data = kp_data.reshape((n_chunks, N_FRAMES_PER_CLIP) + kp_data.shape[1:])
+    
+    return kp_data, n_chunks
+
+def mjx_setup(kp_data, mj_model):
+    # Create mjx model and data
+    mjx_model = mjx.device_put(mj_model)
     mjx_data = mjx.make_data(mjx_model)
+    return mjx_model, mjx_data
 
-    return mjx_data, kp_data, n_frames
-
-# pmap fit and transform if you want to use it with multiple gpus
+# TODO: pmap fit and transform if you want to use it with multiple gpus
 def fit(root, kp_data, params):
     """Calibrate and fit the model to keypoints.
     Performs three rounds of alternating marker and quaternion optimization. Optimal
@@ -92,26 +107,48 @@ def fit(root, kp_data, params):
 
     """    
     
-    physics, body_sites, part_names, mjx_model = set_body_sites(root, params)
+    site_index_map, part_names, mj_model = set_body_sites(root, params)
+    
+    # Get the model pointer from the MjModel object
+    mj_model = mj_model.ptr
+    
+    # Create batch mjx model and data
+    mjx_model, mjx_data = jax.vmap(lambda x: mjx_setup(x, mj_model))(kp_data)
+    
     # Get and set the offsets of the markers
-    offsets = jnp.copy(physics.bind(body_sites).pos[:])
+    offsets = np.copy(stac_base.get_sites_pos(mj_model, site_index_map))
     offsets *= params['SCALE_FACTOR']
-    physics.bind(body_sites).pos[:] = offsets
     
-    mjx_data = mjx.forward(mjx_model, mjx_data)
+    # TODO: CURRENTLY THIS DONT WORK BUT THEY B RELEASING 3.1.0 SOON
+    mjx_model = stac_base.set_sites_pos(mjx_model, site_index_map, offsets) 
 
-    for n_site, p in enumerate(physics.bind(body_sites).pos):
-        body_sites[n_site].pos = p
+    # forward is used to calculate xpos and stuff, loop necessity tbd
+    mjx_data = stac_base.jit_forward(mjx_model, mjx_data)
+
+    # for n_site, p in enumerate(physics.bind(body_sites).pos):
+    #     body_sites[n_site].pos = p
     
-    root_optimization(mjx_model, mjx_data, params)
+    # Create partial functions that can be vmapped
+    vmap_root_opt = jax.vmap(functools.partial(root_optimization, 
+                                               site_index_map=site_index_map, 
+                                               params=params))
+    vmap_pose_opt = jax.vmap(functools.partial(pose_optimization, 
+                                               site_index_map=site_index_map, 
+                                               params=params))
+    vmap_root_opt = jax.vmap(functools.partial(offset_optimization, 
+                                               site_index_map=site_index_map, 
+                                               params=params))
+
+    mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
     for n_iter in range(params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{params['N_ITERS']}")
-        q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, params)
-        offset_optimization(mjx_model, mjx_data, offsets, q, params)
+        q, walker_body_sites, x = vmap_pose_opt(mjx_model, mjx_data)
+        vmap_root_opt(mjx_model, mjx_data, offsets, q)
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
-    q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, params)
+    q, walker_body_sites, x = vmap_pose_opt(mjx_model, mjx_data)
+    
     data = package_data(
         mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_data, params
     )
@@ -127,6 +164,31 @@ def transform(kp_data, offset_path):
             Keypoint order must match the order in the skeleton file.
         offset_path (Text): Path to offset file saved after .fit()
     """
+    # kp_data = self._prepare_data(kp_data)
+    # self.n_frames = kp_data.shape[0]
+    # env = build_env(kp_data, self._properties)
+    # part_names = initialize_part_names(env)
+
+    # # Set the offsets.
+    # self.offset_path = offset_path
+    # with open(self.offset_path, "rb") as f:
+    #     in_dict = pickle.load(f)
+    # sites = env.task._walker.body_sites
+    # env.physics.bind(sites).pos[:] = in_dict["offsets"]
+    # for n_site, p in enumerate(env.physics.bind(sites).pos):
+    #     sites[n_site].pos = p
+
+    # # Optimize the root position
+    # root_optimization(env, self._properties)
+
+    # # Optimize the pose for the whole sequence
+    # q, walker_body_sites, x = pose_optimization(env, self._properties)
+
+    # # Extract pose, offsets, data, and all parameters
+    # data = package_data(
+    #     env, q, x, walker_body_sites, part_names, kp_data, self._properties
+    # )
+    # return data
     return
 
 def end_to_end():
@@ -134,21 +196,47 @@ def end_to_end():
     """
     params = utils.load_params("params/params.yaml")
     model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
+    model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
+    model.opt.iterations = 1
+    model.opt.ls_iterations = 1
+    
+    offset_path = "offset.p"
+
     root = mjcf.from_path(params["XML_PATH"])
-    mjx_model = mjx.device_put(model)
 
     n_frames = None
 
     # Default ordering of mj sites is alphabetical, so we reorder to match
     kp_names = utils.loadmat(params["SKELETON_PATH"])["joint_names"]
     # argsort returns the indices that would sort the array
-    stac_keypoint_order = jnp.argsort(params["kp_names"])
-    
-    # Call vmapped prep data
-    mjx_data, kp_data, n_frames = prep_data(kp_data)
+    stac_keypoint_order = np.argsort(kp_names)
 
+    # TODO: load kp_data
+
+    # kp_data
+    # TODO: store kp_data used in fit in another variable (small slice of kpdata)
+    kp_data = prep_kp_data(kp_data, stac_keypoint_order, params)
+    # chunk it to pass int vmapped functions
+    kp_data, n_envs = chunk_kp_data(kp_data, params)
     # fit
-    data = fit(kp_data, params)
-    
+    fit_data = fit(root, kp_data, params)
+
+    save(fit_data, offset_path)
     # transform
-    # transform()
+    # transform_data = transform()
+    return
+    
+def save(fit_data, save_path: Text):
+    """Save data.
+
+    Args:
+        save_path (Text): Path to save data. Defaults to None.
+    """
+    if os.path.dirname(save_path) != "":
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    _, file_extension = os.path.splitext(save_path)
+    if file_extension == ".p":
+        with open(save_path, "wb") as output_file:
+            pickle.dump(fit_data, output_file, protocol=2)
+    elif file_extension == ".mat":
+        savemat(save_path, fit_data)

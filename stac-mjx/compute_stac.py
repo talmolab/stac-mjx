@@ -7,18 +7,17 @@ import jax
 from jax import jit, vmap
 import jax.numpy as jnp
 import stac_base
-import stac.rodent_environments as rodent_environments
-import stac.util as util
+import utils
 import numpy as jnp
 import pickle
 import os
 from typing import List, Dict, Tuple, Text
 from tqdm import tqdm
 import state
+import numpy as np
+import functools
 
-"""The optimization functions are vmapped, so the functions in stac_base dont need to be. So now we need to ensure the args are vectorizable"""
-@vmap
-def root_optimization(mjx_model, mjx_data, kp_data, sites, params: Dict, frame: int = 0):
+def root_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict, frame: int = 0):
     """Optimize only the root.
 
     Args:
@@ -26,15 +25,11 @@ def root_optimization(mjx_model, mjx_data, kp_data, sites, params: Dict, frame: 
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    # TODO how to store kp_data (keypoint data) and body sites? 
-    # kp_data is simply an array so that's easy and can be passed as a 
-    # batch of kp_datas
-    # body_sites 
-    stac_base.q_phase(
+    mjx_data = stac_base.q_phase(
         mjx_model, 
         mjx_data,
-        kp_data,
-        sites,
+        kp_data[frame, :],
+        site_index_map,
         params,
         root_only=True,
     )
@@ -45,18 +40,20 @@ def root_optimization(mjx_model, mjx_data, kp_data, sites, params: Dict, frame: 
         for kp_name in params["kp_names"]
     ]
     trunk_kps = jnp.repeat(jnp.array(trunk_kps), 3)
-    stac_base.q_phase(
+    mjx_data = stac_base.q_phase(
         mjx_model, 
         mjx_data,
-        env.task.kp_data[frame, :],
-        env.task._walker.body_sites,
+        kp_data[frame, :],
+        site_index_map,
         params,
         root_only=True,
         kps_to_opt=trunk_kps,
     )
+    
+    return mjx_data
 
-# TODO: revert this to how it was before since it's part of preprocessing. can do all preprocessing like before and move to mjx only for optimization
-def get_part_ids(mjx_model, mjx_data, parts: List) -> jnp.ndarray:
+# TODO: used in 
+def get_part_ids(physics, parts: List) -> jnp.ndarray:
     """Get the part ids given a list of parts.
 This code creates a JAX NumPy-like Boolean array where each element 
 represents whether any of the strings in the parts list is found as a substring in 
@@ -68,19 +65,18 @@ the corresponding name from the part_names list.
     Returns:
         jnp.ndarray: Array of part identifiers
     """
-    part_names = mjx_data.qpos.axes.row.names
-    return jnp.array([any(part in name for part in parts) for name in part_names])
+    part_names = physics.named.data.qpos.axes.row.names
+    return np.array([any(part in name for part in parts) for name in part_names])
 
-
-def offset_optimization(mjx_model, mjx_data, offsets, q, params: Dict, maxiter: int = 100):
+def offset_optimization(mjx_model, mjx_data, offsets, q, site_index_map: Dict, params: Dict, maxiter: int = 100):
     time_indices = jnp.random.randint(
         0, high=params["n_frames"], size=params["N_SAMPLE_FRAMES"]
     )
-    stac_base.m_phase(
+    mjx_model, mjx_data = stac_base.m_phase(
         mjx_model, 
         mjx_data,
-        env.task.kp_data,
-        env.task._walker.body_sites,
+        kp_data,
+        site_index_map,
         time_indices,
         q,
         offsets,
@@ -89,8 +85,7 @@ def offset_optimization(mjx_model, mjx_data, offsets, q, params: Dict, maxiter: 
         maxiter=maxiter,
     )
 
-@vmap
-def pose_optimization(mjx_model, mjx_data, params: Dict) -> Tuple:
+def pose_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict) -> Tuple:
     """Perform q_phase over the entire clip.
 
     Optimizes limbs and head independently.
@@ -112,40 +107,40 @@ def pose_optimization(mjx_model, mjx_data, params: Dict) -> Tuple:
             get_part_ids(mjx_model, mjx_data, parts)
             for parts in params["INDIVIDUAL_PART_OPTIMIZATION"].values()
         ]
-
+    
     # Iterate through all of the frames in the clip
     frames = list(range(params["n_frames"]))
     for n_frame in tqdm(frames):
         # Optimize over all points
-        stac_base.q_phase(
+        mjx_data = stac_base.q_phase(
             mjx_model, 
             mjx_data,
-            env.task.kp_data[n_frame, :],
-            env.task._walker.body_sites,
+            kp_data[n_frame, :],
+            site_index_map,
             params,
         )
 
         # Next optimize over parts individually to improve time and accur.
         for part in indiv_parts:
-            stac_base.q_phase(
+            mjx_data = stac_base.q_phase(
                 mjx_model, 
                 mjx_data,
-                env.task.kp_data[n_frame, :],
-                env.task._walker.body_sites,
+                kp_data[n_frame, :],
+                site_index_map,
                 params,
                 qs_to_opt=part,
             )
         q.append(jnp.copy(mjx_data.qpos[:]))
         x.append(jnp.copy(mjx_data.xpos[:]))
         walker_body_sites.append(
-            jnp.copy(env.physics.bind(env.task._walker.body_sites).xpos[:])
+            jnp.copy(stac_base.get_sites_xpos(mjx_data, site_index_map))
         )
 
     return q, walker_body_sites, x
 
+# TODO: delete?
 def build_env(kp_data: jnp.ndarray, params: Dict):
     """loads mjmodel and makes mjdata, also does rescaling.
-       TODO how to use kp_data?
 
     Args:
         kp_data (jnp.ndarray): Key point data.
@@ -164,23 +159,25 @@ def build_env(kp_data: jnp.ndarray, params: Dict):
         params["SCALE_FACTOR"],
     )
     
-    mjx.forward(mjx_model, mjx_data)
+    stac_base.jit_forward(mjx_model, mjx_data)
 
     return mjx_model, mjx_data
 
-# TODO reimplement
-def initialize_part_names(mjx_model, mjx_data):
+def initialize_part_names(physics):
     # Get the ids of the limbs, accounting for quaternion and pos
-    part_names = mjx_data.qpos.axes.row.names
+    part_names = physics.named.data.qpos.axes.row.names
     for _ in range(6):
         part_names.insert(0, part_names[0])
     return part_names
 
-
+# TODO: Do we need to package the data like this? DOes it need to be jax compatible?
 def package_data(mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_data, params):
     # Extract pose, offsets, data, and all parameters
-    offsets = env.physics.bind(env.task._walker.body_sites).pos[:].copy()
+    offsets = stac_base.get_sites_pos(mjx_model, site_index_map).copy()
+    
     names_xpos = mjx_data.xpos.axes.row.names
+    
+    # Turn this into a Flax Dataclass?
     data = {
         "qpos": q,
         "xpos": x,
@@ -190,8 +187,10 @@ def package_data(mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_da
         "names_xpos": names_xpos,
         "kp_data": jnp.copy(kp_data),
     }
+    
     for k, v in params.items():
         data[k] = v
+    
     return data
 
 
@@ -264,7 +263,7 @@ class STAC:
         offsets *= self.SCALE_FACTOR
         env.physics.bind(env.task._walker.body_sites).pos[:] = offsets
         
-        mjx_data = mjx.forward(mjx_model, mjx_data)
+        mjx_data = stac_base.jit_forward(mjx_model, mjx_data)
 
         for n_site, p in enumerate(env.physics.bind(env.task._walker.body_sites).pos):
             env.task._walker.body_sites[n_site].pos = p
