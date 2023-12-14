@@ -17,7 +17,8 @@ import state
 import numpy as np
 import functools
 
-def root_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict, frame: int = 0):
+@jax.vmap
+def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
 
     Args:
@@ -32,33 +33,30 @@ def root_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
-        site_index_map,
-        params,
         root_only=True,
     )
 
     # First optimize over the trunk
     trunk_kps = [
-        any([n in kp_name for n in params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
-        for kp_name in params["kp_names"]
+        any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
+        for kp_name in utils.params["kp_names"]
     ]
     trunk_kps = jnp.repeat(jnp.array(trunk_kps), 3)
     mjx_data = stac_base.q_phase(
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
-        site_index_map,
-        params,
         root_only=True,
         kps_to_opt=trunk_kps,
     )
     
     return mjx_data
 
-def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, site_index_map: Dict, params: Dict, maxiter: int = 100):
+@jax.vmap
+def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int = 100):
     key = jax.random.PRNGKey(0)
     time_indices = jax.random.randint(
-        key, shape=[params["N_SAMPLE_FRAMES"]], minval=0, maxval=params["n_frames"], 
+        key, shape=[utils.params["N_SAMPLE_FRAMES"]], minval=0, maxval=utils.params["n_frames"], 
     )
     
     print("Offset Optimization:")
@@ -67,32 +65,15 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, site_index_map
         mjx_model, 
         mjx_data,
         kp_data,
-        site_index_map,
         time_indices,
         q,
         offsets,
-        params,
-        reg_coef=params["M_REG_COEF"],
+        reg_coef=utils.params["M_REG_COEF"],
         maxiter=maxiter,
     )
 
-# TODO: 
-def get_part_ids(physics, parts: List) -> jnp.ndarray:
-    """Get the part ids given a list of parts.
-This code creates a JAX NumPy-like Boolean array where each element 
-represents whether any of the strings in the parts list is found as a substring in 
-the corresponding name from the part_names list.
-    Args:
-        env (TYPE): Environment
-        parts (List): List of part names
-
-    Returns:
-        jnp.ndarray: Array of part identifiers
-    """
-    part_names = physics.named.data.qpos.axes.row.names
-    return np.array([any(part in name for part in parts) for name in part_names])
-
-def pose_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict) -> Tuple:
+@jax.vmap
+def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     """Perform q_phase over the entire clip.
 
     Optimizes limbs and head independently.
@@ -110,16 +91,16 @@ def pose_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict
 
     # TODO: move out
     # Use global indiv parts to scan over range and index in if can't scan ragged arrays
-    if params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
-        indiv_parts = []
-    else:
-        indiv_parts = [
-            get_part_ids(mjx_model, mjx_data, parts)
-            for parts in params["INDIVIDUAL_PART_OPTIMIZATION"].values()
-        ]
+    # if utils.params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
+    #     indiv_parts = []
+    # else:
+    #     indiv_parts = [
+    #         get_part_ids(mjx_model, mjx_data, parts)
+    #         for parts in utils.params["INDIVIDUAL_PART_OPTIMIZATION"].values()
+    #     ]
     
     # Iterate through all of the frames in the clip
-    frames = jnp.arange(params["n_frames"])
+    frames = jnp.arange(utils.params["n_frames"])
     
     print("Pose Optimization:")
 
@@ -132,25 +113,21 @@ def pose_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict
             mjx_model, 
             mjx_data,
             kp_data[n_frame, :],
-            site_index_map,
-            params,
         )
 
         # TODO: scan this too
         # Next optimize over parts individually to improve time and accur.
-        for part in indiv_parts:
+        for part in utils.params["indiv_parts"]:
             mjx_data = stac_base.q_phase(
                 mjx_model, 
                 mjx_data,
                 kp_data[n_frame, :],
-                site_index_map,
-                params,
                 qs_to_opt=part,
             )
         q = q.append(jnp.copy(mjx_data.qpos[:]))
         x = x.append(jnp.copy(mjx_data.xpos[:]))
         walker_body_sites = walker_body_sites.append(
-            jnp.copy(stac_base.get_site_xpos(mjx_data, site_index_map))
+            jnp.copy(stac_base.get_site_xpos(mjx_data))
         )
     
     carry = (mjx_data, jnp.empty(0), jnp.empty(0), jnp.empty(0))
@@ -185,7 +162,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict
     return q, walker_body_sites, x
 
 # TODO: delete?
-def build_env(kp_data: jnp.ndarray, params: Dict):
+def build_env(kp_data: jnp.ndarray):
     """loads mjmodel and makes mjdata, also does rescaling.
 
     Args:
@@ -217,11 +194,11 @@ def initialize_part_names(physics):
     return part_names
 
 # TODO: Do we need to package the data like this? DOes it need to be jax compatible?
-def package_data(mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_data, site_index_map, params):
+def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data):
     # Extract pose, offsets, data, and all parameters
-    offsets = stac_base.get_site_pos(mjx_model, site_index_map).copy()
+    offsets = stac_base.get_site_pos(mjx_model).copy()
     
-    names_xpos = mjx_data.xpos.axes.row.names
+    names_xpos = physics.named.data.xpos.axes.row.names
     x = x.reshape(-1, x.shape[-1])
     q = q.reshape(-1, q.shape[-1])
     kp_data = kp_data.reshape(-1, kp_data.shape[-1])
@@ -230,12 +207,12 @@ def package_data(mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_da
         "xpos": x,
         "walker_body_sites": walker_body_sites,
         "offsets": offsets,
-        "names_qpos": part_names,
+        "names_qpos": utils.params["part_names"],
         "names_xpos": names_xpos,
         "kp_data": jnp.copy(kp_data),
     }
     
-    for k, v in params.items():
+    for k, v in utils.params.items():
         data[k] = v
     
     return data

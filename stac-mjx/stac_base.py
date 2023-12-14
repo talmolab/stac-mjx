@@ -6,14 +6,16 @@ from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
 from jax import jit
-import jaxopt
+from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB
+import utils
+from functools import partial
 
 class _TestNoneArgs(BaseException):
     """Simple base exception"""
 
     pass
-@jit
-def get_site_xpos(mjx_data, site_index_map):
+# @jit
+def get_site_xpos(mjx_data):
     """Returns MjxData.site_xpos of keypoint body sites
 
     Args:
@@ -23,9 +25,10 @@ def get_site_xpos(mjx_data, site_index_map):
     Returns:
         jax.Array: _description_
     """
-    return jnp.array([mjx_data.site_xpos[i] for i in site_index_map.values()])
-@jit
-def get_site_pos(mjx_model, site_index_map):
+    return jnp.array([mjx_data.site_xpos[i] for i in utils.params["site_index_map"].values()])
+
+# @jit
+def get_site_pos(mjx_model):
     """Gets MjxModel.site_pos of keypoint body sites
 
     Args:
@@ -35,11 +38,11 @@ def get_site_pos(mjx_model, site_index_map):
     Returns:
         jax.Array: _description_
     """
-    return jnp.array([mjx_model.site_pos[i] for i in site_index_map.values()])
+    return jnp.array([mjx_model.site_pos[i] for i in utils.params["site_index_map"].values()])
 
 # Gives error when getting indices array: ValueError: setting an array element with a sequence.
 # @jit
-def set_site_pos(mjx_model, site_index_map, offsets):
+def set_site_pos(mjx_model, offsets):
     """Sets MjxModel.sites_pos to offsets and returns the new mjx_model
 
     Args:
@@ -49,8 +52,7 @@ def set_site_pos(mjx_model, site_index_map, offsets):
     Returns:
         _type_: _description_
     """
-    indices = np.fromiter(site_index_map.values(), dtype=int)
-    print(indices)
+    indices = np.fromiter(utils.params["site_index_map"].values(), dtype=int)
     new_site_pos = jnp.put(mjx_model.site_pos, indices, offsets, inplace=False)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
@@ -61,7 +63,6 @@ def q_loss(
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
-    site_index_map: jnp.ndarray,
     qs_to_opt: jnp.ndarray = None,
     q_copy: jnp.ndarray = None,
     kps_to_opt: jnp.ndarray = None,
@@ -81,18 +82,24 @@ def q_loss(
         float: loss value
     """
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
+    # TODO: The problem: qs_to_opt needs to be of static shape in order for this function
+    # to be jittable. or it just 
     if qs_to_opt is not None:
-        q_copy[qs_to_opt] = q.copy()
+        true_indices = jnp.where(qs_to_opt)[0]
+        q_copy = q_copy.at[true_indices].set(q)
+
+        # expanded_q = jnp.pad(q, (0, len(qs_to_opt) - len(q)), constant_values=0)
+        # q = jnp.where(qs_to_opt, q_copy, expanded_q)
         q = jnp.copy(q_copy)
 
-    residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data, site_index_map)
+    residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
         
     return residual
 
-
-def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, site_index_map) -> jnp.ndarray:
+# @jit
+def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -105,17 +112,15 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, site_index_map) -> 
     """
     mjx_data = mjx_data.replace(qpos=q.copy())
     # Forward kinematics
-    mjx_data = jit_forward(mjx_model, mjx_data)
+    mjx_data = mjx.forward(mjx_model, mjx_data)
 
-    return get_site_xpos(mjx_data, site_index_map).flatten()
+    return get_site_xpos(mjx_data).flatten()
 
-@jit
+# @partial(jit, static_argnums=[5,6])
 def q_phase(
     mjx_model,
     mjx_data,
     marker_ref_arr: jnp.ndarray,
-    site_index_map: jnp.ndarray,
-    params: Dict,
     qs_to_opt: jnp.ndarray = None,
     kps_to_opt: jnp.ndarray = None,
     root_only: bool = False,
@@ -148,14 +153,15 @@ def q_phase(
     q_copy = jnp.copy(q0)
 
     # Set the center to help with finding the optima (does not need to be exact)
+    
     if root_only or trunk_only:
-        q0[:3] = marker_ref_arr[12:15]
-        diff_step = params["ROOT_DIFF_STEP"]
+        q0 = q0.at[:3].set(marker_ref_arr[12:15])
+        diff_step = utils.params["ROOT_DIFF_STEP"]
     else:
-        diff_step = params["DIFF_STEP"]
+        diff_step = utils.params["DIFF_STEP"]
     if root_only:
         qs_to_opt = jnp.zeros_like(q0, dtype=bool)
-        qs_to_opt[:7] = True
+        qs_to_opt = qs_to_opt.at[:7].set(True)
 
     # Limit the optimizer to a subset of qpos
     if qs_to_opt is not None:
@@ -166,37 +172,43 @@ def q_phase(
     # Use different tolerances for root vs normal optimization
     if ftol is None:
         if root_only:
-            ftol = params["ROOT_FTOL"]
+            ftol = utils.params["ROOT_FTOL"]
         elif qs_to_opt is not None:
-            ftol = params["LIMB_FTOL"]
+            ftol = utils.params["LIMB_FTOL"]
         else:
-            ftol = params["FTOL"]
+            ftol = utils.params["FTOL"]
+            
+    print("q-phase:")
+
     try:
-        q_opt_param = jax.scipy.optimize.minimize(
-            lambda q: q_loss(
-                q,
-                mjx_model,
-                mjx_data,
-                marker_ref_arr.T,
-                site_index_map,
-                qs_to_opt=qs_to_opt,
-                q_copy=q_copy,
-                kps_to_opt=kps_to_opt,
-            ),
-            q0,
-            method="BFGS", # only method
-            # bounds=(lb, ub),
-            # ftol=ftol,
-            # diff_step=diff_step,
-            # verbose=0,
-        )
+        # Create the optimizer
+        solver = LBFGSB(fun=lambda q: q_loss(
+                                                q,
+                                                mjx_model,
+                                                mjx_data,
+                                                marker_ref_arr.T,
+                                                qs_to_opt=qs_to_opt,
+                                                q_copy=q_copy,
+                                                kps_to_opt=kps_to_opt,
+                                            ),
+                                            # method="l-bfgs-b",
+                                            tol=ftol,
+                                            # jit=True,
+                                            # diff_step=diff_step,
+                                            # verbose=0,
+                                        )
+        # Define the bounds
+        bounds=(lb, ub)
+        state = solver.init_state(q0, bounds)
+        # Run the optimization
+        q_opt_param = solver.run(q0, state=state).params
 
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
-            mjx_data.replace(qpos=q_opt_param.x)
+            mjx_data = mjx_data.replace(qpos=q_opt_param.x)
         else:
             q_copy[qs_to_opt] = q_opt_param.x
-            mjx_data.replace(qpos=q_copy.copy())
+            mjx_data = mjx_data.replace(qpos=q_copy.copy())
 
         mjx_data = jit_forward(mjx_model, mjx_data)
 
@@ -207,8 +219,8 @@ def q_phase(
         mjx_data = jit_forward(mjx_model, mjx_data)
         
     return mjx_data
-
-@jit
+    
+# @jit
 def m_loss(
     offset: jnp.ndarray,
     mjx_model,
@@ -253,8 +265,8 @@ def m_loss(
         
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
-@jit
-def m_joints_to_markers(offset, mjx_model, mjx_data, site_index_map) -> jnp.ndarray:
+# @jit
+def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -265,23 +277,21 @@ def m_joints_to_markers(offset, mjx_model, mjx_data, site_index_map) -> jnp.ndar
     Returns:
         TYPE: Array of marker positions
     """
-    mjx_model = set_site_pos(mjx_model, site_index_map, jnp.reshape(offset.copy(), (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset.copy(), (-1, 3))) 
 
     # Forward kinematics
     mjx_data = jit_forward(mjx_model, mjx_data)
 
-    return get_site_xpos(mjx_data, site_index_map).flatten()
+    return get_site_xpos(mjx_data).flatten()
 
 
 def m_phase(
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
-    site_index_map: jnp.ndarray,
     time_indices: jnp.ndarray,
     q: jnp.ndarray,
     initial_offsets: jnp.ndarray,
-    params: Dict,
     reg_coef: float = 0.0,
     maxiter: int = 50,
 ):
@@ -299,12 +309,12 @@ def m_phase(
         maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
     # Define initial position of the optimization
-    offset0 = jnp.copy(get_site_pos(mjx_model, site_index_map)).flatten()
+    offset0 = jnp.copy(get_site_pos(mjx_model)).flatten()
 
     # Define which offsets to regularize
     is_regularized = []
-    for k, v in site_index_map.items():
-        if any(n == k for n in params["SITES_TO_REGULARIZE"]):
+    for k, v in utils.params["site_index_map"].items():
+        if any(n == k for n in utils.params["SITES_TO_REGULARIZE"]):
             is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
         else:
             is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
@@ -314,29 +324,34 @@ def m_phase(
     keypoints = kp_data[time_indices, :].T
     q = jnp.take(q, time_indices, axis=0)
     # q = [q[i] for i in time_indices]
-    offset_opt_param = jax.scipy.optimize.minimize(
-        lambda offset: m_loss(
-            offset,
-            mjx_model,
-            mjx_data,
-            keypoints,
-            time_indices,
-            site_index_map,
-            q,
-            initial_offsets,
-            is_regularized=is_regularized,
-            reg_coef=reg_coef,
-        ),
-        offset0,
-        method="BFGS",
-        # tol=params["ROOT_FTOL"],
-        # options={"maxiter": maxiter},
-    )
+    
+    # Create the optimizer
+    solver = ScipyMinimize(fun=lambda offset: m_loss(
+                                            offset,
+                                            mjx_model,
+                                            mjx_data,
+                                            keypoints,
+                                            time_indices,
+                                            q,
+                                            initial_offsets,
+                                            is_regularized=is_regularized,
+                                            reg_coef=reg_coef,
+                                        ),
+                            method="l-bfgs-b",
+                            tol=utils.params["ROOT_FTOL"],
+                            maxiter=maxiter,
+                            # jit=True
+                            )
+    
+    # Run the optimization
+    offset_opt_param = solver.run(offset0).params
 
     # Set pose to the optimized m and step forward.
-    mjx_model = set_site_pos(mjx_model, site_index_map, jnp.reshape(offset_opt_param.x, (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param.x, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = jit_forward(mjx_model, mjx_data)
+    
+    # TODO: needed??
     # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
     #     sites[n_site].pos = p
         

@@ -53,6 +53,6 @@ def _load_params(param_path):
             print(exc)
     return params
 
-def init_params():
+def init_params(path):
     global params
-    params = _load_params("params/params.yaml")
+    params = _load_params(path)
