@@ -6,38 +6,41 @@ from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
 from jax import jit
+import jaxopt
 
 class _TestNoneArgs(BaseException):
     """Simple base exception"""
 
     pass
-
-def get_sites_xpos(mjx_data, site_index_map):
-    """Returns mjdata.site_xpos of keypoint body sites
+@jit
+def get_site_xpos(mjx_data, site_index_map):
+    """Returns MjxData.site_xpos of keypoint body sites
 
     Args:
         mjx_data (_type_): _description_
         site_index_map (_type_): _description_
 
     Returns:
-        _type_: _description_
+        jax.Array: _description_
     """
     return jnp.array([mjx_data.site_xpos[i] for i in site_index_map.values()])
-
-def get_sites_pos(mjx_model, site_index_map):
-    """Returns mjmodel.site_pos of keypoint body sites
+@jit
+def get_site_pos(mjx_model, site_index_map):
+    """Gets MjxModel.site_pos of keypoint body sites
 
     Args:
         mjx_data (_type_): _description_
         site_index_map (_type_): _description_
 
     Returns:
-        _type_: _description_
+        jax.Array: _description_
     """
     return jnp.array([mjx_model.site_pos[i] for i in site_index_map.values()])
 
-def set_sites_pos(mjx_model, site_index_map, offsets):
-    """Sets model.sites_pos to offets and returns
+# Gives error when getting indices array: ValueError: setting an array element with a sequence.
+# @jit
+def set_site_pos(mjx_model, site_index_map, offsets):
+    """Sets MjxModel.sites_pos to offsets and returns the new mjx_model
 
     Args:
         mjx_data (_type_): _description_
@@ -46,11 +49,13 @@ def set_sites_pos(mjx_model, site_index_map, offsets):
     Returns:
         _type_: _description_
     """
-    for offset, i in zip(offsets, site_index_map.values()):
-        mjx_model.sites_pos[i] = offset
-        
+    indices = np.fromiter(site_index_map.values(), dtype=int)
+    print(indices)
+    new_site_pos = jnp.put(mjx_model.site_pos, indices, offsets, inplace=False)
+    mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 
+@jit
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
@@ -83,6 +88,7 @@ def q_loss(
     residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data, site_index_map)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
+        
     return residual
 
 
@@ -97,13 +103,12 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data, site_index_map) -> 
     Returns:
         jnp.ndarray: Array of marker positions.
     """
-    mjx_data.replace(qpos=q.copy())
+    mjx_data = mjx_data.replace(qpos=q.copy())
     # Forward kinematics
     mjx_data = jit_forward(mjx_model, mjx_data)
 
-    return get_sites_xpos(mjx_data, site_index_map).flatten()
+    return get_site_xpos(mjx_data, site_index_map).flatten()
 
-# q_phase is jit-compiled
 @jit
 def q_phase(
     mjx_model,
@@ -203,13 +208,13 @@ def q_phase(
         
     return mjx_data
 
-
+@jit
 def m_loss(
     offset: jnp.ndarray,
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
-    time_indices: List,
+    time_indices: jnp.ndarray,
     sites: jnp.ndarray,
     q: jnp.ndarray,
     initial_offsets: jnp.ndarray,
@@ -229,22 +234,26 @@ def m_loss(
         is_regularized (bool, optional): binary vector of offsets to regularize.
         reg_coef (float, optional): L1 regularization coefficient during marker loss.
     """
-    residual = 0
-    reg_term = 0
+
     # print(len(q))
     # print(kp_data.shape)
     # print(time_indices)
     # print(offset.shape)
-    for i, frame in enumerate(time_indices):
+
+    def f(terms, i):
         mjx_data.qpos[:] = q[i].copy()
 
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
-        reg_term += ((offset - initial_offsets.flatten()) ** 2) * is_regularized
-        residual += (kp_data[:, i] - m_joints_to_markers(offset, mjx_model, mjx_data, sites)) ** 2
+        reg_term = terms[0] + ((offset - initial_offsets.flatten()) ** 2) * is_regularized
+        residual = terms[1] + (kp_data[:, i] - m_joints_to_markers(offset, mjx_model, mjx_data, sites)) ** 2
+        return (reg_term, residual), None
+    
+    (residual, reg_term), _ = jax.lax.scan(f, (0,0), jnp.arange(time_indices.shape[0]))
+        
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
-
+@jit
 def m_joints_to_markers(offset, mjx_model, mjx_data, site_index_map) -> jnp.ndarray:
     """Convert site information to marker information.
 
@@ -256,12 +265,12 @@ def m_joints_to_markers(offset, mjx_model, mjx_data, site_index_map) -> jnp.ndar
     Returns:
         TYPE: Array of marker positions
     """
-    mjx_model = set_sites_pos(mjx_model, site_index_map, jnp.reshape(offset.copy(), (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, site_index_map, jnp.reshape(offset.copy(), (-1, 3))) 
 
     # Forward kinematics
     mjx_data = jit_forward(mjx_model, mjx_data)
 
-    return get_sites_xpos(mjx_data, site_index_map).flatten()
+    return get_site_xpos(mjx_data, site_index_map).flatten()
 
 
 def m_phase(
@@ -269,7 +278,7 @@ def m_phase(
     mjx_data,
     kp_data: jnp.ndarray,
     site_index_map: jnp.ndarray,
-    time_indices: List,
+    time_indices: jnp.ndarray,
     q: jnp.ndarray,
     initial_offsets: jnp.ndarray,
     params: Dict,
@@ -290,7 +299,7 @@ def m_phase(
         maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
     # Define initial position of the optimization
-    offset0 = jnp.copy(get_sites_pos(mjx_model, site_index_map)).flatten()
+    offset0 = jnp.copy(get_site_pos(mjx_model, site_index_map)).flatten()
 
     # Define which offsets to regularize
     is_regularized = []
@@ -303,7 +312,8 @@ def m_phase(
 
     # Optimize dm
     keypoints = kp_data[time_indices, :].T
-    q = [q[i] for i in time_indices]
+    q = jnp.take(q, time_indices, axis=0)
+    # q = [q[i] for i in time_indices]
     offset_opt_param = jax.scipy.optimize.minimize(
         lambda offset: m_loss(
             offset,
@@ -324,7 +334,7 @@ def m_phase(
     )
 
     # Set pose to the optimized m and step forward.
-    mjx_model = set_sites_pos(mjx_model, site_index_map, jnp.reshape(offset_opt_param.x, (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, site_index_map, jnp.reshape(offset_opt_param.x, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = jit_forward(mjx_model, mjx_data)
     # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos

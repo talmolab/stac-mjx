@@ -50,7 +50,7 @@ def set_body_sites(root, params):
     # Usage of physics: binding = physics.bind(body_sites)
 
     axis = physics.named.model.site_pos._axes[0]
-    site_index_map = {key: axis.convert_key_item(key) for key in params["KEYPOINT_MODEL_PAIRS"].keys()}
+    site_index_map = {key: int(axis.convert_key_item(key)) for key in params["KEYPOINT_MODEL_PAIRS"].keys()}
     
     part_names = initialize_part_names(physics)
 
@@ -68,7 +68,7 @@ def prep_kp_data(kp_data, stac_keypoint_order, params):
         kp_data: kp_data chunks with a leading batch dimension
     """
     
-    kp_data = kp_data[:, :, stac_keypoint_order]
+    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
     kp_data = jnp.transpose(kp_data, (0, 2, 1))
     kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
     
@@ -87,11 +87,23 @@ def chunk_kp_data(kp_data, params):
     
     return kp_data, n_chunks
 
-def mjx_setup(kp_data, mj_model):
+def mjx_setup(kp_data, mj_model, site_index_map, params):
     # Create mjx model and data
-    mjx_model = mjx.device_put(mj_model)
+    mjx_model = mjx.put_model(mj_model)
     mjx_data = mjx.make_data(mjx_model)
-    return mjx_model, mjx_data
+    # do initial get_site stuff inside mjx_setup
+    
+    # Get and set the offsets of the markers
+    offsets = np.copy(stac_base.get_site_pos(mjx_model, site_index_map))
+    offsets *= params['SCALE_FACTOR']
+    
+    # print(mjx_model.site_pos, mjx_model.site_pos.shape)
+    mjx_model = stac_base.set_site_pos(mjx_model, site_index_map, offsets) 
+
+    # forward is used to calculate xpos and stuff, loop necessity tbd
+    mjx_data = stac_base.jit_forward(mjx_model, mjx_data)
+    
+    return mjx_model, mjx_data, offsets
 
 # TODO: pmap fit and transform if you want to use it with multiple gpus
 def fit(root, kp_data, params):
@@ -112,30 +124,23 @@ def fit(root, kp_data, params):
     # Get the model pointer from the MjModel object
     mj_model = mj_model.ptr
     
-    # Create batch mjx model and data
-    mjx_model, mjx_data = jax.vmap(lambda x: mjx_setup(x, mj_model))(kp_data)
-    
-    # Get and set the offsets of the markers
-    offsets = np.copy(stac_base.get_sites_pos(mj_model, site_index_map))
-    offsets *= params['SCALE_FACTOR']
-    
-    # TODO: CURRENTLY THIS DONT WORK BUT THEY B RELEASING 3.1.0 SOON
-    mjx_model = stac_base.set_sites_pos(mjx_model, site_index_map, offsets) 
-
-    # forward is used to calculate xpos and stuff, loop necessity tbd
-    mjx_data = stac_base.jit_forward(mjx_model, mjx_data)
+    # Create batch mjx model and data where batch_size = kp_data.shape[0]
+    mjx_model, mjx_data, offsets = jax.vmap(lambda x: mjx_setup(x, mj_model, site_index_map, params))(kp_data)
 
     # for n_site, p in enumerate(physics.bind(body_sites).pos):
     #     body_sites[n_site].pos = p
     
     # Create partial functions that can be vmapped
+    # to jaxify the optimization functions:
+    # put all the setup parts into their own functions
+    # only vmap the computation part that really needs to be vmapped
     vmap_root_opt = jax.vmap(functools.partial(root_optimization, 
                                                site_index_map=site_index_map, 
                                                params=params))
     vmap_pose_opt = jax.vmap(functools.partial(pose_optimization, 
                                                site_index_map=site_index_map, 
                                                params=params))
-    vmap_root_opt = jax.vmap(functools.partial(offset_optimization, 
+    vmap_offset_opt = jax.vmap(functools.partial(offset_optimization, 
                                                site_index_map=site_index_map, 
                                                params=params))
 
@@ -143,14 +148,14 @@ def fit(root, kp_data, params):
     for n_iter in range(params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{params['N_ITERS']}")
         q, walker_body_sites, x = vmap_pose_opt(mjx_model, mjx_data)
-        vmap_root_opt(mjx_model, mjx_data, offsets, q)
+        vmap_offset_opt(mjx_model, mjx_data, kp_data, offsets, q)
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
     q, walker_body_sites, x = vmap_pose_opt(mjx_model, mjx_data)
     
     data = package_data(
-        mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_data, params
+        mjx_model, mjx_data, q, x, walker_body_sites, part_names, kp_data, site_index_map, params
     )
     return data
 

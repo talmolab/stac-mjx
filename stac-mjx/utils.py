@@ -5,7 +5,6 @@ import os
 import yaml
 import scipy.io as spio
 
-
 def loadmat(filename):
     """
     this function should be called instead of direct spio.loadmat
