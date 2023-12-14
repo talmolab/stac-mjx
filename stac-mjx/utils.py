@@ -41,7 +41,7 @@ def _todict(matobj):
     return dict
 
 
-def load_params(param_path):
+def _load_params(param_path):
     """Load parameters for the animal.
 
     :param param_path: Path to .yaml file specifying animal parameters.
@@ -52,3 +52,7 @@ def load_params(param_path):
         except yaml.YAMLError as exc:
             print(exc)
     return params
+
+def init_params():
+    global params
+    params = _load_params("params/params.yaml")

@@ -107,6 +107,9 @@ def pose_optimization(mjx_model, mjx_data, kp_data, site_index_map, params: Dict
     # q = jnp.array([])
     # x = jnp.array([])
     # walker_body_sites = jnp.array([])
+
+    # TODO: move out
+    # Use global indiv parts to scan over range and index in if can't scan ragged arrays
     if params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
         indiv_parts = []
     else:

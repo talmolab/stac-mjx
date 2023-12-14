@@ -40,7 +40,7 @@ def set_body_sites(root, params):
             group=3,
         )
         body_sites.append(site)
-        
+
     rescale.rescale_subtree(
         root,
         params["SCALE_FACTOR"],
@@ -50,12 +50,12 @@ def set_body_sites(root, params):
     # Usage of physics: binding = physics.bind(body_sites)
 
     axis = physics.named.model.site_pos._axes[0]
-    site_index_map = {key: int(axis.convert_key_item(key)) for key in params["KEYPOINT_MODEL_PAIRS"].keys()}
+    utils.params["site_index_map"] = {key: int(axis.convert_key_item(key)) for key in params["KEYPOINT_MODEL_PAIRS"].keys()}
     
-    part_names = initialize_part_names(physics)
+    utils.params["part_names"] = initialize_part_names(physics)
 
-    # What's the difference btwn returning physics.data and physics.model?
-    return site_index_map, part_names, physics.model
+    # Set params fields instead of returning
+    return physics.model.ptr
 
 def prep_kp_data(kp_data, stac_keypoint_order, params):
     """Data preparation for kp_data: splits kp_data into 1k frame chunks.
@@ -118,11 +118,9 @@ def fit(root, kp_data, params):
     Returns: fitted model props?? find relevant props from stac object
 
     """    
-    
+    utils.init_params()
+    utils.params
     site_index_map, part_names, mj_model = set_body_sites(root, params)
-    
-    # Get the model pointer from the MjModel object
-    mj_model = mj_model.ptr
     
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     mjx_model, mjx_data, offsets = jax.vmap(lambda x: mjx_setup(x, mj_model, site_index_map, params))(kp_data)
@@ -199,7 +197,7 @@ def transform(kp_data, offset_path):
 def end_to_end():
     """this function runs fit and transform end to end for conceptualizing purposes
     """
-    params = utils.load_params("params/params.yaml")
+    # params = utils.load_params("params/params.yaml")
     model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
     model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
     model.opt.iterations = 1
