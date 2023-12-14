@@ -83,7 +83,8 @@ def q_loss(
     """
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     # TODO: The problem: qs_to_opt needs to be of static shape in order for this function
-    # to be jittable. or it just 
+    # to be jittable. using jax.numpy.where should work, but need to figure out how to get
+    # make an array where its the entire shape iwth q values in the right places
     if qs_to_opt is not None:
         true_indices = jnp.where(qs_to_opt)[0]
         q_copy = q_copy.at[true_indices].set(q)
