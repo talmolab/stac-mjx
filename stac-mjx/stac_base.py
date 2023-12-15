@@ -57,7 +57,7 @@ def set_site_pos(mjx_model, offsets):
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 
-@jit
+# @partial(jit, static_argnums=(5,7))
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
@@ -85,13 +85,13 @@ def q_loss(
     # TODO: The problem: qs_to_opt needs to be of static shape in order for this function
     # to be jittable. using jax.numpy.where should work, but need to figure out how to get
     # make an array where its the entire shape iwth q values in the right places
-    if qs_to_opt is not None:
-        true_indices = jnp.where(qs_to_opt)[0]
-        q_copy = q_copy.at[true_indices].set(q)
-
-        # expanded_q = jnp.pad(q, (0, len(qs_to_opt) - len(q)), constant_values=0)
-        # q = jnp.where(qs_to_opt, q_copy, expanded_q)
-        q = jnp.copy(q_copy)
+    def convert(q, qs_to_opt, q_copy):
+        return q_copy.at[qs_to_opt].set(q.copy())
+    
+    q = jax.lax.cond(qs_to_opt is not None, convert, lambda q, x, y: q, q, qs_to_opt, q_copy).copy()
+    # if qs_to_opt is not None:
+    #     q_copy = q_copy.at[qs_to_opt].set(q.copy())
+    #     q = jnp.copy(q_copy)
 
     residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data)
     if kps_to_opt is not None:
@@ -182,22 +182,22 @@ def q_phase(
     print("q-phase:")
 
     try:
+        # trying to make qs_to_opt static 
+        loss_fn = jit(partial(q_loss,
+                            mjx_model=mjx_model,
+                            mjx_data=mjx_data,
+                            kp_data=marker_ref_arr.T,
+                            qs_to_opt=qs_to_opt,
+                            q_copy=q_copy,
+                            kps_to_opt=kps_to_opt,
+                            )) # static_argnames=["qs_to_opt", "kps_to_opt"]
+                            
         # Create the optimizer
-        solver = LBFGSB(fun=lambda q: q_loss(
-                                                q,
-                                                mjx_model,
-                                                mjx_data,
-                                                marker_ref_arr.T,
-                                                qs_to_opt=qs_to_opt,
-                                                q_copy=q_copy,
-                                                kps_to_opt=kps_to_opt,
-                                            ),
-                                            # method="l-bfgs-b",
-                                            tol=ftol,
-                                            # jit=True,
-                                            # diff_step=diff_step,
-                                            # verbose=0,
-                                        )
+        solver = LBFGSB(fun=loss_fn, tol=ftol)
+        # method="l-bfgs-b",
+        # jit=True,
+        # diff_step=diff_step,
+        # verbose=0,
         # Define the bounds
         bounds=(lb, ub)
         state = solver.init_state(q0, bounds)

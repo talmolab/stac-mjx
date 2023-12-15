@@ -155,7 +155,7 @@ def fit(root, kp_data):
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = mjx.forward(mjx_model, mjx_data)
+        mjx_data = stac_base.jit_forward(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     # mjx_model, mjx_data, offsets = jax.vmap(lambda x: mjx_setup(x, mj_model))(kp_data)
