@@ -6,7 +6,7 @@ from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
 from jax import jit
-from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB
+from jaxopt import ScipyBoundedMinimize, LevenbergMarquardt, ScipyMinimize, LBFGSB
 import utils
 from functools import partial
 
@@ -14,7 +14,7 @@ class _TestNoneArgs(BaseException):
     """Simple base exception"""
 
     pass
-# @jit
+
 def get_site_xpos(mjx_data):
     """Returns MjxData.site_xpos of keypoint body sites
 
@@ -27,7 +27,6 @@ def get_site_xpos(mjx_data):
     """
     return jnp.array([mjx_data.site_xpos[i] for i in utils.params["site_index_map"].values()])
 
-# @jit
 def get_site_pos(mjx_model):
     """Gets MjxModel.site_pos of keypoint body sites
 
@@ -41,7 +40,6 @@ def get_site_pos(mjx_model):
     return jnp.array([mjx_model.site_pos[i] for i in utils.params["site_index_map"].values()])
 
 # Gives error when getting indices array: ValueError: setting an array element with a sequence.
-# @jit
 def set_site_pos(mjx_model, offsets):
     """Sets MjxModel.sites_pos to offsets and returns the new mjx_model
 
@@ -57,7 +55,6 @@ def set_site_pos(mjx_model, offsets):
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 
-# @partial(jit, static_argnums=(5,7))
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
@@ -82,24 +79,19 @@ def q_loss(
         float: loss value
     """
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
-    # TODO: The problem: qs_to_opt needs to be of static shape in order for this function
-    # to be jittable. using jax.numpy.where should work, but need to figure out how to get
-    # make an array where its the entire shape iwth q values in the right places
-    def convert(q, qs_to_opt, q_copy):
-        return q_copy.at[qs_to_opt].set(q.copy())
-    
-    q = jax.lax.cond(qs_to_opt is not None, convert, lambda q, x, y: q, q, qs_to_opt, q_copy).copy()
-    # if qs_to_opt is not None:
-    #     q_copy = q_copy.at[qs_to_opt].set(q.copy())
-    #     q = jnp.copy(q_copy)
+    if qs_to_opt is not None:
+        q_copy = q_copy.at[qs_to_opt].set(q.copy())
+        q = jnp.copy(q_copy)
 
+    # pred = q_joints_to_markers(q, mjx_model, mjx_data)
     residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
         
+    # residual = jnp.sum(residual)
+
     return residual
 
-# @jit
 def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
 
@@ -117,7 +109,6 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
 
     return get_site_xpos(mjx_data).flatten()
 
-# @partial(jit, static_argnums=[5,6])
 def q_phase(
     mjx_model,
     mjx_data,
@@ -146,20 +137,31 @@ def q_phase(
         root_only (bool, optional If True, only optimize the root.
         trunk_only (bool, optional If True, only optimize the trunk.
     """
-    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
+    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), utils.params['mj_model'].jnt_range[1:][:, 0]])
     lb = jnp.minimum(lb, 0.0)
     ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
     # Define initial position of the optimization
+    # q0 = jnp.copy(mujoco.MjData(utils.params["mj_model"]).qpos)
+
     q0 = jnp.copy(mjx_data.qpos[:])
+    # print(q0, mjx_data.qpos)
     q_copy = jnp.copy(q0)
 
     # Set the center to help with finding the optima (does not need to be exact)
     
-    if root_only or trunk_only:
-        q0 = q0.at[:3].set(marker_ref_arr[12:15])
-        diff_step = utils.params["ROOT_DIFF_STEP"]
-    else:
-        diff_step = utils.params["DIFF_STEP"]
+    q0 = jax.lax.cond(
+        root_only | trunk_only,  # Condition for execution
+        lambda _: q0.at[:3].set(marker_ref_arr[12:15]),  # True branch
+        lambda _: q0,  # False branch (return q0 unchanged)
+        operand=None  # Pass q0 as an operand to both branches
+    )
+    
+    # if root_only or trunk_only:
+    #     q0 = q0.at[:3].set(marker_ref_arr[12:15])
+    #     print(q0)
+    #     diff_step = utils.params["ROOT_DIFF_STEP"]
+    # else:
+    #     diff_step = utils.params["DIFF_STEP"]
     if root_only:
         qs_to_opt = jnp.zeros_like(q0, dtype=bool)
         qs_to_opt = qs_to_opt.at[:7].set(True)
@@ -170,6 +172,7 @@ def q_phase(
         lb = lb[qs_to_opt]
         ub = ub[qs_to_opt]
 
+    print(qs_to_opt)
     # Use different tolerances for root vs normal optimization
     if ftol is None:
         if root_only:
@@ -182,28 +185,33 @@ def q_phase(
     print("q-phase:")
 
     try:
-        # trying to make qs_to_opt static 
-        loss_fn = jit(partial(q_loss,
+        loss_fn = partial(q_loss,
                             mjx_model=mjx_model,
                             mjx_data=mjx_data,
                             kp_data=marker_ref_arr.T,
                             qs_to_opt=qs_to_opt,
                             q_copy=q_copy,
                             kps_to_opt=kps_to_opt,
-                            )) # static_argnames=["qs_to_opt", "kps_to_opt"]
+                            )
                             
         # Create the optimizer
-        solver = LBFGSB(fun=loss_fn, tol=ftol)
+        solver = LevenbergMarquardt(residual_fun=loss_fn, 
+                        tol=ftol,
+                        # maxls=50
+                        )
         # method="l-bfgs-b",
         # jit=True,
         # diff_step=diff_step,
         # verbose=0,
         # Define the bounds
-        bounds=(lb, ub)
-        state = solver.init_state(q0, bounds)
-        # Run the optimization
-        q_opt_param = solver.run(q0, state=state).params
+        # bounds=(lb, ub)
+        # print(type(bounds), bounds)
+        # state = solver.init_state(q0, bounds=bounds)
+        # q_opt_param = solver.run(q0, bounds=bounds).params
+        q_opt_param = solver.run(q0).params
+        print(f"optimized params: {q_opt_param.x}")
 
+        # q_opt_param = solver.run(q0, bounds=bounds).params
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
             mjx_data = mjx_data.replace(qpos=q_opt_param.x)
@@ -211,17 +219,18 @@ def q_phase(
             q_copy[qs_to_opt] = q_opt_param.x
             mjx_data = mjx_data.replace(qpos=q_copy.copy())
 
-        mjx_data = jit_forward(mjx_model, mjx_data)
+        print("last forward step")
+        mjx_data = mjx.forward(mjx_model, mjx_data)
 
-    except ValueError:
+    except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
+        print(ex, flush=True)
         q_copy[jnp.isnan(q_copy)] = 0.0
         mjx_data.replace(qpos=q_copy.copy()) 
-        mjx_data = jit_forward(mjx_model, mjx_data)
+        mjx_data = mjx.forward(mjx_model, mjx_data)
         
     return mjx_data
     
-# @jit
 def m_loss(
     offset: jnp.ndarray,
     mjx_model,
@@ -266,7 +275,6 @@ def m_loss(
         
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
-# @jit
 def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
 
@@ -281,7 +289,7 @@ def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset.copy(), (-1, 3))) 
 
     # Forward kinematics
-    mjx_data = jit_forward(mjx_model, mjx_data)
+    mjx_data = mjx.forward(mjx_model, mjx_data)
 
     return get_site_xpos(mjx_data).flatten()
 

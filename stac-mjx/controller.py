@@ -116,6 +116,7 @@ def chunk_kp_data(kp_data):
     return kp_data, n_chunks
 
 # TODO: pmap fit and transform if you want to use it with multiple gpus
+# May not be necessary?
 def fit(root, kp_data):
     """Calibrate and fit the model to keypoints.
     Performs three rounds of alternating marker and quaternion optimization. Optimal
@@ -130,6 +131,7 @@ def fit(root, kp_data):
     """    
     
     physics, mj_model = set_body_sites(root)
+    utils.params["mj_model"] = mj_model
     part_opt_setup(physics)
     
     @vmap
@@ -155,19 +157,15 @@ def fit(root, kp_data):
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = stac_base.jit_forward(mjx_model, mjx_data)
+        mjx_data = mjx.forward(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
+
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     # mjx_model, mjx_data, offsets = jax.vmap(lambda x: mjx_setup(x, mj_model))(kp_data)
     mjx_model, mjx_data, offsets = mjx_setup(kp_data)
     # for n_site, p in enumerate(physics.bind(body_sites).pos):
     #     body_sites[n_site].pos = p
-    
-    # Create partial functions that can be vmapped
-    # to jaxify the optimization functions:
-    # put all the setup parts into their own functions
-    # only vmap the computation part that really needs to be vmapped
-
+    # print(mjx_model.body_pos, mjx_data.qpos)
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     for n_iter in range(utils.params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")

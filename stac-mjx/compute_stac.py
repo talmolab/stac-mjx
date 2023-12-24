@@ -28,7 +28,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """
     
     print("Root Optimization:")
-    
     mjx_data = stac_base.q_phase(
         mjx_model, 
         mjx_data,
