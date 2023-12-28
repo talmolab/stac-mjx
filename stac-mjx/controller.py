@@ -134,7 +134,7 @@ def fit(root, kp_data):
     utils.params["mj_model"] = mj_model
     part_opt_setup(physics)
     
-    @vmap
+    # @vmap
     def mjx_setup(kp_data):
         """creates mjxmodel and mjxdata, setting offets 
 
@@ -236,6 +236,8 @@ def end_to_end():
 
     # Default ordering of mj sites is alphabetical, so we reorder to match
     kp_names = utils.loadmat(utils.params["SKELETON_PATH"])["joint_names"]
+    utils.params["kp_names"] = kp_names
+    
     # argsort returns the indices that would sort the array
     stac_keypoint_order = np.argsort(kp_names)
 

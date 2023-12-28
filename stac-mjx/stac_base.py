@@ -88,7 +88,7 @@ def q_loss(
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
         
-    # residual = jnp.sum(residual)
+    residual = jnp.sum(residual)
 
     return residual
 
@@ -172,7 +172,6 @@ def q_phase(
         lb = lb[qs_to_opt]
         ub = ub[qs_to_opt]
 
-    print(qs_to_opt)
     # Use different tolerances for root vs normal optimization
     if ftol is None:
         if root_only:
@@ -182,44 +181,44 @@ def q_phase(
         else:
             ftol = utils.params["FTOL"]
             
-    print("q-phase:")
+    print("begin q-phase:")
 
     try:
-        loss_fn = partial(q_loss,
+        loss_fn = jit(partial(q_loss,
                             mjx_model=mjx_model,
                             mjx_data=mjx_data,
                             kp_data=marker_ref_arr.T,
                             qs_to_opt=qs_to_opt,
                             q_copy=q_copy,
                             kps_to_opt=kps_to_opt,
-                            )
+                            ))
                             
-        # Create the optimizer
-        solver = LevenbergMarquardt(residual_fun=loss_fn, 
+        # Create the optimizer (for LM, residual_fun instead)
+        solver = ScipyBoundedMinimize(fun=loss_fn, 
                         tol=ftol,
-                        # maxls=50
+                        method='L-BFGS-B',
+                        jit=True
                         )
         # method="l-bfgs-b",
         # jit=True,
         # diff_step=diff_step,
         # verbose=0,
         # Define the bounds
-        # bounds=(lb, ub)
+        bounds=(lb, ub)
         # print(type(bounds), bounds)
         # state = solver.init_state(q0, bounds=bounds)
-        # q_opt_param = solver.run(q0, bounds=bounds).params
-        q_opt_param = solver.run(q0).params
-        print(f"optimized params: {q_opt_param.x}")
+        q_opt_param = solver.run(q0, bounds=bounds).params
+        # q_opt_param = solver.run(q0).params
+        print(f"optimized params: {q_opt_param}")
 
         # q_opt_param = solver.run(q0, bounds=bounds).params
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
-            mjx_data = mjx_data.replace(qpos=q_opt_param.x)
+            mjx_data = mjx_data.replace(qpos=q_opt_param)
         else:
-            q_copy[qs_to_opt] = q_opt_param.x
+            q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
             mjx_data = mjx_data.replace(qpos=q_copy.copy())
 
-        print("last forward step")
         mjx_data = mjx.forward(mjx_model, mjx_data)
 
     except ValueError as ex:
@@ -228,7 +227,8 @@ def q_phase(
         q_copy[jnp.isnan(q_copy)] = 0.0
         mjx_data.replace(qpos=q_copy.copy()) 
         mjx_data = mjx.forward(mjx_model, mjx_data)
-        
+    
+    print("q_phase complete")
     return mjx_data
     
 def m_loss(

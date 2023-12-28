@@ -17,7 +17,7 @@ import state
 import numpy as np
 import functools
 
-@jax.vmap
+# @jax.vmap
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
 
