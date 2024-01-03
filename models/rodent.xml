@@ -1,11 +1,4 @@
 <mujoco model="rat">
-  <asset>
-    <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512"/>
-    <texture name="body" type="cube" builtin="flat" mark="cross" width="128" height="128" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
-    <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 .4 1"/>
-    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
-    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
-  </asset>
   <compiler angle="radian"/>
   <size njmax="8000" nconmax="4000"/>
   <default>
@@ -21,7 +14,7 @@
       <default class="collision_primitive">
         <geom type="capsule" group="2" rgba="0 0.5 0.5 1" density="500.0"/>
         <default class="collision_primitive_paw">
-          <geom g condim="3" priority="1" rgba="0 0.6 0.7 1" friction="1.5 0.005 0.0001"/>
+          <geom condim="3" priority="1" rgba="0 0.6 0.7 1" friction="1.5 0.005 0.0001"/>
         </default>
         <default class="nonself_collision_primitive">
           <geom conaffinity="0"/>
@@ -29,7 +22,7 @@
       </default>
     </default>
     <default class="lumbar">
-      <joint group="3" pos="0.003 0 -0.003" armature="1e-05" damping="0.03"/>
+      <joint group="3" pos="0.003 0 -0.003" armature="1e-05" damping="0.03" solimplimit="0 .99 .01"/>
       <general gainprm="0.15"/>
       <default class="lumbar_extend">
         <joint stiffness="0.02" range="-0.5235987755982988 0.7853981633974483"/>
@@ -43,7 +36,7 @@
       </default>
     </default>
     <default class="cervical">
-      <joint group="3" pos="-0.02 0 -0.05" stiffness="1.0" armature="0.001" damping="1.0"/>
+      <joint group="3" pos="-0.02 0 -0.05" stiffness="1.0" armature="0.001" damping="1.0" solimplimit="0 .99 .01"/>
       <default class="cervical_extend">
         <joint range="-0.4072434921320102 0.6108652381980153"/>
         <general gainprm="2.5"/>
@@ -58,15 +51,15 @@
       </default>
     </default>
     <default class="atlas">
-      <joint axis="0 -1 0" stiffness="0.002" range="-0.08726646259971647 0.7853981633974483" damping="0.002"/>
+      <joint axis="0 -1 0" stiffness="0.002" range="-0.08726646259971647 0.7853981633974483" damping="0.002" solimplimit="0 .99 .01"/>
       <general gainprm="0.025"/>
     </default>
     <default class="mandible">
-      <joint stiffness="0.002" range="-0.296705972839036 0.2617993877991494" springref="-0.314159265359" damping="0.002"/>
+      <joint stiffness="0.002" range="-0.296705972839036 0.2617993877991494" springref="-0.314159265359" damping="0.002" solimplimit="0 .99 .01"/>
       <general gainprm="0.025"/>
     </default>
     <default class="caudal">
-      <joint group="3" stiffness="1e-05" damping="0.002"/>
+      <joint group="3" stiffness="1e-05" damping="0.002" solimplimit="0 .99 .01"/>
       <general gainprm="0.005"/>
       <default class="caudal_extend">
         <joint range="-0.08726646259971647 0.08726646259971647"/>
@@ -76,7 +69,7 @@
       </default>
     </default>
     <default class="hip">
-      <joint armature="1e-05" damping="0.02"/>
+      <joint armature="1e-05" damping="0.02" solimplimit="0 .99 .01"/>
       <general gainprm="0.2"/>
       <default class="hip_supinate">
         <joint range="-0.6981317007977318 0.5235987755982988"/>
@@ -90,19 +83,19 @@
       </default>
     </default>
     <default class="knee">
-      <joint range="-1.221730476396031 1.53588974175501" damping="0.005"/>
+      <joint range="-1.221730476396031 1.53588974175501" damping="0.005" solimplimit="0 .99 .01"/>
       <general gainprm="0.2"/>
     </default>
     <default class="ankle">
-      <joint range="-0.1396263401595464 1.396263401595464" damping="0.003"/>
+      <joint range="-0.1396263401595464 1.396263401595464" damping="0.003" solimplimit="0 .99 .01"/>
       <general gainprm="0.2"/>
     </default>
     <default class="toe">
-      <joint range="0 0.8726646259971648" damping="0.001"/>
+      <joint range="0 0.8726646259971648" damping="0.001" solimplimit="0 .99 .01"/>
       <general gainprm="0.025"/>
     </default>
     <default class="scapula">
-      <joint damping="0.005"/>
+      <joint damping="0.005" solimplimit="0 .99 .01"/>
       <general gainprm="0.25"/>
       <default class="scapula_supinate">
         <joint pos="0 0.005000000000000001 0" range="-0.0174532925199433 0.1745329251994329"/>
@@ -116,23 +109,23 @@
       </default>
     </default>
     <default class="shoulder">
-      <joint range="-1.308996938995747 0.8726646259971648" damping="0.005"/>
+      <joint range="-1.308996938995747 0.8726646259971648" damping="0.005" solimplimit="0 .99 .01"/>
       <general gainprm="0.15"/>
     </default>
     <default class="shoulder_sup">
-      <joint range="-0.05235987755982989 1.134464013796314" damping="0.005"/>
+      <joint range="-0.05235987755982989 1.134464013796314" damping="0.005" solimplimit="0 .99 .01"/>
       <general gainprm="0.15"/>
     </default>
     <default class="elbow">
-      <joint range="-1.308996938995747 0.6981317007977318" damping="0.003"/>
+      <joint range="-1.308996938995747 0.6981317007977318" damping="0.003" solimplimit="0 .99 .01"/>
       <general gainprm="0.15"/>
     </default>
     <default class="wrist">
-      <joint range="-0.3490658503988659 2.094395102393195" damping="0.002"/>
+      <joint range="-0.3490658503988659 2.094395102393195" damping="0.002" solimplimit="0 .99 .01"/>
       <general gainprm="0.05"/>
     </default>
     <default class="finger">
-      <joint range="0 1.570796326794897" damping="0.002"/>
+      <joint range="0 1.570796326794897" damping="0.002" solimplimit="0 .99 .01"/>
       <general gainprm="0.025"/>
     </default>
     <default class="sensor">
@@ -146,9 +139,17 @@
     <quality shadowsize="2048"/>
   </visual>
   <statistic meansize="0.003"/>
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512"/>
+    <texture name="body" type="cube" builtin="flat" mark="cross" width="128" height="128" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
+    <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 .4 1"/>
+    <skin name="skin" file="rodent_walker_skin.skn"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+  </asset>
   <worldbody>
-    <geom name="floor" size="0 0 .05" type="plane" material="grid" condim="3" contype="1"/>
-    <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06508957263119967">
+    <geom name="floor" size="0 0 .1" type="plane" material="grid" condim="3"/>
+    <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.2">
       <freejoint name="root"/>
       <site name="tracking[torso]" class="tracking_site" />
       <light name="tracking_light" mode="trackcom" pos="0 0 3"/>
@@ -548,6 +549,7 @@
       </body>
     </body>
   </worldbody>
+
   <contact>
     <exclude name="pelvis:vertebra_C2" body1="pelvis" body2="vertebra_C2"/>
     <exclude name="pelvis:vertebra_C3" body1="pelvis" body2="vertebra_C3"/>
@@ -585,7 +587,9 @@
     <pair geom1="toe_R1_collision" geom2="floor"/>
     <pair geom1="toe_R2_collision" geom2="floor"/>
     <pair geom1="collision_torso" geom2="floor"/>
+
   </contact>
+
   <actuator>
     <general name="hip_L_supinate" forcerange="-0.2 0.2" joint="hip_L_supinate" dyntype="filter" biastype="affine" dynprm="0.04" gainprm="0.2443460952792061" biasprm="-0.0349065850398866 -0.4"/>
     <general name="hip_L_abduct" forcerange="-0.2 0.2" joint="hip_L_abduct" dyntype="filter" biastype="affine" dynprm="0.04" gainprm="0.3141592653589793" biasprm="0.1047197551196598 -0.4"/>

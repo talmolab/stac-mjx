@@ -138,7 +138,7 @@ INDIVIDUAL_PART_OPTIMIZATION:
 
 
 # OPTIONAL Lock the mandible to a position if there is no jaw tracking
-MANDIBLE_POS: -0.297
+# MANDIBLE_POS: -0.297
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
@@ -159,7 +159,7 @@ ARENA_TYPE: DannceArena
 Z_OFFSET: 0.00
 
 # Path to the model file.
-XML_PATH: "./models/rodent_modified.xml"
+XML_PATH: "./models/rodent.xml"
 SKELETON_PATH: "./models/rat23.mat"
 
 # What is the size of the animal you'd like to register, relative to the model?
