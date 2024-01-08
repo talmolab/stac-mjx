@@ -6,7 +6,7 @@ from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
 from jax import jit
-from jaxopt import ScipyBoundedMinimize, LevenbergMarquardt, ScipyMinimize, LBFGSB
+from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB
 import utils
 from functools import partial
 
@@ -88,8 +88,8 @@ def q_loss(
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
         
-    residual = jnp.sum(residual)
-
+    residual = jnp.sum(jnp.square(residual))
+    print(f"residual: {residual}")
     return residual
 
 def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
@@ -184,34 +184,33 @@ def q_phase(
     print("begin q-phase:")
 
     try:
-        loss_fn = jit(partial(q_loss,
+        loss_fn = partial(q_loss,
                             mjx_model=mjx_model,
                             mjx_data=mjx_data,
                             kp_data=marker_ref_arr.T,
                             qs_to_opt=qs_to_opt,
                             q_copy=q_copy,
                             kps_to_opt=kps_to_opt,
-                            ))
+                            )
                             
         # Create the optimizer (for LM, residual_fun instead)
-        solver = ScipyBoundedMinimize(fun=loss_fn, 
+        solver = LBFGSB(fun=loss_fn, 
                         tol=ftol,
-                        method='L-BFGS-B',
-                        jit=True
+                        jit=False,
+                        maxiter=25,
+                        # stepsize=-1.,
+                        # use_gamma=True,
+                        # verbose=True,
+                        # method='L-BFGS-B',
                         )
-        # method="l-bfgs-b",
-        # jit=True,
-        # diff_step=diff_step,
-        # verbose=0,
         # Define the bounds
         bounds=(lb, ub)
-        # print(type(bounds), bounds)
-        # state = solver.init_state(q0, bounds=bounds)
-        q_opt_param = solver.run(q0, bounds=bounds).params
-        # q_opt_param = solver.run(q0).params
+        res = solver.run(q0, bounds=bounds)
+        q_opt_param = res.params
         print(f"optimized params: {q_opt_param}")
+        # print(res)
+        # print(f"info: {res.info}")
 
-        # q_opt_param = solver.run(q0, bounds=bounds).params
         # Set pose to the optimized q and step forward.
         if qs_to_opt is None:
             mjx_data = mjx_data.replace(qpos=q_opt_param)

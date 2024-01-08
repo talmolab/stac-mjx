@@ -161,29 +161,29 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     return q, walker_body_sites, x
 
 # TODO: delete?
-def build_env(kp_data: jnp.ndarray):
-    """loads mjmodel and makes mjdata, also does rescaling.
+# def build_env(kp_data: jnp.ndarray):
+#     """loads mjmodel and makes mjdata, also does rescaling.
 
-    Args:
-        kp_data (jnp.ndarray): Key point data.
-        params (Dict): Parameters for the environment.
+#     Args:
+#         kp_data (jnp.ndarray): Key point data.
+#         params (Dict): Parameters for the environment.
 
-    Returns:
-        : The environment
-    """
-    model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
-    mjx_model = mjx.device_put(model)
-    mjx_data = mjx.make_data(mjx_model)
+#     Returns:
+#         : The environment
+#     """
+#     model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
+#     mjx_model = mjx.device_put(model)
+#     mjx_data = mjx.make_data(mjx_model)
 
-    rescale.rescale_subtree(
-        env.task._walker._mjcf_root,
-        params["SCALE_FACTOR"],
-        params["SCALE_FACTOR"],
-    )
+#     rescale.rescale_subtree(
+#         env.task._walker._mjcf_root,
+#         params["SCALE_FACTOR"],
+#         params["SCALE_FACTOR"],
+#     )
     
-    stac_base.jit_forward(mjx_model, mjx_data)
+#     stac_base.jit_forward(mjx_model, mjx_data)
 
-    return mjx_model, mjx_data
+#     return mjx_model, mjx_data
 
 def initialize_part_names(physics):
     # Get the ids of the limbs, accounting for quaternion and pos
