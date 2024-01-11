@@ -3,6 +3,7 @@ from jax import jit, vmap
 from jax import numpy as jnp
 import mujoco
 from mujoco import mjx
+from  mujoco.mjx._src import smooth
 from typing import Text, Dict
 import utils
 from dm_control import mjcf
@@ -157,7 +158,8 @@ def fit(root, kp_data):
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = mjx.forward(mjx_model, mjx_data)
+        mjx_data = smooth.kinematics(mjx_model, mjx_data)
+        mjx_data = smooth.com_pos(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
 
     utils.params['n_frames'] = kp_data.shape[0]
@@ -167,10 +169,10 @@ def fit(root, kp_data):
     # for n_site, p in enumerate(physics.bind(body_sites).pos):
     #     body_sites[n_site].pos = p
     
-    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    # mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     for n_iter in range(utils.params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+        mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
         print("starting offset optimization")
         offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
 

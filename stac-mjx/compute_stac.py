@@ -8,14 +8,9 @@ from jax import jit, vmap
 import jax.numpy as jnp
 import stac_base
 import utils
-import numpy as jnp
 import pickle
 import os
 from typing import List, Dict, Tuple, Text
-from tqdm import tqdm
-import state
-import numpy as np
-from functools import partial
 
 @jax.vmap
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
@@ -58,7 +53,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
         key, shape=[utils.params["N_SAMPLE_FRAMES"]], minval=0, maxval=utils.params["n_frames"], 
     )
     
-    print("Offset Optimization:")
+    print("Begining m_phase:")
 
     mjx_model, mjx_data = stac_base.m_phase(
         mjx_model, 
@@ -84,9 +79,9 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     Returns:
         Tuple: qpos, walker body sites, xpos
     """
-    # q = jnp.array([])
-    # x = jnp.array([])
-    # walker_body_sites = jnp.array([])
+    q = jnp.array([])
+    x = jnp.array([])
+    walker_body_sites = jnp.array([])
 
     # TODO: move out
     # Use global indiv parts to scan over range and index in if can't scan ragged arrays
@@ -102,86 +97,32 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     frames = jnp.arange(utils.params["n_frames"])
     
     print("Pose Optimization:")
-    
-    def f(carry, n_frame):
-        # unpack carry
-        mjx_data, q, x, walker_body_sites = carry
-        
+    # TODO: can we make this faster?
+    for n_frame in frames:
         # Optimize over all points
-        # mjx_data = stac_base.q_phase(
-        #     mjx_model, 
-        #     mjx_data,
-        #     kp_data[n_frame, :],
-        # )
+        print("Optimizing over all points:")
+        mjx_data = stac_base.q_phase(
+            mjx_model, 
+            mjx_data,
+            kp_data[n_frame, :],
+        )
 
         # Next optimize over parts individually to improve time and accur.
-        # TODO: make this a for loop again?
-        mjx_data = stac_base.q_phase(mjx_model, 
-                mjx_data,
-                kp_data[n_frame, :],
-                parts_opt = True)
+        # TODO: can we move the loop back in here? maybe not bc the partial funcs
+        # mjx_data = stac_base.q_phase(mjx_model, 
+        #         mjx_data,
+        #         kp_data[n_frame, :],
+        #         parts_opt = True)
         
-        q = jnp.append(q, jnp.copy(mjx_data.qpos[:]))
-        x = jnp.append(x, jnp.copy(mjx_data.xpos[:]))
+        q = jnp.append(q, mjx_data.qpos)
+        x = jnp.append(x, mjx_data.xpos)
         walker_body_sites = jnp.append(walker_body_sites,
-            jnp.copy(stac_base.get_site_xpos(mjx_data))
+            stac_base.get_site_xpos(mjx_data)
         )
-        return (mjx_data, q, x, walker_body_sites), None
-    carry = (mjx_data, jnp.empty(0), jnp.empty(0), jnp.empty(0))
-    (mjx_data, q, x, walker_body_sites), _ = jax.lax.scan(f, carry, frames)
+        print(f"Frame {n_frame} done")
     
-    # for n_frame in frames:
-    #     # Optimize over all points
-    #     mjx_data = stac_base.q_phase(
-    #         mjx_model, 
-    #         mjx_data,
-    #         kp_data[n_frame, :],
-    #         site_index_map,
-    #         params,
-    #     )
-
-    #     # Next optimize over parts individually to improve time and accur.
-    #     for part in indiv_parts:
-    #         mjx_data = stac_base.q_phase(
-    #             mjx_model, 
-    #             mjx_data,
-    #             kp_data[n_frame, :],
-    #             site_index_map,
-    #             params,
-    #             qs_to_opt=part,
-    #         )
-    #     q = q.append(jnp.copy(mjx_data.qpos[:]))
-    #     x = x.append(jnp.copy(mjx_data.xpos[:]))
-    #     walker_body_sites = walker_body_sites.append(
-    #         jnp.copy(stac_base.get_site_xpos(mjx_data, site_index_map))
-    #     )
-
-    return q, walker_body_sites, x
-
-# TODO: delete?
-# def build_env(kp_data: jnp.ndarray):
-#     """loads mjmodel and makes mjdata, also does rescaling.
-
-#     Args:
-#         kp_data (jnp.ndarray): Key point data.
-#         params (Dict): Parameters for the environment.
-
-#     Returns:
-#         : The environment
-#     """
-#     model = mujoco.MjModel.from_xml_path(params["XML_PATH"])
-#     mjx_model = mjx.device_put(model)
-#     mjx_data = mjx.make_data(mjx_model)
-
-#     rescale.rescale_subtree(
-#         env.task._walker._mjcf_root,
-#         params["SCALE_FACTOR"],
-#         params["SCALE_FACTOR"],
-#     )
-    
-#     stac_base.jit_forward(mjx_model, mjx_data)
-
-#     return mjx_model, mjx_data
+    print("Pose Optimization done")
+    return mjx_data, q, walker_body_sites, x
 
 def initialize_part_names(physics):
     # Get the ids of the limbs, accounting for quaternion and pos

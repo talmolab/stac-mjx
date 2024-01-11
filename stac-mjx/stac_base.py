@@ -1,6 +1,7 @@
 """Implementation of stac for animal motion capture in dm_control suite."""
 import mujoco
 from mujoco import mjx
+from  mujoco.mjx._src import smooth
 import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
@@ -9,6 +10,7 @@ from jax import jit
 from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB, LBFGS
 import utils
 from functools import partial
+
 
 class _TestNoneArgs(BaseException):
     """Simple base exception"""
@@ -80,17 +82,18 @@ def q_loss(
     """
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     if qs_to_opt is not None:
-        q_copy = q_copy.at[qs_to_opt].set(q.copy())
+        q_copy = q_copy.at[qs_to_opt].set(q)
         q = jnp.copy(q_copy)
 
-    residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data)
+    mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
+    residual = kp_data - markers
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
         
     residual = jnp.sum(jnp.square(residual))
     return residual
 
-def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
+def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.ndarray):
     """Convert site information to marker information.
 
     Args:
@@ -101,11 +104,12 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
     Returns:
         jnp.ndarray: Array of marker positions.
     """
-    mjx_data = mjx_data.replace(qpos=q.copy())
+    mjx_data = mjx_data.replace(qpos=q)
     # Forward kinematics
-    mjx_data = mjx.forward(mjx_model, mjx_data)
+    mjx_data = smooth.kinematics(mjx_model, mjx_data)
+    mjx_data = smooth.com_pos(mjx_model, mjx_data)
 
-    return get_site_xpos(mjx_data).flatten()
+    return mjx_data, get_site_xpos(mjx_data).flatten()
 
 def q_phase(
     mjx_model,
@@ -193,40 +197,36 @@ def q_phase(
             bounds=(lb, ub)
             res = solver.run(q0, bounds=bounds)
             q_opt_param = res.params
-            # print(f"optimized params: {q_opt_param}")
-            # print(res)
-            # print(f"info: {res.info}")
 
             # Set pose to the optimized q and step forward.
             if qs_to_opt is None:
                 mjx_data = mjx_data.replace(qpos=q_opt_param)
             else:
                 q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
-                mjx_data = mjx_data.replace(qpos=q_copy.copy())
+                mjx_data = mjx_data.replace(qpos=q_copy)
 
-            mjx_data = mjx.forward(mjx_model, mjx_data)
+            mjx_data = smooth.kinematics(mjx_model, mjx_data)
 
         except ValueError as ex:
             print("Warning: optimization failed.", flush=True)
             print(ex, flush=True)
             q_copy[jnp.isnan(q_copy)] = 0.0
-            mjx_data.replace(qpos=q_copy.copy()) 
-            mjx_data = mjx.forward(mjx_model, mjx_data)
+            mjx_data.replace(qpos=q_copy) 
+            mjx_data = smooth.kinematics(mjx_model, mjx_data)
     
         print("q_phase complete")
         return mjx_data
         
     if parts_opt:
-        # def part_f(carry, _):
-        #     mjx_data, i = carry
-        #     mjx_data = part_opt_f[i](mjx_data)
-        #     return (mjx_data, i+1), mjx_data
+        # This scan doesnt work because part becomes a tracer and cant be used for boolean masking
+        # def part_f(mjx_data, part):
+        #     mjx_data = partial(opt, qs_to_opt=part)(mjx_data)
+        #     return mjx_data, None
         
         part_opt_f = [partial(opt, qs_to_opt=part) for part in utils.params["indiv_parts"]]
         for f in part_opt_f:
-            print(mjx_data)
             mjx_data = f(mjx_data)
-        # _, mjx_data = jax.lax.scan(part_f, (mjx_data, 0), jnp.arange(len(utils.params["indiv_parts"])))
+        # _, mjx_data = jax.lax.scan(part_f, mjx_data, utils.params["indiv_parts"])
         
         return mjx_data
     else:
@@ -265,17 +265,18 @@ def m_loss(
 
     def f(terms, pair):
         qpos, kp = pair
-        mjx_data.qpos[:] = qpos.copy()
+        mjx_data = mjx_data.replace(qpos=qpos)
         reg_term, residual = terms
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
-        reg_term = reg_term + ((offset - initial_offsets.flatten()) ** 2) * is_regularized
-        residual = residual + (kp - m_joints_to_markers(offset, mjx_model, mjx_data, sites)) ** 2
+        reg_term = reg_term + (jnp.square(offset - initial_offsets.flatten())) * is_regularized
+        
+        mjx_data, markers = m_joints_to_markers(offset, mjx_model, mjx_data, sites)
+        residual = (residual + (kp - markers))
         return (reg_term, residual), None
     
-    (residual, reg_term), _ = jax.lax.scan(f, (0,0), (q, jnp.transpose(kp_data)))
-        
-    return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
+    (residual, reg_term), _ = jax.lax.scan(f, (0,0), (q, kp_data))
+    return jnp.sum(jnp.square(residual)) + reg_coef * jnp.sum(reg_term)
 
 def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
@@ -288,12 +289,13 @@ def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     Returns:
         TYPE: Array of marker positions
     """
-    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset.copy(), (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset, (-1, 3))) 
 
     # Forward kinematics
-    mjx_data = mjx.forward(mjx_model, mjx_data)
+    mjx_data = smooth.kinematics(mjx_model, mjx_data)
+    mjx_data = smooth.com_pos(mjx_model, mjx_data)
 
-    return get_site_xpos(mjx_data).flatten()
+    return mjx_data, get_site_xpos(mjx_data).flatten()
 
 
 def m_phase(
@@ -320,11 +322,11 @@ def m_phase(
         maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
     # Define initial position of the optimization
-    offset0 = jnp.copy(get_site_pos(mjx_model)).flatten()
+    offset0 = get_site_pos(mjx_model).flatten()
 
     # Define which offsets to regularize
     is_regularized = []
-    for k, v in utils.params["site_index_map"].items():
+    for k in utils.params["site_index_map"].keys():
         if any(n == k for n in utils.params["SITES_TO_REGULARIZE"]):
             is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
         else:
@@ -332,7 +334,7 @@ def m_phase(
     is_regularized = jnp.stack(is_regularized).flatten()
 
     # Optimize dm
-    keypoints = kp_data[time_indices, :].T
+    keypoints = kp_data[time_indices, :]
     q = jnp.take(q, time_indices, axis=0)
     # q = [q[i] for i in time_indices]
     
@@ -382,15 +384,11 @@ def m_phase(
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param.x, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = mjx.forward(mjx_model, mjx_data)
+    mjx_data = smooth.kinematics(mjx_model, mjx_data)
     
     # TODO: needed??
     # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
     #     sites[n_site].pos = p
         
     return mjx_data, mjx_model
-
-@jit
-def jit_forward(mjx_model, mjx_data):
-    return mjx.forward(mjx_model, mjx_data)
     
