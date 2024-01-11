@@ -45,10 +45,10 @@ def part_opt_setup(physics):
     if utils.params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
         indiv_parts = []
     else:
-        indiv_parts = [
+        indiv_parts = jnp.array([
             get_part_ids(physics, parts)
             for parts in utils.params["INDIVIDUAL_PART_OPTIMIZATION"].values()
-        ]
+        ])
     
     utils.params["indiv_parts"] = indiv_parts
     
@@ -134,7 +134,7 @@ def fit(root, kp_data):
     utils.params["mj_model"] = mj_model
     part_opt_setup(physics)
     
-    # @vmap
+    @vmap
     def mjx_setup(kp_data):
         """creates mjxmodel and mjxdata, setting offets 
 
@@ -160,16 +160,18 @@ def fit(root, kp_data):
         mjx_data = mjx.forward(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
 
+    utils.params['n_frames'] = kp_data.shape[0]
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     # mjx_model, mjx_data, offsets = jax.vmap(lambda x: mjx_setup(x, mj_model))(kp_data)
     mjx_model, mjx_data, offsets = mjx_setup(kp_data)
     # for n_site, p in enumerate(physics.bind(body_sites).pos):
     #     body_sites[n_site].pos = p
-    # print(mjx_model.body_pos, mjx_data.qpos)
+    
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     for n_iter in range(utils.params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data)
+        q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+        print("starting offset optimization")
         offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
 
     # Optimize the pose for the whole sequence

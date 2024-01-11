@@ -6,7 +6,7 @@ from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
 from jax import jit
-from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB
+from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB, LBFGS
 import utils
 from functools import partial
 
@@ -83,13 +83,11 @@ def q_loss(
         q_copy = q_copy.at[qs_to_opt].set(q.copy())
         q = jnp.copy(q_copy)
 
-    # pred = q_joints_to_markers(q, mjx_model, mjx_data)
     residual = kp_data - q_joints_to_markers(q, mjx_model, mjx_data)
     if kps_to_opt is not None:
         residual = residual[kps_to_opt]
         
     residual = jnp.sum(jnp.square(residual))
-    print(f"residual: {residual}")
     return residual
 
 def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> jnp.ndarray:
@@ -113,10 +111,11 @@ def q_phase(
     mjx_model,
     mjx_data,
     marker_ref_arr: jnp.ndarray,
-    qs_to_opt: jnp.ndarray = None,
+    # qs_to_opt: jnp.ndarray = None,
     kps_to_opt: jnp.ndarray = None,
     root_only: bool = False,
     trunk_only: bool = False,
+    parts_opt: bool = False,
     ftol: float = None,
 ):
     """Update q_pose using estimated marker parameters.
@@ -141,94 +140,97 @@ def q_phase(
     lb = jnp.minimum(lb, 0.0)
     ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
     # Define initial position of the optimization
-    # q0 = jnp.copy(mujoco.MjData(utils.params["mj_model"]).qpos)
 
     q0 = jnp.copy(mjx_data.qpos[:])
-    # print(q0, mjx_data.qpos)
     q_copy = jnp.copy(q0)
-
     # Set the center to help with finding the optima (does not need to be exact)
-    
-    q0 = jax.lax.cond(
-        root_only | trunk_only,  # Condition for execution
-        lambda _: q0.at[:3].set(marker_ref_arr[12:15]),  # True branch
-        lambda _: q0,  # False branch (return q0 unchanged)
-        operand=None  # Pass q0 as an operand to both branches
-    )
-    
-    # if root_only or trunk_only:
-    #     q0 = q0.at[:3].set(marker_ref_arr[12:15])
-    #     print(q0)
-    #     diff_step = utils.params["ROOT_DIFF_STEP"]
-    # else:
-    #     diff_step = utils.params["DIFF_STEP"]
-    if root_only:
-        qs_to_opt = jnp.zeros_like(q0, dtype=bool)
-        qs_to_opt = qs_to_opt.at[:7].set(True)
-
-    # Limit the optimizer to a subset of qpos
-    if qs_to_opt is not None:
-        q0 = q0[qs_to_opt]
-        lb = lb[qs_to_opt]
-        ub = ub[qs_to_opt]
-
-    # Use different tolerances for root vs normal optimization
-    if ftol is None:
-        if root_only:
-            ftol = utils.params["ROOT_FTOL"]
-        elif qs_to_opt is not None:
-            ftol = utils.params["LIMB_FTOL"]
-        else:
-            ftol = utils.params["FTOL"]
+    if root_only or trunk_only:
+        q0 = q0.at[:3].set(marker_ref_arr[12:15])
             
-    print("begin q-phase:")
+    def opt(mjx_data, qs_to_opt=None, lb=lb, ub=ub, q0=q0, q_copy=q_copy, ftol=ftol):
+        # TODO: convert these to cond? is cond even needed
+        if root_only:
+            qs_to_opt = jnp.zeros_like(q0, dtype=bool)
+            qs_to_opt = qs_to_opt.at[:7].set(True)
 
-    try:
-        loss_fn = partial(q_loss,
-                            mjx_model=mjx_model,
-                            mjx_data=mjx_data,
-                            kp_data=marker_ref_arr.T,
-                            qs_to_opt=qs_to_opt,
-                            q_copy=q_copy,
-                            kps_to_opt=kps_to_opt,
+        # Limit the optimizer to a subset of qpos
+        if qs_to_opt is not None:
+            q0 = q0[qs_to_opt]
+            lb = lb[qs_to_opt]
+            ub = ub[qs_to_opt]
+
+        # Use different tolerances for root vs normal optimization
+        if ftol is None:
+            if root_only:
+                ftol = utils.params["ROOT_FTOL"]
+            elif qs_to_opt is not None:
+                ftol = utils.params["LIMB_FTOL"]
+            else:
+                ftol = utils.params["FTOL"]
+ 
+        print("begin optimizing:")
+        try:
+            loss_fn = jit(partial(q_loss,
+                                mjx_model=mjx_model,
+                                mjx_data=mjx_data,
+                                kp_data=marker_ref_arr.T,
+                                qs_to_opt=qs_to_opt,
+                                q_copy=q_copy,
+                                kps_to_opt=kps_to_opt,
+                                ))
+                                
+            # Create the optimizer (for LM, residual_fun instead)
+            solver = LBFGSB(fun=loss_fn, 
+                            tol=ftol,
+                            jit=True,
+                            maxiter=25,
+                            # stepsize=-1.,
+                            # use_gamma=True,
+                            # verbose=True,
+                            # method='L-BFGS-B',
                             )
-                            
-        # Create the optimizer (for LM, residual_fun instead)
-        solver = LBFGSB(fun=loss_fn, 
-                        tol=ftol,
-                        jit=False,
-                        maxiter=25,
-                        # stepsize=-1.,
-                        # use_gamma=True,
-                        # verbose=True,
-                        # method='L-BFGS-B',
-                        )
-        # Define the bounds
-        bounds=(lb, ub)
-        res = solver.run(q0, bounds=bounds)
-        q_opt_param = res.params
-        print(f"optimized params: {q_opt_param}")
-        # print(res)
-        # print(f"info: {res.info}")
+            # Define the bounds
+            bounds=(lb, ub)
+            res = solver.run(q0, bounds=bounds)
+            q_opt_param = res.params
+            # print(f"optimized params: {q_opt_param}")
+            # print(res)
+            # print(f"info: {res.info}")
 
-        # Set pose to the optimized q and step forward.
-        if qs_to_opt is None:
-            mjx_data = mjx_data.replace(qpos=q_opt_param)
-        else:
-            q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
-            mjx_data = mjx_data.replace(qpos=q_copy.copy())
+            # Set pose to the optimized q and step forward.
+            if qs_to_opt is None:
+                mjx_data = mjx_data.replace(qpos=q_opt_param)
+            else:
+                q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
+                mjx_data = mjx_data.replace(qpos=q_copy.copy())
 
-        mjx_data = mjx.forward(mjx_model, mjx_data)
+            mjx_data = mjx.forward(mjx_model, mjx_data)
 
-    except ValueError as ex:
-        print("Warning: optimization failed.", flush=True)
-        print(ex, flush=True)
-        q_copy[jnp.isnan(q_copy)] = 0.0
-        mjx_data.replace(qpos=q_copy.copy()) 
-        mjx_data = mjx.forward(mjx_model, mjx_data)
+        except ValueError as ex:
+            print("Warning: optimization failed.", flush=True)
+            print(ex, flush=True)
+            q_copy[jnp.isnan(q_copy)] = 0.0
+            mjx_data.replace(qpos=q_copy.copy()) 
+            mjx_data = mjx.forward(mjx_model, mjx_data)
     
-    print("q_phase complete")
-    return mjx_data
+        print("q_phase complete")
+        return mjx_data
+        
+    if parts_opt:
+        # def part_f(carry, _):
+        #     mjx_data, i = carry
+        #     mjx_data = part_opt_f[i](mjx_data)
+        #     return (mjx_data, i+1), mjx_data
+        
+        part_opt_f = [partial(opt, qs_to_opt=part) for part in utils.params["indiv_parts"]]
+        for f in part_opt_f:
+            print(mjx_data)
+            mjx_data = f(mjx_data)
+        # _, mjx_data = jax.lax.scan(part_f, (mjx_data, 0), jnp.arange(len(utils.params["indiv_parts"])))
+        
+        return mjx_data
+    else:
+        return opt(mjx_data)
     
 def m_loss(
     offset: jnp.ndarray,
@@ -261,16 +263,17 @@ def m_loss(
     # print(time_indices)
     # print(offset.shape)
 
-    def f(terms, i):
-        mjx_data.qpos[:] = q[i].copy()
-
+    def f(terms, pair):
+        qpos, kp = pair
+        mjx_data.qpos[:] = qpos.copy()
+        reg_term, residual = terms
         # Get the offset relative to the initial position, only for
         # markers you wish to regularize
-        reg_term = terms[0] + ((offset - initial_offsets.flatten()) ** 2) * is_regularized
-        residual = terms[1] + (kp_data[:, i] - m_joints_to_markers(offset, mjx_model, mjx_data, sites)) ** 2
+        reg_term = reg_term + ((offset - initial_offsets.flatten()) ** 2) * is_regularized
+        residual = residual + (kp - m_joints_to_markers(offset, mjx_model, mjx_data, sites)) ** 2
         return (reg_term, residual), None
     
-    (residual, reg_term), _ = jax.lax.scan(f, (0,0), jnp.arange(time_indices.shape[0]))
+    (residual, reg_term), _ = jax.lax.scan(f, (0,0), (q, jnp.transpose(kp_data)))
         
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
@@ -334,30 +337,52 @@ def m_phase(
     # q = [q[i] for i in time_indices]
     
     # Create the optimizer
-    solver = ScipyMinimize(fun=lambda offset: m_loss(
-                                            offset,
-                                            mjx_model,
-                                            mjx_data,
-                                            keypoints,
-                                            time_indices,
-                                            q,
-                                            initial_offsets,
-                                            is_regularized=is_regularized,
-                                            reg_coef=reg_coef,
-                                        ),
-                            method="l-bfgs-b",
-                            tol=utils.params["ROOT_FTOL"],
-                            maxiter=maxiter,
-                            # jit=True
-                            )
+    # solver = ScipyMinimize(fun=lambda offset: m_loss(
+    #                                         offset,
+    #                                         mjx_model,
+    #                                         mjx_data,
+    #                                         keypoints,
+    #                                         time_indices,
+    #                                         q,
+    #                                         initial_offsets,
+    #                                         is_regularized=is_regularized,
+    #                                         reg_coef=reg_coef,
+    #                                     ),
+    #                         method="l-bfgs-b",
+    #                         tol=utils.params["ROOT_FTOL"],
+    #                         maxiter=maxiter,
+    #                         # jit=True
+    #                         )
     
-    # Run the optimization
-    offset_opt_param = solver.run(offset0).params
+    # # Run the optimization
+    # offset_opt_param = solver.run(offset0).params
 
+    loss_fn = jit(partial(m_loss(
+                            mjx_model=mjx_model,
+                            mjx_data=mjx_data,
+                            keypoints=keypoints,
+                            time_indices=time_indices,
+                            q=q,
+                            initial_offsets=initial_offsets,
+                            is_regularized=is_regularized,
+                            reg_coef=reg_coef,)))
+                            
+        # Create the optimizer (for LM, residual_fun instead)
+    solver = LBFGS(fun=loss_fn, 
+                    tol=utils.params["ROOT_FTOL"],
+                    jit=True,
+                    maxiter=maxiter,
+                    # stepsize=-1.,
+                    # use_gamma=True,
+                    # verbose=True,
+                    # method='L-BFGS-B',
+                    )
+    res = solver.run(offset0)
+    offset_opt_param = res.params
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param.x, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = jit_forward(mjx_model, mjx_data)
+    mjx_data = mjx.forward(mjx_model, mjx_data)
     
     # TODO: needed??
     # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
