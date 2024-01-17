@@ -81,14 +81,18 @@ def q_loss(
         float: loss value
     """
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
-    if qs_to_opt is not None:
-        q_copy = q_copy.at[qs_to_opt].set(q)
-        q = jnp.copy(q_copy)
+    
+    # TODO: reimplement so qs_to_opt plays nice with dynamic arrays (dont index)
+    # if qs_to_opt is not None:
+    #     q_copy = q_copy.at[qs_to_opt].set(q)
+    #     q = jnp.copy(q_copy)
 
-    mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
+    mjx_data, markers = q_joints_to_markers(q*qs_to_opt, mjx_model, mjx_data)
     residual = kp_data - markers
+    
+    # Set irrelevant body sites to 0
     if kps_to_opt is not None:
-        residual = residual[kps_to_opt]
+        residual = residual * kps_to_opt
         
     residual = jnp.sum(jnp.square(residual))
     return residual
@@ -186,12 +190,9 @@ def q_phase(
             # Create the optimizer (for LM, residual_fun instead)
             solver = LBFGSB(fun=loss_fn, 
                             tol=ftol,
-                            jit=True,
                             maxiter=25,
-                            # stepsize=-1.,
-                            # use_gamma=True,
-                            # verbose=True,
-                            # method='L-BFGS-B',
+                            jit=True,
+                            verbose=False
                             )
             # Define the bounds
             bounds=(lb, ub)

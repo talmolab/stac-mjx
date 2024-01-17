@@ -4,8 +4,8 @@ DIFF_STEP: 3.0e-08
 
 # Tolerance for the optimizations of the full model, limb, and root. 
 FTOL: 0.001
-LIMB_FTOL: 1.0e-06
-ROOT_FTOL: 1.0e-04
+LIMB_FTOL: 1.0e-05
+ROOT_FTOL: 1.0e-03
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:

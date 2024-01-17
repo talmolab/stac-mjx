@@ -23,6 +23,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """
     
     print("Root Optimization:")
+    
     mjx_data = stac_base.q_phase(
         mjx_model, 
         mjx_data,
@@ -53,7 +54,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
         key, shape=[utils.params["N_SAMPLE_FRAMES"]], minval=0, maxval=utils.params["n_frames"], 
     )
     
-    print("Begining m_phase:")
+    print("Begining offset optimization:")
 
     mjx_model, mjx_data = stac_base.m_phase(
         mjx_model, 
@@ -82,25 +83,13 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     q = jnp.array([])
     x = jnp.array([])
     walker_body_sites = jnp.array([])
-
-    # TODO: move out
-    # Use global indiv parts to scan over range and index in if can't scan ragged arrays
-    # if utils.params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
-    #     indiv_parts = []
-    # else:
-    #     indiv_parts = [
-    #         get_part_ids(mjx_model, mjx_data, parts)
-    #         for parts in utils.params["INDIVIDUAL_PART_OPTIMIZATION"].values()
-    #     ]
     
     # Iterate through all of the frames in the clip
     frames = jnp.arange(utils.params["n_frames"])
     
     print("Pose Optimization:")
-    # TODO: can we make this faster?
-    for n_frame in frames:
-        # Optimize over all points
-        print("Optimizing over all points:")
+    @jit
+    def jit_f(mjx_data, kp_data, n_frame):
         mjx_data = stac_base.q_phase(
             mjx_model, 
             mjx_data,
@@ -114,6 +103,11 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
         #         kp_data[n_frame, :],
         #         parts_opt = True)
         
+        return mjx_data
+    
+    # TODO: can we make this faster?
+    for n_frame in frames:
+        mjx_data = jit_f(mjx_data, kp_data, n_frame)
         q = jnp.append(q, mjx_data.qpos)
         x = jnp.append(x, mjx_data.xpos)
         walker_body_sites = jnp.append(walker_body_sites,

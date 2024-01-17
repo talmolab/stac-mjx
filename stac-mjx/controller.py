@@ -104,7 +104,7 @@ def prep_kp_data(kp_data, stac_keypoint_order):
     return kp_data 
 
 def chunk_kp_data(kp_data):
-    N_FRAMES_PER_CLIP = 250
+    N_FRAMES_PER_CLIP = 150
     n_frames = kp_data.shape[0]
 
     n_chunks = int((n_frames / N_FRAMES_PER_CLIP) // utils.params['N_GPUS'] * utils.params['N_GPUS'])
@@ -185,6 +185,55 @@ def fit(root, kp_data):
     )
     return data
 
+def test_opt(root, kp_data):
+    physics, mj_model = set_body_sites(root)
+    utils.params["mj_model"] = mj_model
+    part_opt_setup(physics)
+    
+    @vmap
+    def mjx_setup(kp_data):
+        """creates mjxmodel and mjxdata, setting offets 
+
+        Args:
+            kp_data (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Create mjx model and data
+        mjx_model = mjx.put_model(mj_model)
+        mjx_data = mjx.make_data(mjx_model)
+        # do initial get_site stuff inside mjx_setup
+        
+        # Get and set the offsets of the markers
+        offsets = np.copy(stac_base.get_site_pos(mjx_model))
+        offsets *= utils.params['SCALE_FACTOR']
+        
+        # print(mjx_model.site_pos, mjx_model.site_pos.shape)
+        mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
+
+        # forward is used to calculate xpos and such
+        mjx_data = smooth.kinematics(mjx_model, mjx_data)
+        mjx_data = smooth.com_pos(mjx_model, mjx_data)
+        return mjx_model, mjx_data, offsets
+
+    # TODO: move this to a setup function
+    utils.params['n_frames'] = kp_data.shape[1]
+    # Create batch mjx model and data where batch_size = kp_data.shape[0]
+    mjx_model, mjx_data, offsets = mjx_setup(kp_data)
+    # This used to set the walker body sites based on the body site positions in 'physics'. 
+    # Do we still need to do this? 
+    # for n_site, p in enumerate(physics.bind(body_sites).pos):
+    #     body_sites[n_site].pos = p
+    
+    # Optimize
+    # mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+    
+    data = package_data(
+        mjx_model, physics, q, x, walker_body_sites, kp_data
+    )
+    return data
 def transform(kp_data, offset_path):
     """Register skeleton to keypoint data
 
