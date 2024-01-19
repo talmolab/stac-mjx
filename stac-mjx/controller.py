@@ -3,7 +3,6 @@ from jax import jit, vmap
 from jax import numpy as jnp
 import mujoco
 from mujoco import mjx
-from  mujoco.mjx._src import smooth
 from typing import Text, Dict
 import utils
 from dm_control import mjcf
@@ -158,8 +157,8 @@ def fit(root, kp_data):
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = smooth.kinematics(mjx_model, mjx_data)
-        mjx_data = smooth.com_pos(mjx_model, mjx_data)
+        mjx_data = stac_base.kinematics(mjx_model, mjx_data)
+        mjx_data = stac_base.com_pos(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
 
     utils.params['n_frames'] = kp_data.shape[0]
@@ -213,8 +212,8 @@ def test_opt(root, kp_data):
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = smooth.kinematics(mjx_model, mjx_data)
-        mjx_data = smooth.com_pos(mjx_model, mjx_data)
+        mjx_data = stac_base.kinematics(mjx_model, mjx_data)
+        mjx_data = stac_base.com_pos(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
 
     # TODO: move this to a setup function
@@ -227,7 +226,7 @@ def test_opt(root, kp_data):
     #     body_sites[n_site].pos = p
     
     # Optimize
-    # mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
     
     data = package_data(

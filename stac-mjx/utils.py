@@ -4,6 +4,8 @@ import h5py
 import os
 import yaml
 import scipy.io as spio
+from jax import jit
+from  mujoco.mjx._src import smooth
 
 def loadmat(filename):
     """
@@ -56,3 +58,11 @@ def _load_params(param_path):
 def init_params(path):
     global params
     params = _load_params(path)
+
+@jit
+def kinematics(mjx_model, mjx_data):
+    return smooth.kinematics(mjx_model, mjx_data)
+
+@jit
+def compos(mjx_model, mjx_data):
+    return smooth.com_pos(mjx_model, mjx_data)

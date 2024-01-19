@@ -10,7 +10,7 @@ from jax import jit
 from jaxopt import ScipyBoundedMinimize, ScipyMinimize, LBFGSB, LBFGS
 import utils
 from functools import partial
-
+from jax.tree_util import Partial
 
 class _TestNoneArgs(BaseException):
     """Simple base exception"""
@@ -81,11 +81,11 @@ def q_loss(
         float: loss value
     """
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
-    
     # TODO: reimplement so qs_to_opt plays nice with dynamic arrays (dont index)
     if qs_to_opt is not None:
         q_copy = q_copy.at[qs_to_opt].set(q)
         q = jnp.copy(q_copy)
+        # q = jnp.copy((1 - qs_to_opt) * q_copy + qs_to_opt * q)
 
     mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
     residual = kp_data - markers
@@ -110,8 +110,8 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.n
     """
     mjx_data = mjx_data.replace(qpos=q)
     # Forward kinematics
-    mjx_data = smooth.kinematics(mjx_model, mjx_data)
-    mjx_data = smooth.com_pos(mjx_model, mjx_data)
+    mjx_data = kinematics(mjx_model, mjx_data)
+    mjx_data = com_pos(mjx_model, mjx_data)
 
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
@@ -122,6 +122,7 @@ def get_q_bounds(mjx_model):
 
     return (lb, ub)
 
+@jit
 def q_opt(
     mjx_model,
     mjx_data,
@@ -144,7 +145,7 @@ def q_opt(
                         verbose=False
                         )
         # Define the bounds
-        bounds = get_q_bounds(mjx_model)
+        # bounds = get_q_bounds(mjx_model)
         
         res = solver.run(q0, bounds, mjx_model=mjx_model, 
                                         mjx_data=mjx_data, 
@@ -152,26 +153,19 @@ def q_opt(
                                         q_copy=q_copy, 
                                         kps_to_opt=kps_to_opt)
         q_opt_param = res.params
-
-        # Set pose to the optimized q and step forward.
-        if qs_to_opt is None:
-            mjx_data = mjx_data.replace(qpos=q_opt_param)
-        else:
-            q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
-            mjx_data = mjx_data.replace(qpos=q_copy)
-
-        mjx_data = smooth.kinematics(mjx_model, mjx_data)
+        
+        return mjx_data, q_opt_param
 
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
-        q_copy[jnp.isnan(q_copy)] = 0.0
-        mjx_data.replace(qpos=q_copy) 
-        mjx_data = smooth.kinematics(mjx_model, mjx_data)
+        q_copy = q_copy.at[jnp.isnan(q_copy)].set(0.0)
+        mjx_data = mjx_data.replace(qpos=q_copy) 
+        mjx_data = kinematics(mjx_model, mjx_data)
 
     print("q_phase complete")
         
-    return mjx_data
+    return mjx_data, None
 
 def m_loss(
     offset: jnp.ndarray,
@@ -233,8 +227,8 @@ def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset, (-1, 3))) 
 
     # Forward kinematics
-    mjx_data = smooth.kinematics(mjx_model, mjx_data)
-    mjx_data = smooth.com_pos(mjx_model, mjx_data)
+    mjx_data = kinematics(mjx_model, mjx_data)
+    mjx_data = com_pos(mjx_model, mjx_data)
 
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
@@ -300,7 +294,7 @@ def m_phase(
     # # Run the optimization
     # offset_opt_param = solver.run(offset0).params
 
-    loss_fn = jit(partial(m_loss(
+    loss_fn = jit(Partial(m_loss(
                             mjx_model=mjx_model,
                             mjx_data=mjx_data,
                             keypoints=keypoints,
@@ -325,11 +319,18 @@ def m_phase(
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param.x, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = smooth.kinematics(mjx_model, mjx_data)
+    mjx_data = kinematics(mjx_model, mjx_data)
     
     # TODO: needed??
     # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
     #     sites[n_site].pos = p
         
     return mjx_data, mjx_model
-    
+
+@jit
+def kinematics(mjx_model, mjx_data):
+    return smooth.kinematics(mjx_model, mjx_data)
+
+@jit
+def com_pos(mjx_model, mjx_data):
+    return smooth.com_pos(mjx_model, mjx_data)
