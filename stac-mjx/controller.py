@@ -132,7 +132,7 @@ def fit(root, kp_data):
     """    
     
     physics, mj_model = set_body_sites(root)
-    utils.params["mj_model"] = mj_model
+    # utils.params["mj_model"] = mj_model
     part_opt_setup(physics)
     
     @vmap

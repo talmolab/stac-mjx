@@ -12,6 +12,23 @@ import pickle
 import os
 from typing import List, Dict, Tuple, Text
 
+def root_opt_setup(mjx_model, mjx_data, kp_data):
+    q0 = jnp.copy(mjx_data.qpos[:])
+    q_copy = jnp.copy(q0)
+    # Set the center to help with finding the optima (does not need to be exact)
+    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+
+    qs_to_opt = jnp.zeros_like(q0, dtype=bool)
+    qs_to_opt = qs_to_opt.at[:7].set(True)
+    
+    # Limit the optimizer to a subset of qpos
+    bounds = stac_base.get_q_bounds(mjx_model)
+    bounds = (b[qs_to_opt] for b in bounds)
+
+    q0 = q0[qs_to_opt]
+    
+    return q0, q_copy, bounds
+    
 @jax.vmap
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
@@ -23,12 +40,18 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """
     
     print("Root Optimization:")
+    ftol = utils.params["ROOT_FTOL"]
     
-    mjx_data = stac_base.q_phase(
+    q0, q_copy, bounds = root_opt_setup(mjx_model, mjx_data, kp_data)
+    
+    mjx_data = stac_base.q_opt(
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
-        root_only=True,
+        q0,
+        q_copy,
+        bounds=bounds,
+        ftol=ftol,
     )
 
     # First optimize over the trunk
@@ -37,11 +60,17 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         for kp_name in utils.params["kp_names"]
     ]
     trunk_kps = jnp.repeat(jnp.array(trunk_kps), 3)
-    mjx_data = stac_base.q_phase(
+    
+    q0, q_copy, bounds = root_opt_setup(mjx_model, mjx_data, kp_data)
+    
+    mjx_data = stac_base.q_opt(
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
-        root_only=True,
+        q0,
+        q_copy,
+        bounds=bounds,
+        ftol=ftol,
         kps_to_opt=trunk_kps,
     )
     
@@ -67,6 +96,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
         maxiter=maxiter,
     )
 
+
 @jax.vmap
 def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     """Perform q_phase over the entire clip.
@@ -84,30 +114,62 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     x = jnp.array([])
     walker_body_sites = jnp.array([])
     
+    parts = utils.params["indiv_parts"]
+
     # Iterate through all of the frames in the clip
     frames = jnp.arange(utils.params["n_frames"])
     
+    ftol = utils.params["FTOL"]
+    part_ftol = utils.params["LIMB_FTOL"]
+    
+    bounds = stac_base.get_q_bounds(mjx_model)
+    
+    # Get bounds and loss functions for part optimization
+    parts_bounds = [(b[part] for b in bounds) for part in parts]
+    part_opt_loss_fs = [jit(partial(stac_base.q_loss, qs_to_opt=part)) for part in parts]
+    
     print("Pose Optimization:")
+    
     @jit
-    def jit_f(mjx_data, kp_data, n_frame):
-        mjx_data = stac_base.q_phase(
+    def f(mjx_data, kp_data, n_frame, bounds, parts_bounds, part_opt_loss_fs, parts):
+        q0 = jnp.copy(mjx_data.qpos[:])
+        q_copy = jnp.copy(q0)
+        
+        # Get initial parameters for part optimization
+        part_q0s = [q0[part] for part in parts] 
+        
+        mjx_data = stac_base.q_opt(
             mjx_model, 
             mjx_data,
             kp_data[n_frame, :],
+            q0,
+            q_copy,
+            bounds=bounds,
+            ftol=ftol,
         )
 
-        # Next optimize over parts individually to improve time and accur.
-        # TODO: can we move the loop back in here? maybe not bc the partial funcs
-        # mjx_data = stac_base.q_phase(mjx_model, 
-        #         mjx_data,
-        #         kp_data[n_frame, :],
-        #         parts_opt = True)
+        for loss_fn in part_opt_loss_fs:
+            mjx_data = stac_base.q_opt(
+                mjx_model, 
+                mjx_data,
+                kp_data[frame, :],
+                q0,
+                q_copy,
+                loss_fn=loss_fn,
+                bounds=bounds,
+                ftol=part_ftol,
+            )
         
         return mjx_data
     
-    # TODO: can we make this faster?
     for n_frame in frames:
-        mjx_data = jit_f(mjx_data, kp_data, n_frame)
+        mjx_data = f(mjx_data, 
+                         kp_data, 
+                         n_frame, 
+                         bounds, 
+                         parts_bounds, 
+                         part_opt_loss_fs, 
+                         parts)
         q = jnp.append(q, mjx_data.qpos)
         x = jnp.append(x, mjx_data.xpos)
         walker_body_sites = jnp.append(walker_body_sites,

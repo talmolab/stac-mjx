@@ -62,8 +62,8 @@ def q_loss(
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
+    q_copy: jnp.ndarray,
     qs_to_opt: jnp.ndarray = None,
-    q_copy: jnp.ndarray = None,
     kps_to_opt: jnp.ndarray = None,
 ) -> float:
     """Compute the marker loss for q_phase optimization.
@@ -83,11 +83,11 @@ def q_loss(
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     
     # TODO: reimplement so qs_to_opt plays nice with dynamic arrays (dont index)
-    # if qs_to_opt is not None:
-    #     q_copy = q_copy.at[qs_to_opt].set(q)
-    #     q = jnp.copy(q_copy)
+    if qs_to_opt is not None:
+        q_copy = q_copy.at[qs_to_opt].set(q)
+        q = jnp.copy(q_copy)
 
-    mjx_data, markers = q_joints_to_markers(q*qs_to_opt, mjx_model, mjx_data)
+    mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
     residual = kp_data - markers
     
     # Set irrelevant body sites to 0
@@ -115,124 +115,64 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.n
 
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
-def q_phase(
+def get_q_bounds(mjx_model):
+    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
+    lb = jnp.minimum(lb, 0.0)
+    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
+
+    return (lb, ub)
+
+def q_opt(
     mjx_model,
     mjx_data,
     marker_ref_arr: jnp.ndarray,
-    # qs_to_opt: jnp.ndarray = None,
-    kps_to_opt: jnp.ndarray = None,
-    root_only: bool = False,
-    trunk_only: bool = False,
-    parts_opt: bool = False,
+    q0,
+    q_copy: jnp.ndarray,
+    loss_fn = q_loss,
+    bounds = None,
     ftol: float = None,
+    kps_to_opt: jnp.ndarray = None,
 ):
     """Update q_pose using estimated marker parameters.
-
-    Args:
-        env (TYPE): env of current environment.
-        marker_ref_arr (jnp.ndarray): Keypoint data reference
-        sites (jnp.ndarray): sites of keypoints at frame_index
-        params (Dict): Animal parameters dictionary
-        qs_to_opt (jnp.ndarray, optional): Description
-        kps_to_opt (jnp.ndarray, optional): Description
-        root_only (bool, optional): Description
-        trunk_only (bool, optional): Description
-        temporal_regularization (bool, optional): If True, regularize arm joints over time.
-        ftol (float, optional): Description
-        qs_to_opt (None, optional Binary vector of qs to optimize.
-        kps_to_opt (None, optional Logical vector of keypoints to use in q loss function.
-        root_only (bool, optional If True, only optimize the root.
-        trunk_only (bool, optional If True, only optimize the trunk.
     """
-    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), utils.params['mj_model'].jnt_range[1:][:, 0]])
-    lb = jnp.minimum(lb, 0.0)
-    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-    # Define initial position of the optimization
-
-    q0 = jnp.copy(mjx_data.qpos[:])
-    q_copy = jnp.copy(q0)
-    # Set the center to help with finding the optima (does not need to be exact)
-    if root_only or trunk_only:
-        q0 = q0.at[:3].set(marker_ref_arr[12:15])
-            
-    def opt(mjx_data, qs_to_opt=None, lb=lb, ub=ub, q0=q0, q_copy=q_copy, ftol=ftol):
-        # TODO: convert these to cond? is cond even needed
-        if root_only:
-            qs_to_opt = jnp.zeros_like(q0, dtype=bool)
-            qs_to_opt = qs_to_opt.at[:7].set(True)
-
-        # Limit the optimizer to a subset of qpos
-        if qs_to_opt is not None:
-            q0 = q0[qs_to_opt]
-            lb = lb[qs_to_opt]
-            ub = ub[qs_to_opt]
-
-        # Use different tolerances for root vs normal optimization
-        if ftol is None:
-            if root_only:
-                ftol = utils.params["ROOT_FTOL"]
-            elif qs_to_opt is not None:
-                ftol = utils.params["LIMB_FTOL"]
-            else:
-                ftol = utils.params["FTOL"]
- 
-        print("begin optimizing:")
-        try:
-            loss_fn = jit(partial(q_loss,
-                                mjx_model=mjx_model,
-                                mjx_data=mjx_data,
-                                kp_data=marker_ref_arr.T,
-                                qs_to_opt=qs_to_opt,
-                                q_copy=q_copy,
-                                kps_to_opt=kps_to_opt,
-                                ))
-                                
-            # Create the optimizer (for LM, residual_fun instead)
-            solver = LBFGSB(fun=loss_fn, 
-                            tol=ftol,
-                            maxiter=25,
-                            jit=True,
-                            verbose=False
-                            )
-            # Define the bounds
-            bounds=(lb, ub)
-            res = solver.run(q0, bounds=bounds)
-            q_opt_param = res.params
-
-            # Set pose to the optimized q and step forward.
-            if qs_to_opt is None:
-                mjx_data = mjx_data.replace(qpos=q_opt_param)
-            else:
-                q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
-                mjx_data = mjx_data.replace(qpos=q_copy)
-
-            mjx_data = smooth.kinematics(mjx_model, mjx_data)
-
-        except ValueError as ex:
-            print("Warning: optimization failed.", flush=True)
-            print(ex, flush=True)
-            q_copy[jnp.isnan(q_copy)] = 0.0
-            mjx_data.replace(qpos=q_copy) 
-            mjx_data = smooth.kinematics(mjx_model, mjx_data)
-    
-        print("q_phase complete")
-        return mjx_data
+    print("begin optimizing:")
+    try:
+        solver = LBFGSB(fun=loss_fn, 
+                        tol=ftol,
+                        maxiter=25,
+                        jit=True,
+                        verbose=False
+                        )
+        # Define the bounds
+        bounds = get_q_bounds(mjx_model)
         
-    if parts_opt:
-        # This scan doesnt work because part becomes a tracer and cant be used for boolean masking
-        # def part_f(mjx_data, part):
-        #     mjx_data = partial(opt, qs_to_opt=part)(mjx_data)
-        #     return mjx_data, None
+        res = solver.run(q0, bounds, mjx_model=mjx_model, 
+                                        mjx_data=mjx_data, 
+                                        kp_data=marker_ref_arr.T,
+                                        q_copy=q_copy, 
+                                        kps_to_opt=kps_to_opt)
+        q_opt_param = res.params
+
+        # Set pose to the optimized q and step forward.
+        if qs_to_opt is None:
+            mjx_data = mjx_data.replace(qpos=q_opt_param)
+        else:
+            q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
+            mjx_data = mjx_data.replace(qpos=q_copy)
+
+        mjx_data = smooth.kinematics(mjx_model, mjx_data)
+
+    except ValueError as ex:
+        print("Warning: optimization failed.", flush=True)
+        print(ex, flush=True)
+        q_copy[jnp.isnan(q_copy)] = 0.0
+        mjx_data.replace(qpos=q_copy) 
+        mjx_data = smooth.kinematics(mjx_model, mjx_data)
+
+    print("q_phase complete")
         
-        part_opt_f = [partial(opt, qs_to_opt=part) for part in utils.params["indiv_parts"]]
-        for f in part_opt_f:
-            mjx_data = f(mjx_data)
-        # _, mjx_data = jax.lax.scan(part_f, mjx_data, utils.params["indiv_parts"])
-        
-        return mjx_data
-    else:
-        return opt(mjx_data)
-    
+    return mjx_data
+
 def m_loss(
     offset: jnp.ndarray,
     mjx_model,
