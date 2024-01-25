@@ -11,7 +11,8 @@ import numpy as np
 import functools
 from compute_stac import *
 import stac_base
-
+import pickle
+import os
 import time
 
 """
@@ -103,15 +104,15 @@ def prep_kp_data(kp_data, stac_keypoint_order):
     return kp_data 
 
 def chunk_kp_data(kp_data):
-    N_FRAMES_PER_CLIP = 150
-    n_frames = kp_data.shape[0]
+    n_frames = utils.params['N_FRAMES_PER_CLIP']
+    total_frames = kp_data.shape[0]
 
-    n_chunks = int((n_frames / N_FRAMES_PER_CLIP) // utils.params['N_GPUS'] * utils.params['N_GPUS'])
+    n_chunks = int((total_frames / n_frames) // utils.params['N_GPUS'] * utils.params['N_GPUS'])
     
-    kp_data = kp_data[:int(n_chunks) * N_FRAMES_PER_CLIP]
+    kp_data = kp_data[:int(n_chunks) * n_frames]
     
     # Reshape the array to create chunks
-    kp_data = kp_data.reshape((n_chunks, N_FRAMES_PER_CLIP) + kp_data.shape[1:])
+    kp_data = kp_data.reshape((n_chunks, n_frames) + kp_data.shape[1:])
     
     return kp_data, n_chunks
 
@@ -157,23 +158,22 @@ def fit(root, kp_data):
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = stac_base.kinematics(mjx_model, mjx_data)
-        mjx_data = stac_base.com_pos(mjx_model, mjx_data)
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
         return mjx_model, mjx_data, offsets
 
-    utils.params['n_frames'] = kp_data.shape[0]
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     # mjx_model, mjx_data, offsets = jax.vmap(lambda x: mjx_setup(x, mj_model))(kp_data)
     mjx_model, mjx_data, offsets = mjx_setup(kp_data)
     # for n_site, p in enumerate(physics.bind(body_sites).pos):
     #     body_sites[n_site].pos = p
     
-    # mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     for n_iter in range(utils.params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
         mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
         print("starting offset optimization")
-        offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
+        mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
@@ -205,19 +205,18 @@ def test_opt(root, kp_data):
         # do initial get_site stuff inside mjx_setup
         
         # Get and set the offsets of the markers
-        offsets = np.copy(stac_base.get_site_pos(mjx_model))
+        offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
         offsets *= utils.params['SCALE_FACTOR']
         
         # print(mjx_model.site_pos, mjx_model.site_pos.shape)
         mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
-        mjx_data = stac_base.kinematics(mjx_model, mjx_data)
-        mjx_data = stac_base.com_pos(mjx_model, mjx_data)
-        return mjx_model, mjx_data, offsets
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
-    # TODO: move this to a setup function
-    utils.params['n_frames'] = kp_data.shape[1]
+        return mjx_model, mjx_data, offsets
+    
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     mjx_model, mjx_data, offsets = mjx_setup(kp_data)
     # This used to set the walker body sites based on the body site positions in 'physics'. 
@@ -229,10 +228,30 @@ def test_opt(root, kp_data):
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
     
+    # Saving the post_opt data in a pickle
+    data = {
+        "kp_data": kp_data,
+        "mjx_model": mjx_model,
+        "mjx_data": mjx_data,
+        "q": q,
+        "offsets": offsets,
+        "walker_body_sites": walker_body_sites,
+        "x": x,
+        "physics": physics,
+        "site_index_map": utils.params["site_index_map"],
+    }
+    save_path = "pose_opt_qs.p"
+    if os.path.dirname(save_path) != "":
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    with open(save_path, "wb") as output_file:
+        pickle.dump(data, output_file, protocol=2)
+        
+    mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
     data = package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data
     )
     return data
+    # return None
 def transform(kp_data, offset_path):
     """Register skeleton to keypoint data
 
@@ -292,8 +311,6 @@ def end_to_end():
     
     # argsort returns the indices that would sort the array
     stac_keypoint_order = np.argsort(kp_names)
-
-    # TODO: load kp_data
 
     # kp_data
     # TODO: store kp_data used in fit in another variable (small slice of kpdata)

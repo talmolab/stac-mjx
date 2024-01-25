@@ -14,8 +14,8 @@ start_time = time.time()
 
 # %%
 # If youre machine is low on ram:
-# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.5'
-
+os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6'
+# os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"
 # %%
 def save(fit_data, save_path):
     """Save data.
@@ -68,14 +68,44 @@ kp_data = utils.loadmat(data_path)["pred"][:] / 1000
 kp_data = prep_kp_data(kp_data, stac_keypoint_order)
 # chunk it to pass int vmapped functions
 kp_data, n_envs = chunk_kp_data(kp_data)
-
 # %%
 fit_kp_data = kp_data[:100]
 fit_kp_data.shape
 
 # %%
 # fit
-fit_data = test_opt(root, fit_kp_data)
+# fit_data = test_opt(root, fit_kp_data)
+post_pose_opt_path = "pose_opt_qs.p"
+with open(post_pose_opt_path, "rb") as file:
+    in_dict = pickle.load(file)
+
+mjx_model = in_dict["mjx_model"]
+mjx_data = in_dict["mjx_data"]
+kp_data = in_dict["kp_data"]
+q = in_dict["q"]
+physics = in_dict["physics"]
+x = in_dict["x"]
+walker_body_sites = in_dict["walker_body_sites"]
+utils.params["site_index_map"] = in_dict["site_index_map"]
+
+@jax.vmap
+def get_offsets(mjx_model):
+    offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+    offsets *= utils.params['SCALE_FACTOR']
+    return offsets
+offsets = get_offsets(mjx_model)
+
+mjx_model, mjx_data = offset_optimization(
+    mjx_model, 
+    mjx_data, 
+    kp_data, 
+    offsets, 
+    q
+    )
+
+fit_data = package_data(
+        mjx_model, physics, q, x, walker_body_sites, kp_data
+    )
 save(fit_data, offset_path)
 
 print(f"Job complete in {time.time()-start_time}")

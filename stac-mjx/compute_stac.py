@@ -12,15 +12,23 @@ import pickle
 import os
 from typing import List, Dict, Tuple, Text
 from jax.tree_util import Partial
+import time
 
-def replace_qs(mjx_model, mjx_data, q_copy, q_opt_param, qs_to_opt=None):
-    if qs_to_opt is None:
-        mjx_data = mjx_data.replace(qpos=q_opt_param)
+def replace_qs(mjx_model, mjx_data, q_opt_param):
+    # if qs_to_opt is None:
+    #     mjx_data = mjx_data.replace(qpos=q_opt_param)
+    # else:
+    #     q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
+    #     mjx_data = mjx_data.replace(qpos=q_copy)
+
+    if q_opt_param is None:
+        print("optimization failed, continuing")
+
     else:
-        q_copy = q_copy.at[qs_to_opt].set(q_opt_param)
-        mjx_data = mjx_data.replace(qpos=q_copy)
-
-    return stac_base.kinematics(mjx_model, mjx_data) 
+        mjx_data = mjx_data.replace(qpos=q_opt_param)
+        mjx_data = stac_base.kinematics(mjx_model, mjx_data) 
+    
+    return mjx_data
 
 @jax.vmap
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
@@ -31,61 +39,60 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    
+    # import time
+    s = time.time()
     print("Root Optimization:")
     ftol = utils.params["ROOT_FTOL"]
     
     q0 = jnp.copy(mjx_data.qpos[:])
-    q_copy = jnp.copy(q0)
-    
     # Set the center to help with finding the optima (does not need to be exact)
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     
-    # Limit the optimizer to a subset of qpos
-    bounds = stac_base.get_q_bounds(mjx_model)
-    bounds = tuple([b[qs_to_opt] for b in bounds])
-    
-    q0 = q0[qs_to_opt]
-    
-    loss_fn = Partial(stac_base.q_loss, qs_to_opt=qs_to_opt)
-    
+    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
+
+    j = time.time()
     mjx_data, q_opt_param = stac_base.q_opt(
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
         q0,
-        q_copy,
-        loss_fn=loss_fn,
-        bounds=bounds,
-        ftol=ftol,
+        qs_to_opt,
+        kps_to_opt,
+        ftol,
     )
-
-    mjx_data = replace_qs(mjx_model, mjx_data, q_copy, q_opt_param, qs_to_opt=qs_to_opt)
+    print(f"q_opt 1 finished in {time.time()-j}")
+    r = time.time()
+    mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+    print(f"Replace 1 finished in {time.time()-r}")
     
-    # First optimize over the trunk
-    trunk_kps = [
-        any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
-        for kp_name in utils.params["kp_names"]
-    ]
-    trunk_kps = jnp.repeat(jnp.array(trunk_kps), 3)
+    kps_to_opt = jnp.repeat(
+            jnp.array([
+                any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
+                for kp_name in utils.params["kp_names"]
+            ]), 3)
     
-    # q0, q_copy, bounds = root_opt_setup(mjx_model, mjx_data, kp_data, frame)
-    
-    mjx_data = stac_base.q_opt(
+    # Trunk only optimization
+    j = time.time()
+    print("starting q_opt 2")
+    mjx_data, q_opt_param = stac_base.q_opt(
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
         q0,
-        q_copy,
-        loss_fn=loss_fn,
-        bounds=bounds,
-        ftol=ftol,
-        kps_to_opt=trunk_kps,
+        qs_to_opt,
+        kps_to_opt,
+        ftol,
+
     )
-    
-    mjx_data = replace_qs(mjx_model, mjx_data, q_copy, q_opt_param, qs_to_opt=qs_to_opt)
+    # 
+    print(f"q_opt 2 finished in {time.time()-j}")
+    r = time.time()
+    mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+    print(f"Replace 2 finished in {time.time()-r}")
+    # 
+    print(f"Root optimization finished in {time.time()-s}")
 
     return mjx_data
 
@@ -93,10 +100,16 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 @jax.vmap
 def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int = 100):
     key = jax.random.PRNGKey(0)
-    time_indices = jax.random.randint(
-        key, shape=[utils.params["N_SAMPLE_FRAMES"]], minval=0, maxval=utils.params["n_frames"], 
-    )
+    # N_SAMPLE_FRAMES has to be less than N_FRAMES_PER_CLIP
+    N_FRAMES_PER_CLIP = utils.params["N_FRAMES_PER_CLIP"]  # Total number of frames per clip
+    N_SAMPLE_FRAMES = utils.params["N_SAMPLE_FRAMES"]      # Number of frames to sample
+
+    # shuffle frames to get sample frames
+    all_indices = jnp.arange(N_FRAMES_PER_CLIP)
+    shuffled_indices = jax.random.permutation(key, all_indices, independent=True)
+    time_indices = shuffled_indices[:N_SAMPLE_FRAMES]
     
+    s = time.time()
     print("Begining offset optimization:")
 
     mjx_model, mjx_data = stac_base.m_phase(
@@ -109,6 +122,10 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
         reg_coef=utils.params["M_REG_COEF"],
         maxiter=maxiter,
     )
+    
+    print(f"offset optimization finished in {time.time()-s}")
+
+    mjx_model, mjx_data
 
 
 @jax.vmap
@@ -124,79 +141,69 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     Returns:
         Tuple: qpos, walker body sites, xpos
     """
-    q = jnp.array([])
-    x = jnp.array([])
-    walker_body_sites = jnp.array([])
+    s = time.time()
+    q = []
+    x = []
+    walker_body_sites = []
     
     parts = utils.params["indiv_parts"]
 
     # Iterate through all of the frames in the clip
-    frames = jnp.arange(utils.params["n_frames"])
+    frames = jnp.arange(utils.params["N_FRAMES_PER_CLIP"])
     
     ftol = utils.params["FTOL"]
     part_ftol = utils.params["LIMB_FTOL"]
-    
-    bounds = stac_base.get_q_bounds(mjx_model)
-    
-    # Get bounds and loss functions for part optimization
-    parts_bounds = [(b[part] for b in bounds) for part in parts]
-    part_opt_loss_fs = [jit(Partial(stac_base.q_loss, qs_to_opt=part)) for part in parts]
-    
+    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
+    qs_to_opt = jnp.ones(mjx_model.nq, dtype=bool)
     print("Pose Optimization:")
     
-    # @jit
-    def f(mjx_data, kp_data, n_frame, bounds, parts_bounds, part_opt_loss_fs, parts):
+    def f(mjx_data, kp_data, n_frame, parts):
         q0 = jnp.copy(mjx_data.qpos[:])
-        q_copy = jnp.copy(q0)
         
         # Get initial parameters for part optimization
-        part_q0s = [q0[part] for part in parts] 
+        # part_q0s = [q0[part] for part in parts] 
         
         mjx_data, q_opt_param = stac_base.q_opt(
             mjx_model, 
             mjx_data,
             kp_data[n_frame, :],
             q0,
-            q_copy,
-            bounds=bounds,
-            ftol=ftol,
+            qs_to_opt,
+            kps_to_opt,
+            ftol
         )
 
-        mjx_data = replace_qs(mjx_model, mjx_data, q_copy, q_opt_param)
-
-        for part_bounds, loss_fn, part in zip(parts_bounds, part_opt_loss_fs, parts):
-            mjx_data = stac_base.q_opt(
+        mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+        
+        for part in parts:
+            mjx_data, q_opt_param = stac_base.q_opt(
                 mjx_model, 
                 mjx_data,
                 kp_data[n_frame, :],
                 q0,
-                q_copy,
-                loss_fn=loss_fn,
-                bounds=part_bounds,
-                ftol=part_ftol,
+                part,
+                kps_to_opt,
+                part_ftol,
             )
             
-            mjx_data = replace_qs(mjx_model, mjx_data, q_copy, q_opt_param, qs_to_opt=part)
+            mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
         
         return mjx_data
     
+    # Optimize over each frame, storing all the results
     for n_frame in frames:
-        mjx_data = f(mjx_data, 
-                         kp_data, 
-                         n_frame, 
-                         bounds, 
-                         parts_bounds, 
-                         part_opt_loss_fs, 
-                         parts)
-        q = jnp.append(q, mjx_data.qpos)
-        x = jnp.append(x, mjx_data.xpos)
-        walker_body_sites = jnp.append(walker_body_sites,
-            stac_base.get_site_xpos(mjx_data)
-        )
-        print(f"Frame {n_frame} done")
-    
-    print("Pose Optimization done")
-    return mjx_data, q, walker_body_sites, x
+        loop_start = time.time()
+        
+        mjx_data = f(mjx_data, kp_data, n_frame, parts)
+        
+        q.append(mjx_data.qpos[:])
+        x.append(mjx_data.xpos[:])
+        walker_body_sites.append(stac_base.get_site_xpos(mjx_data))
+        
+        print(f"Frame {n_frame} done in {time.time()-loop_start}")
+        
+    print(f"Pose Optimization done in {time.time()-s}")
+    return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x)
 
 def initialize_part_names(physics):
     # Get the ids of the limbs, accounting for quaternion and pos

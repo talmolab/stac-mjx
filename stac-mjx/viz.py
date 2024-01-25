@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 import re
 import scipy.io as spio
-import stac.rodent_environments as rodent_environments
+import stac.dmcontrol_env.rodent_environments as rodent_environments
 import stac.util as util
 import yaml
 from dm_control.locomotion.walkers import rescale
@@ -66,7 +66,8 @@ def setup_visualization(
         render_video (bool, optional): If True, make a video and put it in clips.
     """
     params = util.load_params(param_path)
-    params["n_frames"] = n_frames - 1
+    # TODO params as global
+    utils.params["N_FRAMES_PER_CLIP"] = n_frames - 1
 
     if segmented:
         alpha = 0.0

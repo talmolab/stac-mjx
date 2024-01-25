@@ -4,8 +4,8 @@ DIFF_STEP: 3.0e-08
 
 # Tolerance for the optimizations of the full model, limb, and root. 
 FTOL: 0.001
-LIMB_FTOL: 1.0e-05
-ROOT_FTOL: 1.0e-03
+LIMB_FTOL: 1.0e-02
+ROOT_FTOL: 1.0e-02
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -149,7 +149,7 @@ SITES_TO_REGULARIZE:
 - SpineF
 - SpineL
 - SpineM
-N_SAMPLE_FRAMES: 50
+N_SAMPLE_FRAMES: 5
 
 # Time of each frame in seconds.
 TIME_BINS: 0.02
@@ -170,3 +170,5 @@ N_ITERS: 3
 
 # Number of GPUs to be used
 N_GPUS: 1
+
+N_FRAMES_PER_CLIP: 10
