@@ -279,15 +279,14 @@ def m_phase(
     res = solver.run(offset0)
     offset_opt_param = res.params
     # Set pose to the optimized m and step forward.
-    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param.x, (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = kinematics(mjx_model, mjx_data)
     
     # TODO: needed??
     # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
     #     sites[n_site].pos = p
-        
-    return mjx_data, mjx_model
+    return mjx_model, mjx_data
 
 @jit
 def kinematics(mjx_model, mjx_data):

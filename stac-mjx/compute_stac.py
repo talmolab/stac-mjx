@@ -125,7 +125,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
     
     print(f"offset optimization finished in {time.time()-s}")
 
-    mjx_model, mjx_data
+    return mjx_model, mjx_data
 
 
 @jax.vmap
