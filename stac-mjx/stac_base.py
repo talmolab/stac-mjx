@@ -159,6 +159,7 @@ def q_opt(
 
     return mjx_data, None
 
+@jit 
 def m_loss(
     offset: jnp.ndarray,
     mjx_model,
@@ -260,23 +261,23 @@ def m_phase(
     # Optimize dm
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
-    loss_fn = partial(m_loss,
-                            mjx_model=mjx_model,
-                            mjx_data=mjx_data,
-                            kp_data=keypoints,
-                            q=q,
-                            initial_offsets=initial_offsets,
-                            is_regularized=is_regularized,
-                            reg_coef=reg_coef)
-                            
-        # Create the optimizer (for LM, residual_fun instead)
+    loss_fn = m_loss
+
+    # Create the optimizer (for LM, residual_fun instead)
+    # TODO: move solver to separate jitted function
     solver = LBFGS(fun=loss_fn, 
                     tol=utils.params["ROOT_FTOL"],
                     jit=True,
                     maxiter=maxiter,
                     verbose=False
                     )
-    res = solver.run(offset0)
+    res = solver.run(offset0, mjx_model=mjx_model,
+                            mjx_data=mjx_data,
+                            kp_data=keypoints,
+                            q=q,
+                            initial_offsets=initial_offsets,
+                            is_regularized=is_regularized,
+                            reg_coef=reg_coef)
     offset_opt_param = res.params
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 

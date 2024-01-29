@@ -149,7 +149,7 @@ SITES_TO_REGULARIZE:
 - SpineF
 - SpineL
 - SpineM
-N_SAMPLE_FRAMES: 5
+N_SAMPLE_FRAMES: 50
 
 # Time of each frame in seconds.
 TIME_BINS: 0.02
@@ -171,4 +171,4 @@ N_ITERS: 3
 # Number of GPUs to be used
 N_GPUS: 1
 
-N_FRAMES_PER_CLIP: 10
+N_FRAMES_PER_CLIP: 360 # 1000 environments

@@ -1,4 +1,3 @@
-# %%
 import utils
 import mujoco
 import os
@@ -9,14 +8,14 @@ import numpy as np
 import jax
 from jax import numpy as jnp
 import time
+from controller import *
 
 start_time = time.time()
 
-# %%
-# If youre machine is low on ram:
+# If your machine is low on ram:
 # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6'
 # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"
-# %%
+
 def save(fit_data, save_path):
     """Save data.
 
@@ -32,10 +31,6 @@ def save(fit_data, save_path):
     elif file_extension == ".mat":
         savemat(save_path, fit_data)
 
-# %%
-from controller import *
-
-# %%
 # relative pathing no working in notebook rn
 utils.init_params("././params/params.yaml")
 ratpath = "././models/rodent.xml"
@@ -47,8 +42,8 @@ model.opt.iterations = 1
 model.opt.ls_iterations = 1
 
 # Need to download this data file and provide the path
-# data_path = "/home/charles/Desktop/save_data_AVG.mat"
-offset_path = "offset.p"
+data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" # "/home/charles/Desktop/save_data_AVG.mat"
+offset_path = "offset_1000_360_3.p"
 
 root = mjcf.from_path(ratpath)
 
@@ -59,49 +54,47 @@ utils.params["kp_names"] = kp_names
 # argsort returns the indices that would sort the array
 stac_keypoint_order = np.argsort(kp_names)
 # Load kp_data
-# kp_data = utils.loadmat(data_path)["pred"][:] / 1000
+kp_data = utils.loadmat(data_path)["pred"][:] / 1000
 
-
-# kp_data = prep_kp_data(kp_data, stac_keypoint_order)
-# kp_data, n_envs = chunk_kp_data(kp_data)
-# fit_kp_data = kp_data[:100]
+kp_data = prep_kp_data(kp_data, stac_keypoint_order)
+kp_data, n_envs = chunk_kp_data(kp_data)
+print(f"total envs: {n_envs}")
+# kp_data = kp_data[:100]
 # fit_kp_data.shape
 
-# %%
-# fit
-# fit_data = test_opt(root, fit_kp_data)
-post_pose_opt_path = "pose_opt_qs.p"
-with open(post_pose_opt_path, "rb") as file:
-    in_dict = pickle.load(file)
+fit_data = test_opt(root, kp_data)
+# post_pose_opt_path = "pose_opt_qs.p"
+# with open(post_pose_opt_path, "rb") as file:
+#     in_dict = pickle.load(file)
 
-mjx_model = in_dict["mjx_model"]
-mjx_data = in_dict["mjx_data"]
-kp_data = in_dict["kp_data"]
-q = in_dict["q"]
-physics = in_dict["physics"]
-x = in_dict["x"]
-walker_body_sites = in_dict["walker_body_sites"]
-utils.params["site_index_map"] = in_dict["site_index_map"]
+# mjx_model = in_dict["mjx_model"]
+# mjx_data = in_dict["mjx_data"]
+# kp_data = in_dict["kp_data"]
+# q = in_dict["q"]
+# physics = in_dict["physics"]
+# x = in_dict["x"]
+# walker_body_sites = in_dict["walker_body_sites"]
+# utils.params["site_index_map"] = in_dict["site_index_map"]
 
-@jax.vmap
-def get_offsets(mjx_model):
-    offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
-    offsets *= utils.params['SCALE_FACTOR']
-    return offsets
-offsets = get_offsets(mjx_model)
+# @jax.vmap
+# def get_offsets(mjx_model):
+#     offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+#     offsets *= utils.params['SCALE_FACTOR']
+#     return offsets
+# offsets = get_offsets(mjx_model)
 
-mjx_model, mjx_data = offset_optimization(
-    mjx_model, 
-    mjx_data, 
-    kp_data, 
-    offsets, 
-    q
-    )
+# mjx_model, mjx_data = offset_optimization(
+#     mjx_model, 
+#     mjx_data, 
+#     kp_data, 
+#     offsets, 
+#     q
+#     )
 
-print(f"Now packaging data and saving to {offset_path}")
-fit_data = package_data(
-        mjx_model, physics, q, x, walker_body_sites, kp_data
-    )
+# fit_data = package_data(
+#         mjx_model, physics, q, x, walker_body_sites, kp_data
+#     )
+print(f"saving data to {offset_path}")
 save(fit_data, offset_path)
 
 print(f"Job complete in {time.time()-start_time}")

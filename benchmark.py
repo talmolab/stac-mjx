@@ -180,7 +180,7 @@ def single_step(state, ctrl):
     return state
 
 n_envs_small = 1
-n_envs_large = 256
+n_envs_large = 512
 key = random.PRNGKey(0)
 small_ctrl = random.uniform(key, shape=(n_envs_small, mjx_model.nu))
 large_ctrl = random.uniform(key, shape=(n_envs_large, mjx_model.nu))
@@ -197,22 +197,29 @@ reset_fn = jax.jit(jax.vmap(reset))
 single_batch_step = jax.vmap(single_step)
 # returns the state object with a batch axis for each attribute in data (batch_size=n_envs_large)
 env_state = reset_fn(blah)
-print(env_state.data.qpos.shape)
 
-print("Running single step scan")
-
-jit_single_batch_step = jax.jit(single_batch_step)
-start_time = time.time()
 steps = 100
 
+jit_single_batch_step = jax.jit(single_batch_step)
 def f(state ,_):
     return (jit_single_batch_step(state, large_ctrl), None)
-env_state, times = jax.lax.scan(f, env_state, (), length=steps)
-    
+
+jit_f = jit(f)
+
+print("Running single step scan #1")
+start_time = time.time()
+env_state, times = jax.lax.scan(jit_f, env_state, (), length=steps)
 print(f"{steps * n_envs_large} steps completed in {time.time()-start_time} seconds")
 
-print("Running single step for loop")
+print("Running single step scan #2")
 
+start_time = time.time()
+env_state, times = jax.lax.scan(jit_f, env_state, (), length=steps)
+print(f"{steps * n_envs_large} steps completed in {time.time()-start_time} seconds")
+
+jit_single_batch_step = jax.jit(single_batch_step)
+
+print("Running single step for loop #1")
 start_time = time.time()
 
 jit_single_batch_step(env_state, large_ctrl)
@@ -223,4 +230,17 @@ for _ in range(steps):
     print(f"{time.time()-prev}")
     prev = time.time()
     
-print(f"{steps * n_envs_large} steps completed in {time.time()-start_time} seconds")
+print(f"{steps * n_envs_large + steps} steps completed in {time.time()-start_time} seconds")
+
+print("Running single step for loop #2")
+start_time = time.time()
+
+jit_single_batch_step(env_state, large_ctrl)
+prev = time.time()
+print(f"initial execution time: {prev - start_time}")
+for _ in range(steps):
+    env_state = jit_single_batch_step(env_state, large_ctrl)
+    print(f"{time.time()-prev}")
+    prev = time.time()
+    
+print(f"{steps * n_envs_large + steps} steps completed in {time.time()-start_time} seconds")

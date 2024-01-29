@@ -224,29 +224,41 @@ def test_opt(root, kp_data):
     # for n_site, p in enumerate(physics.bind(body_sites).pos):
     #     body_sites[n_site].pos = p
     
-    # Optimize
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    for n_iter in range(utils.params['N_ITERS']):
+        print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
+        mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+        print("starting offset optimization")
+        mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
+
+    # Optimize the pose for the whole sequence
+    print("Final pose optimization")
     mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
     
+    # Optimize
+    # mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    # mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+    
     # Saving the post_opt data in a pickle
-    data = {
-        "kp_data": kp_data,
-        "mjx_model": mjx_model,
-        "mjx_data": mjx_data,
-        "q": q,
-        "offsets": offsets,
-        "walker_body_sites": walker_body_sites,
-        "x": x,
-        "physics": physics,
-        "site_index_map": utils.params["site_index_map"],
-    }
-    save_path = "pose_opt_qs.p"
-    if os.path.dirname(save_path) != "":
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    with open(save_path, "wb") as output_file:
-        pickle.dump(data, output_file, protocol=2)
+    # data = {
+    #     "kp_data": kp_data,
+    #     "mjx_model": mjx_model,
+    #     "mjx_data": mjx_data,
+    #     "q": q,
+    #     "offsets": offsets,
+    #     "walker_body_sites": walker_body_sites,
+    #     "x": x,
+    #     "physics": physics,
+    #     "site_index_map": utils.params["site_index_map"],
+    # }
+    # save_path = "pose_opt_qs.p"
+    # if os.path.dirname(save_path) != "":
+    #     os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    # with open(save_path, "wb") as output_file:
+    #     pickle.dump(data, output_file, protocol=2)
         
-    mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
+    # mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
+    
     data = package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data
     )

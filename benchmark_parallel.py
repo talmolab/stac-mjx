@@ -15,6 +15,7 @@ from flax import struct
 import logging
 import os
 from jax.tree_util import tree_map
+os.environ["XLA_PYTHON_CLIENT_MEM_FRACTION"] = ".90"
 
 num_gpus = jax.local_device_count()
 
@@ -181,7 +182,7 @@ def single_step(state, ctrl):
     state = state.replace(data=data)
     return state
 
-total_envs = 2048
+total_envs = 16384 # 8192 * 2
 n_envs_small = 1
 key = random.PRNGKey(0)
 small_ctrl = random.uniform(key, shape=(n_envs_small, mjx_model.nu))
@@ -205,40 +206,50 @@ single_batch_step = jax.vmap(single_step)
 print("Running single step scan")
 
 jit_single_batch_step = jax.jit(single_batch_step)
-start_time = time.time()
 steps = 100
+
+start_time = time.time()
 
 def take_steps(large_ctrl):
     env_state = reset_fn(per_gpu)
-    def f(state ,_):
-        return (jit_single_batch_step(state, large_ctrl), None)
-    env_state, _ = jax.lax.scan(f, env_state, (), length=steps)
 
-    # d = mujoco.MjData(model)
-    # mjx.device_get_into(d, env_state.data)
-    return 
+    def f(state ,_):
+      return (jit_single_batch_step(state, large_ctrl), None)
+    jit_f = jit(f)
+
+
+    env_state, _ = jax.lax.scan(jit_f, env_state, (), length=steps)
+    # env_state, _ = jax.lax.scan(jit_f, env_state, (), length=steps)
+
+    return env_state
 
 parallel_take_steps = jax.pmap(take_steps)
-parallel_take_steps(large_ctrl_split)
+env_state = parallel_take_steps(large_ctrl_split)
+
+os.system("nvidia-smi")
+# print(times)
 print(f"{steps * total_envs} steps completed in {time.time()-start_time} seconds")
+# print(f"The second {steps * total_envs} steps took {times[2][0] - times[1][0]} seconds")
 
-print("Running single step for loop")
+# print("Running single step for loop")
 
-start_time = time.time()
+# start_time = time.time()
 
-# jit_single_batch_step(env_state, large_ctrl)
-# prev = time.time()
-# print(f"initial execution time: {prev - start_time}")
-def loop_steps(large_ctrl):
-    env_state = reset_fn(per_gpu)
-    for _ in range(steps):
-        env_state = jit_single_batch_step(env_state, large_ctrl)
-        # print(f"{time.time()-prev}")
-        # prev = time.time()
-    # d = mujoco.MjData(model)
-    # mjx.device_get_into(d, env_state.data)
-    return 
+# def loop_steps(large_ctrl):
+#     env_state = reset_fn(per_gpu)
+    
+#     start = time.time()
+#     for _ in range(steps):
+#         env_state = jit_single_batch_step(env_state, large_ctrl)
+#     first = time.time()
+#     for _ in range(steps):
+#         env_state = jit_single_batch_step(env_state, large_ctrl)
+#     second = time.time()
 
-parallel_loop_steps = jax.pmap(loop_steps)
-parallel_loop_steps(large_ctrl_split)
-print(f"{steps * total_envs} steps completed in {time.time()-start_time} seconds")
+#     return [start, first, second]
+
+# parallel_loop_steps = jax.pmap(loop_steps)
+# times = parallel_loop_steps(large_ctrl_split)
+# print(times)
+# print(f"{steps * total_envs * 2} steps completed in {time.time()-start_time} seconds")
+# print(f"The second {steps * total_envs} steps took {times[2][0] - times[1][0]} seconds")
