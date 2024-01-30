@@ -4,12 +4,13 @@ from __future__ import division
 from __future__ import print_function
 from dm_control import composer
 from dm_control.locomotion.arenas import floors
-import stac.walkers as walkers
-import stac.tasks as tasks
-import stac.arenas as arenas
+import walkers
+import tasks
+import arenas
 from typing import List, Dict
 import numpy as np
 import collections
+import utils 
 
 MM_TO_METER = 1000
 SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
@@ -17,7 +18,6 @@ SkyBox = collections.namedtuple("SkyBox", ("file", "gridsize", "gridlayout"))
 
 def rodent_mocap(
     kp_data,
-    params: Dict,
     random_state: int = None,
     hfield_image: np.ndarray = None,
     pedestal_center: List = None,
@@ -31,7 +31,6 @@ def rodent_mocap(
 
     Args:
         kp_data (TYPE): Reference keypoint data
-        params (Dict): Stac parameters dict
         random_state (int, optional): Random seed for arena initialization.
         hfield_image (np.ndarray, optional): Heightfield array for non-flat surfaces.
         pedestal_center (List, optional): Center of pedestal
@@ -46,17 +45,17 @@ def rodent_mocap(
     # Build a position-controlled Rat
     walker = walkers.Rat(
         initializer=None,
-        params=params,
         observable_options={"egocentric_camera": dict(enabled=True)},
     )
+    print(f"walker: {walker}")
     arena = arenas.DannceArena(
-        params,
         arena_diameter=arena_diameter,
         arena_center=arena_center,
         alpha=alpha,
     )
-    task = tasks.ViewMocap(walker, arena, kp_data, params=params)
-    time_limit = params["TIME_BINS"] * (params["n_frames"])
+    print(f"arena: {arena}")
+    task = tasks.ViewMocap(walker, arena, kp_data)
+    time_limit = utils.params["TIME_BINS"] * (utils.params["n_frames"])
     return composer.Environment(
         task,
         time_limit=time_limit,
@@ -68,7 +67,6 @@ def rodent_mocap(
 def rodent_variability(
     kp_data: np.ndarray,
     variability: np.ndarray,
-    params: Dict,
     random_state: int = None,
     alpha=1.0,
 ) -> composer.Environment:
@@ -77,7 +75,6 @@ def rodent_variability(
     Args:
         kp_data (np.ndarray): Keypoint data
         variability (np.ndarray): Variability data
-        params (Dict): Parameters dictionary
         random_state (int, optional): Environment random state. Defaults to None.
         alpha (float, optional): DannceArena alpha value. Defaults to 1.0.
 
@@ -86,11 +83,10 @@ def rodent_variability(
     """
     walker = walkers.Rat(
         initializer=None,
-        params=params,
         observable_options={"egocentric_camera": dict(enabled=True)},
     )
     arena = arenas.DannceArena(
-        params, alpha=alpha, arena_diameter=None, arena_center=None
+        utils.params, alpha=alpha, arena_diameter=None, arena_center=None
     )
     # arena._mjcf_root.compiler.texturedir = (
     #     "/n/holylfs02/LABS/olveczky_lab/Diego/code/dm/stac/stac"
@@ -109,8 +105,8 @@ def rodent_variability(
     #     # gridlayout=sky_info.gridlayout,
     # )
 
-    task = tasks.ViewVariability(variability, walker, arena, kp_data, params=params)
-    time_limit = params["TIME_BINS"] * (params["n_frames"])
+    task = tasks.ViewVariability(variability, walker, arena, kp_data)
+    time_limit = utils.params["TIME_BINS"] * (utils.params["n_frames"])
     return composer.Environment(
         task,
         time_limit=time_limit,

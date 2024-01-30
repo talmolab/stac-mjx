@@ -8,6 +8,7 @@ from dm_control.locomotion.walkers import base, legacy_base
 from dm_control.composer.observation import observable
 from dm_control.locomotion.walkers.initializers import WalkerInitializer
 import numpy as np
+import utils
 
 _UPRIGHT_POS = (0.0, 0.0, 0.94)
 _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
@@ -31,8 +32,8 @@ class Rat(legacy_base.Walker):
     """A position-controlled rat with control range scaled to [-1, 1]."""
 
     def _build(self, params=None, name="walker", marker_rgba=None, initializer=None):
-        self.params = params
-        self._mjcf_root = mjcf.from_path(self._xml_path)
+        self.params = utils.params
+        self._mjcf_root = mjcf.from_path("/Users/charleszhang/GitHub/stac-mjx/models/rodent.xml")
         if name:
             self._mjcf_root.model = name
 

@@ -6,7 +6,7 @@ from dm_control.mujoco.wrapper.mjbindings import enums
 import numpy as np
 from matplotlib import cm, colors
 from scipy.interpolate import interp1d
-
+import utils
 MM_TO_METER = 1000
 PEDESTAL_WIDTH = 0.099
 PEDESTAL_HEIGHT = 0.054
@@ -66,7 +66,6 @@ class ViewMocap(composer.Task):
         physics_timestep=0.001,
         control_timestep=0.025,
         qpos=None,
-        params=None,
     ):
         """Initialize ViewMocap environment.
 
@@ -89,7 +88,7 @@ class ViewMocap(composer.Task):
         self.sites = []
         self.qpos = qpos
         self.V = None
-        self.params = params
+        self.params = utils.params
 
         for id, name in enumerate(self.params["KEYPOINT_MODEL_PAIRS"]):
             start = (np.random.rand(3) - 0.5) * 0.001

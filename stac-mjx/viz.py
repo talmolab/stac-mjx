@@ -4,8 +4,8 @@ import numpy as np
 import pickle
 import re
 import scipy.io as spio
-import stac.dmcontrol_env.rodent_environments as rodent_environments
-import stac.util as util
+from rodent_environments import rodent_mocap
+import utils
 import yaml
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco import wrapper
@@ -65,24 +65,24 @@ def setup_visualization(
         n_frames (TYPE): Number of frames
         render_video (bool, optional): If True, make a video and put it in clips.
     """
-    params = util.load_params(param_path)
-    # TODO params as global
+    utils.init_params(param_path)
     utils.params["N_FRAMES_PER_CLIP"] = n_frames - 1
 
     if segmented:
         alpha = 0.0
-        params["ARENA_DIAMETER"] = None
+        utils.params["ARENA_DIAMETER"] = None
     else:
         alpha = 1.0
-        params["ARENA_DIAMETER"] = None
+        utils.params["ARENA_DIAMETER"] = None
     if registration_xml:
-        params["XML_PATH"] = os.path.join(MODELS_PATH, "rodent_stac.xml")
+        utils.params["XML_PATH"] = os.path.join(MODELS_PATH, "rodent.xml")
 
-    env = setup_arena(kp_data, params, alpha=alpha)
+    env = setup_arena(kp_data, alpha=alpha)
+    print(env)
     rescale.rescale_subtree(
         env.task._walker._mjcf_root,
-        params["SCALE_FACTOR"],
-        params["SCALE_FACTOR"],
+        utils.params["SCALE_FACTOR"],
+        utils.params["SCALE_FACTOR"],
     )
 
     if camera_kwargs is not None:
@@ -137,7 +137,6 @@ def setup_sites(q: np.ndarray, offsets: np.ndarray, env):
 
 def overlay_frame(
     rgb_frame: np.ndarray,
-    params: List,
     recon_frame: np.ndarray,
     seg_frame: np.ndarray,
     camera: int,
@@ -158,11 +157,11 @@ def overlay_frame(
     # Load and undistort the rgb frame
     rgb_frame = cv2.undistort(
         rgb_frame,
-        params[cam_id].K.T,
+        utils.params[cam_id].K.T,
         np.concatenate(
-            [params[cam_id].RDistort, params[cam_id].TDistort], axis=0
+            [utils.params[cam_id].RDistort, utils.params[cam_id].TDistort], axis=0
         ).T.squeeze(),
-        params[cam_id].K.T,
+        utils.params[cam_id].K.T,
     )
 
     # Calculate the alpha mask using the segmented video
@@ -173,8 +172,8 @@ def overlay_frame(
     frame = np.zeros_like(recon_frame)
 
     # Correct the segmented frame by cropping such that the optical center is at the center of the image
-    recon_frame = correct_optical_center(params, recon_frame, cam_id)
-    seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
+    recon_frame = correct_optical_center(recon_frame, cam_id)
+    seg_frame = correct_optical_center(seg_frame, cam_id, pad_val=-1)
 
     # Calculate the alpha mask using the segmented video
     alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
@@ -192,7 +191,7 @@ def overlay_frame(
 
 
 def correct_optical_center(
-    params, frame: np.ndarray, cam_id: int, pad_val=0
+    frame: np.ndarray, cam_id: int, pad_val=0
 ) -> np.ndarray:
     """Correct the optical center of the frame.
 
@@ -206,8 +205,8 @@ def correct_optical_center(
         np.ndarray: Corrected frame
     """
     # Get the optical center
-    cx = params[cam_id].K[2, 0]
-    cy = params[cam_id].K[2, 1]
+    cx = utils.params[cam_id].K[2, 0]
+    cy = utils.params[cam_id].K[2, 1]
 
     # Compute the offset and pad the frame
     crop_offset_x = int(-cx + (frame.shape[1] / 2))
@@ -232,7 +231,6 @@ def correct_optical_center(
 
 def mujoco_loop(
     save_path: Text,
-    params: Dict,
     env,
     scene_option,
     camera: Text = "walker/close_profile",
@@ -266,7 +264,7 @@ def mujoco_loop(
         reconArr = render_frame(env, scene_option, height, width, camera)
         video.append_data(reconArr)
         while prev_time < env._time_limit:
-            while (np.round(env.physics.time() - prev_time, decimals=5)) < params[
+            while (np.round(env.physics.time() - prev_time, decimals=5)) < utils.params[
                 "TIME_BINS"
             ]:
                 env.physics.step()
@@ -280,7 +278,6 @@ def overlay_loop(
     video_path: Text,
     calibration_path: Text,
     frames: np.ndarray,
-    params: Dict,
     env,
     scene_option,
     camera: Text = "walker/close_profile",
@@ -294,7 +291,6 @@ def overlay_loop(
         video_path (Text): Path to undistorted rgb video
         calibration_path (Text): Path to calibration dannce.mat file.
         frames (np.ndarray): Frames to render
-        params (Dict): stac parameters dictionary
         env ([type]): rodent environment
         scene_option ([type]): MjvOption rendering options
         camera (Text, optional): Name of the camera to use for rendering. Defaults to "walker/close_profile".
@@ -326,7 +322,7 @@ def overlay_loop(
     prev_time = env.physics.time()
     reader = imageio.get_reader(video_path)
     n_frame = 0
-    cam_params = util.loadmat(calibration_path)["params"]
+    cam_params = utils.loadmat(calibration_path)["params"]
     env.task.after_step(env.physics, None)
     with imageio.get_writer(save_path, fps=FPS) as video:
         for n_frame in range(len(frames)):
@@ -350,23 +346,22 @@ def overlay_loop(
             prev_time = np.round(env.physics.time(), decimals=2)
 
 
-def setup_arena(kp_data, params, alpha=1.0):
+def setup_arena(kp_data, alpha=1.0):
     # Build the environment, and set the offsets, and params
-    if params["ARENA_TYPE"] == "Standard":
-        env = rodent_environments.rodent_mocap(kp_data, params)
-    elif params["ARENA_TYPE"] == "DannceArena":
-        if "ARENA_DIAMETER" in params:
-            diameter = params["ARENA_DIAMETER"]
+    if utils.params["ARENA_TYPE"] == "Standard":
+        env = rodent_mocap(kp_data)
+    elif utils.params["ARENA_TYPE"] == "DannceArena":
+        if "ARENA_DIAMETER" in utils.params:
+            diameter = utils.params["ARENA_DIAMETER"]
         else:
             diameter = None
 
-        if "ARENA_CENTER" in params:
-            center = params["ARENA_CENTER"]
+        if "ARENA_CENTER" in utils.params:
+            center = utils.params["ARENA_CENTER"]
         else:
             center = None
-        env = rodent_environments.rodent_mocap(
+        env = rodent_mocap(
             kp_data,
-            params,
             arena_diameter=diameter,
             arena_center=center,
             alpha=alpha,
@@ -396,7 +391,7 @@ def convert_camera(cam, idx):
     }
 
 
-def convert_cameras(params) -> List[Dict]:
+def convert_cameras() -> List[Dict]:
     """Convert cameras from Matlab convention to Mujoco convention.
 
     Args:
@@ -405,7 +400,7 @@ def convert_cameras(params) -> List[Dict]:
     Returns:
         List[Dict]: List of dicts containing kwargs for Mujoco camera addition through worldbody.
     """
-    camera_kwargs = [convert_camera(cam, idx) for idx, cam in enumerate(params)]
+    camera_kwargs = [convert_camera(cam, idx) for idx, cam in enumerate(utils.params)]
     return camera_kwargs
 
 
@@ -440,7 +435,7 @@ def render_mujoco(
     )
 
     # Prepare the environment
-    params, env, scene_option = setup_visualization(
+    env, scene_option = setup_visualization(
         param_path,
         qpos,
         offsets,
@@ -453,7 +448,6 @@ def render_mujoco(
     )
     mujoco_loop(
         save_path,
-        params,
         env,
         scene_option,
         camera=camera,
@@ -487,13 +481,13 @@ def load_data(
     # Filter qpos and kp_data based on provided frames
     if frames is not None:
         qpos = qpos[frames, ...].copy()
-        kp_data = data["kp_data"][frames, ...].copy()
+        kp_data = data["kp_data"][frames, ...].copy() 
     n_frames = qpos.shape[0]
-    offsets = data["offsets"]
+    offsets = data["offsets"][0] # TODO: play nice with batch dim
 
     # Load camera parameters and convert them if a calibration path is provided
     if calibration_path is not None:
-        params = util.loadmat(calibration_path)["params"]
+        params = utils.loadmat(calibration_path)["params"]
         camera_kwargs = convert_cameras(params)
     else:
         camera_kwargs = None

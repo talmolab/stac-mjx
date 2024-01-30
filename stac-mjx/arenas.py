@@ -28,7 +28,6 @@ ASSETS_PATH = os.path.join(
 class DannceArena(composer.Arena):
     def _build(
         self,
-        params,
         arena_diameter=0.6985,
         arena_center=[0.1123, 0.1750],
         size=(2, 2),
@@ -92,7 +91,6 @@ class DannceArena(composer.Arena):
         )
 
         # Get the dimensions of arena objects and floormap
-        self.params = params
         self.arena_diameter = arena_diameter
         self.arena_center = arena_center
 

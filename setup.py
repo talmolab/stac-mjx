@@ -25,6 +25,8 @@ setup(
         "scipy >= 1.2.1",
         "pyyaml",
         "opencv-python",
+        "imageio",
+        "matplotlib"
         
     ],
 )
