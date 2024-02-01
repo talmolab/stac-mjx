@@ -62,10 +62,10 @@ kp_data = prep_kp_data(kp_data, stac_keypoint_order)
 # print(f"total envs: {n_envs}")
 # fit_data = test_opt(root, kp_data)
 # Single clip optimization for first 500 frames
-def test_single_clip_fit():
+def test_single_clip_fit(root, kp_data):
     # returns fit_data
-    fit_data = single_clip_opt(root, kp_data[500:])
-    offset_path = "offset_sing_clip1.p"
+    fit_data = single_clip_opt(root, kp_data)
+    offset_path = "offset_sing_clip2.p"
     print(f"saving data to {offset_path}")
     save(fit_data, offset_path)
 
@@ -80,38 +80,61 @@ def test_transform(offset_path, root, kp_data):
     print(f"saving data to {transform_path}")
     save(transform_data, transform_path)
 
-test_transform("offset_sing_clip1.p", root, kp_data)
-# post_pose_opt_path = "pose_opt_qs.p"
-# with open(post_pose_opt_path, "rb") as file:
-#     in_dict = pickle.load(file)
 
-# mjx_model = in_dict["mjx_model"]
-# mjx_data = in_dict["mjx_data"]
-# kp_data = in_dict["kp_data"]
-# q = in_dict["q"]
-# physics = in_dict["physics"]
-# x = in_dict["x"]
-# walker_body_sites = in_dict["walker_body_sites"]
-# utils.params["site_index_map"] = in_dict["site_index_map"]
+def test_m_phase():
+    post_pose_opt_path = "pose_opt_qs.p"
+    with open(post_pose_opt_path, "rb") as file:
+        in_dict = pickle.load(file)
 
-# @jax.vmap
-# def get_offsets(mjx_model):
-#     offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
-#     offsets *= utils.params['SCALE_FACTOR']
-#     return offsets
-# offsets = get_offsets(mjx_model)
+    mjx_model = in_dict["mjx_model"]
+    mjx_data = in_dict["mjx_data"]
+    kp_data = in_dict["kp_data"]
+    q = in_dict["q"]
+    physics = in_dict["physics"]
+    x = in_dict["x"]
+    walker_body_sites = in_dict["walker_body_sites"]
+    utils.params["site_index_map"] = in_dict["site_index_map"]
 
-# mjx_model, mjx_data = offset_optimization(
-#     mjx_model, 
-#     mjx_data, 
-#     kp_data, 
-#     offsets, 
-#     q
-#     )
+    @jax.vmap
+    def get_offsets(mjx_model):
+        offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+        offsets *= utils.params['SCALE_FACTOR']
+        return offsets
+    offsets = get_offsets(mjx_model)
 
-# fit_data = package_data(
-#         mjx_model, physics, q, x, walker_body_sites, kp_data
-#     )
+    mjx_model, mjx_data = vmap(offset_optimization)(
+        mjx_model, 
+        mjx_data, 
+        kp_data, 
+        offsets, 
+        q
+        )
+    mjx_model, mjx_data = vmap(offset_optimization)(
+        mjx_model, 
+        mjx_data, 
+        kp_data, 
+        offsets, 
+        q
+        )
+    mjx_model, mjx_data = vmap(offset_optimization)(
+        mjx_model, 
+        mjx_data, 
+        kp_data, 
+        offsets, 
+        q
+        )
+
+    fit_data = package_data(
+            mjx_model, physics, q, x, walker_body_sites, kp_data
+        )
+    offset_path = "m_phase_test.p"
+    print(f"saving data to {offset_path}")
+    save(fit_data, offset_path)
+
+
+# test_transform("offset_sing_clip1.p", root, kp_data)
+# test_single_clip_fit(root, kp_data[500:])
+# test_m_phase()
 
 print(f"Job complete in {time.time()-start_time}")
 
