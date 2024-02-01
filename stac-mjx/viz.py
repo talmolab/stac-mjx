@@ -94,7 +94,7 @@ def setup_visualization(
     env.task.render_video = render_video
     env.task.initialize_episode(env.physics, 0)
     scene_option = setup_scene()
-    return params, env, scene_option
+    return env, scene_option
 
 
 def setup_scene():
@@ -109,8 +109,8 @@ def setup_scene():
     # scene_option.geomgroup[3] = 0
     # scene_option.sitegroup[0] = 0
     # scene_option.sitegroup[1] = 0
-    scene_option.sitegroup[2] = 0
-    scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = False
+    scene_option.sitegroup[2] = 1
+    scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
     scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
     scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
     scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
@@ -467,7 +467,7 @@ def load_data(
     if xml_path is None:
         with open(param_path, "rb") as file:
             params = yaml.safe_load(file)
-        xml_path = params["XML_PATH"]
+        xml_path = params["VIZ_XML_PATH"]
 
     # Load data from the data file
     with open(data_path, "rb") as file:
@@ -483,7 +483,7 @@ def load_data(
         qpos = qpos[frames, ...].copy()
         kp_data = data["kp_data"][frames, ...].copy() 
     n_frames = qpos.shape[0]
-    offsets = data["offsets"][0] # TODO: play nice with batch dim
+    offsets = data["offsets"] 
 
     # Load camera parameters and convert them if a calibration path is provided
     if calibration_path is not None:
@@ -512,7 +512,7 @@ def render_overlay(
     )
 
     # Prepare the environment
-    params, env, scene_option = setup_visualization(
+    env, scene_option = setup_visualization(
         param_path,
         qpos,
         offsets,

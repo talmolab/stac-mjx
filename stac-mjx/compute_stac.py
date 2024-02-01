@@ -30,7 +30,7 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
     
     return mjx_data
 
-@jax.vmap
+# @jax.vmap
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
 
@@ -45,13 +45,13 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     ftol = utils.params["ROOT_FTOL"]
     
     q0 = jnp.copy(mjx_data.qpos[:])
+
     # Set the center to help with finding the optima (does not need to be exact)
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-
     j = time.time()
     mjx_data, q_opt_param = stac_base.q_opt(
         mjx_model, 
@@ -86,18 +86,18 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         ftol,
 
     )
-    # 
+    
     print(f"q_opt 2 finished in {time.time()-j}")
     r = time.time()
     mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
     print(f"Replace 2 finished in {time.time()-r}")
-    # 
+     
     print(f"Root optimization finished in {time.time()-s}")
 
     return mjx_data
 
 
-@jax.vmap
+# @jax.vmap
 def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int = 100):
     key = jax.random.PRNGKey(0)
     # N_SAMPLE_FRAMES has to be less than N_FRAMES_PER_CLIP
@@ -128,7 +128,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
     return mjx_model, mjx_data
 
 
-@jax.vmap
+# @jax.vmap
 def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     """Perform q_phase over the entire clip.
 
@@ -212,14 +212,19 @@ def initialize_part_names(physics):
         part_names.insert(0, part_names[0])
     return part_names
 
-# TODO: Do we need to package the data like this? DOes it need to be jax compatible?
-def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data):
+def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
     # Extract pose, offsets, data, and all parameters
-    offsets = stac_base.get_site_pos(mjx_model).copy()
-    
+    if batched:
+        # prepare batched data to be packaged
+        get_batch_offsets = vmap(stac_base.get_site_pos)
+        offsets = get_batch_offsets(mjx_model).copy()[0]
+        x = x.reshape(-1, x.shape[-1])
+        q = q.reshape(-1, q.shape[-1])
+    else:
+        offsets = stac_base.get_site_pos(mjx_model).copy()
+        
     names_xpos = physics.named.data.xpos.axes.row.names
-    x = x.reshape(-1, x.shape[-1])
-    q = q.reshape(-1, q.shape[-1])
+    
     kp_data = kp_data.reshape(-1, kp_data.shape[-1])
     data = {
         "qpos": q,

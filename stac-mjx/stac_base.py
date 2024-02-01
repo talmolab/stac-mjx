@@ -117,7 +117,6 @@ def get_q_bounds(mjx_model):
     lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
     lb = jnp.minimum(lb, 0.0)
     ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-
     return (lb, ub)
 
 @jit
@@ -284,9 +283,6 @@ def m_phase(
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = kinematics(mjx_model, mjx_data)
     
-    # TODO: needed??
-    # for n_site, p in enumerate(env.bind(sites).pos): mjmodel.sites_pos
-    #     sites[n_site].pos = p
     return mjx_model, mjx_data
 
 @jit

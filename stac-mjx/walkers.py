@@ -33,7 +33,7 @@ class Rat(legacy_base.Walker):
 
     def _build(self, params=None, name="walker", marker_rgba=None, initializer=None):
         self.params = utils.params
-        self._mjcf_root = mjcf.from_path("/Users/charleszhang/GitHub/stac-mjx/models/rodent.xml")
+        self._mjcf_root = mjcf.from_path(utils.params["VIZ_XML_PATH"])
         if name:
             self._mjcf_root.model = name
 
@@ -150,7 +150,7 @@ class Rat(legacy_base.Walker):
     @property
     def _xml_path(self):
         """Return the path to th model .xml file."""
-        return self.params["XML_PATH"]
+        return self.params["VIZ_XML_PATH"]
 
     def _build_observables(self):
         return RodentObservables(self)

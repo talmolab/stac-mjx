@@ -117,7 +117,6 @@ def chunk_kp_data(kp_data):
     return kp_data, n_chunks
 
 # TODO: pmap fit and transform if you want to use it with multiple gpus
-# May not be necessary?
 def fit(root, kp_data):
     """Calibrate and fit the model to keypoints.
     Performs three rounds of alternating marker and quaternion optimization. Optimal
@@ -264,7 +263,44 @@ def test_opt(root, kp_data):
     )
     return data
     # return None
-def transform(kp_data, offset_path):
+    
+def single_clip_opt(root, kp_data):
+    physics, mj_model = set_body_sites(root)
+    utils.params["mj_model"] = mj_model
+    part_opt_setup(physics)
+    
+    # Create mjx model and data
+    mjx_model = mjx.put_model(mj_model)
+    mjx_data = mjx.make_data(mjx_model)
+    
+    # Get and set the offsets of the markers
+    offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+    offsets *= utils.params['SCALE_FACTOR']
+    
+    # print(mjx_model.site_pos, mjx_model.site_pos.shape)
+    mjx_model = stac_base.set_site_pos(mjx_model, offsets)
+
+    # forward is used to calculate xpos and such
+    mjx_data = mjx.kinematics(mjx_model, mjx_data)
+    mjx_data = mjx.com_pos(mjx_model, mjx_data)
+    
+    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    for n_iter in range(utils.params['N_ITERS']):
+        print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
+        mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+        print("starting offset optimization")
+        mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
+
+    # Optimize the pose for the whole sequence
+    print("Final pose optimization")
+    mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+       
+    data = package_data(
+        mjx_model, physics, q, x, walker_body_sites, kp_data
+    )
+    return data
+
+def transform(root, kp_data, offsets):
     """Register skeleton to keypoint data
 
         Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
@@ -272,43 +308,61 @@ def transform(kp_data, offset_path):
     Args:
         kp_data (jnp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
             Keypoint order must match the order in the skeleton file.
-        offset_path (Text): Path to offset file saved after .fit()
+        offsets (jnp.ndarray): offsets loaded from offset.p after fit()
     """
-    # kp_data = self._prepare_data(kp_data)
-    # self.n_frames = kp_data.shape[0]
-    # env = build_env(kp_data, self._properties)
-    # part_names = initialize_part_names(env)
+    
+    physics, mj_model = set_body_sites(root)
+    utils.params["mj_model"] = mj_model
+    part_opt_setup(physics)
+    
+    @vmap
+    def mjx_setup(kp_data):
+        """creates mjxmodel and mjxdata, setting offets 
 
-    # # Set the offsets.
-    # self.offset_path = offset_path
-    # with open(self.offset_path, "rb") as f:
-    #     in_dict = pickle.load(f)
-    # sites = env.task._walker.body_sites
-    # env.physics.bind(sites).pos[:] = in_dict["offsets"]
-    # for n_site, p in enumerate(env.physics.bind(sites).pos):
-    #     sites[n_site].pos = p
+        Args:
+            kp_data (_type_): _description_
 
-    # # Optimize the root position
-    # root_optimization(env, self._properties)
+        Returns:
+            _type_: _description_
+        """
+        # Create mjx model and data
+        mjx_model = mjx.put_model(mj_model)
+        mjx_data = mjx.make_data(mjx_model)
+        # do initial get_site stuff inside mjx_setup
+        
+        # Set the offsets.
+        mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
 
-    # # Optimize the pose for the whole sequence
-    # q, walker_body_sites, x = pose_optimization(env, self._properties)
+        # forward is used to calculate xpos and such
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
-    # # Extract pose, offsets, data, and all parameters
-    # data = package_data(
-    #     env, q, x, walker_body_sites, part_names, kp_data, self._properties
-    # )
-    # return data
-    return
+        return mjx_model, mjx_data
+    
+    # Create batch mjx model and data where batch_size = kp_data.shape[0]
+    mjx_model, mjx_data = mjx_setup(kp_data)
+
+    vmap_root_opt = vmap(root_optimization)
+    vmap_pose_opt = vmap(pose_optimization)
+
+    mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
+    mjx_data, q, walker_body_sites, x = vmap_pose_opt(mjx_model, mjx_data, kp_data)
+
+    data = package_data(
+        mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
+    )
+    return data
+
 
 def end_to_end():
-    """this function runs fit and transform end to end for conceptualizing purposes
+    """this function runs fit and transform end to end
     """
     # params = utils.load_params("params/params.yaml")
     utils.init_params("params/params.yaml")
     model = mujoco.MjModel.from_xml_path(utils.params["XML_PATH"])
     model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
     model.opt.iterations = 1
+    # change this to 4 if need to improve simulation?
     model.opt.ls_iterations = 1
     
     offset_path = "offset.p"

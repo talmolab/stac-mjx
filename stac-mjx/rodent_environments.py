@@ -55,7 +55,7 @@ def rodent_mocap(
     )
     print(f"arena: {arena}")
     task = tasks.ViewMocap(walker, arena, kp_data)
-    time_limit = utils.params["TIME_BINS"] * (utils.params["n_frames"])
+    time_limit = utils.params["TIME_BINS"] * (utils.params["N_FRAMES_PER_CLIP"])
     return composer.Environment(
         task,
         time_limit=time_limit,
