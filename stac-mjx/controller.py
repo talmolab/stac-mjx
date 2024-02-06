@@ -274,7 +274,7 @@ def transform(mj_model, kp_data, offsets):
     vmap_mjx_setup = vmap(mjx_setup, in_axes=(0, None))
     
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
-    mjx_model, mjx_data = vmap_mjx_setup(kp_data)
+    mjx_model, mjx_data = vmap_mjx_setup(kp_data, mj_model)
 
     # Vmap optimize functions
     vmap_root_opt = vmap(root_optimization)

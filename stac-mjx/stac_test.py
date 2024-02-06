@@ -15,21 +15,6 @@ from controller import *
 # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6'
 # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"
 
-def save(fit_data, save_path):
-    """Save data.
-
-    Args:
-        save_path (Text): Path to save data. Defaults to None.
-    """
-    if os.path.dirname(save_path) != "":
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    _, file_extension = os.path.splitext(save_path)
-    if file_extension == ".p":
-        with open(save_path, "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
-    elif file_extension == ".mat":
-        savemat(save_path, fit_data)
-
 # print(f"total envs: {n_envs}")
 # fit_data = test_opt(root, kp_data)
 # Single clip optimization for first 500 frames
@@ -60,21 +45,21 @@ This commented code is for running transform with a presaved fit() file
 # with open(post_pose_opt_path, "rb") as file:
 #     in_dict = pickle.load(file)
 
-    mjx_model = in_dict["mjx_model"]
-    mjx_data = in_dict["mjx_data"]
-    kp_data = in_dict["kp_data"]
-    q = in_dict["q"]
-    physics = in_dict["physics"]
-    x = in_dict["x"]
-    walker_body_sites = in_dict["walker_body_sites"]
-    utils.params["site_index_map"] = in_dict["site_index_map"]
+# mjx_model = in_dict["mjx_model"]
+# mjx_data = in_dict["mjx_data"]
+# kp_data = in_dict["kp_data"]
+# q = in_dict["q"]
+# physics = in_dict["physics"]
+# x = in_dict["x"]
+# walker_body_sites = in_dict["walker_body_sites"]
+# utils.params["site_index_map"] = in_dict["site_index_map"]
 
-    @jax.vmap
-    def get_offsets(mjx_model):
-        offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
-        offsets *= utils.params['SCALE_FACTOR']
-        return offsets
-    offsets = get_offsets(mjx_model)
+# @jax.vmap
+# def get_offsets(mjx_model):
+#     offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+#     offsets *= utils.params['SCALE_FACTOR']
+#     return offsets
+# offsets = get_offsets(mjx_model)
 
 # mjx_model, mjx_data = offset_optimization(
 #     mjx_model, 
