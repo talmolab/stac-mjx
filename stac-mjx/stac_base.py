@@ -224,6 +224,48 @@ def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
 
+@jit
+def m_opt(maxiter, 
+          offset0, 
+          mjx_model, 
+          mjx_data, 
+          keypoints, 
+          q, 
+          initial_offsets, 
+          is_regularized, 
+          reg_coef):
+    """a jitted m_phase optimization
+
+    Args:
+        maxiter (_type_): _description_
+        offset0 (_type_): _description_
+        mjx_model (_type_): _description_
+        mjx_data (_type_): _description_
+        keypoints (_type_): _description_
+        q (_type_): _description_
+        initial_offsets (_type_): _description_
+        is_regularized (bool): _description_
+        reg_coef (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
+    solver = LBFGS(fun=m_loss, 
+                    tol=utils.params["ROOT_FTOL"],
+                    jit=True,
+                    maxiter=maxiter,
+                    verbose=False
+                    )
+    res = solver.run(offset0, mjx_model=mjx_model,
+                            mjx_data=mjx_data,
+                            kp_data=keypoints,
+                            q=q,
+                            initial_offsets=initial_offsets,
+                            is_regularized=is_regularized,
+                            reg_coef=reg_coef)
+    return res.params
+    
+    
 def m_phase(
     mjx_model,
     mjx_data,
@@ -260,8 +302,8 @@ def m_phase(
     # Optimize dm
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
-    loss_fn = m_loss
 
+<<<<<<< HEAD
     # Create the optimizer (for LM, residual_fun instead)
     # TODO: move solver to separate jitted function
     solver = LBFGS(fun=loss_fn, 
@@ -278,6 +320,12 @@ def m_phase(
                             is_regularized=is_regularized,
                             reg_coef=reg_coef)
     offset_opt_param = res.params
+=======
+    offset_opt_param = m_opt(maxiter, offset0, mjx_model, 
+                             mjx_data, keypoints, q, 
+                             initial_offsets, is_regularized, reg_coef)
+    
+>>>>>>> 08f2653ba9cdd1966a512baaa514edfde9b1d360
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
