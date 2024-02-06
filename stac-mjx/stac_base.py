@@ -127,14 +127,14 @@ def q_opt(
     q0,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
-    ftol: float,
+    maxiter: int = 100
 ):
     """Update q_pose using estimated marker parameters.
     """
     try:
         solver = LBFGSB(fun=q_loss, 
-                        tol=ftol,
-                        maxiter=25,
+                        tol=utils.params["FTOL"],
+                        maxiter=maxiter,
                         jit=True,
                         verbose=False
                         )
@@ -265,7 +265,7 @@ def m_phase(
     # Create the optimizer (for LM, residual_fun instead)
     # TODO: move solver to separate jitted function
     solver = LBFGS(fun=loss_fn, 
-                    tol=utils.params["ROOT_FTOL"],
+                    tol=utils.params["FTOL"],
                     jit=True,
                     maxiter=maxiter,
                     verbose=False

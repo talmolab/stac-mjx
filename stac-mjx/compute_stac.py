@@ -42,7 +42,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     # import time
     s = time.time()
     print("Root Optimization:")
-    ftol = utils.params["ROOT_FTOL"]
     
     q0 = jnp.copy(mjx_data.qpos[:])
 
@@ -60,7 +59,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         qs_to_opt,
         kps_to_opt,
-        ftol,
     )
     print(f"q_opt 1 finished in {time.time()-j}")
     r = time.time()
@@ -83,7 +81,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         qs_to_opt,
         kps_to_opt,
-        ftol,
 
     )
     
@@ -148,11 +145,9 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     
     parts = utils.params["indiv_parts"]
 
-    # Iterate through all of the frames in the clip
-    frames = jnp.arange(utils.params["N_FRAMES_PER_CLIP"])
+    # Iterate through all of the frames
+    frames = jnp.arange(kp_data.shape[0])
     
-    ftol = utils.params["FTOL"]
-    part_ftol = utils.params["LIMB_FTOL"]
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
     qs_to_opt = jnp.ones(mjx_model.nq, dtype=bool)
     print("Pose Optimization:")
@@ -170,7 +165,6 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
             q0,
             qs_to_opt,
             kps_to_opt,
-            ftol
         )
 
         mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
@@ -183,7 +177,6 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 q0,
                 part,
                 kps_to_opt,
-                part_ftol,
             )
             
             mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)

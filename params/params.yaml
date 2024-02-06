@@ -3,9 +3,9 @@ ROOT_DIFF_STEP: 1.0e-08
 DIFF_STEP: 3.0e-08
 
 # Tolerance for the optimizations of the full model, limb, and root. 
-FTOL: 0.001
-LIMB_FTOL: 1.0e-02
-ROOT_FTOL: 1.0e-02
+FTOL: 0.1
+# LIMB_FTOL: 1.0e-01
+# ROOT_FTOL: 1.0e-01
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -172,4 +172,6 @@ N_ITERS: 3
 # Number of GPUs to be used
 N_GPUS: 1
 
+# TODO: raise exception if total frames % frames per clip != 0
+# frames per clip for transform.
 N_FRAMES_PER_CLIP: 360 # 1000 environments
