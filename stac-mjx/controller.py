@@ -247,8 +247,7 @@ def transform(mj_model, kp_data, offsets):
     # physics, mj_model = set_body_sites(root)
     # utils.params["mj_model"] = mj_model
     # part_opt_setup(physics)
-    
-    @vmap(in_axes=(0, None))
+
     def mjx_setup(kp_data, mj_model):
         """creates mjxmodel and mjxdata, setting offets 
 
@@ -272,9 +271,12 @@ def transform(mj_model, kp_data, offsets):
 
         return mjx_model, mjx_data
     
+    vmap_mjx_setup = vmap(mjx_setup, in_axes=(0, None))
+    
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
-    mjx_model, mjx_data = mjx_setup(kp_data)
+    mjx_model, mjx_data = vmap_mjx_setup(kp_data)
 
+    # Vmap optimize functions
     vmap_root_opt = vmap(root_optimization)
     vmap_pose_opt = vmap(pose_optimization)
 
