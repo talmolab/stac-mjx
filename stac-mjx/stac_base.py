@@ -194,7 +194,7 @@ def m_loss(
         reg_term = reg_term + (jnp.square(offset - initial_offsets.flatten())) * is_regularized
         
         mjx_data, markers = m_joints_to_markers(offset, mjx_model, mjx_data)
-        residual = (residual + (kp - markers))
+        residual = (residual + jnp.square((kp - markers)))
         return (mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized), None
     
     (mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized), _ = jax.lax.scan(
@@ -202,7 +202,7 @@ def m_loss(
             (mjx_model, mjx_data, jnp.zeros(69), jnp.zeros(69), initial_offsets, is_regularized), 
             (q, kp_data)
         )
-    return jnp.sum(jnp.square(residual)) + reg_coef * jnp.sum(reg_term)
+    return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
 def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
@@ -265,7 +265,7 @@ def m_opt(maxiter,
                             reg_coef=reg_coef)
     return res.params
     
-    
+
 def m_phase(
     mjx_model,
     mjx_data,
@@ -307,6 +307,7 @@ def m_phase(
                              mjx_data, keypoints, q, 
                              initial_offsets, is_regularized, reg_coef)
     
+    print(f"learned offsets: {offset_opt_param}")
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well

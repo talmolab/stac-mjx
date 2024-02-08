@@ -36,42 +36,6 @@ def test_transform(offset_path, root, kp_data):
     transform_path = "transform1.p"
     print(f"saving data to {transform_path}")
     save(transform_data, transform_path)
-    
-"""
-This commented code is for running transform with a presaved fit() file
-"""
-# test_transform("offset_sing_clip1.p", root, kp_data)
-# post_pose_opt_path = "pose_opt_qs.p"
-# with open(post_pose_opt_path, "rb") as file:
-#     in_dict = pickle.load(file)
-
-# mjx_model = in_dict["mjx_model"]
-# mjx_data = in_dict["mjx_data"]
-# kp_data = in_dict["kp_data"]
-# q = in_dict["q"]
-# physics = in_dict["physics"]
-# x = in_dict["x"]
-# walker_body_sites = in_dict["walker_body_sites"]
-# utils.params["site_index_map"] = in_dict["site_index_map"]
-
-# @jax.vmap
-# def get_offsets(mjx_model):
-#     offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
-#     offsets *= utils.params['SCALE_FACTOR']
-#     return offsets
-# offsets = get_offsets(mjx_model)
-
-# mjx_model, mjx_data = offset_optimization(
-#     mjx_model, 
-#     mjx_data, 
-#     kp_data, 
-#     offsets, 
-#     q
-#     )
-
-# fit_data = package_data(
-#         mjx_model, physics, q, x, walker_body_sites, kp_data
-#     )
 
 
 import argparse

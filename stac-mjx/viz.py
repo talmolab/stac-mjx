@@ -109,7 +109,9 @@ def setup_scene():
     # scene_option.geomgroup[3] = 0
     # scene_option.sitegroup[0] = 0
     # scene_option.sitegroup[1] = 0
-    scene_option.sitegroup[2] = 1
+    scene_option.sitegroup[2] = 0
+
+    scene_option.sitegroup[3] = 1
     scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
     scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
     scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True

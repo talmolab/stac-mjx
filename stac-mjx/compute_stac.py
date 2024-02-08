@@ -30,7 +30,6 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
     
     return mjx_data
 
-# @jax.vmap
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
 
@@ -94,7 +93,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     return mjx_data
 
 
-# @jax.vmap
 def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int = 100):
     key = jax.random.PRNGKey(0)
     # N_SAMPLE_FRAMES has to be less than N_FRAMES_PER_CLIP
@@ -125,7 +123,6 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
     return mjx_model, mjx_data
 
 
-# @jax.vmap
 def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     """Perform q_phase over the entire clip.
 
