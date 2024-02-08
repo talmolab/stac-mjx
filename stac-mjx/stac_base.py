@@ -64,6 +64,7 @@ def q_loss(
     kp_data: jnp.ndarray,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
+    initial_q: jnp.ndarray
     # part_opt: bool = False
 ) -> float:
     """Compute the marker loss for q_phase optimization.
@@ -85,7 +86,7 @@ def q_loss(
     
     # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
     # updates the relevant qpos elements to the corresponding new ones to calculate the loss
-    q = jnp.copy((1 - qs_to_opt) * q + qs_to_opt * q)
+    q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * q)
 
     mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
     residual = kp_data - markers
@@ -145,7 +146,8 @@ def q_opt(
                                         mjx_data=mjx_data, 
                                         kp_data=marker_ref_arr.T,
                                         qs_to_opt=qs_to_opt,
-                                        kps_to_opt=kps_to_opt)
+                                        kps_to_opt=kps_to_opt,
+                                        initial_q=q0)
         q_opt_param = res.params
         
         return mjx_data, q_opt_param
