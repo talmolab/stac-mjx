@@ -127,7 +127,7 @@ def q_opt(
     q0,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
-    maxiter: int = 100
+    maxiter
 ):
     """Update q_pose using estimated marker parameters.
     """
@@ -225,8 +225,7 @@ def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
 
 
 @jit
-def m_opt(maxiter, 
-          offset0, 
+def m_opt(offset0, 
           mjx_model, 
           mjx_data, 
           keypoints, 
@@ -237,7 +236,6 @@ def m_opt(maxiter,
     """a jitted m_phase optimization
 
     Args:
-        maxiter (_type_): _description_
         offset0 (_type_): _description_
         mjx_model (_type_): _description_
         mjx_data (_type_): _description_
@@ -253,7 +251,7 @@ def m_opt(maxiter,
     solver = LBFGS(fun=m_loss, 
                     tol=utils.params["FTOL"],
                     jit=True,
-                    maxiter=maxiter,
+                    maxiter=utils.params["MAXITER"],
                     verbose=False
                     )
     res = solver.run(offset0, mjx_model=mjx_model,
@@ -274,7 +272,6 @@ def m_phase(
     q: jnp.ndarray,
     initial_offsets: jnp.ndarray,
     reg_coef: float = 0.0,
-    maxiter: int = 100,
 ):
     """Estimate marker offset, keeping qpos fixed.
 
@@ -287,7 +284,6 @@ def m_phase(
         initial_offsets (jnp.ndarray): Initial offset values for offset regularization.
         params (Dict): Animal parameters dictionary
         reg_coef (float, optional): L1 regularization coefficient during marker loss.
-        maxiter (int, optional): Maximum number of iterations to use in the minimization.
     """
     # Define initial position of the optimization
     offset0 = get_site_pos(mjx_model).flatten()
@@ -303,7 +299,7 @@ def m_phase(
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
 
-    offset_opt_param = m_opt(maxiter, offset0, mjx_model, 
+    offset_opt_param = m_opt(offset0, mjx_model, 
                              mjx_data, keypoints, q, 
                              initial_offsets, is_regularized, reg_coef)
     

@@ -58,6 +58,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         qs_to_opt,
         kps_to_opt,
+        utils.params["ROOT_MAXITER"]
     )
     print(f"q_opt 1 finished in {time.time()-j}")
     r = time.time()
@@ -80,7 +81,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         qs_to_opt,
         kps_to_opt,
-
+        utils.params["ROOT_MAXITER"]
     )
     
     print(f"q_opt 2 finished in {time.time()-j}")
@@ -93,7 +94,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     return mjx_data
 
 
-def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int = 100):
+def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     key = jax.random.PRNGKey(0)
     # N_SAMPLE_FRAMES has to be less than N_FRAMES_PER_CLIP
     N_FRAMES_PER_CLIP = utils.params["N_FRAMES_PER_CLIP"]  # Total number of frames per clip
@@ -115,7 +116,6 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q, maxiter: int =
         q,
         offsets,
         reg_coef=utils.params["M_REG_COEF"],
-        maxiter=maxiter,
     )
     
     print(f"offset optimization finished in {time.time()-s}")
@@ -162,6 +162,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
             q0,
             qs_to_opt,
             kps_to_opt,
+            utils.params["MAXITER"]
         )
 
         mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
@@ -174,6 +175,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 q0,
                 part,
                 kps_to_opt,
+                utils.params["MAXITER"]
             )
             
             mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
