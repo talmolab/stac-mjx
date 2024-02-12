@@ -3,11 +3,12 @@ ROOT_DIFF_STEP: 1.0e-08
 DIFF_STEP: 3.0e-08
 
 # Tolerance for the optimizations of the full model, limb, and root. 
-FTOL: 1.0e-04
-
+Q_TOL: 1.0e-08
+M_TOL: 1.0e-08
 # Solver iterations
-ROOT_MAXITER: 500
-MAXITER: 100
+ROOT_MAXITER: 200
+Q_MAXITER: 200
+M_MAXITER: 1000
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -161,8 +162,8 @@ ARENA_TYPE: DannceArena
 Z_OFFSET: 0.00
 
 # Path to the model file.
-STAC_XML_PATH: "./models/rodent_stac.xml"
-VIZ_XML_PATH: "./models/rodent_viz.xml"
+STAC_XML_PATH: /Users/charleszhang/GitHub/stac-mjx/models/rodent_stac.xml # "./models/rodent_stac.xml"
+VIZ_XML_PATH: /Users/charleszhang/GitHub/stac-mjx/models/rodent_viz.xml # "./models/rodent_viz.xml"
 SKELETON_PATH: "./models/rat23.mat"
 
 # What is the size of the animal you'd like to register, relative to the model?

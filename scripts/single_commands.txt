@@ -1,0 +1,1 @@
+python3 stac-mjx/stac_test.py -fp="no_kpstoopt_fit.p" -tp="no_kpstoopt_transform.p" -n=500 -t=1e-03 -s=True > output.out

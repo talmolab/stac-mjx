@@ -7,7 +7,7 @@ from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
 from jax import jit
-from jaxopt import LBFGSB, LBFGS
+from jaxopt import LBFGSB, LBFGS, GaussNewton
 import utils
 from functools import partial
 from jax.tree_util import Partial
@@ -80,12 +80,8 @@ def q_loss(
     Returns:
         float: loss value
     """
-    # TODO use jax.lax.cond
-    # if part opt, compose a loss of the form: L = aF(p1) + bF(p2) ... + d(F(p4))
-    # function F is what q_loss currently does
-    
-    # If optimizing arbitrary sets of qpos, add the optimizer qpos to the copy.
-    # updates the relevant qpos elements to the corresponding new ones to calculate the loss
+    # If optimizing subsets of qpos, add the optimizer qpos to the copy.
+    # updates the relevant qpos elements to the corresponding new ones
     q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * q)
 
     mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
@@ -114,47 +110,61 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.n
 
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
-def get_q_bounds(mjx_model):
-    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
-    lb = jnp.minimum(lb, 0.0)
-    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-    return (lb, ub)
 
 @jit
 def q_opt(
     mjx_model,
     mjx_data,
     marker_ref_arr: jnp.ndarray,
-    q0,
+    q0: jnp.ndarray,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
-    maxiter
+    maxiter: int
 ):
     """Update q_pose using estimated marker parameters.
     """
+
     try:
-        solver = LBFGSB(fun=q_loss, 
-                        tol=utils.params["FTOL"],
-                        maxiter=maxiter,
-                        jit=True,
-                        verbose=False
-                        )
-        # Define the bounds
-        bounds = get_q_bounds(mjx_model)
-        
-        res = solver.run(q0, bounds, mjx_model=mjx_model, 
+        gn = GaussNewton(residual_fun=q_loss, 
+                         tol=utils.params["Q_TOL"],
+                         maxiter=maxiter,
+                         jit=True,
+                         verbose=0
+                         )
+
+        res = gn.run(q0, mjx_model=mjx_model, 
                                         mjx_data=mjx_data, 
                                         kp_data=marker_ref_arr.T,
                                         qs_to_opt=qs_to_opt,
                                         kps_to_opt=kps_to_opt,
                                         initial_q=q0)
+        
+        # solver = LBFGSB(fun=q_loss, 
+        #                 tol=utils.params["Q_TOL"],
+        #                 maxiter=maxiter,
+        #                 jit=True,
+        #                 verbose=0
+        #                 )
+        
+        # # Get and define the bounds
+        # lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
+        # lb = jnp.minimum(lb, 0.0)
+        # ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
+        # bounds = (lb, ub)
+        
+        # res = solver.run(q0, bounds, mjx_model=mjx_model, 
+        #                                 mjx_data=mjx_data, 
+        #                                 kp_data=marker_ref_arr.T,
+        #                                 qs_to_opt=qs_to_opt,
+        #                                 kps_to_opt=kps_to_opt,
+        #                                 initial_q=q0)
         q_opt_param = res.params
         
         return mjx_data, q_opt_param
 
     except ValueError as ex:
-        # print("Warning: optimization failed.", flush=True)
-        # print(ex, flush=True)
+        print("Warning: optimization failed.", flush=True)
+        print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = kinematics(mjx_model, mjx_data)
 
@@ -251,9 +261,10 @@ def m_opt(offset0,
         _type_: _description_
     """
     solver = LBFGS(fun=m_loss, 
-                    tol=utils.params["FTOL"],
+                    tol=utils.params["M_TOL"],
                     jit=True,
-                    maxiter=utils.params["MAXITER"],
+                    maxiter=utils.params["M_MAXITER"],
+                    history_size=20,
                     verbose=False
                     )
     res = solver.run(offset0, mjx_model=mjx_model,

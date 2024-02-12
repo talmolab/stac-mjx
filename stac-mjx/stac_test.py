@@ -38,16 +38,25 @@ def test_transform(offset_path, root, kp_data):
     save(transform_data, transform_path)
 
 
+def get_clip(kp_data, n_frames):
+    import random
+    max_index = kp_data.shape[0] - n_frames + 1
+    rand_start = random.randint(0, max_index)
+    return kp_data[rand_start:rand_start+n_frames,:]
+
+
 import argparse
 
 def main():
     """Processes command-line arguments and prints a message based on tolerance."""
     parser = argparse.ArgumentParser(description=
                                     'calls fit and transform, using the given optimizer tolerance')
-    parser.add_argument('--fit_path', type=str, help='fit path')
-    parser.add_argument('--transform_path', type=str, help='transform path')
-    parser.add_argument('--tol', type=float, help='optimizer tolerance')
-    parser.add_argument('--n_fit_frames', type=int, help='number of frames to fit')
+    parser.add_argument('-fp', '--fit_path', type=str, help='fit path')
+    parser.add_argument('-tp', '--transform_path', type=str, help='transform path')
+    parser.add_argument('-t', '--tol', type=float, help='optimizer tolerance')
+    parser.add_argument('-n', '--n_fit_frames', type=int, help='number of frames to fit')
+    parser.add_argument('-s', '--skip_transform', type=bool, help='True if skip transform')
+
     args = parser.parse_args()
 
     utils.init_params("././params/params.yaml")
@@ -76,8 +85,8 @@ def main():
     model.opt.ls_iterations = 4
 
     # Need to download this data file and provide the path
-    # data_path = "/home/charles/Desktop/save_data_AVG.mat"
-    data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
+    data_path = "save_data_AVG.mat"
+    # data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
 
     root = mjcf.from_path(ratpath)
 
@@ -97,10 +106,11 @@ def main():
     part_opt_setup(physics)
     
     # Running fit then transform
-
     print(f"kp_data shape: {kp_data.shape}")
     print(f"Running fit() on {utils.params['n_fit_frames']}")
-    mjx_model, q, x, walker_body_sites, kp_data = fit(mj_model, kp_data[:utils.params['n_fit_frames']])
+    clip = get_clip(kp_data, utils.params['n_fit_frames'])
+    print(f"clip shape: {clip.shape}")
+    mjx_model, q, x, walker_body_sites, kp_data = fit(mj_model, clip)
 
     fit_data = package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data
@@ -109,6 +119,10 @@ def main():
     print(f"saving data to {fit_path}")
     save(fit_data, fit_path)
 
+    if args.skip_transform:
+        print("skipping transform()")
+        return
+    
     print("Running transform()")
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
