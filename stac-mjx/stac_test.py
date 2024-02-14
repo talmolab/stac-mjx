@@ -53,7 +53,8 @@ def main():
                                     'calls fit and transform, using the given optimizer tolerance')
     parser.add_argument('-fp', '--fit_path', type=str, help='fit path')
     parser.add_argument('-tp', '--transform_path', type=str, help='transform path')
-    parser.add_argument('-t', '--tol', type=float, help='optimizer tolerance')
+    parser.add_argument('-qt', '--qtol', type=float, help='q optimizer tolerance')
+    parser.add_argument('-mt', '--mtol', type=float, help='m optimizer tolerance')
     parser.add_argument('-n', '--n_fit_frames', type=int, help='number of frames to fit')
     parser.add_argument('-s', '--skip_transform', type=bool, help='True if skip transform')
 
@@ -65,9 +66,9 @@ def main():
         raise Exception("arg fit_path required")
     if not args.transform_path:
         raise Exception("arg transform_path required")
-    if args.tol:
-        print(f"setting tolerance to {args.tol}")
-        utils.params['FTOL'] = args.tol
+    if args.qtol:
+        print(f"setting tolerance to {args.qtol}")
+        utils.params['Q_TOL'] = args.qtol
     if args.n_fit_frames:
         print(f"setting fit frames to {args.n_fit_frames}")
         utils.params['n_fit_frames'] = args.n_fit_frames
@@ -85,8 +86,8 @@ def main():
     model.opt.ls_iterations = 4
 
     # Need to download this data file and provide the path
-    data_path = "save_data_AVG.mat"
-    # data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
+    # data_path = "save_data_AVG.mat"
+    data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
 
     root = mjcf.from_path(ratpath)
 

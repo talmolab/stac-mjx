@@ -218,6 +218,7 @@ def fit(mj_model, kp_data):
     
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+
     for n_iter in range(utils.params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
         mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)

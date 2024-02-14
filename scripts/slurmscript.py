@@ -9,7 +9,7 @@ def submit():
     """
     script = f"""#!/bin/bash
 #SBATCH -p olveczkygpu,gpu_requeue # olveczky,cox,shared,serial_requeue # olveczkygpu,gpu_requeue
-#SBATCH --mem=32000 
+#SBATCH --mem=64000 
 #SBATCH -c 16
 #SBATCH -N 1 
 # # SBATCH --constraint="intel&avx2"
@@ -21,8 +21,9 @@ def submit():
 source ~/.bashrc
 module load Mambaforge/22.11.1-fasrc01
 source activate stac-mjx
+module load cuda/12.2.0-fasrc01
 nvidia-smi
-python3 /n/home05/charleszhang/stac-mjx/stac-mjx/stac_test.py --fit_path={"no_kpstoopt_fit.p"} --transform_path={"no_kpstoopt_transform.p"} --n_fit_frames={500} --tol={1e-03}
+python3 stac-mjx/stac_test.py -fp="LM_fit.p" -tp="LM_transform.p" -n=1000 -qt=1e-08 -s=False 
 """
     print(f"Submitting job")
     job_id = slurm_submit(script) 

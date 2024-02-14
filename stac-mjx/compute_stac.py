@@ -35,16 +35,16 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     s = time.time()
     print("Root Optimization:")
     q0 = jnp.copy(mjx_data.qpos[:])
+    print(f"data.qpos: {q0}")
     # Set the center to help with finding the optima (does not need to be exact)
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
 
-    # q0 = q0 + 1e-08
     print(f"starting qs: {q0}")
 
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-    print(kps_to_opt)
+    print(qs_to_opt)
     j = time.time()
     mjx_data, q_opt_param = stac_base.q_opt(
         mjx_model, 
@@ -53,7 +53,8 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         qs_to_opt,
         kps_to_opt,
-        utils.params["ROOT_MAXITER"]
+        utils.params["ROOT_MAXITER"],
+        root=True
     )
     print(f"q_opt 1 finished in {time.time()-j}")
     print(f"resulting qs: {q_opt_param}")
@@ -84,7 +85,8 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         qs_to_opt,
         kps_to_opt,
-        utils.params["ROOT_MAXITER"]
+        utils.params["ROOT_MAXITER"],
+        root=True
     )
     
     print(f"q_opt 2 finished in {time.time()-j}")

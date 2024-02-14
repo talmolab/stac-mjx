@@ -3,10 +3,10 @@ ROOT_DIFF_STEP: 1.0e-08
 DIFF_STEP: 3.0e-08
 
 # Tolerance for the optimizations of the full model, limb, and root. 
-Q_TOL: 1.0e-08
-M_TOL: 1.0e-08
+Q_TOL: 1.0e-06
+M_TOL: 1.0e-06
 # Solver iterations
-ROOT_MAXITER: 200
+ROOT_MAXITER: 400
 Q_MAXITER: 200
 M_MAXITER: 1000
 
