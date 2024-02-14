@@ -54,7 +54,10 @@ def set_site_pos(mjx_model, offsets):
         _type_: _description_
     """
     indices = np.fromiter(utils.params["site_index_map"].values(), dtype=int)
-    new_site_pos = jnp.put(mjx_model.site_pos, indices, offsets, inplace=False)
+    # print(indices)
+    # new_site_pos = jnp.put(mjx_model.site_pos, indices, offsets, inplace=False)
+    new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
+    # print(new_site_pos[indices])
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 
