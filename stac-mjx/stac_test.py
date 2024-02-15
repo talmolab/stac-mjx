@@ -120,6 +120,7 @@ def main():
     print(f"saving data to {fit_path}")
     save(fit_data, fit_path)
 
+    print(args.skip_transform)
     if args.skip_transform:
         print("skipping transform()")
         return

@@ -20,7 +20,7 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
 
     else:
         mjx_data = mjx_data.replace(qpos=q_opt_param)
-        mjx_data = stac_base.kinematics(mjx_model, mjx_data) 
+        return stac_base.kinematics(mjx_model, mjx_data) 
     
     return mjx_data
 
@@ -54,7 +54,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         qs_to_opt,
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
-        root=True
+        # root=True
     )
     print(f"q_opt 1 finished in {time.time()-j}")
     print(f"resulting qs: {q_opt_param}")
@@ -86,7 +86,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         qs_to_opt,
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
-        root=True
+        # root=True
     )
     
     print(f"q_opt 2 finished in {time.time()-j}")

@@ -216,7 +216,7 @@ def fit(mj_model, kp_data):
     mjx_data = mjx.kinematics(mjx_model, mjx_data)
     mjx_data = mjx.com_pos(mjx_model, mjx_data)
     
-    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    # Begin optimization steps
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
 
     for n_iter in range(utils.params['N_ITERS']):
@@ -230,10 +230,7 @@ def fit(mj_model, kp_data):
     mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
        
     return mjx_model, q, x, walker_body_sites, kp_data
-    # data = package_data(
-    #     mjx_model, physics, q, x, walker_body_sites, kp_data
-    # )
-    # return data
+
 
 def transform(mj_model, kp_data, offsets):
     """Register skeleton to keypoint data
