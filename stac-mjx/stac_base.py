@@ -54,12 +54,57 @@ def set_site_pos(mjx_model, offsets):
         _type_: _description_
     """
     indices = np.fromiter(utils.params["site_index_map"].values(), dtype=int)
-    # print(indices)
-    # new_site_pos = jnp.put(mjx_model.site_pos, indices, offsets, inplace=False)
     new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
-    # print(new_site_pos[indices])
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
+
+
+def test_q_loss(
+    q: jnp.ndarray,
+    mjx_model,
+    mjx_data,
+    kp_data: jnp.ndarray,
+    # qs_to_opt: jnp.ndarray,
+    kps_to_opt: jnp.ndarray,
+    # initial_q: jnp.ndarray
+    # part_opt: bool = False
+) -> float:
+    """Compute the marker loss for q_phase optimization.
+
+    Args:
+        q (jnp.ndarray): Qpos for current frame.
+        env (TYPE): env of current environment.
+        kp_data (jnp.ndarray): Reference keypoint data.
+        sites (jnp.ndarray): sites of keypoints at frame_index
+        qs_to_opt (List, optional): Binary vector of qposes to optimize.
+        trunk_only (bool, optional): Optimize based only on the trunk kps
+
+    Returns:
+        float: loss value
+    """
+    # If optimizing subsets of qpos, add the optimizer qpos to the copy.
+    # updates the relevant qpos elements to the corresponding new ones
+    # new_q = jnp.zeros((67,)) 
+    # new_q = jnp.concatenate((q, new_q))
+
+    pad_width = ((0, 67))  # Pads only at the end
+    new_q = jnp.pad(q, pad_width, mode='constant', constant_values=0)
+    
+    mjx_data = mjx_data.replace(qpos=new_q)
+    # Forward kinematics
+    mjx_data = mjx.kinematics(mjx_model, mjx_data)
+    mjx_data = mjx.com_pos(mjx_model, mjx_data)
+    markers = get_site_xpos(mjx_data).flatten()
+    # mjx_data, markers = q_joints_to_markers(new_q, mjx_model, mjx_data)
+    residual = kp_data - markers
+    # print("a")
+    # Set irrelevant body sites to 0
+    # residual = residual * kps_to_opt
+    # print("b")
+    residual =  0.5 * jnp.sum(jnp.square(residual))
+    # print(f"final residual: {residual}")
+    # print("q_loss done")
+    return residual
 
 def q_loss(
     q: jnp.ndarray,
@@ -118,91 +163,71 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.n
 
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
-def lm_solve(maxiter, q0, bounds, mjx_model, 
+# TODO put this back into the opt function. loss function is conditioned on root opt or not.
+def lbfgsb_solve(q0, bounds, mjx_model, 
                     mjx_data, 
                     kp_data,
-                    qs_to_opt,
+                    # qs_to_opt,
                     kps_to_opt,
-                    ):
-    
-    solver = LevenbergMarquardt(residual_fun=q_loss, 
-                         tol=utils.params["Q_TOL"],
-                         maxiter=maxiter,
-                         jit=True,
-                         xtol=1e-8, 
-                         gtol=1e-8,
-                         verbose=0
-                         )
-
-    return solver.run(q0, mjx_model=mjx_model, 
-                                    mjx_data=mjx_data, 
-                                    kp_data=kp_data,
-                                    qs_to_opt=qs_to_opt,
-                                    kps_to_opt=kps_to_opt,
-                                    initial_q=q0).params
-
-
-def lbfgsb_solve(maxiter, q0, bounds, mjx_model, 
-                    mjx_data, 
-                    kp_data,
-                    qs_to_opt,
-                    kps_to_opt,
+                    maxiter
                     ):
 
-    solver = LBFGSB(fun=q_loss, 
+    solver = LBFGSB(fun=test_q_loss, 
                         tol=utils.params["Q_TOL"],
                         maxiter=maxiter,
+                        history_size=20,
+                        use_gamma=True,
+                        stepsize=-1.0,
                         jit=True,
                         verbose=0
                         )
-               
-        
+    # print(q0.shape)
     return solver.run(q0, bounds, mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=kp_data,
-                                    qs_to_opt=qs_to_opt,
+                                    # qs_to_opt=qs_to_opt,
                                     kps_to_opt=kps_to_opt,
-                                    initial_q=q0).params
+                                    # initial_q=q0
+                                    ).params
 
 @jit
 def q_opt(
     mjx_model,
     mjx_data,
     marker_ref_arr: jnp.ndarray,
-    q0: jnp.ndarray,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
     maxiter: int,
-    root: bool=False
+    # root: bool=False,
+    q0: jnp.ndarray = None,
+
 ):
     """Update q_pose using estimated marker parameters.
     """
-
     try:
         
         lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
         lb = jnp.minimum(lb, 0.0)
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        bounds = (lb, ub)
-        # solver = LeastSquares()
-        # q_opt_param = solver.least_squares(q_loss, q0, None, bounds,max_nfev=maxiter,
-                                                # mjx_model=mjx_model, 
-                                                # mjx_data=mjx_data, 
-                                                # kp_data=marker_ref_arr.T,
-                                                # qs_to_opt=qs_to_opt,
-                                                # kps_to_opt=kps_to_opt,
-                                                # initial_q=q0
-                                                # )
+        bounds = (lb[:7], ub[:7])
+
         # print(q_opt_param)
-        # if root, use LM, else use lbfgsb
-        q_opt_param = jax.lax.cond(root, lm_solve, lbfgsb_solve, maxiter, q0, bounds, mjx_model, 
+        # q_opt_param = jax.lax.cond(root, lm_solve, lbfgsb_solve, maxiter, q0, bounds, mjx_model, 
+        #             mjx_data, 
+        #             marker_ref_arr.T,
+        #             qs_to_opt,
+        #             kps_to_opt,
+        #             )
+        # print(root_q0.shape)
+        q_opt_param = lbfgsb_solve(q0, bounds, mjx_model, 
                     mjx_data, 
                     marker_ref_arr.T,
-                    qs_to_opt,
+                    # qs_to_opt,
                     kps_to_opt,
+                    maxiter
                     )
         
-        return mjx_data, q_opt_param
+        return q_opt_param
 
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
@@ -210,7 +235,41 @@ def q_opt(
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = kinematics(mjx_model, mjx_data)
 
-    return mjx_data, None
+    return None
+
+@jit
+def root_q_opt(
+    mjx_model,
+    mjx_data,
+    bounds,
+    marker_ref_arr: jnp.ndarray,
+    kps_to_opt: jnp.ndarray,
+    maxiter: int,
+    q0: jnp.ndarray,
+
+):
+    """Update q_pose using estimated marker parameters.
+    """
+    try:
+        q_opt_param = lbfgsb_solve(q0, bounds, mjx_model, 
+                    mjx_data, 
+                    marker_ref_arr.T,
+                    # qs_to_opt,
+                    kps_to_opt,
+                    maxiter
+                    )
+        
+        return q_opt_param
+
+    except ValueError as ex:
+        print("Warning: optimization failed.", flush=True)
+        print(ex, flush=True)
+        mjx_data = mjx_data.replace(qpos=q0) 
+        mjx_data = kinematics(mjx_model, mjx_data)
+
+    return None
+
+
 
 @jit 
 def m_loss(
@@ -258,7 +317,7 @@ def m_loss(
         )
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
 
-def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
+def m_joints_to_markers(offsets, mjx_model, mjx_data) -> jnp.ndarray:
     """Convert site information to marker information.
 
     Args:
@@ -269,7 +328,7 @@ def m_joints_to_markers(offset, mjx_model, mjx_data) -> jnp.ndarray:
     Returns:
         TYPE: Array of marker positions
     """
-    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset, (-1, 3))) 
+    mjx_model = set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
 
     # Forward kinematics
     mjx_data = kinematics(mjx_model, mjx_data)

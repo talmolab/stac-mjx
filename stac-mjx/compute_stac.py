@@ -13,14 +13,19 @@ import os
 from typing import List, Dict, Tuple, Text
 from jax.tree_util import Partial
 import time
+from functools import partial
 
 def replace_qs(mjx_model, mjx_data, q_opt_param):
     if q_opt_param is None:
         print("optimization failed, continuing")
 
     else:
+        # if root opt
+        z = jnp.zeros((67,)) 
+        q_opt_param = jnp.concatenate((q_opt_param, z))
+
         mjx_data = mjx_data.replace(qpos=q_opt_param)
-        return stac_base.kinematics(mjx_model, mjx_data) 
+        mjx_data = stac_base.kinematics(mjx_model, mjx_data) 
     
     return mjx_data
 
@@ -32,35 +37,44 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
+
     s = time.time()
     print("Root Optimization:")
+
+    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
+    lb = jnp.minimum(lb, 0.0)
+    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
+    bounds = (lb[:7], ub[:7])
+
     q0 = jnp.copy(mjx_data.qpos[:])
-    print(f"data.qpos: {q0}")
+    # print(f"data.qpos: {q0}")
     # Set the center to help with finding the optima (does not need to be exact)
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
 
-    print(f"starting qs: {q0}")
+    root_q0 = q0[:7]
+
+    # print(f"starting qs: {q0}")
 
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-    print(qs_to_opt)
+    # print(qs_to_opt)
     j = time.time()
-    mjx_data, q_opt_param = stac_base.q_opt(
+    q_opt_param = stac_base.root_q_opt(
         mjx_model, 
         mjx_data,
+        bounds, 
         kp_data[frame, :],
-        q0,
-        qs_to_opt,
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
-        # root=True
+        root_q0,
     )
     print(f"q_opt 1 finished in {time.time()-j}")
-    print(f"resulting qs: {q_opt_param}")
+    # print(f"resulting qs: {q_opt_param}")
     r = time.time()
+    
     mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
-    print(f"qs after replace: {mjx_data.qpos}")
+    # print(f"qs after replace: {mjx_data.qpos}")
     print(f"Replace 1 finished in {time.time()-r}")
     
     kps_to_opt = jnp.repeat(
@@ -71,22 +85,23 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     
     q0 = jnp.copy(mjx_data.qpos[:])
 
-    # Set the center to help with finding the optima (does not need to be exact)
+    
+    # TODO: try without this one? itmay be reseting better params
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    root_q0 = q0[:7]
 
     # Trunk only optimization
     j = time.time()
     print("starting q_opt 2")
     print(f"starting qs: {q0}")
-    mjx_data, q_opt_param = stac_base.q_opt(
+    q_opt_param = stac_base.root_q_opt(
         mjx_model, 
         mjx_data,
+        bounds,
         kp_data[frame, :],
-        q0,
-        qs_to_opt,
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
-        # root=True
+        root_q0,
     )
     
     print(f"q_opt 2 finished in {time.time()-j}")

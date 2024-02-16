@@ -155,7 +155,7 @@ SITES_TO_REGULARIZE:
 N_SAMPLE_FRAMES: 50
 
 # Time of each frame in seconds.
-TIME_BINS: 0.02
+TIME_BINS: 1.0 # 0.02
 
 # If you want to use a different arena, you can specify it here.
 ARENA_TYPE: DannceArena
