@@ -21,23 +21,16 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
 
     else:
         # if root opt
-        z = jnp.zeros((67,)) 
-        q_opt_param = jnp.concatenate((q_opt_param, z))
+        # z = jnp.zeros((67,)) 
+        # q_opt_param = jnp.concatenate((q_opt_param, z))
 
         mjx_data = mjx_data.replace(qpos=q_opt_param)
         mjx_data = stac_base.kinematics(mjx_model, mjx_data) 
     
     return mjx_data
 
-def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
-    """Optimize only the root.
 
-    Args:
-        env (TYPE): Environment
-        params (Dict): Parameters dictionary
-        frame (int, optional): Frame to optimize
-    """
-
+def hyper_root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     s = time.time()
     print("Root Optimization:")
 
@@ -55,21 +48,71 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
     root_q0 = q0[:7]
 
-    # print(f"starting qs: {q0}")
+    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
+
+    reses = []
+    for i in range(100):
+        j = time.time()
+        reses.append(stac_base.root_q_opt(mjx_model,
+                                        mjx_data,
+                                        bounds, 
+                                        kp_data[frame, :],
+                                        kps_to_opt,
+                                        utils.params["ROOT_MAXITER"],
+                                        root_q0,
+                                        )
+        )
+        print(f"q_opt {i} finished in {time.time()-j}")
+        print(f"resulting qs: {reses[i].params[:7]}")
+
+    r = time.time()
+    
+    # get the lowest one then replace
+    best_res = min(reses, key=lambda r: r.state.error)
+    print(f"errors: {sorted([res.state.error for res in reses])}")
+    print(f"best state = {best_res} with error of {best_res.state.error}")
+    mjx_data = replace_qs(mjx_model, mjx_data, best_res.params)
+    print(f"Replace 1 finished in {time.time()-r}")
+
+
+    print(f"Root optimization finished in {time.time()-s}")
+    return mjx_data
+
+
+def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
+    """Optimize only the root.
+
+    Args:
+        env (TYPE): Environment
+        params (Dict): Parameters dictionary
+        frame (int, optional): Frame to optimize
+    """
+
+    s = time.time()
+    print("Root Optimization:")
+
+    q0 = jnp.copy(mjx_data.qpos[:])
+    # print(f"data.qpos: {q0}")
+    # Set the center to help with finding the optima (does not need to be exact)
+    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    qs_to_opt = jnp.zeros_like(q0, dtype=bool)
+    qs_to_opt = qs_to_opt.at[:7].set(True)
 
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
     # print(qs_to_opt)
     j = time.time()
-    q_opt_param = stac_base.root_q_opt(
-        mjx_model, 
+    res = stac_base.q_opt(
+        mjx_model,
         mjx_data,
-        bounds, 
         kp_data[frame, :],
+        qs_to_opt,
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
-        root_q0,
+        q0,
     )
-    print(f"q_opt 1 finished in {time.time()-j}")
+    q_opt_param = res.params
+
+    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     # print(f"resulting qs: {q_opt_param}")
     r = time.time()
     
@@ -85,26 +128,25 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     
     q0 = jnp.copy(mjx_data.qpos[:])
 
-    
-    # TODO: try without this one? itmay be reseting better params
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
-    root_q0 = q0[:7]
 
     # Trunk only optimization
     j = time.time()
     print("starting q_opt 2")
     print(f"starting qs: {q0}")
-    q_opt_param = stac_base.root_q_opt(
+    res = stac_base.q_opt(
         mjx_model, 
         mjx_data,
-        bounds,
         kp_data[frame, :],
+        qs_to_opt,
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
-        root_q0,
+        q0,
     )
     
-    print(f"q_opt 2 finished in {time.time()-j}")
+    q_opt_param = res.params
+
+    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
     print(f"resulting qs: {q_opt_param}")
     mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)

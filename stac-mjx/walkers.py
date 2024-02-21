@@ -33,7 +33,7 @@ class Rat(legacy_base.Walker):
 
     def _build(self, params=None, name="walker", marker_rgba=None, initializer=None):
         self.params = utils.params
-        self._mjcf_root = mjcf.from_path(utils.params["VIZ_XML_PATH"])
+        self._mjcf_root = mjcf.from_path(utils.params["STAC_XML_PATH"])
         if name:
             self._mjcf_root.model = name
 

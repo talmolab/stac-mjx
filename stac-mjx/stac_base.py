@@ -95,15 +95,10 @@ def test_q_loss(
     mjx_data = mjx.kinematics(mjx_model, mjx_data)
     mjx_data = mjx.com_pos(mjx_model, mjx_data)
     markers = get_site_xpos(mjx_data).flatten()
-    # mjx_data, markers = q_joints_to_markers(new_q, mjx_model, mjx_data)
     residual = kp_data - markers
-    # print("a")
     # Set irrelevant body sites to 0
     # residual = residual * kps_to_opt
-    # print("b")
     residual =  0.5 * jnp.sum(jnp.square(residual))
-    # print(f"final residual: {residual}")
-    # print("q_loss done")
     return residual
 
 def q_loss(
@@ -132,17 +127,13 @@ def q_loss(
     # If optimizing subsets of qpos, add the optimizer qpos to the copy.
     # updates the relevant qpos elements to the corresponding new ones
     
-    q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * q)
-    # print(f"initial_q: {initial_q}")
-    # print(f"q: {q}")
+    new_q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * jnp.copy(q))
 
-    mjx_data, markers = q_joints_to_markers(q, mjx_model, mjx_data)
+    mjx_data, markers = q_joints_to_markers(new_q, mjx_model, mjx_data)
     residual = kp_data - markers
     # Set irrelevant body sites to 0
     residual = residual * kps_to_opt
-    residual =  0.5 * jnp.sum(jnp.square(residual))
-    # print(f"final residual: {residual}")
-    # print("q_loss done")
+    residual =  jnp.sum(jnp.square(residual))
     return residual
 
 def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.ndarray):
@@ -163,32 +154,6 @@ def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.n
 
     return mjx_data, get_site_xpos(mjx_data).flatten()
 
-# TODO put this back into the opt function. loss function is conditioned on root opt or not.
-def lbfgsb_solve(q0, bounds, mjx_model, 
-                    mjx_data, 
-                    kp_data,
-                    # qs_to_opt,
-                    kps_to_opt,
-                    maxiter
-                    ):
-
-    solver = LBFGSB(fun=test_q_loss, 
-                        tol=utils.params["Q_TOL"],
-                        maxiter=maxiter,
-                        history_size=20,
-                        use_gamma=True,
-                        stepsize=-1.0,
-                        jit=True,
-                        verbose=0
-                        )
-    # print(q0.shape)
-    return solver.run(q0, bounds, mjx_model=mjx_model, 
-                                    mjx_data=mjx_data, 
-                                    kp_data=kp_data,
-                                    # qs_to_opt=qs_to_opt,
-                                    kps_to_opt=kps_to_opt,
-                                    # initial_q=q0
-                                    ).params
 
 @jit
 def q_opt(
@@ -198,8 +163,7 @@ def q_opt(
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
     maxiter: int,
-    # root: bool=False,
-    q0: jnp.ndarray = None,
+    q0: jnp.ndarray,
 
 ):
     """Update q_pose using estimated marker parameters.
@@ -209,7 +173,11 @@ def q_opt(
         lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
         lb = jnp.minimum(lb, 0.0)
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        bounds = (lb[:7], ub[:7])
+        # lb = jnp.array(mjx_model.jnt_range[:, 0])
+        # lb = jnp.minimum(lb, 0.0)
+        # ub = jnp.array(mjx_model.jnt_range[:, 1])
+        print(f"lb: {lb.shape}\n ub: {ub.shape}")
+        bounds = (lb, ub)
 
         # print(q_opt_param)
         # q_opt_param = jax.lax.cond(root, lm_solve, lbfgsb_solve, maxiter, q0, bounds, mjx_model, 
@@ -219,15 +187,24 @@ def q_opt(
         #             kps_to_opt,
         #             )
         # print(root_q0.shape)
-        q_opt_param = lbfgsb_solve(q0, bounds, mjx_model, 
-                    mjx_data, 
-                    marker_ref_arr.T,
-                    # qs_to_opt,
-                    kps_to_opt,
-                    maxiter
-                    )
+        solver = LBFGSB(fun=q_loss, 
+                        tol=utils.params["Q_TOL"],
+                        maxiter=maxiter,
+                        history_size=20,
+                        use_gamma=True,
+                        stepsize=1.0,
+                        jit=True,
+                        verbose=0
+                        )
+        return solver.run(q0, bounds, mjx_model=mjx_model, 
+                                    mjx_data=mjx_data, 
+                                    kp_data=marker_ref_arr.T,
+                                    qs_to_opt=qs_to_opt,
+                                    kps_to_opt=kps_to_opt,
+                                    initial_q=q0
+                                    ) # .params
         
-        return q_opt_param
+        # return q_opt_param
 
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
@@ -251,15 +228,24 @@ def root_q_opt(
     """Update q_pose using estimated marker parameters.
     """
     try:
-        q_opt_param = lbfgsb_solve(q0, bounds, mjx_model, 
-                    mjx_data, 
-                    marker_ref_arr.T,
-                    # qs_to_opt,
-                    kps_to_opt,
-                    maxiter
-                    )
+        solver = LBFGSB(fun=test_q_loss, 
+                        tol=utils.params["Q_TOL"],
+                        maxiter=maxiter,
+                        history_size=20,
+                        use_gamma=True,
+                        stepsize=-1.0,
+                        jit=True,
+                        verbose=0
+                        )
+        return solver.run(q0, bounds, mjx_model=mjx_model, 
+                                    mjx_data=mjx_data, 
+                                    kp_data=marker_ref_arr.T,
+                                    # qs_to_opt=qs_to_opt,
+                                    kps_to_opt=kps_to_opt,
+                                    # initial_q=q0
+                                    ) # .params
         
-        return q_opt_param
+        # return q_opt_param
 
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
@@ -268,7 +254,6 @@ def root_q_opt(
         mjx_data = kinematics(mjx_model, mjx_data)
 
     return None
-
 
 
 @jit 

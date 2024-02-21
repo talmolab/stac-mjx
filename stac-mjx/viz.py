@@ -264,6 +264,7 @@ def mujoco_loop(
     with imageio.get_writer(save_path, fps=FPS) as video:
         # Render the first frame before stepping in the physics
         reconArr = render_frame(env, scene_option, height, width, camera)
+        
         video.append_data(reconArr)
         while prev_time < env._time_limit:
             while (np.round(env.physics.time() - prev_time, decimals=5)) < utils.params[
@@ -457,6 +458,75 @@ def render_mujoco(
         width=width,
     )
 
+def render_first(
+    param_path: Text,
+    data_path: Text,
+    save_path: Text,
+    frames: np.ndarray = None,
+    camera: Text = "walker/close_profile",
+    calibration_path: Text = None,
+    segmented: bool = False,
+    height: int = HEIGHT,
+    width: int = WIDTH,
+    xml_path: Text = None,
+):
+    """Render a video of a STAC dataset using mujoco.
+
+    Args:
+        param_path (Text): Path to the stac parameters file.
+        data_path (Text): Path to the stac data file.
+        save_path (Text): Path to save the video.
+        frames (np.ndarray, optional): Frames to render. Defaults to None.
+        camera (Text, optional): Camera to render. Defaults to "walker/close_profile".
+        calibration_path (Text, optional): Path to the calibration file. Defaults to None.
+        segmented (bool, optional): Whether to segment the rendered video. Defaults to False.
+        height (int, optional): Image height. Defaults to 1200.
+        width (int, optional): Image width. Defaults to 1920.
+        xml_path (Text, optional): Path to the xml file. Defaults to None.
+    """
+    xml_path, qpos, kp_data, n_frames, offsets, camera_kwargs = load_data(
+        param_path, data_path, frames, calibration_path, xml_path
+    )
+
+    # Prepare the environment
+    env, scene_option = setup_visualization(
+        param_path,
+        qpos,
+        offsets,
+        kp_data,
+        n_frames,
+        render_video=True,
+        segmented=segmented,
+        camera_kwargs=camera_kwargs,
+        registration_xml=xml_path,
+    )
+    def render_frame(env, scene_option, height, width, camera):
+        env.task.after_step(env.physics, None)
+        return env.physics.render(
+            height,
+            width,
+            camera_id=camera,
+            scene_option=scene_option,
+        )
+
+    prev_time = env.physics.time()
+    
+    with imageio.get_writer(save_path, fps=FPS) as video:
+        # Render the first frame before stepping in the physics
+        reconArr = render_frame(env, scene_option, height, width, camera)
+        
+        video.append_data(reconArr)
+        print(env._time_limit)
+        while prev_time < env._time_limit:
+            while (np.round(env.physics.time() - prev_time, decimals=5)) < utils.params[
+                "TIME_BINS"
+            ]:
+                env.physics.step()
+            reconArr = render_frame(env, scene_option, height, width, camera)
+            video.append_data(reconArr)
+            prev_time = np.round(env.physics.time(), decimals=2)
+
+
 
 def load_data(
     param_path: str,
@@ -469,7 +539,7 @@ def load_data(
     if xml_path is None:
         with open(param_path, "rb") as file:
             params = yaml.safe_load(file)
-        xml_path = params["VIZ_XML_PATH"]
+        xml_path = params["STAC_XML_PATH"]
 
     # Load data from the data file
     with open(data_path, "rb") as file:
@@ -481,6 +551,7 @@ def load_data(
     qpos = fix_tail(qpos, q_names)
 
     # Filter qpos and kp_data based on provided frames
+    print(qpos.shape)
     if frames is not None:
         qpos = qpos[frames, ...].copy()
         kp_data = data["kp_data"][frames, ...].copy() 
