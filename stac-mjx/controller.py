@@ -52,9 +52,44 @@ def part_opt_setup(physics):
         ])
     
     utils.params["indiv_parts"] = indiv_parts
+
+
+def create_keypoint_sites(root):
+    keypoint_sites = []
+    # set up keypoint rendering by adding the kp sites to the body
+    for id, name in enumerate(utils.params["KEYPOINT_MODEL_PAIRS"]):
+        start = (np.random.rand(3) - 0.5) * 0.001
+        rgba = utils.params["KEYPOINT_COLOR_PAIRS"][name]
+        site = root.worldbody.add(
+            "site",
+            name=name + "_kp",
+            type="sphere",
+            size=[0.005],
+            rgba=rgba,
+            pos=start,
+            group=2,
+        )
+        keypoint_sites.append(site)
     
-# root is modified in place
-def set_body_sites(root):
+    physics = mjcf.Physics.from_mjcf_model(root)
+    
+    # return physics, mj_model, and sites (to use in bind())
+    return physics, physics.model.ptr, keypoint_sites
+
+
+def set_keypoint_sites(physics, sites, kps):
+    """
+
+    Args:
+        physics (_type_): _description_
+        sites (_type_): _description_
+        kps (_type_): _description_
+    """
+    physics.bind(sites).pos[:] = np.reshape(kps.T, (-1,3))
+    return physics, physics.model.ptr
+
+
+def create_body_sites(root):
     body_sites = []
     for key, v in utils.params["KEYPOINT_MODEL_PAIRS"].items():
         parent = root.find("body", v)
@@ -83,7 +118,6 @@ def set_body_sites(root):
     
     utils.params["part_names"] = initialize_part_names(physics)
 
-    # Set params fields instead of returning
     return physics, physics.model.ptr
 
 def prep_kp_data(kp_data, stac_keypoint_order):
@@ -118,7 +152,7 @@ def chunk_kp_data(kp_data):
 
 
 def test_opt(root, kp_data):
-    physics, mj_model = set_body_sites(root)
+    physics, mj_model = create_body_sites(root)
     utils.params["mj_model"] = mj_model
     part_opt_setup(physics)
     

@@ -8,7 +8,6 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 from jaxopt import LBFGSB, LBFGS, GaussNewton, LevenbergMarquardt
-from jaxfit import LeastSquares
 import utils
 from functools import partial
 from jax.tree_util import Partial

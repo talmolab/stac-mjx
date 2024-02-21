@@ -13,7 +13,7 @@
     <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512"/>
     <texture name="body" type="cube" builtin="flat" mark="cross" width="128" height="128" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
     <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 .4 1"/>
-    <skin name="skin" file="rodent_walker_skin.skn"/>
+    <!-- <skin name="skin" file="rodent_walker_skin.skn"/> -->
     <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
     <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
   </asset>
@@ -151,10 +151,10 @@
   </default>
 
   <worldbody>
-    <!-- <geom name="floor" pos="0 0 -0.005" size="10 10 0.025" type="plane" material="grid" condim="3"/> -->
+    <geom name="floor" pos="0 0 -0.005" size="10 10 0.025" type="plane" material="grid" condim="3"/>
     <light name="spotlight" mode="targetbody" target="torso"/>
     <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06808957263119967">
-      <!-- <freejoint name="root"/> -->
+      <freejoint name="root"/>
       <light name="tracking_light" mode="targetbodycom" pos="0 0 3"/>
       <camera name="back" mode="targetbody" pos="-1 0 0.5" xyaxes="0 -1 0 1 0 2"/>
       <camera name="side" mode="targetbody" pos="0 -3 1" xyaxes="1 0 0 0 1 2"/>

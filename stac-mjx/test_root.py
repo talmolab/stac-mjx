@@ -71,7 +71,7 @@ if __name__ == "__main__":
     kp_data = prep_kp_data(kp_data, stac_keypoint_order)
 
     # setup for fit
-    physics, mj_model = set_body_sites(root)
+    physics, mj_model = create_body_sites(root)
     part_opt_setup(physics)
 
     # Run root optimization
