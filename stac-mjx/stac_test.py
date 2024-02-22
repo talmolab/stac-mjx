@@ -10,11 +10,6 @@ from jax import numpy as jnp
 import time
 from controller import *
 
-
-# If your machine is low on ram:
-# os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6'
-# os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"
-
 # print(f"total envs: {n_envs}")
 # fit_data = test_opt(root, kp_data)
 # Single clip optimization for first 500 frames
@@ -48,6 +43,14 @@ def get_clip(kp_data, n_frames):
 import argparse
 
 def main():
+    # If your machine is low on ram:
+    # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6' 
+    # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"   
+    # When using nvidia gpu do this thing
+    from jax.lib import xla_bridge
+    if xla_bridge.get_backend().platform == 'gpu':
+        os.environ["XLA_FLAGS"]="xla_gpu_triton_gemm_any=true"
+    
     """Processes command-line arguments and prints a message based on tolerance."""
     parser = argparse.ArgumentParser(description=
                                     'calls fit and transform, using the given optimizer tolerance')

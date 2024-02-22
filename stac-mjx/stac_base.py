@@ -313,7 +313,6 @@ def m_joints_to_markers(offsets, mjx_model, mjx_data) -> jnp.ndarray:
         TYPE: Array of marker positions
     """
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
-
     # Forward kinematics
     mjx_data = kinematics(mjx_model, mjx_data)
     mjx_data = com_pos(mjx_model, mjx_data)
