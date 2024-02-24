@@ -15,7 +15,7 @@ def submit():
 # # SBATCH --constraint="intel&avx2"
 #SBATCH -t 1-0:00
 #SBATCH -J stac-mjx
-#SBATCH --gres=gpu:nvidia_a100-sxm4-80gb:1
+#SBATCH --gres=gpu:nvidia_h100_80gb_hbm3:1
 # # SBATCH -o /slurm/out
 # # SBATCH -e /slurm/error
 source ~/.bashrc
@@ -23,7 +23,7 @@ module load Mambaforge/22.11.1-fasrc01
 source activate stac-mjx
 module load cuda/12.2.0-fasrc01
 nvidia-smi
-python3 stac-mjx/stac_test.py -fp="LM_fit.p" -tp="LM_transform.p" -n=1000 -qt=1e-08 -s=False 
+python3 stac-mjx/stac_test.py -fp="viz_fit.p" -tp="viz_transform.p" -n=2000 -s=1 
 """
     print(f"Submitting job")
     job_id = slurm_submit(script) 

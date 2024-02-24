@@ -172,20 +172,10 @@ def q_opt(
         lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
         lb = jnp.minimum(lb, 0.0)
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        # lb = jnp.array(mjx_model.jnt_range[:, 0])
-        # lb = jnp.minimum(lb, 0.0)
-        # ub = jnp.array(mjx_model.jnt_range[:, 1])
-        print(f"lb: {lb.shape}\n ub: {ub.shape}")
+
+        # print(f"lb: {lb.shape}\n ub: {ub.shape}")
         bounds = (lb, ub)
 
-        # print(q_opt_param)
-        # q_opt_param = jax.lax.cond(root, lm_solve, lbfgsb_solve, maxiter, q0, bounds, mjx_model, 
-        #             mjx_data, 
-        #             marker_ref_arr.T,
-        #             qs_to_opt,
-        #             kps_to_opt,
-        #             )
-        # print(root_q0.shape)
         solver = LBFGSB(fun=q_loss, 
                         tol=utils.params["Q_TOL"],
                         maxiter=maxiter,
@@ -195,23 +185,21 @@ def q_opt(
                         jit=True,
                         verbose=0
                         )
-        return solver.run(q0, bounds, mjx_model=mjx_model, 
+        return mjx_data, solver.run(q0, bounds, mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=marker_ref_arr.T,
                                     qs_to_opt=qs_to_opt,
                                     kps_to_opt=kps_to_opt,
                                     initial_q=q0
-                                    ) # .params
+                                    )
         
-        # return q_opt_param
-
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = kinematics(mjx_model, mjx_data)
 
-    return None
+    return mjx_data, None
 
 @jit
 def root_q_opt(
@@ -358,7 +346,7 @@ def m_opt(offset0,
                             initial_offsets=initial_offsets,
                             is_regularized=is_regularized,
                             reg_coef=reg_coef)
-    return res.params
+    return res
     
 
 def m_phase(
@@ -396,11 +384,12 @@ def m_phase(
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
 
-    offset_opt_param = m_opt(offset0, mjx_model, 
+    res = m_opt(offset0, mjx_model, 
                              mjx_data, keypoints, q, 
                              initial_offsets, is_regularized, reg_coef)
     
-    print(f"learned offsets: {offset_opt_param}")
+    offset_opt_param = res.params
+    print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well

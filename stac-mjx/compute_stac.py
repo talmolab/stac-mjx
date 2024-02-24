@@ -92,16 +92,15 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     print("Root Optimization:")
 
     q0 = jnp.copy(mjx_data.qpos[:])
-    # print(f"data.qpos: {q0}")
+
     # Set the center to help with finding the optima (does not need to be exact)
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
 
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-    # print(qs_to_opt)
     j = time.time()
-    res = stac_base.q_opt(
+    mjx_data, res = stac_base.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -113,11 +112,9 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q_opt_param = res.params
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
-    # print(f"resulting qs: {q_opt_param}")
     r = time.time()
     
     mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
-    # print(f"qs after replace: {mjx_data.qpos}")
     print(f"Replace 1 finished in {time.time()-r}")
     
     kps_to_opt = jnp.repeat(
@@ -134,7 +131,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     j = time.time()
     print("starting q_opt 2")
     print(f"starting qs: {q0}")
-    res = stac_base.q_opt(
+    mjx_data, res = stac_base.q_opt(
         mjx_model, 
         mjx_data,
         kp_data[frame, :],
@@ -215,49 +212,48 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     def f(mjx_data, kp_data, n_frame, parts):
         q0 = jnp.copy(mjx_data.qpos[:])
         
-        # Get initial parameters for part optimization
-        # part_q0s = [q0[part] for part in parts] 
-        
-        mjx_data, q_opt_param = stac_base.q_opt(
+        # While body opt, then part opt
+        mjx_data, res = stac_base.q_opt(
             mjx_model, 
             mjx_data,
             kp_data[n_frame, :],
-            q0,
             qs_to_opt,
             kps_to_opt,
-            utils.params["Q_MAXITER"]
+            utils.params["Q_MAXITER"],
+            q0,
+
         )
 
-        mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+        mjx_data = replace_qs(mjx_model, mjx_data, res.params)
         
         for part in parts:
             q0 = jnp.copy(mjx_data.qpos[:])
 
-            mjx_data, q_opt_param = stac_base.q_opt(
+            mjx_data, res = stac_base.q_opt(
                 mjx_model, 
                 mjx_data,
                 kp_data[n_frame, :],
-                q0,
-                part,
+                qs_to_opt,
                 kps_to_opt,
-                utils.params["Q_MAXITER"]
+                utils.params["Q_MAXITER"],
+                q0,
             )
             
-            mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+            mjx_data = replace_qs(mjx_model, mjx_data, res.params)
         
-        return mjx_data
+        return mjx_data, res.state.error
     
     # Optimize over each frame, storing all the results
     for n_frame in frames:
         loop_start = time.time()
         
-        mjx_data = f(mjx_data, kp_data, n_frame, parts)
+        mjx_data, error = f(mjx_data, kp_data, n_frame, parts)
         
         q.append(mjx_data.qpos[:])
         x.append(mjx_data.xpos[:])
         walker_body_sites.append(stac_base.get_site_xpos(mjx_data))
         
-        print(f"Frame {n_frame} done in {time.time()-loop_start}")
+        print(f"Frame {n_frame} done in {time.time()-loop_start} with a final error of {error}")
         
     print(f"Pose Optimization done in {time.time()-s}")
     return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x)
