@@ -97,7 +97,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
-
+    print(f"Initial qs: {q0}")
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
     j = time.time()
     mjx_data, res = stac_base.q_opt(
@@ -112,9 +112,11 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q_opt_param = res.params
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    print(f"Resulting qs: {q_opt_param}")
+
     r = time.time()
-    
-    mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+
+    mjx_data = replace_qs(mjx_model, mjx_data, stac_base.make_qs(q0, qs_to_opt, q_opt_param))
     print(f"Replace 1 finished in {time.time()-r}")
     
     kps_to_opt = jnp.repeat(
@@ -145,8 +147,9 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
-    print(f"resulting qs: {q_opt_param}")
-    mjx_data = replace_qs(mjx_model, mjx_data, q_opt_param)
+
+    mjx_data = replace_qs(mjx_model, mjx_data, stac_base.make_qs(q0, qs_to_opt, q_opt_param))
+
     print(f"Replace 2 finished in {time.time()-r}")
     print(f"qs after replace: {mjx_data.qpos}")
     print(f"Root optimization finished in {time.time()-s}")
@@ -221,7 +224,6 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
             kps_to_opt,
             utils.params["Q_MAXITER"],
             q0,
-
         )
 
         mjx_data = replace_qs(mjx_model, mjx_data, res.params)
@@ -233,13 +235,14 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 mjx_model, 
                 mjx_data,
                 kp_data[n_frame, :],
-                qs_to_opt,
+                part,
                 kps_to_opt,
                 utils.params["Q_MAXITER"],
                 q0,
             )
-            
-            mjx_data = replace_qs(mjx_model, mjx_data, res.params)
+            q_opt_param = res.params
+
+            mjx_data = replace_qs(mjx_model, mjx_data, stac_base.make_qs(q0, part, q_opt_param))
         
         return mjx_data, res.state.error
     

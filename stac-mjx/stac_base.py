@@ -6,6 +6,7 @@ import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
+# import jax.experimental.host_callback as hcb
 from jax import jit
 from jaxopt import LBFGSB, LBFGS, GaussNewton, LevenbergMarquardt
 import utils
@@ -56,6 +57,20 @@ def set_site_pos(mjx_model, offsets):
     new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
+
+
+def make_qs(q0, qs_to_opt, q):
+    """Creates new set of qs combining initial and new qs for part optimization based on qs_to_opt
+
+    Args:
+        q0 (_type_): _description_
+        qs_to_opt (_type_): _description_
+        q (_type_): _description_
+
+    Returns:
+        jnp.Array: _description_
+    """
+    return jnp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jnp.copy(q))
 
 
 def test_q_loss(
@@ -126,9 +141,9 @@ def q_loss(
     # If optimizing subsets of qpos, add the optimizer qpos to the copy.
     # updates the relevant qpos elements to the corresponding new ones
     
-    new_q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * jnp.copy(q))
+    # new_q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * jnp.copy(q))
 
-    mjx_data, markers = q_joints_to_markers(new_q, mjx_model, mjx_data)
+    mjx_data, markers = q_joints_to_markers(make_qs(initial_q, qs_to_opt, q), mjx_model, mjx_data)
     residual = kp_data - markers
     # Set irrelevant body sites to 0
     residual = residual * kps_to_opt
@@ -192,7 +207,7 @@ def q_opt(
                                     kps_to_opt=kps_to_opt,
                                     initial_q=q0
                                     )
-        
+            
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
@@ -219,8 +234,8 @@ def root_q_opt(
                         tol=utils.params["Q_TOL"],
                         maxiter=maxiter,
                         history_size=20,
-                        use_gamma=True,
-                        stepsize=-1.0,
+                        # use_gamma=True,
+                        # stepsize=-1.0,
                         jit=True,
                         verbose=0
                         )
