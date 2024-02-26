@@ -59,7 +59,7 @@ def main():
     parser.add_argument('-qt', '--qtol', type=float, help='q optimizer tolerance')
     parser.add_argument('-mt', '--mtol', type=float, help='m optimizer tolerance')
     parser.add_argument('-n', '--n_fit_frames', type=int, help='number of frames to fit')
-    parser.add_argument('-s', '--skip_transform', type=bool, help='True if skip transform')
+    parser.add_argument('-s', '--skip_transform', type=int, help='True if skip transform')
 
     args = parser.parse_args()
 
@@ -123,8 +123,7 @@ def main():
     print(f"saving data to {fit_path}")
     save(fit_data, fit_path)
 
-    print(args.skip_transform)
-    if args.skip_transform:
+    if args.skip_transform==1:
         print("skipping transform()")
         return
     

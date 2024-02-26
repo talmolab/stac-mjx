@@ -6,6 +6,7 @@ import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
+# import jax.experimental.host_callback as hcb
 from jax import jit
 from jaxopt import LBFGSB, LBFGS, GaussNewton, LevenbergMarquardt
 import utils
@@ -56,6 +57,20 @@ def set_site_pos(mjx_model, offsets):
     new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
+
+
+def make_qs(q0, qs_to_opt, q):
+    """Creates new set of qs combining initial and new qs for part optimization based on qs_to_opt
+
+    Args:
+        q0 (_type_): _description_
+        qs_to_opt (_type_): _description_
+        q (_type_): _description_
+
+    Returns:
+        jnp.Array: _description_
+    """
+    return jnp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jnp.copy(q))
 
 
 def test_q_loss(
@@ -126,9 +141,9 @@ def q_loss(
     # If optimizing subsets of qpos, add the optimizer qpos to the copy.
     # updates the relevant qpos elements to the corresponding new ones
     
-    new_q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * jnp.copy(q))
+    # new_q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * jnp.copy(q))
 
-    mjx_data, markers = q_joints_to_markers(new_q, mjx_model, mjx_data)
+    mjx_data, markers = q_joints_to_markers(make_qs(initial_q, qs_to_opt, q), mjx_model, mjx_data)
     residual = kp_data - markers
     # Set irrelevant body sites to 0
     residual = residual * kps_to_opt
@@ -172,20 +187,10 @@ def q_opt(
         lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
         lb = jnp.minimum(lb, 0.0)
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        # lb = jnp.array(mjx_model.jnt_range[:, 0])
-        # lb = jnp.minimum(lb, 0.0)
-        # ub = jnp.array(mjx_model.jnt_range[:, 1])
-        print(f"lb: {lb.shape}\n ub: {ub.shape}")
+
+        # print(f"lb: {lb.shape}\n ub: {ub.shape}")
         bounds = (lb, ub)
 
-        # print(q_opt_param)
-        # q_opt_param = jax.lax.cond(root, lm_solve, lbfgsb_solve, maxiter, q0, bounds, mjx_model, 
-        #             mjx_data, 
-        #             marker_ref_arr.T,
-        #             qs_to_opt,
-        #             kps_to_opt,
-        #             )
-        # print(root_q0.shape)
         solver = LBFGSB(fun=q_loss, 
                         tol=utils.params["Q_TOL"],
                         maxiter=maxiter,
@@ -195,23 +200,21 @@ def q_opt(
                         jit=True,
                         verbose=0
                         )
-        return solver.run(q0, bounds, mjx_model=mjx_model, 
+        return mjx_data, solver.run(q0, bounds, mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=marker_ref_arr.T,
                                     qs_to_opt=qs_to_opt,
                                     kps_to_opt=kps_to_opt,
                                     initial_q=q0
-                                    ) # .params
-        
-        # return q_opt_param
-
+                                    )
+            
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = kinematics(mjx_model, mjx_data)
 
-    return None
+    return mjx_data, None
 
 @jit
 def root_q_opt(
@@ -231,8 +234,8 @@ def root_q_opt(
                         tol=utils.params["Q_TOL"],
                         maxiter=maxiter,
                         history_size=20,
-                        use_gamma=True,
-                        stepsize=-1.0,
+                        # use_gamma=True,
+                        # stepsize=-1.0,
                         jit=True,
                         verbose=0
                         )
