@@ -358,7 +358,7 @@ def m_opt(offset0,
                             initial_offsets=initial_offsets,
                             is_regularized=is_regularized,
                             reg_coef=reg_coef)
-    return res.params
+    return res
     
 
 def m_phase(
@@ -396,11 +396,12 @@ def m_phase(
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
 
-    offset_opt_param = m_opt(offset0, mjx_model, 
+    res = m_opt(offset0, mjx_model, 
                              mjx_data, keypoints, q, 
                              initial_offsets, is_regularized, reg_coef)
     
-    print(f"learned offsets: {offset_opt_param}")
+    offset_opt_param = res.params
+    print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
     # Forward kinematics, and save the results to the walker sites as well
