@@ -30,55 +30,6 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
     return mjx_data
 
 
-def hyper_root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
-    s = time.time()
-    print("Root Optimization:")
-
-    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
-    lb = jnp.minimum(lb, 0.0)
-    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-    bounds = (lb[:7], ub[:7])
-
-    q0 = jnp.copy(mjx_data.qpos[:])
-    # print(f"data.qpos: {q0}")
-    # Set the center to help with finding the optima (does not need to be exact)
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
-    qs_to_opt = jnp.zeros_like(q0, dtype=bool)
-    qs_to_opt = qs_to_opt.at[:7].set(True)
-
-    root_q0 = q0[:7]
-
-    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-
-    reses = []
-    for i in range(100):
-        j = time.time()
-        reses.append(stac_base.root_q_opt(mjx_model,
-                                        mjx_data,
-                                        bounds, 
-                                        kp_data[frame, :],
-                                        kps_to_opt,
-                                        utils.params["ROOT_MAXITER"],
-                                        root_q0,
-                                        )
-        )
-        print(f"q_opt {i} finished in {time.time()-j}")
-        print(f"resulting qs: {reses[i].params[:7]}")
-
-    r = time.time()
-    
-    # get the lowest one then replace
-    best_res = min(reses, key=lambda r: r.state.error)
-    print(f"errors: {sorted([res.state.error for res in reses])}")
-    print(f"best state = {best_res} with error of {best_res.state.error}")
-    mjx_data = replace_qs(mjx_model, mjx_data, best_res.params)
-    print(f"Replace 1 finished in {time.time()-r}")
-
-
-    print(f"Root optimization finished in {time.time()-s}")
-    return mjx_data
-
-
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
 
@@ -108,6 +59,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
         q0,
+        utils.params["ROOT_FTOL"],
     )
     q_opt_param = res.params
 
@@ -141,6 +93,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         kps_to_opt,
         utils.params["ROOT_MAXITER"],
         q0,
+        utils.params["ROOT_FTOL"],
     )
     
     q_opt_param = res.params
@@ -178,7 +131,8 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
         time_indices,
         q,
         offsets,
-        reg_coef=utils.params["M_REG_COEF"],
+        utils.params["M_REG_COEF"],
+        utils.params["ROOT_FTOL"],
     )
     
     print(f"offset optimization finished in {time.time()-s}")
@@ -224,6 +178,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
             kps_to_opt,
             utils.params["Q_MAXITER"],
             q0,
+            utils.params["FTOL"],
         )
 
         mjx_data = replace_qs(mjx_model, mjx_data, res.params)
@@ -239,6 +194,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 kps_to_opt,
                 utils.params["Q_MAXITER"],
                 q0,
+                utils.params["LIMB_FTOL"],
             )
             q_opt_param = res.params
 

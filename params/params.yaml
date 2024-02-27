@@ -3,12 +3,13 @@ ROOT_DIFF_STEP: 1.0e-08
 DIFF_STEP: 3.0e-08
 
 # Tolerance for the optimizations of the full model, limb, and root. 
-Q_TOL: 1.0e-06
-M_TOL: 1.0e-06
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
 # Solver iterations
-ROOT_MAXITER: 400
-Q_MAXITER: 200
-M_MAXITER: 1000
+ROOT_MAXITER: 100
+Q_MAXITER: 100
+M_MAXITER: 500
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -155,15 +156,15 @@ SITES_TO_REGULARIZE:
 N_SAMPLE_FRAMES: 50
 
 # Time of each frame in seconds.
-TIME_BINS: 1.0 # 0.02
+TIME_BINS: 0.02
 
 # If you want to use a different arena, you can specify it here.
 ARENA_TYPE: DannceArena
 Z_OFFSET: 0.00
 
 # Path to the model file.
-STAC_XML_PATH: /Users/charleszhang/GitHub/stac-mjx/models/rodent_stac.xml # "./models/rodent_stac.xml"
-VIZ_XML_PATH: /Users/charleszhang/GitHub/stac-mjx/models/rodent_viz.xml # "./models/rodent_viz.xml"
+STAC_XML_PATH: "./models/rodent_stac.xml"
+VIZ_XML_PATH: "./models/rodent_viz.xml"
 SKELETON_PATH: "./models/rat23.mat"
 
 # What is the size of the animal you'd like to register, relative to the model?
@@ -172,7 +173,7 @@ SCALE_FACTOR: .9
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 3
 
-# Number of GPUs to be used
+# Number of GPUs to be used (unused until pmap is implemented)
 N_GPUS: 1
 
 # TODO: raise exception if total frames % frames per clip != 0

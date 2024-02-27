@@ -2,6 +2,7 @@
 import mujoco
 from mujoco import mjx
 from  mujoco.mjx._src import smooth
+from mujoco.mjx.types import Model, Data
 import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
@@ -128,45 +129,34 @@ def q_loss(
     """Compute the marker loss for q_phase optimization.
 
     Args:
-        q (jnp.ndarray): Qpos for current frame.
-        env (TYPE): env of current environment.
-        kp_data (jnp.ndarray): Reference keypoint data.
-        sites (jnp.ndarray): sites of keypoints at frame_index
-        qs_to_opt (List, optional): Binary vector of qposes to optimize.
-        trunk_only (bool, optional): Optimize based only on the trunk kps
+        q (jnp.ndarray): Proposed qs
+        mjx_model (mjx.Model): Model object (stays constant)
+        mjx_data (mjx.Data): Data object (modified to calculate new xpos)
+        kp_data (jnp.ndarray): Ground truth keypoint positions
+        qs_to_opt (jnp.ndarray): Boolean array; for each index in qpos, True = q and False = initial_q when calculating residual
+        kps_to_opt (jnp.ndarray): Boolean array; only return residuals for the True positions
+        initial_q (jnp.ndarray): Starting qs for reference
 
     Returns:
-        float: loss value
+        float: sum of squares scalar loss
     """
-    # If optimizing subsets of qpos, add the optimizer qpos to the copy.
-    # updates the relevant qpos elements to the corresponding new ones
-    
-    # new_q = jnp.copy((1 - qs_to_opt) * initial_q + qs_to_opt * jnp.copy(q))
 
-    mjx_data, markers = q_joints_to_markers(make_qs(initial_q, qs_to_opt, q), mjx_model, mjx_data)
-    residual = kp_data - markers
-    # Set irrelevant body sites to 0
-    residual = residual * kps_to_opt
-    residual =  jnp.sum(jnp.square(residual))
-    return residual
+    # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
+    mjx_data = mjx_data.replace(qpos=make_qs(initial_q, qs_to_opt, q))
 
-def q_joints_to_markers(q: jnp.ndarray, mjx_model, mjx_data) -> (mjx.Data, jnp.ndarray):
-    """Convert site information to marker information.
-
-    Args:
-        q (jnp.ndarray): Postural state
-        env (TYPE): env of current environment
-        sites (jnp.ndarray): Sites of keypoint data.
-
-    Returns:
-        jnp.ndarray: Array of marker positions.
-    """
-    mjx_data = mjx_data.replace(qpos=q)
     # Forward kinematics
     mjx_data = mjx.kinematics(mjx_model, mjx_data)
     mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
-    return mjx_data, get_site_xpos(mjx_data).flatten()
+    # Get marker site xpos
+    markers = get_site_xpos(mjx_data).flatten()
+    residual = kp_data - markers
+
+    # Set irrelevant body sites to 0
+    residual = residual * kps_to_opt
+    residual =  jnp.sum(jnp.square(residual))
+
+    return residual
 
 
 @jit
@@ -178,25 +168,25 @@ def q_opt(
     kps_to_opt: jnp.ndarray,
     maxiter: int,
     q0: jnp.ndarray,
-
+    ftol: float,
 ):
     """Update q_pose using estimated marker parameters.
     """
     try:
         
+        # Get bounds of joint angle ranges
         lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
         lb = jnp.minimum(lb, 0.0)
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-
         # print(f"lb: {lb.shape}\n ub: {ub.shape}")
         bounds = (lb, ub)
 
         solver = LBFGSB(fun=q_loss, 
-                        tol=utils.params["Q_TOL"],
+                        tol=ftol,
                         maxiter=maxiter,
                         history_size=20,
-                        use_gamma=True,
-                        stepsize=1.0,
+                        # use_gamma=True,
+                        # stepsize=1.0,
                         jit=True,
                         verbose=0
                         )
@@ -331,7 +321,8 @@ def m_opt(offset0,
           q, 
           initial_offsets, 
           is_regularized, 
-          reg_coef):
+          reg_coef,
+          ftol):
     """a jitted m_phase optimization
 
     Args:
@@ -348,7 +339,7 @@ def m_opt(offset0,
         _type_: _description_
     """
     solver = LBFGS(fun=m_loss, 
-                    tol=utils.params["M_TOL"],
+                    tol=ftol,
                     jit=True,
                     maxiter=utils.params["M_MAXITER"],
                     history_size=20,
