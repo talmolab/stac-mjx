@@ -131,8 +131,8 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
         time_indices,
         q,
         offsets,
-        utils.params["M_REG_COEF"],
         utils.params["ROOT_FTOL"],
+        utils.params["M_REG_COEF"],
     )
     
     print(f"offset optimization finished in {time.time()-s}")

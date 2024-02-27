@@ -2,7 +2,6 @@
 import mujoco
 from mujoco import mjx
 from  mujoco.mjx._src import smooth
-from mujoco.mjx.types import Model, Data
 import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
@@ -173,12 +172,10 @@ def q_opt(
     """Update q_pose using estimated marker parameters.
     """
     try:
-        
         # Get bounds of joint angle ranges
         lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
         lb = jnp.minimum(lb, 0.0)
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        # print(f"lb: {lb.shape}\n ub: {ub.shape}")
         bounds = (lb, ub)
 
         solver = LBFGSB(fun=q_loss, 
@@ -205,6 +202,7 @@ def q_opt(
         mjx_data = kinematics(mjx_model, mjx_data)
 
     return mjx_data, None
+
 
 @jit
 def root_q_opt(
@@ -235,10 +233,8 @@ def root_q_opt(
                                     # qs_to_opt=qs_to_opt,
                                     kps_to_opt=kps_to_opt,
                                     # initial_q=q0
-                                    ) # .params
+                                    )
         
-        # return q_opt_param
-
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
@@ -250,7 +246,7 @@ def root_q_opt(
 
 @jit 
 def m_loss(
-    offset: jnp.ndarray,
+    offsets: jnp.ndarray,
     mjx_model,
     mjx_data,
     kp_data: jnp.ndarray,
@@ -275,15 +271,23 @@ def m_loss(
 
     @jit
     def f(carry, input):
+        # Unpack arguments
         qpos, kp = input
         mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized = carry
+
+        # Get the offset relative to the initial position, only for markers you wish to regularize
+        reg_term = reg_term + (jnp.square(offsets - initial_offsets.flatten())) * is_regularized
+
+        # Set qpos and offsets
         mjx_data = mjx_data.replace(qpos=qpos)
-        
-        # Get the offset relative to the initial position, only for
-        # markers you wish to regularize
-        reg_term = reg_term + (jnp.square(offset - initial_offsets.flatten())) * is_regularized
-        
-        mjx_data, markers = m_joints_to_markers(offset, mjx_model, mjx_data)
+        mjx_model = set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
+
+        # Forward kinematics
+        mjx_data = kinematics(mjx_model, mjx_data)
+        mjx_data = com_pos(mjx_model, mjx_data)
+        markers = get_site_xpos(mjx_data).flatten()
+
+        # Accumulate squared residual 
         residual = (residual + jnp.square((kp - markers)))
         return (mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized), None
     
@@ -293,24 +297,6 @@ def m_loss(
             (q, kp_data)
         )
     return jnp.sum(residual) + reg_coef * jnp.sum(reg_term)
-
-def m_joints_to_markers(offsets, mjx_model, mjx_data) -> jnp.ndarray:
-    """Convert site information to marker information.
-
-    Args:
-        offset (TYPE):  Current offset.
-        env (TYPE):  env of current environment
-        sites (TYPE):  Sites of keypoint data.
-
-    Returns:
-        TYPE: Array of marker positions
-    """
-    mjx_model = set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
-    # Forward kinematics
-    mjx_data = kinematics(mjx_model, mjx_data)
-    mjx_data = com_pos(mjx_model, mjx_data)
-
-    return mjx_data, get_site_xpos(mjx_data).flatten()
 
 
 @jit
@@ -362,6 +348,7 @@ def m_phase(
     time_indices: jnp.ndarray,
     q: jnp.ndarray,
     initial_offsets: jnp.ndarray,
+    ftol,
     reg_coef: float = 0.0,
 ):
     """Estimate marker offset, keeping qpos fixed.
@@ -391,8 +378,9 @@ def m_phase(
     q = jnp.take(q, time_indices, axis=0)
 
     res = m_opt(offset0, mjx_model, 
-                             mjx_data, keypoints, q, 
-                             initial_offsets, is_regularized, reg_coef)
+                mjx_data, keypoints, q, 
+                initial_offsets, is_regularized, 
+                reg_coef, ftol)
     
     offset_opt_param = res.params
     print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
