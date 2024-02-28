@@ -1,5 +1,5 @@
 import jax 
-from jax import jit, vmap
+from jax import vmap
 from jax import numpy as jnp
 import mujoco
 from mujoco import mjx
@@ -8,12 +8,10 @@ import utils
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 import numpy as np
-import functools
 from compute_stac import *
-import stac_base
+import operations as op
 import pickle
 import os
-import time
 
 """
 This file should serve the same purpose as the logic for executing SLURM jobs. 
@@ -172,11 +170,11 @@ def test_opt(root, kp_data):
         # do initial get_site stuff inside mjx_setup
         
         # Get and set the offsets of the markers
-        offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+        offsets = jnp.copy(op.get_site_pos(mjx_model))
         offsets *= utils.params['SCALE_FACTOR']
         
         # print(mjx_model.site_pos, mjx_model.site_pos.shape)
-        mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
+        mjx_model = op.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
@@ -240,11 +238,11 @@ def fit(mj_model, kp_data):
     mjx_data = mjx.make_data(mjx_model)
     
     # Get and set the offsets of the markers
-    offsets = jnp.copy(stac_base.get_site_pos(mjx_model))
+    offsets = jnp.copy(op.get_site_pos(mjx_model))
     offsets *= utils.params['SCALE_FACTOR']
     
     # print(mjx_model.site_pos, mjx_model.site_pos.shape)
-    mjx_model = stac_base.set_site_pos(mjx_model, offsets)
+    mjx_model = op.set_site_pos(mjx_model, offsets)
 
     # forward is used to calculate xpos and such
     mjx_data = mjx.kinematics(mjx_model, mjx_data)
@@ -296,7 +294,7 @@ def transform(mj_model, kp_data, offsets):
         # do initial get_site stuff inside mjx_setup
         
         # Set the offsets.
-        mjx_model = stac_base.set_site_pos(mjx_model, offsets) 
+        mjx_model = op.set_site_pos(mjx_model, offsets) 
 
         # forward is used to calculate xpos and such
         mjx_data = mjx.kinematics(mjx_model, mjx_data)

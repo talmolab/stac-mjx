@@ -1,77 +1,11 @@
 """Implementation of stac for animal motion capture in dm_control suite."""
-import mujoco
-from mujoco import mjx
-from  mujoco.mjx._src import smooth
-import numpy as np
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
-# import jax.experimental.host_callback as hcb
+import operations as op
 from jax import jit
-from jaxopt import LBFGSB, LBFGS, GaussNewton, LevenbergMarquardt
+from jaxopt import LBFGSB, LBFGS
 import utils
-from functools import partial
-from jax.tree_util import Partial
-
-class _TestNoneArgs(BaseException):
-    """Simple base exception"""
-
-    pass
-
-def get_site_xpos(mjx_data):
-    """Returns MjxData.site_xpos of keypoint body sites
-
-    Args:
-        mjx_data (_type_): _description_
-        site_index_map (_type_): _description_
-
-    Returns:
-        jax.Array: _description_
-    """
-    return mjx_data.site_xpos[jnp.array(list(utils.params["site_index_map"].values()))]
-
-def get_site_pos(mjx_model):
-    """Gets MjxModel.site_pos of keypoint body sites
-
-    Args:
-        mjx_data (_type_): _description_
-        site_index_map (_type_): _description_
-
-    Returns:
-        jax.Array: _description_
-    """
-    return mjx_model.site_pos[jnp.array(list(utils.params["site_index_map"].values()))]
-
-# Gives error when getting indices array: ValueError: setting an array element with a sequence.
-def set_site_pos(mjx_model, offsets):
-    """Sets MjxModel.sites_pos to offsets and returns the new mjx_model
-
-    Args:
-        mjx_data (_type_): _description_
-        site_index_map (_type_): _description_
-
-    Returns:
-        _type_: _description_
-    """
-    indices = np.fromiter(utils.params["site_index_map"].values(), dtype=int)
-    new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
-    mjx_model = mjx_model.replace(site_pos=new_site_pos)
-    return mjx_model
-
-
-def make_qs(q0, qs_to_opt, q):
-    """Creates new set of qs combining initial and new qs for part optimization based on qs_to_opt
-
-    Args:
-        q0 (_type_): _description_
-        qs_to_opt (_type_): _description_
-        q (_type_): _description_
-
-    Returns:
-        jnp.Array: _description_
-    """
-    return jnp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jnp.copy(q))
-
 
 def test_q_loss(
     q: jnp.ndarray,
@@ -106,9 +40,9 @@ def test_q_loss(
     
     mjx_data = mjx_data.replace(qpos=new_q)
     # Forward kinematics
-    mjx_data = mjx.kinematics(mjx_model, mjx_data)
-    mjx_data = mjx.com_pos(mjx_model, mjx_data)
-    markers = get_site_xpos(mjx_data).flatten()
+    mjx_data = op.kinematics(mjx_model, mjx_data)
+    mjx_data = op.com_pos(mjx_model, mjx_data)
+    markers = op.get_site_xpos(mjx_data).flatten()
     residual = kp_data - markers
     # Set irrelevant body sites to 0
     # residual = residual * kps_to_opt
@@ -141,14 +75,14 @@ def q_loss(
     """
 
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    mjx_data = mjx_data.replace(qpos=make_qs(initial_q, qs_to_opt, q))
+    mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
 
     # Forward kinematics
-    mjx_data = utils.kinematics(mjx_model, mjx_data)
-    mjx_data = utils.com_pos(mjx_model, mjx_data)
+    mjx_data = op.kinematics(mjx_model, mjx_data)
+    mjx_data = op.com_pos(mjx_model, mjx_data)
 
     # Get marker site xpos
-    markers = get_site_xpos(mjx_data).flatten()
+    markers = op.get_site_xpos(mjx_data).flatten()
     residual = kp_data - markers
 
     # Set irrelevant body sites to 0
@@ -199,7 +133,7 @@ def q_opt(
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
-        mjx_data = utils.kinematics(mjx_model, mjx_data)
+        mjx_data = op.kinematics(mjx_model, mjx_data)
 
     return mjx_data, None
 
@@ -239,7 +173,7 @@ def root_q_opt(
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
-        mjx_data = utils.kinematics(mjx_model, mjx_data)
+        mjx_data = op.kinematics(mjx_model, mjx_data)
 
     return None
 
@@ -280,12 +214,12 @@ def m_loss(
 
         # Set qpos and offsets
         mjx_data = mjx_data.replace(qpos=qpos)
-        mjx_model = set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
+        mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
 
         # Forward kinematics
-        mjx_data = utils.kinematics(mjx_model, mjx_data)
-        mjx_data = utils.com_pos(mjx_model, mjx_data)
-        markers = get_site_xpos(mjx_data).flatten()
+        mjx_data = op.kinematics(mjx_model, mjx_data)
+        mjx_data = op.com_pos(mjx_model, mjx_data)
+        markers = op.get_site_xpos(mjx_data).flatten()
 
         # Accumulate squared residual 
         residual = (residual + jnp.square((kp - markers)))
@@ -367,7 +301,7 @@ def m_phase(
         _type_: _description_
     """
     # Define initial position of the optimization
-    offset0 = get_site_pos(mjx_model).flatten()
+    offset0 = op.get_site_pos(mjx_model).flatten()
 
     # Define which offsets to regularize
     is_regularized = []
@@ -390,9 +324,9 @@ def m_phase(
     print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
 
     # Set pose to the optimized m and step forward.
-    mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
+    mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = utils.kinematics(mjx_model, mjx_data)
+    mjx_data = op.kinematics(mjx_model, mjx_data)
     
     return mjx_model, mjx_data
