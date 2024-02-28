@@ -144,8 +144,8 @@ def q_loss(
     mjx_data = mjx_data.replace(qpos=make_qs(initial_q, qs_to_opt, q))
 
     # Forward kinematics
-    mjx_data = mjx.kinematics(mjx_model, mjx_data)
-    mjx_data = mjx.com_pos(mjx_model, mjx_data)
+    mjx_data = utils.kinematics(mjx_model, mjx_data)
+    mjx_data = utils.com_pos(mjx_model, mjx_data)
 
     # Get marker site xpos
     markers = get_site_xpos(mjx_data).flatten()
@@ -199,7 +199,7 @@ def q_opt(
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
-        mjx_data = kinematics(mjx_model, mjx_data)
+        mjx_data = utils.kinematics(mjx_model, mjx_data)
 
     return mjx_data, None
 
@@ -239,7 +239,7 @@ def root_q_opt(
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
-        mjx_data = kinematics(mjx_model, mjx_data)
+        mjx_data = utils.kinematics(mjx_model, mjx_data)
 
     return None
 
@@ -283,8 +283,8 @@ def m_loss(
         mjx_model = set_site_pos(mjx_model, jnp.reshape(offsets, (-1, 3))) 
 
         # Forward kinematics
-        mjx_data = kinematics(mjx_model, mjx_data)
-        mjx_data = com_pos(mjx_model, mjx_data)
+        mjx_data = utils.kinematics(mjx_model, mjx_data)
+        mjx_data = utils.com_pos(mjx_model, mjx_data)
         markers = get_site_xpos(mjx_data).flatten()
 
         # Accumulate squared residual 
@@ -354,17 +354,21 @@ def m_phase(
     """Estimate marker offset, keeping qpos fixed.
 
     Args:
-        env (TYPE): env of current environment
-        kp_data (jnp.ndarray): Keypoint data.
-        sites (jnp.ndarray): sites of keypoints at frame_index.
-        time_indices (List): time_indices used for offset estimation.
-        q (jnp.ndarray): qpos values for the frames in time_indices.
-        initial_offsets (jnp.ndarray): Initial offset values for offset regularization.
-        params (Dict): Animal parameters dictionary
-        reg_coef (float, optional): L1 regularization coefficient during marker loss.
+        mjx_model (_type_): _description_
+        mjx_data (_type_): _description_
+        kp_data (jnp.ndarray): _description_
+        time_indices (jnp.ndarray): _description_
+        q (jnp.ndarray): _description_
+        initial_offsets (jnp.ndarray): _description_
+        ftol (_type_): _description_
+        reg_coef (float, optional): _description_. Defaults to 0.0.
+
+    Returns:
+        _type_: _description_
     """
     # Define initial position of the optimization
     offset0 = get_site_pos(mjx_model).flatten()
+
     # Define which offsets to regularize
     is_regularized = []
     for k in utils.params["site_index_map"].keys():
@@ -373,7 +377,7 @@ def m_phase(
         else:
             is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
     is_regularized = jnp.stack(is_regularized).flatten()
-    # Optimize dm
+
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
 
@@ -384,17 +388,11 @@ def m_phase(
     
     offset_opt_param = res.params
     print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
+
     # Set pose to the optimized m and step forward.
     mjx_model = set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
+
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = kinematics(mjx_model, mjx_data)
+    mjx_data = utils.kinematics(mjx_model, mjx_data)
     
     return mjx_model, mjx_data
-
-@jit
-def kinematics(mjx_model, mjx_data):
-    return smooth.kinematics(mjx_model, mjx_data)
-
-@jit
-def com_pos(mjx_model, mjx_data):
-    return smooth.com_pos(mjx_model, mjx_data)

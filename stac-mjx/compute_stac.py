@@ -25,7 +25,7 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
         # q_opt_param = jnp.concatenate((q_opt_param, z))
 
         mjx_data = mjx_data.replace(qpos=q_opt_param)
-        mjx_data = stac_base.kinematics(mjx_model, mjx_data) 
+        mjx_data = utils.kinematics(mjx_model, mjx_data) 
     
     return mjx_data
 
