@@ -167,7 +167,7 @@ SKELETON_PATH: "./models/rat23.mat"
 SCALE_FACTOR: .9
 
 # Number of alternating pose and offset optimization rounds. 
-N_ITERS: 3
+N_ITERS: 6
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
