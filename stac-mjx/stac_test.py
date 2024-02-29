@@ -1,4 +1,5 @@
 import mujoco
+import jax
 from jax.lib import xla_bridge
 from dm_control import mjcf
 import numpy as np
@@ -20,19 +21,22 @@ def get_clip(kp_data, n_frames):
 
 
 def main():
+    utils.init_params("././params/params.yaml")
+
     # If your machine is low on ram:
     # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6' 
     # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"   
     # When using nvidia gpu do this thing
     if xla_bridge.get_backend().platform == 'gpu':
-       os.environ['XLA_FLAGS'] = (
+        os.environ['XLA_FLAGS'] = (
         '--xla_gpu_enable_triton_softmax_fusion=true '
         '--xla_gpu_triton_gemm_any=True '
         '--xla_gpu_enable_async_collectives=true '
         '--xla_gpu_enable_latency_hiding_scheduler=true '
         '--xla_gpu_enable_highest_priority_async_stream=true '
         )
-
+        # set N_GPUS
+        utils.params["N_GPUS"] = jax.local_device_count("gpu")
     
     """Processes command-line arguments and prints a message based on tolerance."""
     parser = argparse.ArgumentParser(description=
@@ -42,11 +46,10 @@ def main():
     parser.add_argument('-qt', '--qtol', type=float, help='q optimizer tolerance')
     parser.add_argument('-mt', '--mtol', type=float, help='m optimizer tolerance')
     parser.add_argument('-n', '--n_fit_frames', type=int, help='number of frames to fit')
-    parser.add_argument('-s', '--skip_transform', type=int, help='True if skip transform')
+    parser.add_argument('-sf', '--skip_fit', type=int, help='1 if skip fit')
+    parser.add_argument('-st', '--skip_transform', type=int, help='1 if skip transform')
 
     args = parser.parse_args()
-
-    utils.init_params("././params/params.yaml")
 
     if not args.fit_path:
         raise Exception("arg fit_path required")
@@ -92,19 +95,20 @@ def main():
     physics, mj_model = ctrl.create_body_sites(root)
     ctrl.part_opt_setup(physics)
     
-    # Running fit then transform
-    print(f"kp_data shape: {kp_data.shape}")
-    print(f"Running fit() on {utils.params['n_fit_frames']}")
-    clip = get_clip(kp_data, utils.params['n_fit_frames'])
-    print(f"clip shape: {clip.shape}")
-    mjx_model, q, x, walker_body_sites, kp_data = ctrl.fit(mj_model, clip)
+    # Run fit
+    if args.skip_fit != 1:
+        print(f"kp_data shape: {kp_data.shape}")
+        print(f"Running fit() on {utils.params['n_fit_frames']}")
+        clip = get_clip(kp_data, utils.params['n_fit_frames'])
+        print(f"clip shape: {clip.shape}")
+        mjx_model, q, x, walker_body_sites, kp_data = ctrl.fit(mj_model, clip)
 
-    fit_data = ctrl.package_data(
-        mjx_model, physics, q, x, walker_body_sites, kp_data
-    )
+        fit_data = ctrl.package_data(
+            mjx_model, physics, q, x, walker_body_sites, kp_data
+        )
 
-    print(f"saving data to {fit_path}")
-    ctrl.save(fit_data, fit_path)
+        print(f"saving data to {fit_path}")
+        ctrl.save(fit_data, fit_path)
 
     if args.skip_transform==1:
         print("skipping transform()")
@@ -116,6 +120,7 @@ def main():
 
     offsets = fit_data["offsets"] 
     kp_data = ctrl.chunk_kp_data(kp_data)
+    print(f"kp_data shape: {kp_data.shape}")
     mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(mj_model, kp_data, offsets)
 
     transform_data = ctrl.package_data(

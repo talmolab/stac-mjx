@@ -171,3 +171,5 @@ N_ITERS: 6
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
 N_FRAMES_PER_CLIP: 360 # 1000 environments
+
+N_GPUS: 1

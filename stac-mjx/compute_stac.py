@@ -216,6 +216,7 @@ def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=F
         
     names_xpos = physics.named.data.xpos.axes.row.names
     
+    print(f"shape of qpos: {q.shape}")
     kp_data = kp_data.reshape(-1, kp_data.shape[-1])
     data = {
         "qpos": q,
