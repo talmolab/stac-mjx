@@ -1,9 +1,8 @@
-import jax 
 from jax import vmap
 from jax import numpy as jnp
 import mujoco
 from mujoco import mjx
-from typing import Text, Dict
+from typing import Text
 import utils
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
@@ -148,87 +147,6 @@ def chunk_kp_data(kp_data):
     
     return kp_data, n_chunks
 
-
-def test_opt(root, kp_data):
-    physics, mj_model = create_body_sites(root)
-    utils.params["mj_model"] = mj_model
-    part_opt_setup(physics)
-    
-    @vmap
-    def mjx_setup(kp_data):
-        """creates mjxmodel and mjxdata, setting offets 
-
-        Args:
-            kp_data (_type_): _description_
-
-        Returns:
-            _type_: _description_
-        """
-        # Create mjx model and data
-        mjx_model = mjx.put_model(mj_model)
-        mjx_data = mjx.make_data(mjx_model)
-        # do initial get_site stuff inside mjx_setup
-        
-        # Get and set the offsets of the markers
-        offsets = jnp.copy(op.get_site_pos(mjx_model))
-        offsets *= utils.params['SCALE_FACTOR']
-        
-        # print(mjx_model.site_pos, mjx_model.site_pos.shape)
-        mjx_model = op.set_site_pos(mjx_model, offsets) 
-
-        # forward is used to calculate xpos and such
-        mjx_data = mjx.kinematics(mjx_model, mjx_data)
-        mjx_data = mjx.com_pos(mjx_model, mjx_data)
-
-        return mjx_model, mjx_data, offsets
-    
-    # Create batch mjx model and data where batch_size = kp_data.shape[0]
-    mjx_model, mjx_data, offsets = mjx_setup(kp_data)
-    # This used to set the walker body sites based on the body site positions in 'physics'. 
-    # Do we still need to do this? 
-    # for n_site, p in enumerate(physics.bind(body_sites).pos):
-    #     body_sites[n_site].pos = p
-    
-    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
-    for n_iter in range(utils.params['N_ITERS']):
-        print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
-        print("starting offset optimization")
-        mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
-
-    # Optimize the pose for the whole sequence
-    print("Final pose optimization")
-    mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
-    
-    # Optimize
-    # mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
-    # mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
-    
-    # Saving the post_opt data in a pickle
-    # data = {
-    #     "kp_data": kp_data,
-    #     "mjx_model": mjx_model,
-    #     "mjx_data": mjx_data,
-    #     "q": q,
-    #     "offsets": offsets,
-    #     "walker_body_sites": walker_body_sites,
-    #     "x": x,
-    #     "physics": physics,
-    #     "site_index_map": utils.params["site_index_map"],
-    # }
-    # save_path = "pose_opt_qs.p"
-    # if os.path.dirname(save_path) != "":
-    #     os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    # with open(save_path, "wb") as output_file:
-    #     pickle.dump(data, output_file, protocol=2)
-        
-    # mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
-    
-    data = package_data(
-        mjx_model, physics, q, x, walker_body_sites, kp_data
-    )
-    return data
-    # return None
     
 # TODO: pmap fit and transform if you want to use it with multiple gpus
 def fit(mj_model, kp_data):
@@ -311,52 +229,12 @@ def transform(mj_model, kp_data, offsets):
     vmap_root_opt = vmap(root_optimization)
     vmap_pose_opt = vmap(pose_optimization)
 
+    # q_phase
     mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
     mjx_data, q, walker_body_sites, x = vmap_pose_opt(mjx_model, mjx_data, kp_data)
 
     return mjx_model, q, x, walker_body_sites, kp_data
-    # data = package_data(
-    #     mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
-    # )
-    # return data
 
-
-def end_to_end():
-    """this function runs fit and transform end to end
-    """
-    # params = utils.load_params("params/params.yaml")
-    utils.init_params("params/params.yaml")
-    model = mujoco.MjModel.from_xml_path(utils.params["XML_PATH"])
-    model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
-    model.opt.iterations = 1
-    # change this to 4 if need to improve simulation?
-    model.opt.ls_iterations = 1
-    
-    offset_path = "offset.p"
-
-    root = mjcf.from_path(utils.params["XML_PATH"])
-
-    n_frames = None
-
-    # Default ordering of mj sites is alphabetical, so we reorder to match
-    kp_names = utils.loadmat(utils.params["SKELETON_PATH"])["joint_names"]
-    utils.params["kp_names"] = kp_names
-    
-    # argsort returns the indices that would sort the array
-    stac_keypoint_order = np.argsort(kp_names)
-
-    # kp_data
-    # TODO: store kp_data used in fit in another variable (small slice of kpdata)
-    kp_data = prep_kp_data(kp_data, stac_keypoint_order)
-    # chunk it to pass int vmapped functions
-    kp_data, n_envs = chunk_kp_data(kp_data)
-    # fit
-    fit_data = fit(root, kp_data)
-
-    save(fit_data, offset_path)
-    # transform
-    # transform_data = transform()
-    return
     
 def save(fit_data, save_path: Text):
     """Save data.
@@ -370,5 +248,6 @@ def save(fit_data, save_path: Text):
     if file_extension == ".p":
         with open(save_path, "wb") as output_file:
             pickle.dump(fit_data, output_file, protocol=2)
-    elif file_extension == ".mat":
-        savemat(save_path, fit_data)
+    else:
+        with open(save_path + ".p", "wb") as output_file:
+            pickle.dump(fit_data, output_file, protocol=2)
