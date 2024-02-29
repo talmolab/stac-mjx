@@ -151,8 +151,8 @@ SITES_TO_REGULARIZE:
 - SpineM
 N_SAMPLE_FRAMES: 50
 
-# Time of each frame in seconds.
-TIME_BINS: 0.02
+# fps to render video at
+RENDER_FPS: 50
 
 # If you want to use a different arena, you can specify it here.
 ARENA_TYPE: DannceArena
