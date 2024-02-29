@@ -1,7 +1,3 @@
-# Difference step for the root and full model/limbs.
-ROOT_DIFF_STEP: 1.0e-08
-DIFF_STEP: 3.0e-08
-
 # Tolerance for the optimizations of the full model, limb, and root. 
 FTOL: 1.0e-04
 ROOT_FTOL: 1.0e-05
@@ -172,9 +168,6 @@ SCALE_FACTOR: .9
 
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 3
-
-# Number of GPUs to be used (unused until pmap is implemented)
-N_GPUS: 1
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
