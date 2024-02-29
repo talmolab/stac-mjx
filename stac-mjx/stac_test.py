@@ -1,36 +1,15 @@
-import utils
 import mujoco
-import os
-import pickle
-from scipy.io import savemat 
+from jax.lib import xla_bridge
 from dm_control import mjcf
 import numpy as np
-import jax
-from jax import numpy as jnp
+
+import os
+import pickle
 import time
-from controller import *
+import argparse
 
-# print(f"total envs: {n_envs}")
-# fit_data = test_opt(root, kp_data)
-# Single clip optimization for first 500 frames
-def test_single_clip_fit(root, kp_data):
-    # returns fit_data
-    print(f"kp_data shape: {kp_data.shape}")
-    fit_data = single_clip_opt(root, kp_data[:2000])
-    offset_path = "offset_2000_high_maxiter1.p"
-    print(f"saving data to {offset_path}")
-    save(fit_data, offset_path)
-
-def test_transform(offset_path, root, kp_data):
-    print("Running transform()")
-    with open(offset_path, "rb") as file:
-        data = pickle.load(file)
-    offsets = data["offsets"] 
-    kp_data, n_envs = chunk_kp_data(kp_data)
-    transform_data = transform(root, kp_data, offsets)
-    transform_path = "transform1.p"
-    print(f"saving data to {transform_path}")
-    save(transform_data, transform_path)
+import controller as ctrl
+import utils
 
 
 def get_clip(kp_data, n_frames):
@@ -40,16 +19,20 @@ def get_clip(kp_data, n_frames):
     return kp_data[rand_start:rand_start+n_frames,:]
 
 
-import argparse
-
 def main():
     # If your machine is low on ram:
     # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6' 
     # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"   
     # When using nvidia gpu do this thing
-    from jax.lib import xla_bridge
     if xla_bridge.get_backend().platform == 'gpu':
-        os.environ["XLA_FLAGS"]="xla_gpu_triton_gemm_any=true"
+       os.environ['XLA_FLAGS'] = (
+        '--xla_gpu_enable_triton_softmax_fusion=true '
+        '--xla_gpu_triton_gemm_any=True '
+        '--xla_gpu_enable_async_collectives=true '
+        '--xla_gpu_enable_latency_hiding_scheduler=true '
+        '--xla_gpu_enable_highest_priority_async_stream=true '
+        )
+
     
     """Processes command-line arguments and prints a message based on tolerance."""
     parser = argparse.ArgumentParser(description=
@@ -103,25 +86,25 @@ def main():
     # Load kp_data, /1000 to scale data (from mm to meters i think?)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
 
-    kp_data = prep_kp_data(kp_data, stac_keypoint_order)
+    kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
 
     # setup for fit
-    physics, mj_model = create_body_sites(root)
-    part_opt_setup(physics)
+    physics, mj_model = ctrl.create_body_sites(root)
+    ctrl.part_opt_setup(physics)
     
     # Running fit then transform
     print(f"kp_data shape: {kp_data.shape}")
     print(f"Running fit() on {utils.params['n_fit_frames']}")
     clip = get_clip(kp_data, utils.params['n_fit_frames'])
     print(f"clip shape: {clip.shape}")
-    mjx_model, q, x, walker_body_sites, kp_data = fit(mj_model, clip)
+    mjx_model, q, x, walker_body_sites, kp_data = ctrl.fit(mj_model, clip)
 
-    fit_data = package_data(
+    fit_data = ctrl.package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data
     )
 
     print(f"saving data to {fit_path}")
-    save(fit_data, fit_path)
+    ctrl.save(fit_data, fit_path)
 
     if args.skip_transform==1:
         print("skipping transform()")
@@ -132,15 +115,15 @@ def main():
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"] 
-    kp_data, n_envs = chunk_kp_data(kp_data)
-    mjx_model, q, x, walker_body_sites, kp_data = transform(mj_model, kp_data, offsets)
+    kp_data = ctrl.chunk_kp_data(kp_data)
+    mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(mj_model, kp_data, offsets)
 
-    transform_data = package_data(
+    transform_data = ctrl.package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
     )
     
     print(f"saving data to {transform_path}")
-    save(transform_data, transform_path)
+    ctrl.save(transform_data, transform_path)
 
 if __name__ == "__main__":
     start_time = time.time()

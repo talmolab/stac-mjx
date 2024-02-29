@@ -145,7 +145,7 @@ def chunk_kp_data(kp_data):
     # Reshape the array to create chunks
     kp_data = kp_data.reshape((n_chunks, n_frames) + kp_data.shape[1:])
     
-    return kp_data, n_chunks
+    return kp_data
 
     
 # TODO: pmap fit and transform if you want to use it with multiple gpus
