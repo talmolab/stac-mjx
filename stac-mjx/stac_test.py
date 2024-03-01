@@ -8,24 +8,30 @@ import os
 import pickle
 import time
 import argparse
+import random
 
 import controller as ctrl
 import utils
 
-
 def get_clip(kp_data, n_frames):
-    import random
     max_index = kp_data.shape[0] - n_frames + 1
     rand_start = random.randint(0, max_index)
     return kp_data[rand_start:rand_start+n_frames,:]
 
 
-def main():
+def end(start_time):
+    print(f"Job complete in {time.time()-start_time}")
+    exit()
+    
+    
+if __name__ == "__main__":
+    start_time = time.time()
+    
     utils.init_params("././params/params.yaml")
 
-    # If your machine is low on ram:
-    # os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.6' 
-    # os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false"   
+    # Allocate 90% instead of 75% of GPU vram
+    os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.9' 
+    
     # When using nvidia gpu do this thing
     if xla_bridge.get_backend().platform == 'gpu':
         os.environ['XLA_FLAGS'] = (
@@ -35,7 +41,7 @@ def main():
         '--xla_gpu_enable_latency_hiding_scheduler=true '
         '--xla_gpu_enable_highest_priority_async_stream=true '
         )
-        # set N_GPUS
+        # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
     
     """Processes command-line arguments and prints a message based on tolerance."""
@@ -68,6 +74,11 @@ def main():
     
     ratpath = "././models/rodent_stac.xml"
     rat23path = "././models/rat23.mat"
+    kp_names = utils.loadmat(rat23path)["joint_names"]
+    utils.params["kp_names"] = kp_names
+    # argsort returns the indices that would sort the array
+    stac_keypoint_order = np.argsort(kp_names)   
+    
     model = mujoco.MjModel.from_xml_path(ratpath)
     model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
     model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_EULERDAMP
@@ -78,30 +89,23 @@ def main():
     # data_path = "save_data_AVG.mat"
     data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
 
-    root = mjcf.from_path(ratpath)
-
-    # Default ordering of mj sites is alphabetical, so we reorder to match
-    kp_names = utils.loadmat(rat23path)["joint_names"]
-    utils.params["kp_names"] = kp_names
-
-    # argsort returns the indices that would sort the array
-    stac_keypoint_order = np.argsort(kp_names)
-    # Load kp_data, /1000 to scale data (from mm to meters i think?)
+    # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
 
     kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
 
-    # setup for fit
+    # Set up mjcf
+    root = mjcf.from_path(ratpath)
     physics, mj_model = ctrl.create_body_sites(root)
     ctrl.part_opt_setup(physics)
     
-    # Run fit
+    # Run fit if not skipping
     if args.skip_fit != 1:
         print(f"kp_data shape: {kp_data.shape}")
         print(f"Running fit() on {utils.params['n_fit_frames']}")
-        clip = get_clip(kp_data, utils.params['n_fit_frames'])
-        print(f"clip shape: {clip.shape}")
-        mjx_model, q, x, walker_body_sites, kp_data = ctrl.fit(mj_model, clip)
+        # clip = get_clip(kp_data, utils.params['n_fit_frames'])
+        # print(f"clip shape: {clip.shape}")
+        mjx_model, q, x, walker_body_sites, kp_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
 
         fit_data = ctrl.package_data(
             mjx_model, physics, q, x, walker_body_sites, kp_data
@@ -110,9 +114,10 @@ def main():
         print(f"saving data to {fit_path}")
         ctrl.save(fit_data, fit_path)
 
+    # Stop here if skipping transform
     if args.skip_transform==1:
         print("skipping transform()")
-        return
+        end(start_time)
     
     print("Running transform()")
     with open(fit_path, "rb") as file:
@@ -129,9 +134,5 @@ def main():
     
     print(f"saving data to {transform_path}")
     ctrl.save(transform_data, transform_path)
-
-if __name__ == "__main__":
-    start_time = time.time()
-    main()
-
-    print(f"Job complete in {time.time()-start_time}")
+    
+    end(start_time)
