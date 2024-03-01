@@ -12,7 +12,7 @@ def submit():
 #SBATCH --mem=64000 
 #SBATCH -c 16
 #SBATCH -N 1 
-# # SBATCH --constraint="intel&avx2"
+#SBATCH --constraint="a40"
 #SBATCH -t 1-0:00
 #SBATCH -J stac-mjx
 #SBATCH --gres=gpu:4
