@@ -7,7 +7,7 @@ import operations as op
 import utils
 from typing import List, Dict, Tuple, Text
 import time
-
+import logging
 
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """Optimize only the root.
@@ -19,7 +19,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     """
 
     s = time.time()
-    print("Root Optimization:")
+    logging.info("Root Optimization:")
 
     q0 = jnp.copy(mjx_data.qpos[:])
 
@@ -27,7 +27,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
-    print(f"Initial qs: {q0}")
+    logging.info(f"Initial qs: {q0}")
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
     j = time.time()
     mjx_data, res = stac_base.q_opt(
@@ -42,13 +42,13 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     )
     q_opt_param = res.params
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
-    print(f"Resulting qs: {q_opt_param}")
+    logging.info(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    logging.info(f"Resulting qs: {q_opt_param}")
 
     r = time.time()
 
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param))
-    print(f"Replace 1 finished in {time.time()-r}")
+    logging.info(f"Replace 1 finished in {time.time()-r}")
     
     kps_to_opt = jnp.repeat(
             jnp.array([
@@ -62,8 +62,8 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
     # Trunk only optimization
     j = time.time()
-    print("starting q_opt 2")
-    print(f"starting qs: {q0}")
+    logging.info("starting q_opt 2")
+    logging.info(f"starting qs: {q0}")
     mjx_data, res = stac_base.q_opt(
         mjx_model, 
         mjx_data,
@@ -77,14 +77,14 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     
     q_opt_param = res.params
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    logging.info(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param))
 
-    print(f"Replace 2 finished in {time.time()-r}")
-    print(f"qs after replace: {mjx_data.qpos}")
-    print(f"Root optimization finished in {time.time()-s}")
+    logging.info(f"Replace 2 finished in {time.time()-r}")
+    logging.info(f"qs after replace: {mjx_data.qpos}")
+    logging.info(f"Root optimization finished in {time.time()-s}")
 
     return mjx_data
 
@@ -101,7 +101,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     time_indices = shuffled_indices[:N_SAMPLE_FRAMES]
     
     s = time.time()
-    print("Begining offset optimization:")
+    logging.info("Begining offset optimization:")
 
     mjx_model, mjx_data = stac_base.m_phase(
         mjx_model, 
@@ -114,7 +114,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
         utils.params["M_REG_COEF"],
     )
     
-    print(f"offset optimization finished in {time.time()-s}")
+    logging.info(f"offset optimization finished in {time.time()-s}")
 
     return mjx_model, mjx_data
 
@@ -143,7 +143,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
     qs_to_opt = jnp.ones(mjx_model.nq, dtype=bool)
-    print("Pose Optimization:")
+    logging.info("Pose Optimization:")
     
     def f(mjx_data, kp_data, n_frame, parts):
         q0 = jnp.copy(mjx_data.qpos[:])
@@ -182,6 +182,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
         return mjx_data, res.state.error
     
     # Optimize over each frame, storing all the results
+    frame_data = []
     for n_frame in frames:
         loop_start = time.time()
         
@@ -191,10 +192,10 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
         x.append(mjx_data.xpos[:])
         walker_body_sites.append(op.get_site_xpos(mjx_data))
         
-        print(f"Frame {n_frame} done in {time.time()-loop_start} with a final error of {error}")
-        
-    print(f"Pose Optimization done in {time.time()-s}")
-    return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x)
+        frame_data.append((time.time()-loop_start, error))
+    
+    logging.info(f"Pose Optimization done in {time.time()-s}")
+    return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x), frame_data
 
 def initialize_part_names(physics):
     # Get the ids of the limbs, accounting for quaternion and pos
@@ -216,7 +217,7 @@ def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=F
         
     names_xpos = physics.named.data.xpos.axes.row.names
     
-    print(f"shape of qpos: {q.shape}")
+    logging.info(f"shape of qpos: {q.shape}")
     kp_data = kp_data.reshape(-1, kp_data.shape[-1])
     data = {
         "qpos": q,

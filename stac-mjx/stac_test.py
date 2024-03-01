@@ -9,6 +9,9 @@ import pickle
 import time
 import argparse
 import random
+import logging 
+
+logging.basicConfig(level=logging.INFO)
 
 import controller as ctrl
 import utils
@@ -20,7 +23,7 @@ def get_clip(kp_data, n_frames):
 
 
 def end(start_time):
-    print(f"Job complete in {time.time()-start_time}")
+    logging.info(f"Job complete in {time.time()-start_time}")
     exit()
     
     
@@ -44,7 +47,7 @@ if __name__ == "__main__":
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
     
-    """Processes command-line arguments and prints a message based on tolerance."""
+    """Processes command-line arguments and logging.infos a message based on tolerance."""
     parser = argparse.ArgumentParser(description=
                                     'calls fit and transform, using the given optimizer tolerance')
     parser.add_argument('-fp', '--fit_path', type=str, help='fit path')
@@ -62,10 +65,10 @@ if __name__ == "__main__":
     if not args.transform_path:
         raise Exception("arg transform_path required")
     if args.qtol:
-        print(f"setting tolerance to {args.qtol}")
+        logging.info(f"setting tolerance to {args.qtol}")
         utils.params['Q_TOL'] = args.qtol
     if args.n_fit_frames:
-        print(f"setting fit frames to {args.n_fit_frames}")
+        logging.info(f"setting fit frames to {args.n_fit_frames}")
         utils.params['n_fit_frames'] = args.n_fit_frames
 
     # setting paths
@@ -101,38 +104,38 @@ if __name__ == "__main__":
     
     # Run fit if not skipping
     if args.skip_fit != 1:
-        print(f"kp_data shape: {kp_data.shape}")
-        print(f"Running fit() on {utils.params['n_fit_frames']}")
+        logging.info(f"kp_data shape: {kp_data.shape}")
+        logging.info(f"Running fit() on {utils.params['n_fit_frames']}")
         # clip = get_clip(kp_data, utils.params['n_fit_frames'])
-        # print(f"clip shape: {clip.shape}")
-        mjx_model, q, x, walker_body_sites, kp_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
+        # logging.info(f"clip shape: {clip.shape}")
+        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
 
         fit_data = ctrl.package_data(
-            mjx_model, physics, q, x, walker_body_sites, kp_data
+            mjx_model, physics, q, x, walker_body_sites, clip_data
         )
 
-        print(f"saving data to {fit_path}")
+        logging.info(f"saving data to {fit_path}")
         ctrl.save(fit_data, fit_path)
 
     # Stop here if skipping transform
     if args.skip_transform==1:
-        print("skipping transform()")
+        logging.info("skipping transform()")
         end(start_time)
     
-    print("Running transform()")
+    logging.info("Running transform()")
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"] 
     kp_data = ctrl.chunk_kp_data(kp_data)
-    print(f"kp_data shape: {kp_data.shape}")
+    logging.info(f"kp_data shape: {kp_data.shape}")
     mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(mj_model, kp_data, offsets)
 
     transform_data = ctrl.package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
     )
     
-    print(f"saving data to {transform_path}")
+    logging.info(f"saving data to {transform_path}")
     ctrl.save(transform_data, transform_path)
     
     end(start_time)

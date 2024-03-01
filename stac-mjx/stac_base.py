@@ -6,6 +6,7 @@ import operations as op
 from jax import jit
 from jaxopt import LBFGSB, LBFGS
 import utils
+import logging 
 
 def test_q_loss(
     q: jnp.ndarray,
@@ -130,8 +131,8 @@ def q_opt(
                                     )
             
     except ValueError as ex:
-        print("Warning: optimization failed.", flush=True)
-        print(ex, flush=True)
+        logging.info("Warning: optimization failed.", flush=True)
+        logging.info(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = op.kinematics(mjx_model, mjx_data)
 
@@ -170,8 +171,8 @@ def root_q_opt(
                                     )
         
     except ValueError as ex:
-        print("Warning: optimization failed.", flush=True)
-        print(ex, flush=True)
+        logging.info("Warning: optimization failed.", flush=True)
+        logging.info(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = op.kinematics(mjx_model, mjx_data)
 
@@ -321,7 +322,7 @@ def m_phase(
                 reg_coef, ftol)
     
     offset_opt_param = res.params
-    print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
+    logging.info(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
 
     # Set pose to the optimized m and step forward.
     mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
