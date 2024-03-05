@@ -8,47 +8,6 @@ from jaxopt import LBFGSB, LBFGS
 import utils
 import logging 
 
-def test_q_loss(
-    q: jnp.ndarray,
-    mjx_model,
-    mjx_data,
-    kp_data: jnp.ndarray,
-    # qs_to_opt: jnp.ndarray,
-    kps_to_opt: jnp.ndarray,
-    # initial_q: jnp.ndarray
-    # part_opt: bool = False
-) -> float:
-    """Compute the marker loss for q_phase optimization.
-
-    Args:
-        q (jnp.ndarray): Qpos for current frame.
-        env (TYPE): env of current environment.
-        kp_data (jnp.ndarray): Reference keypoint data.
-        sites (jnp.ndarray): sites of keypoints at frame_index
-        qs_to_opt (List, optional): Binary vector of qposes to optimize.
-        trunk_only (bool, optional): Optimize based only on the trunk kps
-
-    Returns:
-        float: loss value
-    """
-    # If optimizing subsets of qpos, add the optimizer qpos to the copy.
-    # updates the relevant qpos elements to the corresponding new ones
-    # new_q = jnp.zeros((67,)) 
-    # new_q = jnp.concatenate((q, new_q))
-
-    pad_width = ((0, 67))  # Pads only at the end
-    new_q = jnp.pad(q, pad_width, mode='constant', constant_values=0)
-    
-    mjx_data = mjx_data.replace(qpos=new_q)
-    # Forward kinematics
-    mjx_data = op.kinematics(mjx_model, mjx_data)
-    mjx_data = op.com_pos(mjx_model, mjx_data)
-    markers = op.get_site_xpos(mjx_data).flatten()
-    residual = kp_data - markers
-    # Set irrelevant body sites to 0
-    # residual = residual * kps_to_opt
-    residual =  0.5 * jnp.sum(jnp.square(residual))
-    return residual
 
 def q_loss(
     q: jnp.ndarray,
@@ -131,52 +90,12 @@ def q_opt(
                                     )
             
     except ValueError as ex:
-        logging.info("Warning: optimization failed.", flush=True)
-        logging.info(ex, flush=True)
+        print("Warning: optimization failed.", flush=True)
+        print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0) 
         mjx_data = op.kinematics(mjx_model, mjx_data)
 
     return mjx_data, None
-
-
-@jit
-def root_q_opt(
-    mjx_model,
-    mjx_data,
-    bounds,
-    marker_ref_arr: jnp.ndarray,
-    kps_to_opt: jnp.ndarray,
-    maxiter: int,
-    q0: jnp.ndarray,
-
-):
-    """Update q_pose using estimated marker parameters.
-    """
-    try:
-        solver = LBFGSB(fun=test_q_loss, 
-                        tol=utils.params["Q_TOL"],
-                        maxiter=maxiter,
-                        history_size=20,
-                        # use_gamma=True,
-                        # stepsize=-1.0,
-                        jit=True,
-                        verbose=0
-                        )
-        return solver.run(q0, bounds, mjx_model=mjx_model, 
-                                    mjx_data=mjx_data, 
-                                    kp_data=marker_ref_arr.T,
-                                    # qs_to_opt=qs_to_opt,
-                                    kps_to_opt=kps_to_opt,
-                                    # initial_q=q0
-                                    )
-        
-    except ValueError as ex:
-        logging.info("Warning: optimization failed.", flush=True)
-        logging.info(ex, flush=True)
-        mjx_data = mjx_data.replace(qpos=q0) 
-        mjx_data = op.kinematics(mjx_model, mjx_data)
-
-    return None
 
 
 @jit 
@@ -322,7 +241,7 @@ def m_phase(
                 reg_coef, ftol)
     
     offset_opt_param = res.params
-    logging.info(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
+    print(f"learned offsets: {offset_opt_param} \n Final error of {res.state.error}")
 
     # Set pose to the optimized m and step forward.
     mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 

@@ -12,6 +12,7 @@ import operations as op
 import pickle
 import logging
 import os
+from statistics import fmean 
 
 """
 This file should serve the same purpose as the logic for executing SLURM jobs. 
@@ -160,7 +161,7 @@ def fit(mj_model, kp_data):
     offsets = jnp.copy(op.get_site_pos(mjx_model))
     offsets *= utils.params['SCALE_FACTOR']
     
-    # logging.info(mjx_model.site_pos, mjx_model.site_pos.shape)
+    # print(mjx_model.site_pos, mjx_model.site_pos.shape)
     mjx_model = op.set_site_pos(mjx_model, offsets)
 
     # forward is used to calculate xpos and such
@@ -171,14 +172,21 @@ def fit(mj_model, kp_data):
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
 
     for n_iter in range(utils.params['N_ITERS']):
-        logging.info(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
-        logging.info("starting offset optimization")
+        print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
+        mjx_data, q, walker_body_sites, x, frame_data = pose_optimization(mjx_model, mjx_data, kp_data)
+
+        for i, t in enumerate(frame_data):
+            print(f"Frame {i+1} done in {t[0]} with a final error of {t[1]}")
+            
+        print("starting offset optimization")
         mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
 
     # Optimize the pose for the whole sequence
-    logging.info("Final pose optimization")
-    mjx_data, q, walker_body_sites, x = pose_optimization(mjx_model, mjx_data, kp_data)
+    print("Final pose optimization")
+    mjx_data, q, walker_body_sites, x, frame_data = pose_optimization(mjx_model, mjx_data, kp_data)
+
+    for i, t in enumerate(frame_data):
+            print(f"Frame {i+1} done in {t[0]} with a final error of {t[1]}")
        
     return mjx_model, q, x, walker_body_sites, kp_data
 
@@ -234,9 +242,9 @@ def transform(mj_model, kp_data, offsets):
     mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
     mjx_data, q, walker_body_sites, x, frame_data = vmap_pose_opt(mjx_model, mjx_data, kp_data)
     
-    # logging.info info
+    # print info
     for i, t in enumerate(frame_data):
-        logging.info(f"Frame {i+1} done in {t[0]} with a final error of {t[1]}")
+        print(f"Frame {i+1} done in {t[0][0]} with a final error of {fmean(t[1])}")
         
     return mjx_model, q, x, walker_body_sites, kp_data
 
