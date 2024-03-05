@@ -18,6 +18,7 @@ import utils
 def get_clip(kp_data, n_frames):
     max_index = kp_data.shape[0] - n_frames + 1
     rand_start = random.randint(0, max_index)
+    print(f"fit clip starts at index {rand_start} and runs for {n_frames}, ending at {rand_start+n_frames}")
     return kp_data[rand_start:rand_start+n_frames,:]
 
 
