@@ -4,6 +4,8 @@ import h5py
 import os
 import yaml
 import scipy.io as spio
+import pickle
+from typing import Text
 
 def loadmat(filename):
     """
@@ -56,3 +58,20 @@ def _load_params(param_path):
 def init_params(path):
     global params
     params = _load_params(path)
+
+# TODO put this in the STAC class
+def save(fit_data, save_path: Text):
+    """Save data.
+
+    Args:
+        save_path (Text): Path to save data. Defaults to None.
+    """
+    if os.path.dirname(save_path) != "":
+        os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    _, file_extension = os.path.splitext(save_path)
+    if file_extension == ".p":
+        with open(save_path, "wb") as output_file:
+            pickle.dump(fit_data, output_file, protocol=2)
+    else:
+        with open(save_path + ".p", "wb") as output_file:
+            pickle.dump(fit_data, output_file, protocol=2)

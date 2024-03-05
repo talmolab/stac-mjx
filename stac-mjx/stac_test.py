@@ -115,12 +115,10 @@ if __name__ == "__main__":
         print(f"clip shape: {clip.shape}")
         mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, clip)
 
-        fit_data = ctrl.package_data(
-            mjx_model, physics, q, x, walker_body_sites, clip_data
-        )
+        fit_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, clip_data)
 
-        print(f"saving data to {fit_path}")
-        ctrl.save(fit_data, fit_path)
+        logging.info(f"saving data to {fit_path}")
+        utils.save(fit_data, fit_path)
 
     # Stop here if skipping transform
     if args.skip_transform==1:
@@ -136,11 +134,9 @@ if __name__ == "__main__":
     print(f"kp_data shape: {kp_data.shape}")
     mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(mj_model, kp_data, offsets)
 
-    transform_data = ctrl.package_data(
-        mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
-    )
+    transform_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True)
     
-    print(f"saving data to {transform_path}")
-    ctrl.save(transform_data, transform_path)
+    logging.info(f"saving data to {transform_path}")
+    utils.save(transform_data, transform_path)
     
     end(start_time)

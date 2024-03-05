@@ -247,20 +247,3 @@ def transform(mj_model, kp_data, offsets):
         print(f"Frame {i+1} done in {t[0][0]} with a final error of {fmean(t[1])}")
         
     return mjx_model, q, x, walker_body_sites, kp_data
-
-    
-def save(fit_data, save_path: Text):
-    """Save data.
-
-    Args:
-        save_path (Text): Path to save data. Defaults to None.
-    """
-    if os.path.dirname(save_path) != "":
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    _, file_extension = os.path.splitext(save_path)
-    if file_extension == ".p":
-        with open(save_path, "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
-    else:
-        with open(save_path + ".p", "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
