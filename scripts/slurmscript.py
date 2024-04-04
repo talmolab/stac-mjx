@@ -13,8 +13,8 @@ def submit():
 #SBATCH -c 16
 #SBATCH -N 1
 #SBATCH --constraint="a100"
-#SBATCH -t 1-0:00
-#SBATCH -J rand2k
+#SBATCH -t 0-5:00
+#SBATCH -J new500
 #SBATCH --gres=gpu:1
 # # SBATCH -o /slurm/out
 # # SBATCH -e /slurm/error
@@ -23,7 +23,7 @@ module load Mambaforge/22.11.1-fasrc01
 source activate stac-mjx
 module load cuda/12.2.0-fasrc01
 nvidia-smi
-python3 stac-mjx/stac_test.py -fp="fit_rand2k.p" -tp="transform_rand2k.p" -n=2000 --skip_fit=0 --skip_transform=0 
+python3 stac-mjx/stac_test.py paths.xml="././models/rodent_stac_optimized.xml" paths.fit_path="fit_500_4_4.p" paths.transform_path="transform_4_4.p"
 """
     print(f"Submitting job")
     job_id = slurm_submit(script) 

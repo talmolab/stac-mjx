@@ -9,13 +9,12 @@ setup(
         "six >= 1.12.0",
         "clize >= 4.0.3",
         "absl-py >= 0.7.1",
-        "mujoco-mjx >= 3.1.2",
+        "mujoco-mjx >= 3.1.3",
         "dm_control",
         "jaxopt",
         "flax",
         "enum34",
         "future",
-        # 'futures',
         "glfw",
         "lxml",
         "numpy",
@@ -26,7 +25,8 @@ setup(
         "pyyaml",
         "opencv-python",
         "imageio",
-        "matplotlib"
+        "matplotlib",
+        "hydra-core",
         
     ],
 )

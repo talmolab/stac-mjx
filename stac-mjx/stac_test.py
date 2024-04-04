@@ -11,7 +11,8 @@ import argparse
 import random
 import logging 
 import sys
-
+import hydra
+from omegaconf import DictConfig, OmegaConf
 import controller as ctrl
 import utils
 
@@ -26,14 +27,10 @@ def end(start_time):
     print(f"Job complete in {time.time()-start_time}")
     exit()
     
+@hydra.main(config_path="", config_name="stac_test_config", version_base=None)
+def main(cfg : DictConfig) -> None:
+    print(OmegaConf.to_yaml(cfg))
     
-if __name__ == "__main__":
-    # root = logging.getLogger()
-    # root.setLevel(logging.INFO)
-    # handler = logging.StreamHandler(sys.stdout)
-    # handler.setLevel(logging.INFO)
-    # root.addHandler(handler)
-
     start_time = time.time()
     
     utils.init_params("././params/params.yaml")
@@ -52,36 +49,21 @@ if __name__ == "__main__":
         )
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
-    
-    """Processes command-line arguments and prints a message based on tolerance."""
-    parser = argparse.ArgumentParser(description=
-                                    'calls fit and transform, using the given optimizer tolerance')
-    parser.add_argument('-fp', '--fit_path', type=str, help='fit path')
-    parser.add_argument('-tp', '--transform_path', type=str, help='transform path')
-    parser.add_argument('-qt', '--qtol', type=float, help='q optimizer tolerance')
-    parser.add_argument('-mt', '--mtol', type=float, help='m optimizer tolerance')
-    parser.add_argument('-n', '--n_fit_frames', type=int, help='number of frames to fit')
-    parser.add_argument('-sf', '--skip_fit', type=int, help='1 if skip fit')
-    parser.add_argument('-st', '--skip_transform', type=int, help='1 if skip transform')
 
-    args = parser.parse_args()
 
-    if not args.fit_path:
+    if not cfg.paths.fit_path:
         raise Exception("arg fit_path required")
-    if not args.transform_path:
+    if not cfg.paths.transform_path:
         raise Exception("arg transform_path required")
-    if args.qtol:
-        print(f"setting tolerance to {args.qtol}")
-        utils.params['Q_TOL'] = args.qtol
-    if args.n_fit_frames:
-        print(f"setting fit frames to {args.n_fit_frames}")
-        utils.params['n_fit_frames'] = args.n_fit_frames
+    if cfg.stac.n_fit_frames:
+        print(f"setting fit frames to {cfg.stac.n_fit_frames}")
+        utils.params['n_fit_frames'] = cfg.stac.n_fit_frames
 
     # setting paths
-    fit_path = args.fit_path
-    transform_path = args.transform_path
+    fit_path = cfg.paths.fit_path
+    transform_path = cfg.paths.transform_path
     
-    ratpath = "././models/rodent_stac.xml"
+    ratpath = cfg.paths.xml 
     rat23path = "././models/rat23.mat"
     kp_names = utils.loadmat(rat23path)["joint_names"]
     utils.params["kp_names"] = kp_names
@@ -89,14 +71,18 @@ if __name__ == "__main__":
     stac_keypoint_order = np.argsort(kp_names)   
     
     model = mujoco.MjModel.from_xml_path(ratpath)
-    model.opt.solver = mujoco.mjtSolver.mjSOL_NEWTON
-    model.opt.disableflags = mujoco.mjtDisableBit.mjDSBL_EULERDAMP
-    model.opt.iterations = 1
-    model.opt.ls_iterations = 4
+    
+    model.opt.solver = {
+      'cg': mujoco.mjtSolver.mjSOL_CG,
+      'newton': mujoco.mjtSolver.mjSOL_NEWTON,
+    }[cfg.mujoco.solver.lower()]
+    
+    model.opt.iterations = cfg.mujoco.iterations
+    model.opt.ls_iterations = cfg.mujoco.ls_iterations
 
     # Need to download this data file and provide the path
     # data_path = "save_data_AVG.mat"
-    data_path = "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
+    data_path = cfg.paths.data_path
 
     # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
@@ -109,12 +95,12 @@ if __name__ == "__main__":
     ctrl.part_opt_setup(physics)
     
     # Run fit if not skipping
-    if args.skip_fit != 1:
+    if cfg.test.skip_fit != 1:
         print(f"kp_data shape: {kp_data.shape}")
         print(f"Running fit() on {utils.params['n_fit_frames']}")
-        clip = get_clip(kp_data, utils.params['n_fit_frames'])
-        print(f"clip shape: {clip.shape}")
-        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, clip)
+        # clip = get_clip(kp_data, utils.params['n_fit_frames'])
+        # print(f"clip shape: {clip.shape}")
+        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
 
         fit_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, clip_data)
 
@@ -122,7 +108,7 @@ if __name__ == "__main__":
         utils.save(fit_data, fit_path)
 
     # Stop here if skipping transform
-    if args.skip_transform==1:
+    if cfg.test.skip_transform==1:
         print("skipping transform()")
         end(start_time)
     
@@ -141,3 +127,6 @@ if __name__ == "__main__":
     utils.save(transform_data, transform_path)
     
     end(start_time)
+    
+if __name__ == "__main__":
+    main()
