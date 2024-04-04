@@ -158,10 +158,6 @@ RENDER_FPS: 50
 ARENA_TYPE: DannceArena
 Z_OFFSET: 0.00
 
-# Path to the model file.
-STAC_XML_PATH: "./models/rodent_stac.xml"
-SKELETON_PATH: "./models/rat23.mat"
-
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: .9
 
