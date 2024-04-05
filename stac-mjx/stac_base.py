@@ -98,8 +98,8 @@ def q_opt(
         #                             initial_q=q0
         #                             )
         
-        opt = optax.adam(1e-4)
-        solver = OptaxSolver(opt=opt, fun=q_loss, maxiter=2000)
+        opt = optax.adamw(utils.params['LR'])
+        solver = OptaxSolver(opt=opt, fun=q_loss, maxiter=utils.params['MAXITER'])
         
         return mjx_data, solver.run(q0, mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
@@ -207,8 +207,8 @@ def m_opt(offset0,
     #                 history_size=20,
     #                 verbose=False
     #                 )
-    opt = optax.adam(1e-4)
-    solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)
+    opt = optax.adamw(utils.params['LR'])
+    solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=utils.params['MAXITER'])
     
     res = solver.run(offset0, mjx_model=mjx_model,
                             mjx_data=mjx_data,
