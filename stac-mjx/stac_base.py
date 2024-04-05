@@ -5,8 +5,12 @@ import jax.numpy as jnp
 import operations as op
 from jax import jit
 from jaxopt import LBFGSB, LBFGS
+import optax
 import utils
 import logging 
+    
+from jaxopt import OptaxSolver
+
 
 
 def q_loss(
@@ -16,7 +20,9 @@ def q_loss(
     kp_data: jnp.ndarray,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
-    initial_q: jnp.ndarray
+    initial_q: jnp.ndarray,
+    lb: jnp.ndarray,
+    ub: jnp.ndarray,
     # part_opt: bool = False
 ) -> float:
     """Compute the marker loss for q_phase optimization.
@@ -35,7 +41,7 @@ def q_loss(
     """
 
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
+    mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), min=lb, max=ub))
 
     # Forward kinematics
     mjx_data = op.kinematics(mjx_model, mjx_data)
@@ -72,21 +78,37 @@ def q_opt(
         ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
         bounds = (lb, ub)
 
-        solver = LBFGSB(fun=q_loss, 
-                        tol=ftol,
-                        maxiter=maxiter,
-                        history_size=20,
-                        # use_gamma=True,
-                        # stepsize=1.0,
-                        jit=True,
-                        verbose=0
-                        )
-        return mjx_data, solver.run(q0, bounds, mjx_model=mjx_model, 
+        # solver = LBFGSB(fun=q_loss, 
+        #                 tol=ftol,
+        #                 maxiter=maxiter,
+        #                 history_size=20,
+        #                 # use_gamma=True,
+        #                 # stepsize=1.0,
+        #                 jit=True,
+        #                 verbose=0
+        #                 )
+        
+        
+        # return mjx_data, solver.run(q0, (utils.params['lb'], utils.params['ub']), 
+        #                             mjx_model=mjx_model, 
+        #                             mjx_data=mjx_data, 
+        #                             kp_data=marker_ref_arr.T,
+        #                             qs_to_opt=qs_to_opt,
+        #                             kps_to_opt=kps_to_opt,
+        #                             initial_q=q0
+        #                             )
+        
+        opt = optax.adam(1e-4)
+        solver = OptaxSolver(opt=opt, fun=q_loss, maxiter=2000)
+        
+        return mjx_data, solver.run(q0, mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=marker_ref_arr.T,
                                     qs_to_opt=qs_to_opt,
                                     kps_to_opt=kps_to_opt,
-                                    initial_q=q0
+                                    initial_q=q0,
+                                    lb=utils.params['lb'],
+                                    ub=utils.params['ub'],
                                     )
             
     except ValueError as ex:
@@ -178,13 +200,16 @@ def m_opt(offset0,
     Returns:
         _type_: _description_
     """
-    solver = LBFGS(fun=m_loss, 
-                    tol=ftol,
-                    jit=True,
-                    maxiter=utils.params["M_MAXITER"],
-                    history_size=20,
-                    verbose=False
-                    )
+    # solver = LBFGS(fun=m_loss, 
+    #                 tol=ftol,
+    #                 jit=True,
+    #                 maxiter=utils.params["M_MAXITER"],
+    #                 history_size=20,
+    #                 verbose=False
+    #                 )
+    opt = optax.adam(1e-4)
+    solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)
+    
     res = solver.run(offset0, mjx_model=mjx_model,
                             mjx_data=mjx_data,
                             kp_data=keypoints,
@@ -192,6 +217,7 @@ def m_opt(offset0,
                             initial_offsets=initial_offsets,
                             is_regularized=is_regularized,
                             reg_coef=reg_coef)
+    
     return res
     
 

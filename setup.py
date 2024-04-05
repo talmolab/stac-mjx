@@ -27,6 +27,8 @@ setup(
         "imageio",
         "matplotlib",
         "hydra-core",
+        "optax",
+        "equinox",
         
     ],
 )
