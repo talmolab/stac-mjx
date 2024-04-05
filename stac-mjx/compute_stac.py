@@ -44,7 +44,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         q0,
         utils.params["ROOT_FTOL"],
     )
-    q_opt_param = jnp.clip(res.params, min=utils.params['lb'], max=utils.params['ub'])
+    q_opt_param = jnp.clip(res.params, utils.params['lb'], utils.params['ub'])
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     print(f"Resulting qs: {q_opt_param}")
@@ -79,7 +79,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         utils.params["ROOT_FTOL"],
     )
     
-    q_opt_param = jnp.clip(res.params, min=utils.params['lb'], max=utils.params['ub'])
+    q_opt_param = jnp.clip(res.params, utils.params['lb'], utils.params['ub'])
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
@@ -164,7 +164,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
             utils.params["FTOL"],
         )
 
-        q_opt_param = jnp.clip(res.params, min=utils.params['lb'], max=utils.params['ub'])
+        q_opt_param = jnp.clip(res.params, utils.params['lb'], utils.params['ub'])
         
         mjx_data = op.replace_qs(mjx_model, mjx_data, q_opt_param)
         
@@ -181,7 +181,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 q0,
                 utils.params["LIMB_FTOL"],
             )
-            q_opt_param = jnp.clip(res.params, min=utils.params['lb'], max=utils.params['ub'])
+            q_opt_param = jnp.clip(res.params, utils.params['lb'], utils.params['ub'])
 
             mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, part, q_opt_param))
         

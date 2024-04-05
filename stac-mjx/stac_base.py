@@ -41,7 +41,7 @@ def q_loss(
     """
 
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), min=lb, max=ub))
+    mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), lb, ub))
 
     # Forward kinematics
     mjx_data = op.kinematics(mjx_model, mjx_data)
