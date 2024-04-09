@@ -11,8 +11,6 @@ import logging
     
 from jaxopt import OptaxSolver
 
-
-
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
@@ -73,35 +71,12 @@ def q_opt(
     """
     try:
         # Get bounds of joint angle ranges
-        lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
-        lb = jnp.minimum(lb, 0.0)
-        ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        bounds = (lb, ub)
-
-        # solver = LBFGSB(fun=q_loss, 
-        #                 tol=ftol,
-        #                 maxiter=maxiter,
-        #                 history_size=20,
-        #                 # use_gamma=True,
-        #                 # stepsize=1.0,
-        #                 jit=True,
-        #                 verbose=0
-        #                 )
+        # lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
+        # lb = jnp.minimum(lb, 0.0)
+        # ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
+        # bounds = (lb, ub)
         
-        
-        # return mjx_data, solver.run(q0, (utils.params['lb'], utils.params['ub']), 
-        #                             mjx_model=mjx_model, 
-        #                             mjx_data=mjx_data, 
-        #                             kp_data=marker_ref_arr.T,
-        #                             qs_to_opt=qs_to_opt,
-        #                             kps_to_opt=kps_to_opt,
-        #                             initial_q=q0
-        #                             )
-        
-        opt = optax.adamw(utils.params['LR'])
-        solver = OptaxSolver(opt=opt, fun=q_loss, maxiter=utils.params['MAXITER'])
-        
-        return mjx_data, solver.run(q0, mjx_model=mjx_model, 
+        return mjx_data, q_solver.run(q0, mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=marker_ref_arr.T,
                                     qs_to_opt=qs_to_opt,
@@ -176,15 +151,17 @@ def m_loss(
 
 
 @jit
-def m_opt(offset0, 
-          mjx_model, 
-          mjx_data, 
-          keypoints, 
-          q, 
-          initial_offsets, 
-          is_regularized, 
-          reg_coef,
-          ftol):
+def m_opt(
+    offset0, 
+    mjx_model, 
+    mjx_data, 
+    keypoints, 
+    q, 
+    initial_offsets, 
+    is_regularized, 
+    reg_coef,
+    ftol
+):
     """a jitted m_phase optimization
 
     Args:
@@ -200,17 +177,8 @@ def m_opt(offset0,
     Returns:
         _type_: _description_
     """
-    # solver = LBFGS(fun=m_loss, 
-    #                 tol=ftol,
-    #                 jit=True,
-    #                 maxiter=utils.params["M_MAXITER"],
-    #                 history_size=20,
-    #                 verbose=False
-    #                 )
-    opt = optax.adamw(utils.params['LR'])
-    solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=utils.params['MAXITER'])
     
-    res = solver.run(offset0, mjx_model=mjx_model,
+    res = m_solver.run(offset0, mjx_model=mjx_model,
                             mjx_data=mjx_data,
                             kp_data=keypoints,
                             q=q,
@@ -276,3 +244,37 @@ def m_phase(
     mjx_data = op.kinematics(mjx_model, mjx_data)
     
     return mjx_model, mjx_data
+
+# lr_decay_rate = (utils.params["LR_END"] / utils.params["LR_INIT"]) ** (1.0 / utils.params['MAXITER'])  # (max_iters // 10))
+# transition_steps = utils.params['MAXITER'] // int(jnp.log(utils.params["LR_END"] / utils.params["LR_INIT"]) / jnp.log(lr_decay_rate))
+   
+lr_decay_rate = (1.0e-5 / 5.0e-2) ** (1.0 / utils.params['MAXITER'])  # (max_iters // 10))
+transition_steps = utils.params['MAXITER'] // int(jnp.log(1.0e-5 / 5.0e-2) / jnp.log(lr_decay_rate))
+  
+learning_rate = optax.warmup_exponential_decay_schedule(
+        init_value=1e-6,
+        peak_value=5.0e-2,
+        end_value=1.0e-5,
+        warmup_steps=100,
+        transition_begin=0,
+        decay_rate=lr_decay_rate,
+        transition_steps=transition_steps,
+    )
+    
+# learning_rate = optax.warmup_cosine_decay_schedule(
+    # init_value = 1e-3, 
+    # peak_value = 0.2, 
+    # warmup_steps = 100, 
+    # decay_steps = utils.params['MAXITER'] - 100,  # maxiter - warmupsteps
+    # end_value=1e-4, 
+    # exponent=1.0
+    # )
+    
+opt = optax.chain(
+    optax.adamw(learning_rate=learning_rate),
+    optax.zero_nans(),
+    optax.clip_by_global_norm(10.0),
+)
+
+q_solver = OptaxSolver(opt=opt, fun=q_loss, maxiter=utils.params['MAXITER'])
+m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=utils.params['MAXITER'])

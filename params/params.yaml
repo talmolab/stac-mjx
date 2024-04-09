@@ -10,8 +10,11 @@ Q_MAXITER: 100
 M_MAXITER: 500
 
 # adamw params
-MAXITER: 3000
+MAXITER: 8000
 LR: 1.0e-04
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -166,9 +169,6 @@ Z_OFFSET: 0.00
 
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: .9
-
-# Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.

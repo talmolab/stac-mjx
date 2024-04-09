@@ -1,5 +1,6 @@
 import mujoco
 import jax
+from jax import numpy as jnp
 from jax.lib import xla_bridge
 from dm_control import mjcf
 import numpy as np
@@ -13,8 +14,12 @@ import logging
 import sys
 import hydra
 from omegaconf import DictConfig, OmegaConf
-import controller as ctrl
+
 import utils
+# Gotta do this before importing controller
+utils.init_params("././params/params.yaml")
+
+import controller as ctrl
 
 def get_clip(kp_data, n_frames):
     max_index = kp_data.shape[0] - n_frames + 1
@@ -33,8 +38,6 @@ def main(cfg : DictConfig) -> None:
     
     start_time = time.time()
     
-    utils.init_params("././params/params.yaml")
-
     # Allocate 90% instead of 75% of GPU vram
     os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.9' 
     
@@ -59,6 +62,16 @@ def main(cfg : DictConfig) -> None:
         print(f"setting fit frames to {cfg.stac.n_fit_frames}")
         utils.params['n_fit_frames'] = cfg.stac.n_fit_frames
 
+    utils.params['LR'] = cfg.stac.lr
+    utils.params["LR_INIT"] = cfg.stac.lr_init
+    utils.params["LR_END"] = cfg.stac.lr_end
+    # work out the transition steps with a decay rate of 0.999 (for exponential scheduler)
+    
+    # print(f"lr_decay_rate: {lr_decay_rate}")
+    # print(f"transition_steps; {transition_steps}")
+    # utils.params['LR_DECAY_RATE'] = lr_decay_rate
+    # utils.params['TRANSITION_STEPS'] = transition_steps
+    
     # setting paths
     fit_path = cfg.paths.fit_path
     transform_path = cfg.paths.transform_path
@@ -100,7 +113,7 @@ def main(cfg : DictConfig) -> None:
         print(f"Running fit() on {utils.params['n_fit_frames']}")
         # clip = get_clip(kp_data, utils.params['n_fit_frames'])
         # print(f"clip shape: {clip.shape}")
-        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
+        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[1000:utils.params['n_fit_frames'] + 1000])
 
         fit_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, clip_data)
 
