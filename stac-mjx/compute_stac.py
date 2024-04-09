@@ -27,7 +27,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
-    print(f"Initial qs: {q0}")
     kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
     j = time.time()
     mjx_data, res = stac_base.q_opt(
@@ -43,7 +42,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q_opt_param = jnp.clip(res.params, utils.params['lb'], utils.params['ub'])
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
-    print(f"Resulting qs: {q_opt_param}")
 
     r = time.time()
 
@@ -63,7 +61,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     # Trunk only optimization
     j = time.time()
     print("starting q_opt 2")
-    print(f"starting qs: {q0}")
     mjx_data, res = stac_base.q_opt(
         mjx_model, 
         mjx_data,
@@ -83,7 +80,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param))
 
     print(f"Replace 2 finished in {time.time()-r}")
-    print(f"qs after replace: {mjx_data.qpos}")
     print(f"Root optimization finished in {time.time()-s}")
 
     return mjx_data
