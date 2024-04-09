@@ -1,14 +1,20 @@
 from jax import vmap
 from jax import numpy as jnp
+
 import mujoco
 from mujoco import mjx
+
+import numpy as np
+
 from typing import Text
-import utils
+
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
-import numpy as np
+
+import utils
 from compute_stac import *
 import operations as op
+
 import pickle
 import logging
 import os
@@ -167,7 +173,14 @@ def fit(mj_model, kp_data):
     # forward is used to calculate xpos and such
     mjx_data = mjx.kinematics(mjx_model, mjx_data)
     mjx_data = mjx.com_pos(mjx_model, mjx_data)
-    
+        
+    # Set joint bounds
+    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
+    lb = jnp.minimum(lb, 0.0)
+    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
+    utils.params['lb'] = lb
+    utils.params['ub'] = ub
+
     # Begin optimization steps
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
 

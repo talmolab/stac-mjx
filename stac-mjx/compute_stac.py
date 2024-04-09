@@ -17,11 +17,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
-    lb = jnp.minimum(lb, 0.0)
-    ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-    utils.params['lb'] = lb
-    utils.params['ub'] = ub
+    
     s = time.time()
     print("Root Optimization:")
 
