@@ -167,6 +167,8 @@ RENDER_FPS: 50
 ARENA_TYPE: DannceArena
 Z_OFFSET: 0.00
 
+TIME_BINS: 0.02
+
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: .9
 

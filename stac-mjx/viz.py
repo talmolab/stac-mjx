@@ -7,7 +7,7 @@ import imageio
 import numpy as np
 from typing import List, Dict, Text
 import os
-
+from dm_control.mujoco import wrapper
 import cv2
 from scipy.ndimage import gaussian_filter
 from scipy.spatial.transform import Rotation as R
@@ -166,7 +166,7 @@ def overlay_render(
     save_path,
     camera: Text = "close_profile",
     ):
-    scene_option = mujoco.MjvOption()
+    scene_option = wrapper.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
     # scene_option.geomgroup[3] = 0
@@ -185,6 +185,13 @@ def overlay_render(
 
     # Load mjx_model and mjx_data and set marker sites
     root = mjcf.from_path(model_xml)
+    
+    # Add cameras
+    cam_params = utils.loadmat(calibration_path)["params"]
+    camera_kwargs = convert_cameras(cam_params)
+    for kwargs in camera_kwargs:
+            root.worldbody.add("camera", **kwargs)
+            
     physics, mj_model = ctrl.create_body_sites(root)
     physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
 
@@ -192,12 +199,12 @@ def overlay_render(
     _UPRIGHT_POS = (0.0, 0.0, 0.94)
     _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
-    mj_data = mujoco.MjData(mj_model)
-    mj_data.xpos = _UPRIGHT_POS
-    mj_data.xquat = _UPRIGHT_QUAT
+    # mj_data = mujoco.MjData(mj_model)
+    # mj_data.xpos = _UPRIGHT_POS
+    # mj_data.xquat = _UPRIGHT_QUAT
     # Should this be mj_forward?
-    mujoco.mj_kinematics(mj_model, mj_data)
-
+    # mujoco.mj_kinematics(mj_model, mj_data)
+    physics.forward()
     # Load data
     with open(data_path, "rb") as file:
         d = pickle.load(file)
@@ -208,11 +215,13 @@ def overlay_render(
 
     kp_data = kp_data[:qposes.shape[0]]
     
-    # prev_time = env.physics.time()
+    prev_time = physics.time()
     reader = imageio.get_reader(video_path)
+    # import imageio.v3 as iio
+    # print(iio.immeta(video_path))
+    # print(iio.improps(video_path))
+
     n_frame = 0
-    
-    cam_params = utils.loadmat(calibration_path)["params"]
     
     frames=[]
     with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
@@ -225,33 +234,50 @@ def overlay_render(
                 break
             # This only happens with the simulation fps and render fps don't match up
             # commenting out for now since I'll need to implement time tracking outside of dmcontrol
-            # if i > 0:
-                # while (np.round(env.physics.time() - prev_time, decimals=5)) \
-                #     < utils.params["TIME_BINS"]:
-                #     mujoco.mj_forward(mj_model, mj_data)
-            
+            if i > 0:
+                while (np.round(physics.time() - prev_time, decimals=5)) \
+                    < utils.params["TIME_BINS"]:
+                    # mujoco.mj_forward(mj_model, mj_data)
+                    physics.step()
             # Set keypoints
             physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
-            mj_data.qpos = qpos
-            mujoco.mj_forward(mj_model, mj_data)
+            # mj_data.qpos = qpos
+            # mujoco.mj_forward(mj_model, mj_data)
+            physics.data.qpos = qpos
+            physics.step()
             
             # SEGMENT or IDCOLOR? 
             # https://github.com/google-deepmind/mujoco/blob/725630c95ddebceb32b89c45cfc14a5eae7f8a8a/include/mujoco/mjvisualize.h#L149
-            scene_option.flags[enums.mjtRndFlag.mjRND_SEGMENT] = False
-            renderer.update_scene(mj_data, camera=camera, scene_option=scene_option)
-            reconArr = renderer.render()
+            # scene_option.flags[enums.mjtRndFlag.mjRND_SEGMENT] = False
+            # renderer.update_scene(physics.data, camera=camera, scene_option=scene_option)
+            # reconArr = renderer.render()
             
-            # Get segmentation rendering
-            scene_option.flags[enums.mjtRndFlag.mjRND_SEGMENT] = True
-            renderer.update_scene(mj_data, camera=camera, scene_option=scene_option)
-            segArr = renderer.render()
+            # # Get segmentation rendering
+            # scene_option.flags[enums.mjtRndFlag.mjRND_SEGMENT] = True
+            # renderer.update_scene(physics.data, camera=camera, scene_option=scene_option)
+            # segArr = renderer.render()
             
-            rgbArr = reader.get_data(i)
+            reconArr = physics.render(
+            HEIGHT,
+            WIDTH,
+            camera_id=camera,
+            scene_option=scene_option,
+            )
+            
+            segArr = physics.render(
+                HEIGHT,
+                WIDTH,
+                camera_id=camera,
+                scene_option=scene_option,
+                segmentation=True,
+            )
+            # 89650 is where the clip seems to start lol (29:53)
+            rgbArr = reader.get_data(90000 + i // 2)
             frame = overlay_frame(rgbArr, cam_params, reconArr, segArr, camera)
             
             video.append_data(frame)
             frames.append(frame)
-            # prev_time = np.round(env.physics.time(), decimals=2)
+            prev_time = np.round(physics.time(), decimals=2)
             
     return frames
 
