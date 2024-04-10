@@ -235,7 +235,7 @@ def m_phase(
                 reg_coef, ftol)
     
     offset_opt_param = res.params
-    print(f"Final error of {res.state.error}")
+    print(f"Final error of {res.state.error} \n params: {offset_opt_param}")
 
     # Set pose to the optimized m and step forward.
     mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
