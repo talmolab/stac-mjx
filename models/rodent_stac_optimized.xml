@@ -167,7 +167,7 @@
       <camera name="top" mode="targetbody" fovy="100.0" pos="0 0 1" zaxis="0 -0.2 0"/>
       <camera name="close_profile" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2"/>
       <camera name="close_side" mode="trackcom" pos="0 -.3 0.25" xyaxes="0 0 1 0 1 2"/>
-      <geom name="collision_torso" class="no_collision" type="sphere" size="0.025" density="468.251260009" pos="-0.008200000000000001 0 0" euler="0 0.1745329251994329 0"/>
+      <geom name="collision_torso" class="nonself_collision_primitive_paw" type="ellipsoid" size="0.05 0.024 0.026" density="468.251260009" pos="-0.008200000000000001 0 0" euler="0 0.1745329251994329 0"/>
       <body name="vertebra_1" pos="-0.01917944366660853 -1.880335592758969e-07 0.01684645690649089">
         <geom name="vertebra_1_collision" class="no_collision" type="sphere" size="0.01" pos="0 0 -0.00164"/>
         <body name="vertebra_2" pos="-0.005629716335317717 2.594803588658443e-06 0.0005320922698783236">
@@ -184,7 +184,7 @@
                   <body name="pelvis" pos="-0.01307140919884396 3.513221433820909e-06 -0.008120982829772532">
                     <geom name="collision_pelvis_L" class="no_collision" size="0.013 0.021 0" density="1548.57736929" pos="-0.00082 0.00656 -0.00574" euler="0 0.8726646259971648 0"/>
                     <geom name="collision_pelvis_R" class="no_collision" size="0.013 0.021 0" density="1548.57736929" pos="-0.00082 -0.00656 -0.00574" euler="0 0.8726646259971648 0"/>
-                    <geom name="collision_pelvis_gut" class="no_collision" type="sphere" size="0.01" pos="0.0205 0 -0.0164" euler="0 -0.5235987755982988 0"/>
+                    <geom name="collision_pelvis_gut" class="no_collision" type="ellipsoid" size="0.02 0.02 0.018" pos="0.0205 0 -0.0164" euler="0 -0.5235987755982988 0"/>
                     <site name="hip_L" size="0.0022" pos="-0.004810292416764615 0.01149125410671547 -0.009887823301127264"/>
                     <site name="hip_R" size="0.0022" pos="-0.004810292416764615 -0.01149125410671547 -0.009887823301127264"/>
                     <body name="upper_leg_L" pos="-0.004810292416764615 0.01149125410671547 -0.009887823301127264">
@@ -386,31 +386,31 @@
                     <geom name="vertebra_atlant_collision" class="no_collision" type="sphere" size="0.005399999999999999" density="300.0"/>
                     <joint name="vertebra_atlant_extend" class="cervical_extend" pos="2.740582919998361e-05 -4.955377833772316e-08 -0.0002115292895827232" axis="0 1 0"/>
                     <body name="skull" pos="0.02595506911814188 4.202354324468666e-09 0.001770509875790047">
-                      <geom name="skull_0_collision" class="no_collision" type="sphere" size="0.01209522800796732 0.01669565217391304 0.01" density="703.10773841" pos="-0.0090590434832666 0 0.00082" euler="0 0.1745329251994329 0"/>
-                      <geom name="skull_0b_collision" class="no_collision" type="sphere" size="0.01209522800796732 0.01669565217391304 0.01" density="1.40621547682" pos="-0.0090590434832666 0 0.00328" euler="0 0.1745329251994329 0"/>
-                      <geom name="skull_F_collision" class="no_collision" type="sphere" size="0.007180949102589378 0.008904347826086957 0.02" density="703.10773841" pos="0.01449446957322656 0 -0.00082" euler="0 1.919862177193763 0"/>
-                      <geom name="skull_Fb_collision" class="no_collision" type="sphere" size="0.007180949102589378 0.008904347826086957 0.02" density="1.40621547682" pos="0.01449446957322656 0 0.00164" euler="0 1.919862177193763 0"/>
-                      <geom name="skull_L_collision" class="no_collision" type="sphere" size="0.007180949102589378 0.01335652173913044 0.014" density="703.10773841" pos="0.005435426089959959 0.004563478260869566 -0.00082" euler="0 1.919862177193763 0"/>
+                      <geom name="skull_0_collision" class="no_collision" type="ellipsoid" size="0.01209522800796732 0.01669565217391304 0.01" density="703.10773841" pos="-0.0090590434832666 0 0.00082" euler="0 0.1745329251994329 0"/>
+                      <geom name="skull_0b_collision" class="no_collision" type="ellipsoid" size="0.01209522800796732 0.01669565217391304 0.01" density="1.40621547682" pos="-0.0090590434832666 0 0.00328" euler="0 0.1745329251994329 0"/>
+                      <geom name="skull_F_collision" class="no_collision" type="ellipsoid" size="0.007180949102589378 0.008904347826086957 0.02" density="703.10773841" pos="0.01449446957322656 0 -0.00082" euler="0 1.919862177193763 0"/>
+                      <geom name="skull_Fb_collision" class="no_collision" type="ellipsoid" size="0.007180949102589378 0.008904347826086957 0.02" density="1.40621547682" pos="0.01449446957322656 0 0.00164" euler="0 1.919862177193763 0"/>
+                      <geom name="skull_L_collision" class="no_collision" type="ellipsoid" size="0.007180949102589378 0.01335652173913044 0.014" density="703.10773841" pos="0.005435426089959959 0.004563478260869566 -0.00082" euler="0 1.919862177193763 0"/>
                       <geom name="eye_L_collision" class="no_collision" type="sphere" group="1" size="0.004 0.004 0.004" rgba="0 0 0 1" pos="0.001104761400398366 0.0128 0.0025"/>
-                      <geom name="skull_R_collision" class="no_collision" type="sphere" size="0.007180949102589378 0.01335652173913044 0.014" density="703.10773841" pos="0.005435426089959959 -0.004563478260869566 -0.00082" euler="0 1.919862177193763 0"/>
+                      <geom name="skull_R_collision" class="no_collision" type="ellipsoid" size="0.007180949102589378 0.01335652173913044 0.014" density="703.10773841" pos="0.005435426089959959 -0.004563478260869566 -0.00082" euler="0 1.919862177193763 0"/>
                       <geom name="eye_R_collision" class="no_collision" type="sphere" group="1" size="0.004 0.004 0.004" rgba="0 0 0 1" pos="0.001104761400398366 -0.0128 0.0025"/>
                       <geom name="skull_P0_collision" class="no_collision" type="box" size="0.006628568402390195 0.006233043478260871 0.0016" density="703.10773841" pos="0.00181180869665332 0 -0.00574"/>
                       <geom name="skull_P1_collision" class="no_collision" type="box" size="0.004419045601593462 0.00400695652173913 0.0012" density="703.10773841" pos="0.00634133043828662 0 -0.00574"/>
                       <geom name="skull_P2_collision" class="no_collision" type="box" size="0.001104761400398366 0.003339130434782609 0.0008" density="703.10773841" pos="0.00860609130910327 0 -0.00574"/>
-                      <geom name="skull_T0_collision" class="no_collision" type="sphere" size="0.00552380700199183 0.006678260869565218 0.004" density="703.10773841" pos="0.02989484349477978 0 -0.00656" euler="0 0.5235987755982988 0"/>
-                      <geom name="skull_T1_collision" class="no_collision" type="sphere" group="1" size="0.002209522800796731 0.001669565217391304 0.007000000000000001" rgba="1 1 1 1" density="703.10773841" pos="0.02808303479812645 0.000912695652173913 -0.0123" euler="0 0.5235987755982988 0"/>
-                      <geom name="skull_T2_collision" class="no_collision" type="sphere" group="1" size="0.002209522800796731 0.001669565217391304 0.007000000000000001" rgba="1 1 1 1" density="703.10773841" pos="0.02808303479812645 -0.000912695652173913 -0.0123" euler="0 0.5235987755982988 0"/>
+                      <geom name="skull_T0_collision" class="no_collision" type="ellipsoid" size="0.00552380700199183 0.006678260869565218 0.004" density="703.10773841" pos="0.02989484349477978 0 -0.00656" euler="0 0.5235987755982988 0"/>
+                      <geom name="skull_T1_collision" class="no_collision" type="ellipsoid" group="1" size="0.002209522800796731 0.001669565217391304 0.007000000000000001" rgba="1 1 1 1" density="703.10773841" pos="0.02808303479812645 0.000912695652173913 -0.0123" euler="0 0.5235987755982988 0"/>
+                      <geom name="skull_T2_collision" class="no_collision" type="ellipsoid" group="1" size="0.002209522800796731 0.001669565217391304 0.007000000000000001" rgba="1 1 1 1" density="703.10773841" pos="0.02808303479812645 -0.000912695652173913 -0.0123" euler="0 0.5235987755982988 0"/>
                       <joint name="atlas" class="atlas" pos="-0.02843583549004804 0 0"/>
                       <site name="head" class="sensor" type="box" size="0.002 0.002 0.002"/>
                       <camera name="egocentric" fovy="80.0" pos="0.01 0 0.005" euler="0 -1.570796326794897 -1.570796326794897"/>
                       <body name="jaw" pos="0.0004529521741633299 -1.588797783766933e-08 -0.0164" euler="0 0.2617993877991494 0">
-                        <geom name="jaw_back_collision" class="no_collision" type="sphere" size="0.01215237540438202 0.01335652173913044 0.007000000000000001" density="314.057274977" pos="-0.01087085217991992 0 0.00205" euler="0 0.9599310885968813 0"/>
-                        <geom name="jaw_F_collision" class="no_collision" type="sphere" size="0.003314284201195097 0.006678260869565218 0.012" density="314.057274977" pos="0.002717713044979979 0 -0.00492" euler="0 1.832595714594046 0"/>
-                        <geom name="jaw_L_collision" class="no_collision" type="sphere" size="0.00994285260358529 0.003895652173913044 0.016" density="314.057274977" pos="-0.005435426089959959 0.008214260869565216 0.00082" euler="-0.6981317007977318 2.181661564992912 0.5235987755982988"/>
-                        <geom name="jaw_R_collision" class="no_collision" type="sphere" size="0.00994285260358529 0.003895652173913044 0.016" density="314.057274977" pos="-0.005435426089959959 -0.008214260869565216 0.00082" euler="0.6981317007977318 2.181661564992912 -0.5235987755982988"/>
-                        <geom name="jaw_T0_collision" class="no_collision" type="sphere" size="0.003314284201195097 0.003339130434782609 0.006" density="314.057274977" pos="0.01268266087657324 0 -0.00574" euler="0 1.221730476396031 0"/>
-                        <geom name="jaw_T1_collision" class="no_collision" type="sphere" group="1" size="0.002209522800796731 0.001335652173913044 0.007000000000000001" rgba="1 1 1 1" density="314.057274977" pos="0.01721218261820654 0.000912695652173913 -0.0041" euler="0 1.134464013796314 0"/>
-                        <geom name="jaw_T2_collision" class="no_collision" type="sphere" group="1" size="0.002209522800796731 0.001335652173913044 0.007000000000000001" rgba="1 1 1 1" density="314.057274977" pos="0.01721218261820654 -0.000912695652173913 -0.0041" euler="0 1.134464013796314 0"/>
+                        <geom name="jaw_back_collision" class="no_collision" type="ellipsoid" size="0.01215237540438202 0.01335652173913044 0.007000000000000001" density="314.057274977" pos="-0.01087085217991992 0 0.00205" euler="0 0.9599310885968813 0"/>
+                        <geom name="jaw_F_collision" class="no_collision" type="ellipsoid" size="0.003314284201195097 0.006678260869565218 0.012" density="314.057274977" pos="0.002717713044979979 0 -0.00492" euler="0 1.832595714594046 0"/>
+                        <geom name="jaw_L_collision" class="no_collision" type="ellipsoid" size="0.00994285260358529 0.003895652173913044 0.016" density="314.057274977" pos="-0.005435426089959959 0.008214260869565216 0.00082" euler="-0.6981317007977318 2.181661564992912 0.5235987755982988"/>
+                        <geom name="jaw_R_collision" class="no_collision" type="ellipsoid" size="0.00994285260358529 0.003895652173913044 0.016" density="314.057274977" pos="-0.005435426089959959 -0.008214260869565216 0.00082" euler="0.6981317007977318 2.181661564992912 -0.5235987755982988"/>
+                        <geom name="jaw_T0_collision" class="no_collision" type="ellipsoid" size="0.003314284201195097 0.003339130434782609 0.006" density="314.057274977" pos="0.01268266087657324 0 -0.00574" euler="0 1.221730476396031 0"/>
+                        <geom name="jaw_T1_collision" class="no_collision" type="ellipsoid" group="1" size="0.002209522800796731 0.001335652173913044 0.007000000000000001" rgba="1 1 1 1" density="314.057274977" pos="0.01721218261820654 0.000912695652173913 -0.0041" euler="0 1.134464013796314 0"/>
+                        <geom name="jaw_T2_collision" class="no_collision" type="ellipsoid" group="1" size="0.002209522800796731 0.001335652173913044 0.007000000000000001" rgba="1 1 1 1" density="314.057274977" pos="0.01721218261820654 -0.000912695652173913 -0.0041" euler="0 1.134464013796314 0"/>
                         <geom name="jaw_P0_collision" class="no_collision" type="box" size="0.006628568402390195 0.006233043478260871 0.0016" density="314.057274977" pos="-0.002717713044979979 0 0.00082" euler="0 0.9599310885968813 0"/>
                         <geom name="jaw_P1_collision" class="no_collision" type="box" size="0.004419045601593462 0.004897391304347827 0.001" density="314.057274977" pos="0 0 -0.0009840000000000001" euler="0 0.5235987755982988 0"/>
                         <geom name="jaw_P2_collision" class="no_collision" type="box" size="0.004419045601593462 0.00400695652173913 0.001" density="314.057274977" pos="0.002717713044979979 0 -0.002296" euler="0 0.4363323129985824 0"/>
