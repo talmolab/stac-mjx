@@ -1,4 +1,5 @@
 from dm_control import mjcf
+from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 import mujoco
 from jax import numpy as jnp
@@ -70,7 +71,7 @@ def overlay_frame(
     params: List,
     recon_frame: np.ndarray,
     seg_frame: np.ndarray,
-    camera: int,
+    camera: Text,
 ) -> np.ndarray:
     """Overlay the reconstructed frame on top of the rgb frame.
 
@@ -85,11 +86,70 @@ def overlay_frame(
         np.ndarray: Overlayed frame.
     """
     # TODO: id 1 for camera 2; change to param later
-    cam_id = 1
+    print(camera)
+    cam_id = int(camera[-1]) - 1
+    print(cam_id)
+    print(params.shape)
     # Load and undistort the rgb frame
     rgb_frame = cv2.undistort(
         rgb_frame,
         params[cam_id].K.T,
+        np.concatenate(
+            [params[cam_id].RDistort, params[cam_id].TDistort], axis=0
+        ).T.squeeze(),
+        params[cam_id].K.T,
+    )
+
+    # Calculate the alpha mask using the segmented video
+    alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
+    alpha = gaussian_filter(alpha, 2)
+    alpha = gaussian_filter(alpha, 2)
+    alpha = gaussian_filter(alpha, 2)
+    frame = np.zeros_like(recon_frame)
+
+    # Correct the segmented frame by cropping such that the optical center is at the center of the image
+    recon_frame = correct_optical_center(params, recon_frame, cam_id)
+    seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
+
+    # Calculate the alpha mask using the segmented video
+    alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
+    alpha = gaussian_filter(alpha, 2)
+    alpha = gaussian_filter(alpha, 2)
+    alpha = gaussian_filter(alpha, 2)
+    frame = np.zeros_like(recon_frame)
+
+    # Blend the two videos
+    for n_chan in range(recon_frame.shape[2]):
+        frame[:, :, n_chan] = (
+            alpha * recon_frame[:, :, n_chan] + (1 - alpha) * rgb_frame[:, :, n_chan]
+        )
+    return frame
+
+
+def overlay_frame_indiv(
+    rgb_frame: np.ndarray,
+    params: List,
+    recon_frame: np.ndarray,
+    seg_frame: np.ndarray,
+    camera: int,
+) -> np.ndarray:
+    """Overlay the reconstructed frame on top of the rgb frame.
+
+    Args:
+        rgb_frame (np.ndarray): Frame from the rgb video.
+        params (List): Camera parameters.
+        recon_frame (np.ndarray): Reconstructed frame.
+        seg_frame (np.ndarray): Segmented frame.
+        camera (int): Camera name.
+
+    Returns:
+        np.ndarray: Overlayed frame.
+    """
+
+    # Load and undistort the rgb frame
+    rgb_frame = cv2.undistort(
+        rgb_frame,
+        params.K.T,
         np.concatenate(
             [params[cam_id].RDistort, params[cam_id].TDistort], axis=0
         ).T.squeeze(),
@@ -142,8 +202,29 @@ def convert_camera(cam, idx):
         "fovy": fovy,
         "quat": quat,
     }
+    
+    
+# 'K', 'RDistort', 'TDistort', 'r', 't'
+def convert_camera_indiv(cam, id):
+    """Convert a camera from Matlab convention to Mujoco convention."""
+    # Matlab camera X faces the opposite direction of Mujoco X
+    rot = R.from_matrix(cam['TDistort'])
+    eul = rot.as_euler("zyx")
+    eul[2] += np.pi
+    modified_rot = R.from_euler("zyx", eul)
+    quat = modified_rot.as_quat()
 
-
+    # Convert the quaternion convention from scipy.spatial.transform.Rotation to Mujoco.
+    quat = quat[np.array([3, 0, 1, 2])]
+    quat[0] *= -1
+    # The y field of fiew is a function of the focal y and the image height.
+    fovy = 2 * np.arctan(HEIGHT / (2 * cam['K'][1, 1])) / (2 * np.pi) * 360
+    return {
+        "name": f"Camera{id}",
+        "pos": -cam['t'] @ cam['TDistort'] / 1000,
+        "fovy": fovy,
+        "quat": quat,
+    }
 def convert_cameras(params) -> List[Dict]:
     """Convert cameras from Matlab convention to Mujoco convention.
 
@@ -185,9 +266,16 @@ def overlay_render(
 
     # Load mjx_model and mjx_data and set marker sites
     root = mjcf.from_path(model_xml)
-    
+    rescale.rescale_subtree(
+        root,
+        utils.params["SCALE_FACTOR"],
+        utils.params["SCALE_FACTOR"],
+    )
     # Add cameras
     cam_params = utils.loadmat(calibration_path)["params"]
+    # print(cam_params.keys())
+    # print(cam_params)
+    # root.worldbody.add("camera", **convert_camera_indiv(cam_params, 2)) # Camera 2
     camera_kwargs = convert_cameras(cam_params)
     for kwargs in camera_kwargs:
             root.worldbody.add("camera", **kwargs)
@@ -271,8 +359,8 @@ def overlay_render(
                 scene_option=scene_option,
                 segmentation=True,
             )
-            # 89650 is where the clip seems to start lol (29:53)
-            rgbArr = reader.get_data(90000 + i // 2)
+
+            rgbArr = reader.get_data(i)
             frame = overlay_frame(rgbArr, cam_params, reconArr, segArr, camera)
             
             video.append_data(frame)
