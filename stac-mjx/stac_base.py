@@ -251,27 +251,33 @@ def m_phase(
 lr_decay_rate = (1.0e-5 / 5.0e-2) ** (1.0 / utils.params['MAXITER'])  # (max_iters // 10))
 transition_steps = utils.params['MAXITER'] // int(jnp.log(1.0e-5 / 5.0e-2) / jnp.log(lr_decay_rate))
   
-learning_rate = optax.warmup_exponential_decay_schedule(
-        init_value=1e-6,
-        peak_value=5.0e-2,
-        end_value=1.0e-5,
-        warmup_steps=100,
-        transition_begin=0,
-        decay_rate=lr_decay_rate,
-        transition_steps=transition_steps,
+# learning_rate = optax.warmup_exponential_decay_schedule(
+#         init_value=1e-6,
+#         peak_value=1.0e-2,
+#         end_value=1.0e-6,
+#         warmup_steps=100,
+#         transition_begin=0,
+#         decay_rate=lr_decay_rate,
+#         transition_steps=transition_steps,
+#     )
+    
+learning_rate = optax.warmup_cosine_decay_schedule(
+    init_value = 1e-3, 
+    peak_value = 2e-2, 
+    warmup_steps = 100, 
+    decay_steps = utils.params['MAXITER'] - 100,  # maxiter - warmupsteps
+    end_value=1e-6, 
+    exponent=1.0
     )
     
-# learning_rate = optax.warmup_cosine_decay_schedule(
-    # init_value = 1e-3, 
-    # peak_value = 0.2, 
-    # warmup_steps = 100, 
-    # decay_steps = utils.params['MAXITER'] - 100,  # maxiter - warmupsteps
-    # end_value=1e-4, 
-    # exponent=1.0
-    # )
-    
+# opt = optax.chain(
+#     optax.adamw(learning_rate=learning_rate),
+#     optax.zero_nans(),
+#     optax.clip_by_global_norm(10.0),
+# )
+
 opt = optax.chain(
-    optax.adamw(learning_rate=learning_rate),
+    optax.sgd(learning_rate=learning_rate, momentum=.9, nesterov=True),
     optax.zero_nans(),
     optax.clip_by_global_norm(10.0),
 )

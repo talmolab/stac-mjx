@@ -113,7 +113,7 @@ def main(cfg : DictConfig) -> None:
         print(f"Running fit() on {utils.params['n_fit_frames']}")
         # clip = get_clip(kp_data, utils.params['n_fit_frames'])
         # print(f"clip shape: {clip.shape}")
-        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[1000:utils.params['n_fit_frames'] + 1000])
+        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
 
         fit_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, clip_data)
 
