@@ -195,12 +195,6 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     print(f"Pose Optimization done in {time.time()-s}")
     return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x), frame_data
 
-def initialize_part_names(physics):
-    # Get the ids of the limbs, accounting for quaternion and pos
-    part_names = physics.named.data.qpos.axes.row.names
-    for _ in range(6):
-        part_names.insert(0, part_names[0])
-    return part_names
 
 def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
     # Extract pose, offsets, data, and all parameters
