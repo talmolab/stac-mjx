@@ -9,8 +9,6 @@ import optax
 import utils
 import logging 
     
-from jaxopt import OptaxSolver
-
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
@@ -18,9 +16,7 @@ def q_loss(
     kp_data: jnp.ndarray,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
-    initial_q: jnp.ndarray,
-    lb: jnp.ndarray,
-    ub: jnp.ndarray,
+    initial_q: jnp.ndarray
     # part_opt: bool = False
 ) -> float:
     """Compute the marker loss for q_phase optimization.
@@ -39,8 +35,10 @@ def q_loss(
     """
 
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), lb, ub))
-
+    # mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
+    
+    # Clip to bounds ourselves because of potential jaxopt bug
+    mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
     # Forward kinematics
     mjx_data = op.kinematics(mjx_model, mjx_data)
     mjx_data = op.com_pos(mjx_model, mjx_data)
@@ -70,20 +68,15 @@ def q_opt(
     """Update q_pose using estimated marker parameters.
     """
     try:
-        # Get bounds of joint angle ranges
-        # lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
-        # lb = jnp.minimum(lb, 0.0)
-        # ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-        # bounds = (lb, ub)
-        
-        return mjx_data, q_solver.run(q0, mjx_model=mjx_model, 
+        lb = utils.params['lb']
+        ub = utils.params['ub']
+        # jax.debug.print(f"{len(lb)} {len(ub)} {q0.shape}")
+        return mjx_data, q_solver.run(q0, bounds=jnp.array((lb, ub)), mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=marker_ref_arr.T,
                                     qs_to_opt=qs_to_opt,
                                     kps_to_opt=kps_to_opt,
                                     initial_q=q0,
-                                    lb=utils.params['lb'],
-                                    ub=utils.params['ub'],
                                     )
             
     except ValueError as ex:
@@ -245,42 +238,20 @@ def m_phase(
     
     return mjx_model, mjx_data
 
-# lr_decay_rate = (utils.params["LR_END"] / utils.params["LR_INIT"]) ** (1.0 / utils.params['MAXITER'])  # (max_iters // 10))
-# transition_steps = utils.params['MAXITER'] // int(jnp.log(utils.params["LR_END"] / utils.params["LR_INIT"]) / jnp.log(lr_decay_rate))
-   
-lr_decay_rate = (1.0e-5 / 5.0e-2) ** (1.0 / utils.params['MAXITER'])  # (max_iters // 10))
-transition_steps = utils.params['MAXITER'] // int(jnp.log(1.0e-5 / 5.0e-2) / jnp.log(lr_decay_rate))
-  
-# learning_rate = optax.warmup_exponential_decay_schedule(
-#         init_value=1e-6,
-#         peak_value=1.0e-2,
-#         end_value=1.0e-6,
-#         warmup_steps=100,
-#         transition_begin=0,
-#         decay_rate=lr_decay_rate,
-#         transition_steps=transition_steps,
-#     )
-    
-learning_rate = optax.warmup_cosine_decay_schedule(
-    init_value = 1e-3, 
-    peak_value = 2e-2, 
-    warmup_steps = 100, 
-    decay_steps = utils.params['MAXITER'] - 100,  # maxiter - warmupsteps
-    end_value=1e-6, 
-    exponent=1.0
-    )
-    
-# opt = optax.chain(
-#     optax.adamw(learning_rate=learning_rate),
-#     optax.zero_nans(),
-#     optax.clip_by_global_norm(10.0),
-# )
-
-opt = optax.chain(
-    optax.sgd(learning_rate=learning_rate, momentum=.9, nesterov=True),
-    optax.zero_nans(),
-    optax.clip_by_global_norm(10.0),
-)
-
-q_solver = OptaxSolver(opt=opt, fun=q_loss, maxiter=utils.params['MAXITER'])
-m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=utils.params['MAXITER'])
+q_solver = LBFGSB(fun=q_loss, 
+                        tol=utils.params["FTOL"],
+                        maxiter=utils.params["Q_MAXITER"],
+                        history_size=20,
+                        # maxls=40,
+                        # use_gamma=False,
+                        stepsize=1.0,
+                        jit=True,
+                        verbose=0
+                        )
+m_solver = LBFGS(fun=m_loss, 
+                    tol=utils.params["FTOL"],
+                    jit=True,
+                    maxiter=utils.params["M_MAXITER"],
+                    history_size=20,
+                    verbose=0
+                    )

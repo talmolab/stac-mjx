@@ -61,16 +61,6 @@ def main(cfg : DictConfig) -> None:
     if cfg.stac.n_fit_frames:
         print(f"setting fit frames to {cfg.stac.n_fit_frames}")
         utils.params['n_fit_frames'] = cfg.stac.n_fit_frames
-
-    utils.params['LR'] = cfg.stac.lr
-    utils.params["LR_INIT"] = cfg.stac.lr_init
-    utils.params["LR_END"] = cfg.stac.lr_end
-    # work out the transition steps with a decay rate of 0.999 (for exponential scheduler)
-    
-    # print(f"lr_decay_rate: {lr_decay_rate}")
-    # print(f"transition_steps; {transition_steps}")
-    # utils.params['LR_DECAY_RATE'] = lr_decay_rate
-    # utils.params['TRANSITION_STEPS'] = transition_steps
     
     # setting paths
     fit_path = cfg.paths.fit_path
@@ -83,16 +73,8 @@ def main(cfg : DictConfig) -> None:
     # argsort returns the indices that would sort the array
     stac_keypoint_order = np.argsort(kp_names)   
     
-    model = mujoco.MjModel.from_xml_path(ratpath)
+    # model = mujoco.MjModel.from_xml_path(ratpath)
     
-    model.opt.solver = {
-      'cg': mujoco.mjtSolver.mjSOL_CG,
-      'newton': mujoco.mjtSolver.mjSOL_NEWTON,
-    }[cfg.mujoco.solver.lower()]
-    
-    model.opt.iterations = cfg.mujoco.iterations
-    model.opt.ls_iterations = cfg.mujoco.ls_iterations
-
     # Need to download this data file and provide the path
     # data_path = "save_data_AVG.mat"
     data_path = cfg.paths.data_path
@@ -107,6 +89,15 @@ def main(cfg : DictConfig) -> None:
     physics, mj_model = ctrl.create_body_sites(root)
     ctrl.part_opt_setup(physics)
     
+    mj_model.opt.solver = {
+      'cg': mujoco.mjtSolver.mjSOL_CG,
+      'newton': mujoco.mjtSolver.mjSOL_NEWTON,
+    }[cfg.mujoco.solver.lower()]
+    
+    mj_model.opt.iterations = cfg.mujoco.iterations
+    mj_model.opt.ls_iterations = cfg.mujoco.ls_iterations  
+    mj_model.opt.jacobian = 0 # dense
+      
     # Run fit if not skipping
     if cfg.test.skip_fit != 1:
         print(f"kp_data shape: {kp_data.shape}")

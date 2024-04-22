@@ -11,10 +11,7 @@ paths:
 
 stac:
   n_fit_frames: 500
-  lr: 1.0e-2
-  lr_init: 5.0e-2
-  lr_end: 1.0e-5
 
 test:
   skip_fit: False
-  skip_transform: False
+  skip_transform: True

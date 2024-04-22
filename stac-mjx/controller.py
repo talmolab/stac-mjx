@@ -20,17 +20,14 @@ import logging
 import os
 from statistics import fmean 
 
-"""
-This file should serve the same purpose as the logic for executing SLURM jobs. 
-However, instead of executing SLURM jobs for individual clips, it:
-1. creates the single mjxModel, N mjxDatas, N kp_datas, N body_sites 
-   (kp_data and body_sites are both np arrays so are jax compatible. Only question is how to get then all in the cheapest way)
-2. Executes the functions called in fit() and transform(). 
-Esentially, we are moving the preprocessing functions and fit() and transform() here.
-    Compute_stac.py retains the intermediary functions like root_optimization() and pose_optimization()
-Unlike old stac, all data needs to be passed in as arguments to functions 
-    since we want to have a vectorized set of multiple data instances to be passed into vmapped functions
-"""
+
+def initialize_part_names(physics):
+    # Get the ids of the limbs, accounting for quaternion and pos
+    part_names = physics.named.data.qpos.axes.row.names
+    for _ in range(6):
+        part_names.insert(0, part_names[0])
+    return part_names
+
 
 def part_opt_setup(physics):
     def get_part_ids(physics, parts: List) -> jnp.ndarray:
@@ -190,6 +187,8 @@ def fit(mj_model, kp_data):
 
         for i, t in enumerate(frame_data):
             print(f"Frame {i+1} done in {t[0]} with a final error of {t[1]}")
+            if str(t[1]) == "nan":
+                print(f"qpos: {q[i]}")
             
         print("starting offset optimization")
         mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
