@@ -86,10 +86,7 @@ def overlay_frame(
         np.ndarray: Overlayed frame.
     """
     # TODO: id 1 for camera 2; change to param later
-    print(camera)
     cam_id = int(camera[-1]) - 1
-    print(cam_id)
-    print(params.shape)
     # Load and undistort the rgb frame
     rgb_frame = cv2.undistort(
         rgb_frame,
@@ -108,8 +105,8 @@ def overlay_frame(
     frame = np.zeros_like(recon_frame)
 
     # Correct the segmented frame by cropping such that the optical center is at the center of the image
-    recon_frame = correct_optical_center(params, recon_frame, cam_id)
-    seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
+    # recon_frame = correct_optical_center(params, recon_frame, cam_id)
+    # seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
 
     # Calculate the alpha mask using the segmented video
     alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
