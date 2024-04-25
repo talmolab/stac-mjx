@@ -61,16 +61,24 @@ def q_opt(
     marker_ref_arr: jnp.ndarray,
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
-    maxiter: int,
+    # maxiter: int,
     q0: jnp.ndarray,
     ftol: float,
 ):
     """Update q_pose using estimated marker parameters.
     """
+    lb = utils.params['lb']
+    ub = utils.params['ub']
     try:
-        lb = utils.params['lb']
-        ub = utils.params['ub']
-        # jax.debug.print(f"{len(lb)} {len(ub)} {q0.shape}")
+        q_solver = LBFGSB(fun=q_loss, 
+                        tol=ftol,
+                        maxiter=utils.params["Q_MAXITER"],
+                        history_size=20,
+                        # use_gamma=False,
+                        stepsize=1.0,
+                        jit=True,
+                        verbose=0
+                        )
         return mjx_data, q_solver.run(q0, bounds=jnp.array((lb, ub)), mjx_model=mjx_model, 
                                     mjx_data=mjx_data, 
                                     kp_data=marker_ref_arr.T,
@@ -113,7 +121,7 @@ def m_loss(
         reg_coef (float, optional): L1 regularization coefficient during marker loss.
     """
 
-    @jit
+    # @jit
     def f(carry, input):
         # Unpack arguments
         qpos, kp = input
@@ -170,6 +178,13 @@ def m_opt(
     Returns:
         _type_: _description_
     """
+    m_solver = LBFGS(fun=m_loss, 
+                    tol=ftol,
+                    jit=True,
+                    maxiter=utils.params["M_MAXITER"],
+                    history_size=20,
+                    verbose=0
+                    )
     
     res = m_solver.run(offset0, mjx_model=mjx_model,
                             mjx_data=mjx_data,
@@ -181,77 +196,3 @@ def m_opt(
     
     return res
     
-
-def m_phase(
-    mjx_model,
-    mjx_data,
-    kp_data: jnp.ndarray,
-    time_indices: jnp.ndarray,
-    q: jnp.ndarray,
-    initial_offsets: jnp.ndarray,
-    ftol,
-    reg_coef: float = 0.0,
-):
-    """Estimate marker offset, keeping qpos fixed.
-
-    Args:
-        mjx_model (_type_): _description_
-        mjx_data (_type_): _description_
-        kp_data (jnp.ndarray): _description_
-        time_indices (jnp.ndarray): _description_
-        q (jnp.ndarray): _description_
-        initial_offsets (jnp.ndarray): _description_
-        ftol (_type_): _description_
-        reg_coef (float, optional): _description_. Defaults to 0.0.
-
-    Returns:
-        _type_: _description_
-    """
-    # Define initial position of the optimization
-    offset0 = op.get_site_pos(mjx_model).flatten()
-
-    # Define which offsets to regularize
-    is_regularized = []
-    for k in utils.params["site_index_map"].keys():
-        if any(n == k for n in utils.params["SITES_TO_REGULARIZE"]):
-            is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
-        else:
-            is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
-    is_regularized = jnp.stack(is_regularized).flatten()
-
-    keypoints = jnp.array(kp_data[time_indices, :])
-    q = jnp.take(q, time_indices, axis=0)
-
-    res = m_opt(offset0, mjx_model, 
-                mjx_data, keypoints, q, 
-                initial_offsets, is_regularized, 
-                reg_coef, ftol)
-    
-    offset_opt_param = res.params
-    print(f"Final error of {res.state.error} \n params: {offset_opt_param}")
-
-    # Set pose to the optimized m and step forward.
-    mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
-
-    # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = op.kinematics(mjx_model, mjx_data)
-    
-    return mjx_model, mjx_data
-
-q_solver = LBFGSB(fun=q_loss, 
-                        tol=utils.params["FTOL"],
-                        maxiter=utils.params["Q_MAXITER"],
-                        history_size=20,
-                        # maxls=40,
-                        # use_gamma=False,
-                        stepsize=1.0,
-                        jit=True,
-                        verbose=0
-                        )
-m_solver = LBFGS(fun=m_loss, 
-                    tol=utils.params["FTOL"],
-                    jit=True,
-                    maxiter=utils.params["M_MAXITER"],
-                    history_size=20,
-                    verbose=0
-                    )

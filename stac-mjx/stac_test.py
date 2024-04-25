@@ -21,13 +21,6 @@ utils.init_params("././params/params.yaml")
 
 import controller as ctrl
 
-def get_clip(kp_data, n_frames):
-    max_index = kp_data.shape[0] - n_frames + 1
-    rand_start = random.randint(0, max_index)
-    print(f"fit clip starts at index {rand_start} and runs for {n_frames}, ending at {rand_start+n_frames}")
-    return kp_data[rand_start:rand_start+n_frames,:]
-
-
 def end(start_time):
     print(f"Job complete in {time.time()-start_time}")
     exit()
@@ -101,10 +94,20 @@ def main(cfg : DictConfig) -> None:
     # Run fit if not skipping
     if cfg.test.skip_fit != 1:
         print(f"kp_data shape: {kp_data.shape}")
-        print(f"Running fit() on {utils.params['n_fit_frames']}")
-        # clip = get_clip(kp_data, utils.params['n_fit_frames'])
-        # print(f"clip shape: {clip.shape}")
-        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, kp_data[:utils.params['n_fit_frames']])
+        
+        if cfg.stac.sampler == "first":
+            print("sample the first n frames")
+            fit_data = kp_data[:utils.params['n_fit_frames']]
+        elif cfg.stac.sampler == "every":
+            print("sample every x frames")
+            every = kp_data.shape[0] // utils.params['n_fit_frames']
+            fit_data = kp_data[::every]
+        elif cfg.stac.sampler == "random":  
+            print("sample n random frames")
+            fit_data = jax.random.choice(jax.random.PRNGKey(0), kp_data, (utils.params['n_fit_frames'],), replace=False)
+        
+        print(f"fit_data shape: {fit_data.shape}")
+        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)
 
         fit_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, clip_data)
 

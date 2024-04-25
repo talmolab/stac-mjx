@@ -35,7 +35,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         kp_data[frame, :],
         qs_to_opt,
         kps_to_opt,
-        utils.params["ROOT_MAXITER"],
         q0,
         utils.params["ROOT_FTOL"],
     )
@@ -67,7 +66,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         kp_data[frame, :],
         qs_to_opt,
         kps_to_opt,
-        utils.params["ROOT_MAXITER"],
         q0,
         utils.params["ROOT_FTOL"],
     )
@@ -99,16 +97,34 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     s = time.time()
     print("Begining offset optimization:")
 
-    mjx_model, mjx_data = stac_base.m_phase(
-        mjx_model, 
-        mjx_data,
-        kp_data,
-        time_indices,
-        q,
-        offsets,
-        utils.params["ROOT_FTOL"],
-        utils.params["M_REG_COEF"],
-    )
+    # Define initial position of the optimization
+    offset0 = op.get_site_pos(mjx_model).flatten()
+
+    # Define which offsets to regularize
+    is_regularized = []
+    for k in utils.params["site_index_map"].keys():
+        if any(n == k for n in utils.params["SITES_TO_REGULARIZE"]):
+            is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
+        else:
+            is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
+    is_regularized = jnp.stack(is_regularized).flatten()
+
+    keypoints = jnp.array(kp_data[time_indices, :])
+    q = jnp.take(q, time_indices, axis=0)
+
+    res = stac_base.m_opt(offset0, mjx_model, 
+                mjx_data, keypoints, q, 
+                offsets, is_regularized, 
+                utils.params["M_REG_COEF"], utils.params["ROOT_FTOL"])
+    
+    offset_opt_param = res.params
+    print(f"Final error of {res.state.error} \n params: {offset_opt_param}")
+
+    # Set pose to the optimized m and step forward.
+    mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
+
+    # Forward kinematics, and save the results to the walker sites as well
+    mjx_data = op.kinematics(mjx_model, mjx_data)
     
     print(f"offset optimization finished in {time.time()-s}")
 
@@ -151,7 +167,6 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
             kp_data[n_frame, :],
             qs_to_opt,
             kps_to_opt,
-            utils.params["Q_MAXITER"],
             q0,
             utils.params["FTOL"],
         )
@@ -169,7 +184,6 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 kp_data[n_frame, :],
                 part,
                 kps_to_opt,
-                utils.params["Q_MAXITER"],
                 q0,
                 utils.params["LIMB_FTOL"],
             )
@@ -180,7 +194,8 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
         return mjx_data, res.state.error
     
     # Optimize over each frame, storing all the results
-    frame_data = []
+    frame_time = []
+    frame_error = []
     for n_frame in frames:
         loop_start = time.time()
         
@@ -190,10 +205,11 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
         x.append(mjx_data.xpos[:])
         walker_body_sites.append(op.get_site_xpos(mjx_data))
         
-        frame_data.append((time.time()-loop_start, error))
+        frame_time.append(time.time()-loop_start)
+        frame_error.append(error)
     
     print(f"Pose Optimization done in {time.time()-s}")
-    return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x), frame_data
+    return mjx_data, jnp.array(q), jnp.array(walker_body_sites), jnp.array(x), jnp.array(frame_time), jnp.array(frame_error)
 
 
 def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):

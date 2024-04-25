@@ -18,7 +18,7 @@ import operations as op
 import pickle
 import logging
 import os
-from statistics import fmean 
+from statistics import fmean, pstdev
 
 
 def initialize_part_names(physics):
@@ -152,6 +152,15 @@ def chunk_kp_data(kp_data):
     
     return kp_data
 
+
+def get_error_stats(errors: jnp.ndarray):
+    flattened_errors = errors.reshape(-1)  # -1 infers the size based on other dimensions
+    # Calculate mean and standard deviation
+    mean = jnp.mean(flattened_errors)
+    std = jnp.std(flattened_errors)
+
+    return flattened_errors, mean, std
+
     
 # TODO: pmap fit and transform if you want to use it with multiple gpus
 def fit(mj_model, kp_data):
@@ -183,23 +192,32 @@ def fit(mj_model, kp_data):
 
     for n_iter in range(utils.params['N_ITERS']):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        mjx_data, q, walker_body_sites, x, frame_data = pose_optimization(mjx_model, mjx_data, kp_data)
+        mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(mjx_model, mjx_data, kp_data)
 
-        for i, t in enumerate(frame_data):
-            print(f"Frame {i+1} done in {t[0]} with a final error of {t[1]}")
-            if str(t[1]) == "nan":
-                print(f"qpos: {q[i]}")
-            
+        for i, (t, e) in enumerate(zip(frame_time, frame_error)):
+            print(f"Frame {i+1} done in {t} with a final error of {e}")
+        
+        flattened_errors, mean, std = get_error_stats(frame_error)
+        # Print the results
+        print(f"Flattened array shape: {flattened_errors.shape}")
+        print(f"Mean: {mean}")
+        print(f"Standard deviation: {std}")
+        
         print("starting offset optimization")
         mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
-    mjx_data, q, walker_body_sites, x, frame_data = pose_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(mjx_model, mjx_data, kp_data)
 
-    for i, t in enumerate(frame_data):
-            print(f"Frame {i+1} done in {t[0]} with a final error of {t[1]}")
-       
+    for i, (t, e) in enumerate(zip(frame_time, frame_error)):
+            print(f"Frame {i+1} done in {t} with a final error of {e}")
+    
+    flattened_errors, mean, std = get_error_stats(frame_error)
+    # Print the results
+    print(f"Flattened array shape: {flattened_errors.shape}")
+    print(f"Mean: {mean}")
+    print(f"Standard deviation: {std}")
     return mjx_model, q, x, walker_body_sites, kp_data
 
 
@@ -252,10 +270,12 @@ def transform(mj_model, kp_data, offsets):
 
     # q_phase
     mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
-    mjx_data, q, walker_body_sites, x, frame_data = vmap_pose_opt(mjx_model, mjx_data, kp_data)
+    mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(mjx_model, mjx_data, kp_data)
     
-    # print info
-    for i, t in enumerate(frame_data):
-        print(f"Frame {i+1} done in {t[0][0]} with a final error of {fmean(t[1])}")
-        
+    flattened_errors, mean, std = get_error_stats(frame_error)
+    # Print the results
+    print(f"Flattened array shape: {flattened_errors.shape}")
+    print(f"Mean: {mean}")
+    print(f"Standard deviation: {std}")
+    
     return mjx_model, q, x, walker_body_sites, kp_data

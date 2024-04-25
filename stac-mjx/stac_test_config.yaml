@@ -11,7 +11,7 @@ paths:
 
 stac:
   n_fit_frames: 500
-
+  sampler: "random" #first, every, or random
 test:
   skip_fit: False
-  skip_transform: True
+  skip_transform: False
