@@ -8,4 +8,3 @@ Implementation of STAC using MJX for GPU acceleration. Part of VNL project.
 ```
 pip install .
 ```
-* temp: to make sure the environment works, run `python3 setup_test.py`; if there are no errors, you're all set!

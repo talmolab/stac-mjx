@@ -28,7 +28,6 @@ setup(
         "matplotlib",
         "hydra-core",
         "optax",
-        "equinox",
         
     ],
 )
