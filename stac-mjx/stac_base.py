@@ -17,7 +17,6 @@ def q_loss(
     qs_to_opt: jnp.ndarray,
     kps_to_opt: jnp.ndarray,
     initial_q: jnp.ndarray
-    # part_opt: bool = False
 ) -> float:
     """Compute the marker loss for q_phase optimization.
 

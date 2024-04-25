@@ -142,8 +142,8 @@ def prep_kp_data(kp_data, stac_keypoint_order):
 def chunk_kp_data(kp_data):
     n_frames = utils.params['N_FRAMES_PER_CLIP']
     total_frames = kp_data.shape[0]
-
-    n_chunks = int((total_frames / n_frames) // utils.params['N_GPUS'] * utils.params['N_GPUS'])
+    
+    n_chunks = int(total_frames / n_frames)
     
     kp_data = kp_data[:int(n_chunks) * n_frames]
     
