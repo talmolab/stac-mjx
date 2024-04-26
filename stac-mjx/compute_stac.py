@@ -27,7 +27,13 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
-    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
+    # kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
+    kps_to_opt = jnp.repeat(
+        jnp.array([
+            any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
+            for kp_name in utils.params["kp_names"]
+        ]), 3)
+    print(f"kps_to_opt: {kps_to_opt}")
     j = time.time()
     mjx_data, res = stac_base.q_opt(
         mjx_model,
@@ -47,11 +53,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param))
     print(f"Replace 1 finished in {time.time()-r}")
     
-    kps_to_opt = jnp.repeat(
-            jnp.array([
-                any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
-                for kp_name in utils.params["kp_names"]
-            ]), 3)
+
     
     q0 = jnp.copy(mjx_data.qpos[:])
 

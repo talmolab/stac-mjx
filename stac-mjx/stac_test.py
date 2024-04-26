@@ -74,7 +74,9 @@ def main(cfg : DictConfig) -> None:
 
     # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-
+    # First half of the data
+    kp_data = jnp.split(kp_data, 2)
+    
     kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
 
     # Set up mjcf
@@ -90,7 +92,7 @@ def main(cfg : DictConfig) -> None:
     mj_model.opt.iterations = cfg.mujoco.iterations
     mj_model.opt.ls_iterations = cfg.mujoco.ls_iterations  
     mj_model.opt.jacobian = 0 # dense
-      
+
     # Run fit if not skipping
     if cfg.test.skip_fit != 1:
         print(f"kp_data shape: {kp_data.shape}")
