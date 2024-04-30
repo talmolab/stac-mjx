@@ -368,7 +368,7 @@ def overlay_render(
 
 
 # TODO: put in a big stac class with all the ctrl stuff too (mainly so params can be initialized in it)
-def mujoco_viz(data_path, model_xml, n_frames, save_path):
+def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int=0):
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -421,14 +421,16 @@ def mujoco_viz(data_path, model_xml, n_frames, save_path):
     # slice kp_data to match qposes length
     kp_data = kp_data[:qposes.shape[0]]
 
+    # Slice arrays to be the range that is being rendered
+    kp_data = kp_data[start_frame:start_frame + n_frames]
+    qposes = qposes[start_frame:start_frame + n_frames]
+    
     frames=[]
     # render while stepping using mujoco
     with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
         for i, (qpos, kps) in enumerate(zip(qposes, kp_data)):
             if i%100 == 0:
                 print(f"rendering frame {i}")
-            if i == n_frames:
-                break
             
             # Set keypoints
             physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)

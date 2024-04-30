@@ -1,4 +1,6 @@
 .DS_Store
+# error data files
+*.npy
 # output files
 *.out
 *.p
