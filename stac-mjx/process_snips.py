@@ -33,10 +33,10 @@ def main(cfg : DictConfig) -> None:
     
     start_time = time.time()
     
-    # Allocate 90% instead of 75% of GPU vram
+    # Allocate 90% instead of 75% of ram
     os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.9' 
     
-    # When using nvidia gpu do this thing
+    # When using an nvidia gpu, set these flags for performance speedup
     if xla_bridge.get_backend().platform == 'gpu':
         os.environ['XLA_FLAGS'] = (
         '--xla_gpu_enable_triton_softmax_fusion=true '
@@ -73,15 +73,18 @@ def main(cfg : DictConfig) -> None:
     # And concatenate them together
     # shape: (250, 69)
     kp_data_list = []
+    snips_order = []
     for file_name in os.listdir(snips_path):
         if file_name.endswith(".p"):
             file_path = os.path.join(snips_path, file_name)
             with open(file_path, "rb") as file:
+                snips_order.append(file_path)
                 snip_data = pickle.load(file)
                 kp_data = snip_data["kp_data"]
                 kp_data_list.append(kp_data)
-    kp_data = np.concatenate(kp_data_list, axis=0)
+    kp_data = np.vstack(kp_data_list)
     
+    utils.params['snips_order'] = snips_order
     # Load kp_data, /1000 to scale data (from mm to meters)
     # kp_data_old = utils.loadmat(cfg.paths.data_path)["pred"][:] / 1000
     # kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
