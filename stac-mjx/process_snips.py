@@ -1,3 +1,5 @@
+"""Script to run stac on all the snips in the thing.
+"""
 import mujoco
 import jax
 from jax import numpy as jnp
@@ -66,19 +68,23 @@ def main(cfg : DictConfig) -> None:
     # argsort returns the indices that would sort the array
     stac_keypoint_order = np.argsort(kp_names)   
     
-    # model = mujoco.MjModel.from_xml_path(ratpath)
+    snips_path = "././snippets_2_25_2021/snips"
+    # For each .p file in this directory, open it and access the kp_data attribute
+    # And concatenate them together
+    # shape: (250, 69)
+    kp_data_list = []
+    for file_name in os.listdir(snips_path):
+        if file_name.endswith(".p"):
+            file_path = os.path.join(snips_path, file_name)
+            with open(file_path, "rb") as file:
+                snip_data = pickle.load(file)
+                kp_data = snip_data["kp_data"]
+                kp_data_list.append(kp_data)
+    kp_data = np.concatenate(kp_data_list, axis=0)
     
-    # Need to download this data file and provide the path
-    # data_path = "save_data_AVG.mat"
-    data_path = cfg.paths.data_path
-
     # Load kp_data, /1000 to scale data (from mm to meters)
-    kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-    
-    # First half of the data
-    # kp_data = jnp.split(kp_data, 2)[0]
-    
-    kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
+    # kp_data_old = utils.loadmat(cfg.paths.data_path)["pred"][:] / 1000
+    # kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
 
     # Set up mjcf
     root = mjcf.from_path(ratpath)

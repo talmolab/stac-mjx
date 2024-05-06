@@ -123,7 +123,7 @@ def create_body_sites(root):
     return physics, physics.model.ptr
 
 def prep_kp_data(kp_data, stac_keypoint_order):
-    """Data preparation for kp_data: splits kp_data into 1k frame chunks.
+    """Data preparation for kp_data: splits kp_data into chunks.
         Makes sure that the total chunks is divisible by the number of gpus
         not vmapped but essentially vectorizes kpdata via chunking
 

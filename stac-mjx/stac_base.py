@@ -2,12 +2,16 @@
 from typing import List, Dict, Text, Union, Tuple
 import jax
 import jax.numpy as jnp
-import operations as op
 from jax import jit
-from jaxopt import LBFGSB, LBFGS
+
+from jaxopt import LBFGSB, LBFGS, ProjectedGradient
+from jaxopt.projection import projection_box
+from jaxopt import OptaxSolver
+
 import optax
+
+import operations as op
 import utils
-import logging 
     
 def q_loss(
     q: jnp.ndarray,
@@ -34,10 +38,10 @@ def q_loss(
     """
 
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    # mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
+    mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
     
     # Clip to bounds ourselves because of potential jaxopt bug
-    mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
+    # mjx_data = mjx_data.replace(qpos=jnp.clip(op.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
     
     # Forward kinematics
     mjx_data = op.kinematics(mjx_model, mjx_data)
@@ -70,22 +74,30 @@ def q_opt(
     lb = utils.params['lb']
     ub = utils.params['ub']
     try:
-        q_solver = LBFGSB(fun=q_loss, 
-                        tol=ftol,
-                        maxiter=utils.params["Q_MAXITER"],
-                        history_size=20,
-                        # use_gamma=False,
-                        stepsize=1.0,
-                        jit=True,
-                        verbose=0
-                        )
-        return mjx_data, q_solver.run(q0, bounds=jnp.array((lb, ub)), mjx_model=mjx_model, 
-                                    mjx_data=mjx_data, 
-                                    kp_data=marker_ref_arr.T,
-                                    qs_to_opt=qs_to_opt,
-                                    kps_to_opt=kps_to_opt,
-                                    initial_q=q0,
-                                    )
+       
+        return mjx_data, q_solver.run(q0, hyperparams_proj=jnp.array((lb, ub)), mjx_model=mjx_model, 
+                            mjx_data=mjx_data, 
+                            kp_data=marker_ref_arr.T,
+                            qs_to_opt=qs_to_opt,
+                            kps_to_opt=kps_to_opt,
+                            initial_q=q0,
+                            )
+        # q_solver = LBFGSB(fun=q_loss, 
+        #                 tol=ftol,
+        #                 maxiter=utils.params["Q_MAXITER"],
+        #                 history_size=20,
+        #                 # use_gamma=False,
+        #                 stepsize=1.0,
+        #                 jit=True,
+        #                 verbose=0
+        #                 )
+        # return mjx_data, q_solver.run(q0, bounds=jnp.array((lb, ub)), mjx_model=mjx_model, 
+        #                             mjx_data=mjx_data, 
+        #                             kp_data=marker_ref_arr.T,
+        #                             qs_to_opt=qs_to_opt,
+        #                             kps_to_opt=kps_to_opt,
+        #                             initial_q=q0,
+        #                             )
             
     except ValueError as ex:
         print("Warning: optimization failed.", flush=True)
@@ -178,13 +190,13 @@ def m_opt(
     Returns:
         _type_: _description_
     """
-    m_solver = LBFGS(fun=m_loss, 
-                    tol=ftol,
-                    jit=True,
-                    maxiter=utils.params["M_MAXITER"],
-                    history_size=20,
-                    verbose=0
-                    )
+    # m_solver = LBFGS(fun=m_loss, 
+    #                 tol=ftol,
+    #                 jit=True,
+    #                 maxiter=utils.params["M_MAXITER"],
+    #                 history_size=20,
+    #                 verbose=0
+    #                 )
     
     res = m_solver.run(offset0, mjx_model=mjx_model,
                             mjx_data=mjx_data,
@@ -196,3 +208,29 @@ def m_opt(
     
     return res
     
+learning_rate = optax.warmup_cosine_decay_schedule(
+init_value = 1e-4, 
+peak_value = 1e-3, 
+warmup_steps = 100, 
+decay_steps = utils.params['M_MAXITER'] - 100,  # maxiter - warmupsteps
+end_value=1e-6, 
+exponent=1.0
+)
+    
+opt = optax.sgd(learning_rate=learning_rate, momentum=.9, nesterov=True)
+
+q_solver = ProjectedGradient(fun=q_loss, projection=projection_box)
+m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=6000)
+
+# def create_q_solver():
+#     return
+
+
+# def create_m_solver():
+#     """Create solver for m-phase.
+#     """
+#     opt = optax.chain(
+#         optax.sgd(learning_rate=learning_rate, momentum=.9, nesterov=True),
+#         optax.zero_nans(),
+#         optax.clip_by_global_norm(10.0),
+#     )
