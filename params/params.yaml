@@ -1,5 +1,5 @@
 # Tolerance for the optimizations of the full model, limb, and root. 
-FTOL: 5.0e-02
+FTOL: 1.0e-02
 ROOT_FTOL: 1.0e-05
 LIMB_FTOL: 1.0e-06 # was 6
 
@@ -152,7 +152,7 @@ SITES_TO_REGULARIZE:
 - SpineF
 - SpineL
 - SpineM
-N_SAMPLE_FRAMES: 50
+N_SAMPLE_FRAMES: 100
 
 # fps to render video at
 RENDER_FPS: 50
@@ -168,6 +168,6 @@ SCALE_FACTOR: .9
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
-N_FRAMES_PER_CLIP: 360 # 360000 / 360 = 1000 environments
+N_FRAMES_PER_CLIP: 250 # 360000 / 360 = 1000 environments
 
 N_GPUS: 1

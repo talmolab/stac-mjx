@@ -208,19 +208,19 @@ def m_opt(
     
     return res
     
-learning_rate = optax.warmup_cosine_decay_schedule(
-init_value = 1e-4, 
-peak_value = 1e-3, 
-warmup_steps = 100, 
-decay_steps = utils.params['M_MAXITER'] - 100,  # maxiter - warmupsteps
-end_value=1e-6, 
-exponent=1.0
-)
+# learning_rate = optax.warmup_cosine_decay_schedule(
+# init_value = 1e-4, 
+# peak_value = 1e-3, 
+# warmup_steps = 100, 
+# decay_steps = utils.params['M_MAXITER'] - 100,  # maxiter - warmupsteps
+# end_value=1e-6, 
+# exponent=1.0
+# )
     
-opt = optax.sgd(learning_rate=learning_rate, momentum=.9, nesterov=True)
+opt = optax.sgd(learning_rate=5e-4, momentum=.9, nesterov=False)
 
-q_solver = ProjectedGradient(fun=q_loss, projection=projection_box)
-m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=6000)
+q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250)
+m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)
 
 # def create_q_solver():
 #     return
