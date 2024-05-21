@@ -444,3 +444,91 @@ def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int=0):
 
     return frames
 
+# Render two rats in the same sim! This can be programmatically extended to any number of rats
+# No keypoints or body site rendering unfortunately since they are explicitly named
+def mujoco_pair_viz(data_path1, data_path2, model_xml, n_frames, save_path, start_frame1: int=0, start_frame2: int=0):
+    scene_option = mujoco.MjvOption()
+    # scene_option.geomgroup[1] = 0
+    scene_option.geomgroup[2] = 1
+    # scene_option.geomgroup[3] = 0
+    # scene_option.sitegroup[0] = 0
+    # scene_option.sitegroup[1] = 0
+    scene_option.sitegroup[2] = 1
+
+    scene_option.sitegroup[3] = 1
+    scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+    scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
+    scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
+    scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = False
+
+    # Load mjx_model and mjx_data and set marker sites
+    # root = mjcf.from_path(model_xml)
+    # physics = mjcf.Physics.from_mjcf_model(root)
+    mj_model = mujoco.MjModel.from_xml_path(model_xml)
+    # physics, mj_model = ctrl.create_body_sites(root)
+    # physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
+    
+    # rescale.rescale_subtree(
+    #     root,
+    #     utils.params["SCALE_FACTOR"],
+    #     utils.params["SCALE_FACTOR"],
+    # )
+    
+    # Starting xpos and xquat for mjdata
+    _UPRIGHT_POS = (0.0, 0.0, 0.94)
+    _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
+
+    mj_data = mujoco.MjData(mj_model)
+    # mj_data.xpos = _UPRIGHT_POS
+    # mj_data.xquat = _UPRIGHT_QUAT
+    mujoco.mj_kinematics(mj_model, mj_data)
+
+    # Load data
+    with open(data_path1, "rb") as file:
+        d1 = pickle.load(file)
+        qposes1 = np.array(d1["qpos"])
+        kp_data1 = np.array(d1["kp_data"])
+        
+    with open(data_path2, "rb") as file:
+        d2 = pickle.load(file)
+        qposes2 = np.array(d2["qpos"])
+        kp_data2 = np.array(d2["kp_data"])
+
+    renderer = mujoco.Renderer(mj_model, height=HEIGHT, width=WIDTH)
+
+    # Make sure there are enough frames to render
+    if qposes1.shape[0] < n_frames-1:
+        raise Exception(f"Trying to render {n_frames} frames when data['qpos'] only has {qposes1.shape[0]}")
+
+    # slice kp_data to match qposes length
+    kp_data1 = kp_data1[:qposes1.shape[0]]
+    kp_data2 = kp_data2[:qposes2.shape[0]]
+    # Slice arrays to be the range that is being rendered
+    kp_data1 = kp_data1[start_frame1:start_frame1 + n_frames]
+    qposes1 = qposes1[start_frame1:start_frame1 + n_frames]
+    
+    kp_data2 = kp_data2[start_frame2:start_frame2 + n_frames]
+    qposes2 = qposes2[start_frame2:start_frame2 + n_frames]
+    
+    frames=[]
+    # render while stepping using mujoco
+    with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
+        for i, (qpos1, qpos2) in enumerate(zip(qposes1, qposes2)):
+            if i%100 == 0:
+                print(f"rendering frame {i}")
+            
+            # Set keypoints
+            # physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
+            mj_data.qpos = np.append(qpos1, qpos2)
+            mujoco.mj_forward(mj_model, mj_data)
+
+            renderer.update_scene(mj_data, camera="close_profile", scene_option=scene_option)
+            pixels = renderer.render()
+            video.append_data(pixels)
+            frames.append(pixels)
+
+    return frames
+
