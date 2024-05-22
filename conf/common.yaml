@@ -1,11 +1,30 @@
+# defaults:
+#   - experiments/stac_test.yaml
+#   - _self_
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4
+
+paths:
+  xml: "././models/rodent_stac_optimized.xml"
+  fit_path: 
+  transform_path:
+  data_path: "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
+
+stac:
+  n_fit_frames: 500
+  sampler: "random" #first, every, or random
+  
+test:
+  skip_fit: False
+  skip_transform: False
+
 # Tolerance for the optimizations of the full model, limb, and root. 
 FTOL: 1.0e-02
 ROOT_FTOL: 1.0e-05
 LIMB_FTOL: 1.0e-06 # was 6
-
-# Solver iterations
-Q_MAXITER: 100
-M_MAXITER: 500
 
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 6
@@ -139,10 +158,6 @@ INDIVIDUAL_PART_OPTIMIZATION:
     "atlant_extend"
   ]
 
-
-# OPTIONAL Lock the mandible to a position if there is no jaw tracking
-MANDIBLE_POS: -0.297
-
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 1
@@ -156,10 +171,6 @@ N_SAMPLE_FRAMES: 100
 
 # fps to render video at
 RENDER_FPS: 50
-
-# If you want to use a different arena, you can specify it here.
-ARENA_TYPE: DannceArena
-Z_OFFSET: 0.00
 
 TIME_BINS: 0.02
 

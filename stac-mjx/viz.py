@@ -279,16 +279,6 @@ def overlay_render(
             
     physics, mj_model = ctrl.create_body_sites(root)
     physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
-
-    # Starting xpos and xquat for mjdata
-    _UPRIGHT_POS = (0.0, 0.0, 0.94)
-    _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
-
-    # mj_data = mujoco.MjData(mj_model)
-    # mj_data.xpos = _UPRIGHT_POS
-    # mj_data.xquat = _UPRIGHT_QUAT
-    # Should this be mj_forward?
-    # mujoco.mj_kinematics(mj_model, mj_data)
     physics.forward()
     # Load data
     with open(data_path, "rb") as file:
@@ -302,11 +292,6 @@ def overlay_render(
     
     prev_time = physics.time()
     reader = imageio.get_reader(video_path)
-    # import imageio.v3 as iio
-    # print(iio.immeta(video_path))
-    # print(iio.improps(video_path))
-
-    n_frame = 0
     
     frames=[]
     with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
@@ -366,8 +351,6 @@ def overlay_render(
             
     return frames
 
-
-# TODO: put in a big stac class with all the ctrl stuff too (mainly so params can be initialized in it)
 def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int=0):
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
@@ -396,14 +379,9 @@ def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int=0):
         utils.params["SCALE_FACTOR"],
         utils.params["SCALE_FACTOR"],
     )
-    
-    # Starting xpos and xquat for mjdata
-    _UPRIGHT_POS = (0.0, 0.0, 0.94)
-    _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
 
     mj_data = mujoco.MjData(mj_model)
-    # mj_data.xpos = _UPRIGHT_POS
-    # mj_data.xquat = _UPRIGHT_QUAT
+
     mujoco.mj_kinematics(mj_model, mj_data)
 
     # Load data

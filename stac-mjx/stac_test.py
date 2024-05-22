@@ -16,23 +16,22 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 import utils
-# Gotta do this before importing controller
-utils.init_params("././params/params.yaml")
-
 import controller as ctrl
+
+utils.init_params("././conf/common.yaml")
 
 def end(start_time):
     print(f"Job complete in {time.time()-start_time}")
     exit()
     
-@hydra.main(config_path="", config_name="stac_test_config", version_base=None)
+@hydra.main(config_path="../conf", config_name="common", version_base=None)
 def main(cfg : DictConfig) -> None:
     print(OmegaConf.to_yaml(cfg))
-    
+
     start_time = time.time()
     
     # Allocate 90% instead of 75% of GPU vram
-    os.environ['XLA_PYTHON_CLIENT_MEM_FRACTION'] = '.9' 
+    os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false" 
     
     # When using nvidia gpu do this thing
     if xla_bridge.get_backend().platform == 'gpu':
@@ -46,7 +45,7 @@ def main(cfg : DictConfig) -> None:
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
 
-
+    
     if not cfg.paths.fit_path:
         raise Exception("arg fit_path required")
     if not cfg.paths.transform_path:
@@ -100,7 +99,7 @@ def main(cfg : DictConfig) -> None:
         
         if cfg.stac.sampler == "first":
             print("sample the first n frames")
-            fit_data = kp_data[:utils.params['n_fit_frames']]
+            fit_data = kp_data[25500:25500 + utils.params['n_fit_frames']]
         elif cfg.stac.sampler == "every":
             print("sample every x frames")
             every = kp_data.shape[0] // utils.params['n_fit_frames']
