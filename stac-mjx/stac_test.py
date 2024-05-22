@@ -99,7 +99,7 @@ def main(cfg : DictConfig) -> None:
         
         if cfg.stac.sampler == "first":
             print("sample the first n frames")
-            fit_data = kp_data[25500:25500 + utils.params['n_fit_frames']]
+            fit_data = kp_data[cfg.stac.first_start:cfg.stac.first_start + utils.params['n_fit_frames']]
         elif cfg.stac.sampler == "every":
             print("sample every x frames")
             every = kp_data.shape[0] // utils.params['n_fit_frames']

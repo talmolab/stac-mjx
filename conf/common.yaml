@@ -16,7 +16,9 @@ paths:
 stac:
   n_fit_frames: 500
   sampler: "random" #first, every, or random
-  
+  first_start: 0 # starting frame for "first" sampler
+
+# for stac_test.py
 test:
   skip_fit: False
   skip_transform: False
