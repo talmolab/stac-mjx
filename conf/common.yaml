@@ -8,7 +8,7 @@ mujoco:
   ls_iterations: 4
 
 paths:
-  xml: "././models/rodent_stac_optimized.xml"
+  xml: "././models/rodent.xml"
   fit_path: 
   transform_path:
   data_path: "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
