@@ -105,64 +105,9 @@ def overlay_frame(
     frame = np.zeros_like(recon_frame)
 
     # Correct the segmented frame by cropping such that the optical center is at the center of the image
+    # (No longer needed for mujoco > 3.0.0)
     # recon_frame = correct_optical_center(params, recon_frame, cam_id)
     # seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
-
-    # Calculate the alpha mask using the segmented video
-    alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
-    alpha = gaussian_filter(alpha, 2)
-    alpha = gaussian_filter(alpha, 2)
-    alpha = gaussian_filter(alpha, 2)
-    frame = np.zeros_like(recon_frame)
-
-    # Blend the two videos
-    for n_chan in range(recon_frame.shape[2]):
-        frame[:, :, n_chan] = (
-            alpha * recon_frame[:, :, n_chan] + (1 - alpha) * rgb_frame[:, :, n_chan]
-        )
-    return frame
-
-
-def overlay_frame_indiv(
-    rgb_frame: np.ndarray,
-    params: List,
-    recon_frame: np.ndarray,
-    seg_frame: np.ndarray,
-    camera: int,
-) -> np.ndarray:
-    """Overlay the reconstructed frame on top of the rgb frame.
-
-    Args:
-        rgb_frame (np.ndarray): Frame from the rgb video.
-        params (List): Camera parameters.
-        recon_frame (np.ndarray): Reconstructed frame.
-        seg_frame (np.ndarray): Segmented frame.
-        camera (int): Camera name.
-
-    Returns:
-        np.ndarray: Overlayed frame.
-    """
-
-    # Load and undistort the rgb frame
-    rgb_frame = cv2.undistort(
-        rgb_frame,
-        params.K.T,
-        np.concatenate(
-            [params[cam_id].RDistort, params[cam_id].TDistort], axis=0
-        ).T.squeeze(),
-        params[cam_id].K.T,
-    )
-
-    # Calculate the alpha mask using the segmented video
-    alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
-    alpha = gaussian_filter(alpha, 2)
-    alpha = gaussian_filter(alpha, 2)
-    alpha = gaussian_filter(alpha, 2)
-    frame = np.zeros_like(recon_frame)
-
-    # Correct the segmented frame by cropping such that the optical center is at the center of the image
-    recon_frame = correct_optical_center(params, recon_frame, cam_id)
-    seg_frame = correct_optical_center(params, seg_frame, cam_id, pad_val=-1)
 
     # Calculate the alpha mask using the segmented video
     alpha = (seg_frame[:, :, 0] >= 0.0) * ALPHA_BASE_VALUE
@@ -201,7 +146,6 @@ def convert_camera(cam, idx):
     }
     
     
-# 'K', 'RDistort', 'TDistort', 'r', 't'
 def convert_camera_indiv(cam, id):
     """Convert a camera from Matlab convention to Mujoco convention."""
     # Matlab camera X faces the opposite direction of Mujoco X
@@ -235,7 +179,7 @@ def convert_cameras(params) -> List[Dict]:
     return camera_kwargs
 
 
-def overlay_render(
+def overlay_viz(
     data_path,
     calibration_path,
     video_path,
