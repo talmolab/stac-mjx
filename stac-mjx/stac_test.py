@@ -13,21 +13,25 @@ import random
 import logging 
 import sys
 import hydra
+from hydra import initialize
 from omegaconf import DictConfig, OmegaConf
 
 import utils
 import controller as ctrl
 
-utils.init_params("././conf/common.yaml")
+# utils.init_params("././conf/common.yaml")
 
 def end(start_time):
     print(f"Job complete in {time.time()-start_time}")
     exit()
     
-@hydra.main(config_path="../conf", config_name="common", version_base=None)
+@hydra.main(config_path="../conf", config_name="stac", version_base=None)
 def main(cfg : DictConfig) -> None:
-    print(OmegaConf.to_yaml(cfg))
-
+    global_cfg = hydra.compose(config_name="rodent")
+    print(f"cfg: {OmegaConf.to_yaml(cfg)}")
+    print(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
+    utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
+    
     start_time = time.time()
     
     # Allocate 90% instead of 75% of GPU vram
@@ -44,31 +48,16 @@ def main(cfg : DictConfig) -> None:
         )
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
-
-    
-    if not cfg.paths.fit_path:
-        raise Exception("arg fit_path required")
-    if not cfg.paths.transform_path:
-        raise Exception("arg transform_path required")
-    if cfg.stac.n_fit_frames:
-        print(f"setting fit frames to {cfg.stac.n_fit_frames}")
-        utils.params['n_fit_frames'] = cfg.stac.n_fit_frames
     
     # setting paths
     fit_path = cfg.paths.fit_path
     transform_path = cfg.paths.transform_path
     
     ratpath = cfg.paths.xml 
-    rat23path = "././models/rat23.mat"
-    kp_names = utils.loadmat(rat23path)["joint_names"]
-    utils.params["kp_names"] = kp_names
+    kp_names = utils.params['KP_NAMES']
     # argsort returns the indices that would sort the array
     stac_keypoint_order = np.argsort(kp_names)   
-    
-    # model = mujoco.MjModel.from_xml_path(ratpath)
-    
-    # Need to download this data file and provide the path
-    # data_path = "save_data_AVG.mat"
+
     data_path = cfg.paths.data_path
 
     # Load kp_data, /1000 to scale data (from mm to meters)
@@ -97,16 +86,16 @@ def main(cfg : DictConfig) -> None:
     if cfg.test.skip_fit != 1:
         print(f"kp_data shape: {kp_data.shape}")
         
-        if cfg.stac.sampler == "first":
+        if cfg.sampler == "first":
             print("sample the first n frames")
-            fit_data = kp_data[cfg.stac.first_start:cfg.stac.first_start + utils.params['n_fit_frames']]
-        elif cfg.stac.sampler == "every":
+            fit_data = kp_data[cfg.stac.first_start:cfg.first_start + cfg.n_fit_frames]
+        elif cfg.sampler == "every":
             print("sample every x frames")
-            every = kp_data.shape[0] // utils.params['n_fit_frames']
+            every = kp_data.shape[0] // cfg.n_fit_frames
             fit_data = kp_data[::every]
-        elif cfg.stac.sampler == "random":  
+        elif cfg.sampler == "random":  
             print("sample n random frames")
-            fit_data = jax.random.choice(jax.random.PRNGKey(0), kp_data, (utils.params['n_fit_frames'],), replace=False)
+            fit_data = jax.random.choice(jax.random.PRNGKey(0), kp_data, (cfg.n_fit_frames,), replace=False)
         
         print(f"fit_data shape: {fit_data.shape}")
         mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)

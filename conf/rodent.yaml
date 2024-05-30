@@ -1,35 +1,27 @@
-# defaults:
-#   - experiments/stac_test.yaml
-#   - _self_
-
-mujoco:
-  solver: "newton"
-  iterations: 1
-  ls_iterations: 4
-
-paths:
-  xml: "././models/rodent.xml"
-  fit_path: 
-  transform_path:
-  data_path: "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
-
-stac:
-  n_fit_frames: 500
-  sampler: "random" #first, every, or random
-  first_start: 0 # starting frame for "first" sampler
-
-# for stac_test.py
-test:
-  skip_fit: False
-  skip_transform: False
-
-# Tolerance for the optimizations of the full model, limb, and root. 
-FTOL: 1.0e-02
-ROOT_FTOL: 1.0e-05
-LIMB_FTOL: 1.0e-06 # was 6
-
-# Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
+KP_NAMES: 
+  - 'Snout' 
+  - 'EarL' 
+  - 'EarR' 
+  - 'SpineF' 
+  - 'SpineM' 
+  - 'SpineL' 
+  - 'TailBase' 
+  - 'ShoulderL'
+  - 'ElbowL' 
+  - 'WristL' 
+  - 'HandL' 
+  - 'ShoulderR' 
+  - 'ElbowR' 
+  - 'WristR' 
+  - 'HandR' 
+  - 'HipL'
+  - 'KneeL' 
+  - 'AnkleL' 
+  - 'FootL' 
+  - 'HipR' 
+  - 'KneeR' 
+  - 'AnkleR' 
+  - 'FootR'
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -83,32 +75,6 @@ KEYPOINT_INITIAL_OFFSETS:
   WristL: 0. 0. 0.0
   WristR: 0. 0. 0.0
 
-# Color to use for each keypoint when visualizing the results
-KEYPOINT_COLOR_PAIRS:
-  AnkleL: 0 0 .3 1
-  AnkleR: .3 0 0 1
-  EarL: 0 0 .8 1
-  EarR: .8 0 0 1
-  ElbowL: 0 0 .8 1
-  ElbowR: .8 0 0 1
-  FootL: 0 0 .3 1
-  FootR: .3 0 0 1
-  HandL: 0 0 .8 1
-  HandR: .8 0 0 1
-  HipL: 0 0 .3 1
-  HipR: .3 0 0 1
-  KneeL: 0 0 .3 1
-  KneeR: .3 0 0 1
-  ShoulderL: 0 0 .8 1
-  ShoulderR: .8 0 0 1
-  Snout: .8 .8 .8 1
-  SpineF: .8 .8 .8 1
-  SpineL: .8 .8 .8 1
-  SpineM: .8 .8 .8 1
-  TailBase: .8 .8 .8 1
-  WristL: 0 0 .8 1
-  WristR: .8 0 0 1
-
 TRUNK_OPTIMIZATION_KEYPOINTS:
   - "Spine"
   - "Hip"
@@ -160,27 +126,58 @@ INDIVIDUAL_PART_OPTIMIZATION:
     "atlant_extend"
   ]
 
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  AnkleL: 0 0 .3 1
+  AnkleR: .3 0 0 1
+  EarL: 0 0 .8 1
+  EarR: .8 0 0 1
+  ElbowL: 0 0 .8 1
+  ElbowR: .8 0 0 1
+  FootL: 0 0 .3 1
+  FootR: .3 0 0 1
+  HandL: 0 0 .8 1
+  HandR: .8 0 0 1
+  HipL: 0 0 .3 1
+  HipR: .3 0 0 1
+  KneeL: 0 0 .3 1
+  KneeR: .3 0 0 1
+  ShoulderL: 0 0 .8 1
+  ShoulderR: .8 0 0 1
+  Snout: .8 .8 .8 1
+  SpineF: .8 .8 .8 1
+  SpineL: .8 .8 .8 1
+  SpineM: .8 .8 .8 1
+  TailBase: .8 .8 .8 1
+  WristL: 0 0 .8 1
+  WristR: .8 0 0 1
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: .9
+
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
-# you can regularize those sites using _SITES_TO_REGULARIZE. 
-M_REG_COEF: 1
+# you can regularize those sites using this with M_REG_COEF. 
 SITES_TO_REGULARIZE:
 - HandL
 - HandR
 - SpineF
 - SpineL
 - SpineM
-N_SAMPLE_FRAMES: 100
 
-# fps to render video at
 RENDER_FPS: 50
 
+N_SAMPLE_FRAMES: 100
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+FTOL: 1.0e-02
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
+
 TIME_BINS: 0.02
-
-# What is the size of the animal you'd like to register, relative to the model?
-SCALE_FACTOR: .9
-
-# TODO: raise exception if total frames % frames per clip != 0
-# frames per clip for transform.
-N_FRAMES_PER_CLIP: 250 # 360000 / 360 = 1000 environments
-
-N_GPUS: 1

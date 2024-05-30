@@ -1,0 +1,22 @@
+paths:
+  xml: "././models/rodent.xml"
+  fit_path: "fit.p"
+  transform_path: "transform.p"
+  data_path: "./save_data_AVG.mat" 
+
+n_fit_frames: 1000
+sampler: "random" # first, every, or random
+first_start: 0 # starting frame for "first" sampler
+
+# Frames per clip for transform.
+N_FRAMES_PER_CLIP: 250
+
+# Params specific to stac_test.py
+test:
+  skip_fit: False
+  skip_transform: False
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

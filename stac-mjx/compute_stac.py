@@ -31,7 +31,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     kps_to_opt = jnp.repeat(
         jnp.array([
             any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
-            for kp_name in utils.params["kp_names"]
+            for kp_name in utils.params["KP_NAMES"]
         ]), 3)
     print(f"kps_to_opt: {kps_to_opt}")
     j = time.time()
@@ -155,7 +155,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
     # Iterate through all of the frames
     frames = jnp.arange(kp_data.shape[0])
     
-    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
+    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["KP_NAMES"]), dtype=bool), 3)
     qs_to_opt = jnp.ones(mjx_model.nq, dtype=bool)
     print("Pose Optimization:")
     

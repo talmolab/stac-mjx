@@ -55,9 +55,9 @@ def _load_params(param_path):
             print(exc)
     return params
 
-def init_params(path):
+def init_params(cfg):
     global params
-    params = _load_params(path)
+    params = cfg
 
 # TODO put this in the STAC class
 def save(fit_data, save_path: Text):
