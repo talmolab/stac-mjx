@@ -19,8 +19,6 @@ from omegaconf import DictConfig, OmegaConf
 import utils
 import controller as ctrl
 
-# utils.init_params("././conf/common.yaml")
-
 def end(start_time):
     print(f"Job complete in {time.time()-start_time}")
     exit()

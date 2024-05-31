@@ -15,7 +15,6 @@ setup(
         "flax",
         "enum34",
         "future",
-        "glfw",
         "lxml",
         "numpy",
         "pyopengl",
@@ -28,6 +27,7 @@ setup(
         "matplotlib",
         "hydra-core",
         "optax",
+        "colorama"
         
     ],
 )

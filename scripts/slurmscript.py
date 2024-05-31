@@ -23,7 +23,7 @@ module load Mambaforge/22.11.1-fasrc01
 source activate stac-mjx
 module load cuda/12.2.0-fasrc01
 nvidia-smi
-python3 stac-mjx/stac_test.py paths.xml="././models/rodent.xml" paths.fit_path="fit.p" paths.transform_path="transform.p" stac.sampler="first" stac.n_fit_frames=1000
+python3 stac-mjx/stac_test.py
 """
     print(f"Submitting job")
     job_id = slurm_submit(script) 
