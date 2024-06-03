@@ -20,13 +20,7 @@ import utils
 import controller as ctrl
 from colorama import Fore, Style
 
-@hydra.main(config_path="../config", config_name="stac", version_base=None)
 def run_stac(cfg: DictConfig):
-    global_cfg = hydra.compose(config_name="rodent")
-    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
-    logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
-    utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
-    
     # setting paths
     fit_path = cfg.paths.fit_path
     transform_path = cfg.paths.transform_path
@@ -101,10 +95,15 @@ def run_stac(cfg: DictConfig):
     return fit_path, transform_path
 
 
-if __name__ == "__main__":
+@hydra.main(config_path="../configs", config_name="stac", version_base=None)
+def hydra_entry(cfg: DictConfig):
+    global_cfg = hydra.compose(config_name="rodent")
+    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
+    logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
+    utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
+    
     # Don't preallocate RAM?
     os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false" 
-    
     # When using nvidia gpu do this thing
     if xla_bridge.get_backend().platform == 'gpu':
         os.environ['XLA_FLAGS'] = (
@@ -116,7 +115,13 @@ if __name__ == "__main__":
         )
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
-    fit_path, transform_path = run_stac()
+    
+    return run_stac(cfg)
+    
+    
+if __name__ == "__main__":
+    
+    fit_path, transform_path = hydra_entry()
     print(f"""{Fore.CYAN}{Style.BRIGHT}STAC completed \n 
         fit() joint angles saved to {fit_path} \n 
         transform() joint angles saved to {transform_path}{Style.RESET_ALL}""")

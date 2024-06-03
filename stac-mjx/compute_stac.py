@@ -17,10 +17,8 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         params (Dict): Parameters dictionary
         frame (int, optional): Frame to optimize
     """
-    
-    s = time.time()
     print("Root Optimization:")
-
+    s = time.time()
     q0 = jnp.copy(mjx_data.qpos[:])
 
     # Set the center to help with finding the optima (does not need to be exact)
@@ -33,7 +31,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
             any([n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]])
             for kp_name in utils.params["KP_NAMES"]
         ]), 3)
-    print(f"kps_to_opt: {kps_to_opt}")
     j = time.time()
     mjx_data, res = stac_base.q_opt(
         mjx_model,
@@ -52,8 +49,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param))
     print(f"Replace 1 finished in {time.time()-r}")
-    
-
     
     q0 = jnp.copy(mjx_data.qpos[:])
 
@@ -87,14 +82,11 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
 def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     key = jax.random.PRNGKey(0)
-    # N_SAMPLE_FRAMES has to be less than N_FRAMES_PER_CLIP
-    N_FRAMES_PER_CLIP = utils.params["N_FRAMES_PER_CLIP"]  # Total number of frames per clip
-    N_SAMPLE_FRAMES = utils.params["N_SAMPLE_FRAMES"]      # Number of frames to sample
 
     # shuffle frames to get sample frames
-    all_indices = jnp.arange(N_FRAMES_PER_CLIP)
+    all_indices = jnp.arange(kp_data.shape[0])
     shuffled_indices = jax.random.permutation(key, all_indices, independent=True)
-    time_indices = shuffled_indices[:N_SAMPLE_FRAMES]
+    time_indices = shuffled_indices[:utils.params["N_SAMPLE_FRAMES"]]
     
     s = time.time()
     print("Begining offset optimization:")
@@ -120,7 +112,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
                 utils.params["M_REG_COEF"], utils.params["ROOT_FTOL"])
     
     offset_opt_param = res.params
-    print(f"Final error of {res.state.error} \n params: {offset_opt_param}")
+    print(f"Final error of {res.state.error}")
 
     # Set pose to the optimized m and step forward.
     mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3))) 
