@@ -23,8 +23,8 @@ from colorama import Fore, Style
 @hydra.main(config_path="../config", config_name="stac", version_base=None)
 def run_stac(cfg: DictConfig):
     global_cfg = hydra.compose(config_name="rodent")
-    print(f"cfg: {OmegaConf.to_yaml(cfg)}")
-    print(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
+    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
+    logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
     utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
     
     # setting paths
@@ -35,14 +35,10 @@ def run_stac(cfg: DictConfig):
     kp_names = utils.params['KP_NAMES']
     # argsort returns the indices that would sort the array
     stac_keypoint_order = np.argsort(kp_names)   
-
     data_path = cfg.paths.data_path
 
     # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-    
-    # First half of the data
-    # kp_data = jnp.split(kp_data, 2)[0]
     
     kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
 
@@ -62,20 +58,20 @@ def run_stac(cfg: DictConfig):
 
     # Run fit if not skipping
     if cfg.test.skip_fit != 1:
-        print(f"kp_data shape: {kp_data.shape}")
+        logging.info(f"kp_data shape: {kp_data.shape}")
         
         if cfg.sampler == "first":
-            print("sample the first n frames")
+            logging.info("Sampling the first n frames")
             fit_data = kp_data[cfg.stac.first_start:cfg.first_start + cfg.n_fit_frames]
         elif cfg.sampler == "every":
-            print("sample every x frames")
+            logging.info("Sampling every x frames")
             every = kp_data.shape[0] // cfg.n_fit_frames
             fit_data = kp_data[::every]
         elif cfg.sampler == "random":  
-            print("sample n random frames")
+            logging.info("Sampling n random frames")
             fit_data = jax.random.choice(jax.random.PRNGKey(0), kp_data, (cfg.n_fit_frames,), replace=False)
         
-        print(f"fit_data shape: {fit_data.shape}")
+        logging.info(f"fit_data shape: {fit_data.shape}")
         mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)
 
         fit_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, clip_data)
@@ -85,16 +81,16 @@ def run_stac(cfg: DictConfig):
 
     # Stop here if skipping transform
     if cfg.test.skip_transform==1:
-        print("skipping transform()")
-        end(start_time)
+        logging.info("skipping transform()")
+        return fit_path, None
     
-    print("Running transform()")
+    logging.info("Running transform()")
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"] 
     kp_data = ctrl.chunk_kp_data(kp_data)
-    print(f"kp_data shape: {kp_data.shape}")
+    logging.info(f"kp_data shape: {kp_data.shape}")
     mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(mj_model, kp_data, offsets)
 
     transform_data = ctrl.package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True)
@@ -120,6 +116,8 @@ if __name__ == "__main__":
         )
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
-    run_stac()
-    print(f"{Fore.CYAN}{Style.BRIGHT}STAC completed{Style.RESET_ALL}")
+    fit_path, transform_path = run_stac()
+    print(f"""{Fore.CYAN}{Style.BRIGHT}STAC completed \n 
+        fit() joint angles saved to {fit_path} \n 
+        transform() joint angles saved to {transform_path}{Style.RESET_ALL}""")
         
