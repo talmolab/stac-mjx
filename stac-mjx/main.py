@@ -107,7 +107,8 @@ def hydra_entry(cfg: DictConfig):
     
     # Don't preallocate RAM?
     os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = "false" 
-    # When using nvidia gpu do this thing
+    
+    # XLA flags for Nvidia GPU
     if xla_bridge.get_backend().platform == 'gpu':
         os.environ['XLA_FLAGS'] = (
         '--xla_gpu_enable_triton_softmax_fusion=true '

@@ -12,7 +12,17 @@ import optax
 
 import operations as op
 import utils
-    
+
+def huber(x, delta=5.0, max=10, max_slope=0.1):
+    """Huber loss."""
+    x = jnp.where(jnp.abs(x) < delta, 0.5 * x**2, delta * (jnp.abs(x) - 0.5 * delta))
+    x = jnp.where(x > max, (x - max) * max_slope + max, x)
+    return jnp.sum(x)
+
+def squared_error(x):
+    """Squared error"""
+    return jnp.sum(jnp.square(x))
+
 def q_loss(
     q: jnp.ndarray,
     mjx_model,
@@ -53,7 +63,7 @@ def q_loss(
 
     # Set irrelevant body sites to 0
     residual = residual * kps_to_opt
-    residual =  jnp.sum(jnp.square(residual))
+    residual = squared_error(residual)
 
     return residual
 
