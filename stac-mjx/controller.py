@@ -122,22 +122,6 @@ def create_body_sites(root):
 
     return physics, physics.model.ptr
 
-def prep_kp_data(kp_data, stac_keypoint_order):
-    """Data preparation for kp_data: splits kp_data into chunks.
-        Makes sure that the total chunks is divisible by the number of gpus
-        not vmapped but essentially vectorizes kpdata via chunking
-
-    Returns:
-        model: mjModel
-        mjx_data: MjData with batch dimension; (batch, dim of attr)
-        kp_data: kp_data chunks with a leading batch dimension
-    """
-    
-    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
-    kp_data = jnp.transpose(kp_data, (0, 2, 1))
-    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
-    
-    return kp_data 
 
 def chunk_kp_data(kp_data):
     n_frames = utils.params['N_FRAMES_PER_CLIP']

@@ -34,7 +34,10 @@ def run_stac(cfg: DictConfig):
     # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
     
-    kp_data = ctrl.prep_kp_data(kp_data, stac_keypoint_order)
+    # Preparing data by ordering and reshaping (TODO: will this stay the same?)
+    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
+    kp_data = jnp.transpose(kp_data, (0, 2, 1))
+    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
 
     # Set up mjcf
     root = mjcf.from_path(ratpath)
@@ -76,7 +79,7 @@ def run_stac(cfg: DictConfig):
     # Stop here if skipping transform
     if cfg.test.skip_transform==1:
         logging.info("skipping transform()")
-        return fit_path, None
+        return fit_path, "none"
     
     logging.info("Running transform()")
     with open(fit_path, "rb") as file:
@@ -120,7 +123,6 @@ def hydra_entry(cfg: DictConfig):
     
     
 if __name__ == "__main__":
-    
     fit_path, transform_path = hydra_entry()
     print(f"""{Fore.CYAN}{Style.BRIGHT}STAC completed \n 
         fit() joint angles saved to {fit_path} \n 
