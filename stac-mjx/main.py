@@ -34,7 +34,8 @@ def run_stac(cfg: DictConfig):
     # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
     
-    # Preparing data by ordering and reshaping (TODO: will this stay the same?)
+    # Preparing data by reordering and reshaping (TODO: will this stay the same?)
+    # Resulting kp_data is of shape (n_frames, n_keypoints)
     kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
     kp_data = jnp.transpose(kp_data, (0, 2, 1))
     kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
@@ -56,7 +57,6 @@ def run_stac(cfg: DictConfig):
     # Run fit if not skipping
     if cfg.test.skip_fit != 1:
         logging.info(f"kp_data shape: {kp_data.shape}")
-        
         if cfg.sampler == "first":
             logging.info("Sampling the first n frames")
             fit_data = kp_data[cfg.stac.first_start:cfg.first_start + cfg.n_fit_frames]
