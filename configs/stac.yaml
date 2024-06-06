@@ -1,15 +1,12 @@
 paths:
   xml: "././models/rodent.xml"
-  fit_path: "fit.p"
-  transform_path: "transform.p"
-  data_path: "./save_data_AVG.mat" 
+  fit_path: "fit_sq.p"
+  transform_path: "transform_sq.p"
+  data_path: "/n/holylabs/LABS/olveczky_lab/holylfs02/Everyone/dannce_rig/dannce_ephys/art/2020_12_22_1/DANNCE/predict03/save_data_AVG.mat" 
 
 n_fit_frames: 1000
-sampler: "random" # first, every, or random
+sampler: "first" # first, every, or random
 first_start: 0 # starting frame for "first" sampler
-
-# Frames per clip for transform.
-N_FRAMES_PER_CLIP: 250
 
 # Should this be included?
 test:

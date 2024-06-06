@@ -18,7 +18,6 @@ from omegaconf import DictConfig, OmegaConf
 
 import utils
 import controller as ctrl
-from colorama import Fore, Style
 
 def run_stac(cfg: DictConfig):
     # setting paths
@@ -59,7 +58,7 @@ def run_stac(cfg: DictConfig):
         logging.info(f"kp_data shape: {kp_data.shape}")
         if cfg.sampler == "first":
             logging.info("Sampling the first n frames")
-            fit_data = kp_data[cfg.stac.first_start:cfg.first_start + cfg.n_fit_frames]
+            fit_data = kp_data[:cfg.n_fit_frames]
         elif cfg.sampler == "every":
             logging.info("Sampling every x frames")
             every = kp_data.shape[0] // cfg.n_fit_frames
@@ -124,8 +123,5 @@ def hydra_entry(cfg: DictConfig):
     
     
 if __name__ == "__main__":
-    fit_path, transform_path = hydra_entry()
-    print(f"""{Fore.CYAN}{Style.BRIGHT}STAC completed \n 
-        fit() joint angles saved to {fit_path} \n 
-        transform() joint angles saved to {transform_path}{Style.RESET_ALL}""")
+    hydra_entry()
         

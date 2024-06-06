@@ -1,3 +1,6 @@
+# Frames per clip for transform.
+N_FRAMES_PER_CLIP: 360
+
 KP_NAMES: 
   - 'Snout' 
   - 'EarL' 

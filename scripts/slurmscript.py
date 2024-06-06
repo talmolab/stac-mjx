@@ -9,7 +9,7 @@ def submit():
     """
     script = f"""#!/bin/bash
 #SBATCH -p olveczkygpu,gpu_requeue # olveczky,cox,shared,serial_requeue # olveczkygpu,gpu_requeue
-#SBATCH --mem=64000 
+#SBATCH --mem=16000 
 #SBATCH -c 16
 #SBATCH -N 1
 #SBATCH --constraint="a100"
@@ -23,7 +23,7 @@ module load Mambaforge/22.11.1-fasrc01
 source activate stac-mjx
 module load cuda/12.2.0-fasrc01
 nvidia-smi
-python3 stac-mjx/stac_test.py
+python3 stac-mjx/main.py 
 """
     print(f"Submitting job")
     job_id = slurm_submit(script) 
