@@ -99,6 +99,7 @@ def run_stac(cfg: DictConfig):
 
 @hydra.main(config_path="../configs", config_name="stac", version_base=None)
 def hydra_entry(cfg: DictConfig):
+    # Initialize configs and convert to dictionaries
     global_cfg = hydra.compose(config_name="rodent")
     logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
     logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
