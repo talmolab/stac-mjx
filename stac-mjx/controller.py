@@ -32,8 +32,8 @@ def initialize_part_names(physics):
 def part_opt_setup(physics):
     def get_part_ids(physics, parts: List) -> jnp.ndarray:
         """Get the part ids given a list of parts.
-        This code creates a JAX NumPy-like Boolean array where each element 
-        represents whether any of the strings in the parts list is found as a substring in 
+        This code creates a JAX NumPy-like Boolean array where each element
+        represents whether any of the strings in the parts list is found as a substring in
         the corresponding name from the part_names list.
             Args:
                 env (TYPE): Environment
@@ -48,11 +48,13 @@ def part_opt_setup(physics):
     if utils.params["INDIVIDUAL_PART_OPTIMIZATION"] is None:
         indiv_parts = []
     else:
-        indiv_parts = jnp.array([
-            get_part_ids(physics, parts)
-            for parts in utils.params["INDIVIDUAL_PART_OPTIMIZATION"].values()
-        ])
-    
+        indiv_parts = jnp.array(
+            [
+                get_part_ids(physics, parts)
+                for parts in utils.params["INDIVIDUAL_PART_OPTIMIZATION"].values()
+            ]
+        )
+
     utils.params["indiv_parts"] = indiv_parts
 
 
@@ -72,9 +74,9 @@ def create_keypoint_sites(root):
             group=2,
         )
         keypoint_sites.append(site)
-    
+
     physics = mjcf.Physics.from_mjcf_model(root)
-    
+
     # return physics, mj_model, and sites (to use in bind())
     return physics, physics.model.ptr, keypoint_sites
 
@@ -87,7 +89,7 @@ def set_keypoint_sites(physics, sites, kps):
         sites (_type_): _description_
         kps (_type_): _description_
     """
-    physics.bind(sites).pos[:] = np.reshape(kps.T, (-1,3))
+    physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr
 
 
@@ -116,87 +118,98 @@ def create_body_sites(root):
     # Usage of physics: binding = physics.bind(body_sites)
 
     axis = physics.named.model.site_pos._axes[0]
-    utils.params["site_index_map"] = {key: int(axis.convert_key_item(key)) for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()}
-    
+    utils.params["site_index_map"] = {
+        key: int(axis.convert_key_item(key))
+        for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
+    }
+
     utils.params["part_names"] = initialize_part_names(physics)
 
     return physics, physics.model.ptr
 
 
 def chunk_kp_data(kp_data):
-    n_frames = utils.params['N_FRAMES_PER_CLIP']
+    n_frames = utils.params["N_FRAMES_PER_CLIP"]
     total_frames = kp_data.shape[0]
-    
+
     n_chunks = int(total_frames / n_frames)
-    
-    kp_data = kp_data[:int(n_chunks) * n_frames]
-    
+
+    kp_data = kp_data[: int(n_chunks) * n_frames]
+
     # Reshape the array to create chunks
     kp_data = kp_data.reshape((n_chunks, n_frames) + kp_data.shape[1:])
-    
+
     return kp_data
 
 
 def get_error_stats(errors: jnp.ndarray):
-    flattened_errors = errors.reshape(-1)  # -1 infers the size based on other dimensions
+    flattened_errors = errors.reshape(
+        -1
+    )  # -1 infers the size based on other dimensions
     # Calculate mean and standard deviation
     mean = jnp.mean(flattened_errors)
     std = jnp.std(flattened_errors)
 
     return flattened_errors, mean, std
 
-    
+
 # TODO: pmap fit and transform if you want to use it with multiple gpus
 def fit(mj_model, kp_data):
-    
+
     # Create mjx model and data
     mjx_model = mjx.put_model(mj_model)
     mjx_data = mjx.make_data(mjx_model)
-    
+
     # Get and set the offsets of the markers
     offsets = jnp.copy(op.get_site_pos(mjx_model))
-    offsets *= utils.params['SCALE_FACTOR']
-    
+    offsets *= utils.params["SCALE_FACTOR"]
+
     # print(mjx_model.site_pos, mjx_model.site_pos.shape)
     mjx_model = op.set_site_pos(mjx_model, offsets)
 
     # forward is used to calculate xpos and such
     mjx_data = mjx.kinematics(mjx_model, mjx_data)
     mjx_data = mjx.com_pos(mjx_model, mjx_data)
-        
+
     # Set joint bounds
     lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
     lb = jnp.minimum(lb, 0.0)
     ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
-    utils.params['lb'] = lb
-    utils.params['ub'] = ub
+    utils.params["lb"] = lb
+    utils.params["ub"] = ub
 
     # Begin optimization steps
     mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
 
-    for n_iter in range(utils.params['N_ITERS']):
+    for n_iter in range(utils.params["N_ITERS"]):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(mjx_model, mjx_data, kp_data)
+        mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(
+            mjx_model, mjx_data, kp_data
+        )
 
         for i, (t, e) in enumerate(zip(frame_time, frame_error)):
             print(f"Frame {i+1} done in {t} with a final error of {e}")
-        
+
         flattened_errors, mean, std = get_error_stats(frame_error)
         # Print the results
         print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
-        
+
         print("starting offset optimization")
-        mjx_model, mjx_data = offset_optimization(mjx_model, mjx_data, kp_data, offsets, q)
+        mjx_model, mjx_data = offset_optimization(
+            mjx_model, mjx_data, kp_data, offsets, q
+        )
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
-    mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(
+        mjx_model, mjx_data, kp_data
+    )
 
     for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-            print(f"Frame {i+1} done in {t} with a final error of {e}")
-    
+        print(f"Frame {i+1} done in {t} with a final error of {e}")
+
     flattened_errors, mean, std = get_error_stats(frame_error)
     # Print the results
     print(f"Flattened array shape: {flattened_errors.shape}")
@@ -215,13 +228,13 @@ def transform(mj_model, kp_data, offsets):
             Keypoint order must match the order in the skeleton file.
         offsets (jnp.ndarray): offsets loaded from offset.p after fit()
     """
-    
+
     # physics, mj_model = set_body_sites(root)
     # utils.params["mj_model"] = mj_model
     # part_opt_setup(physics)
 
     def mjx_setup(kp_data, mj_model):
-        """creates mjxmodel and mjxdata, setting offets 
+        """creates mjxmodel and mjxdata, setting offets
 
         Args:
             kp_data (_type_): _description_
@@ -233,18 +246,18 @@ def transform(mj_model, kp_data, offsets):
         mjx_model = mjx.put_model(mj_model)
         mjx_data = mjx.make_data(mjx_model)
         # do initial get_site stuff inside mjx_setup
-        
+
         # Set the offsets.
-        mjx_model = op.set_site_pos(mjx_model, offsets) 
+        mjx_model = op.set_site_pos(mjx_model, offsets)
 
         # forward is used to calculate xpos and such
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         return mjx_model, mjx_data
-    
+
     vmap_mjx_setup = vmap(mjx_setup, in_axes=(0, None))
-    
+
     # Create batch mjx model and data where batch_size = kp_data.shape[0]
     mjx_model, mjx_data = vmap_mjx_setup(kp_data, mj_model)
 
@@ -254,12 +267,14 @@ def transform(mj_model, kp_data, offsets):
 
     # q_phase
     mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
-    mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(mjx_model, mjx_data, kp_data)
-    
+    mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
+        mjx_model, mjx_data, kp_data
+    )
+
     flattened_errors, mean, std = get_error_stats(frame_error)
     # Print the results
     print(f"Flattened array shape: {flattened_errors.shape}")
     print(f"Mean: {mean}")
     print(f"Standard deviation: {std}")
-    
+
     return mjx_model, q, x, walker_body_sites, kp_data

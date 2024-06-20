@@ -1,16 +1,19 @@
 from jax import numpy as jnp
 from jax import jit
-from  mujoco.mjx._src import smooth
+from mujoco.mjx._src import smooth
 import numpy as np
 import utils
+
 
 @jit
 def kinematics(mjx_model, mjx_data):
     return smooth.kinematics(mjx_model, mjx_data)
 
+
 @jit
 def com_pos(mjx_model, mjx_data):
     return smooth.com_pos(mjx_model, mjx_data)
+
 
 def get_site_xpos(mjx_data):
     """Returns MjxData.site_xpos of keypoint body sites
@@ -74,6 +77,6 @@ def replace_qs(mjx_model, mjx_data, q_opt_param):
 
     else:
         mjx_data = mjx_data.replace(qpos=q_opt_param)
-        mjx_data = kinematics(mjx_model, mjx_data) 
-    
+        mjx_data = kinematics(mjx_model, mjx_data)
+
     return mjx_data

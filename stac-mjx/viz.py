@@ -14,18 +14,20 @@ from scipy.ndimage import gaussian_filter
 from scipy.spatial.transform import Rotation as R
 
 import utils
+
 # Gotta do this before importing controller
 utils.init_params("../params/params.yaml")
 import controller as ctrl
 import stac_base
 
-# Standard image shape for dannce rig data 
+# Standard image shape for dannce rig data
 # TODO: make this a param
 HEIGHT = 1200
 WIDTH = 1920
 
 # Param for overlay_frame()
 ALPHA_BASE_VALUE = 0.5
+
 
 def correct_optical_center(
     params, frame: np.ndarray, cam_id: int, pad_val=0
@@ -144,12 +146,12 @@ def convert_camera(cam, idx):
         "fovy": fovy,
         "quat": quat,
     }
-    
-    
+
+
 def convert_camera_indiv(cam, id):
     """Convert a camera from Matlab convention to Mujoco convention."""
     # Matlab camera X faces the opposite direction of Mujoco X
-    rot = R.from_matrix(cam['TDistort'])
+    rot = R.from_matrix(cam["TDistort"])
     eul = rot.as_euler("zyx")
     eul[2] += np.pi
     modified_rot = R.from_euler("zyx", eul)
@@ -159,13 +161,15 @@ def convert_camera_indiv(cam, id):
     quat = quat[np.array([3, 0, 1, 2])]
     quat[0] *= -1
     # The y field of fiew is a function of the focal y and the image height.
-    fovy = 2 * np.arctan(HEIGHT / (2 * cam['K'][1, 1])) / (2 * np.pi) * 360
+    fovy = 2 * np.arctan(HEIGHT / (2 * cam["K"][1, 1])) / (2 * np.pi) * 360
     return {
         "name": f"Camera{id}",
-        "pos": -cam['t'] @ cam['TDistort'] / 1000,
+        "pos": -cam["t"] @ cam["TDistort"] / 1000,
         "fovy": fovy,
         "quat": quat,
     }
+
+
 def convert_cameras(params) -> List[Dict]:
     """Convert cameras from Matlab convention to Mujoco convention.
 
@@ -187,7 +191,7 @@ def overlay_viz(
     n_frames,
     save_path,
     camera: Text = "close_profile",
-    ):
+):
     scene_option = wrapper.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -219,8 +223,8 @@ def overlay_viz(
     # root.worldbody.add("camera", **convert_camera_indiv(cam_params, 2)) # Camera 2
     camera_kwargs = convert_cameras(cam_params)
     for kwargs in camera_kwargs:
-            root.worldbody.add("camera", **kwargs)
-            
+        root.worldbody.add("camera", **kwargs)
+
     physics, mj_model = ctrl.create_body_sites(root)
     physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
     physics.forward()
@@ -232,25 +236,26 @@ def overlay_viz(
 
     renderer = mujoco.Renderer(mj_model, height=1200, width=1920)
 
-    kp_data = kp_data[:qposes.shape[0]]
-    
+    kp_data = kp_data[: qposes.shape[0]]
+
     prev_time = physics.time()
     reader = imageio.get_reader(video_path)
-    
-    frames=[]
+
+    frames = []
     with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
         for i, (qpos, kps) in enumerate(zip(qposes, kp_data)):
-            if i%100 == 0:
+            if i % 100 == 0:
                 print(f"rendering frame {i}")
-                
+
             # TODO: cut qposes and kp_data into the right shape beforehand
             if i == n_frames:
                 break
             # This only happens with the simulation fps and render fps don't match up
             # commenting out for now since I'll need to implement time tracking outside of dmcontrol
             if i > 0:
-                while (np.round(physics.time() - prev_time, decimals=5)) \
-                    < utils.params["TIME_BINS"]:
+                while (np.round(physics.time() - prev_time, decimals=5)) < utils.params[
+                    "TIME_BINS"
+                ]:
                     # mujoco.mj_forward(mj_model, mj_data)
                     physics.step()
             # Set keypoints
@@ -259,25 +264,25 @@ def overlay_viz(
             # mujoco.mj_forward(mj_model, mj_data)
             physics.data.qpos = qpos
             physics.step()
-            
-            # SEGMENT or IDCOLOR? 
+
+            # SEGMENT or IDCOLOR?
             # https://github.com/google-deepmind/mujoco/blob/725630c95ddebceb32b89c45cfc14a5eae7f8a8a/include/mujoco/mjvisualize.h#L149
             # scene_option.flags[enums.mjtRndFlag.mjRND_SEGMENT] = False
             # renderer.update_scene(physics.data, camera=camera, scene_option=scene_option)
             # reconArr = renderer.render()
-            
+
             # # Get segmentation rendering
             # scene_option.flags[enums.mjtRndFlag.mjRND_SEGMENT] = True
             # renderer.update_scene(physics.data, camera=camera, scene_option=scene_option)
             # segArr = renderer.render()
-            
+
             reconArr = physics.render(
-            HEIGHT,
-            WIDTH,
-            camera_id=camera,
-            scene_option=scene_option,
+                HEIGHT,
+                WIDTH,
+                camera_id=camera,
+                scene_option=scene_option,
             )
-            
+
             segArr = physics.render(
                 HEIGHT,
                 WIDTH,
@@ -288,14 +293,15 @@ def overlay_viz(
 
             rgbArr = reader.get_data(i)
             frame = overlay_frame(rgbArr, cam_params, reconArr, segArr, camera)
-            
+
             video.append_data(frame)
             frames.append(frame)
             prev_time = np.round(physics.time(), decimals=2)
-            
+
     return frames
 
-def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int=0):
+
+def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int = 0):
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -337,38 +343,51 @@ def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int=0):
     renderer = mujoco.Renderer(mj_model, height=HEIGHT, width=WIDTH)
 
     # Make sure there are enough frames to render
-    if qposes.shape[0] < n_frames-1:
-        raise Exception(f"Trying to render {n_frames} frames when data['qpos'] only has {qposes.shape[0]}")
+    if qposes.shape[0] < n_frames - 1:
+        raise Exception(
+            f"Trying to render {n_frames} frames when data['qpos'] only has {qposes.shape[0]}"
+        )
 
     # slice kp_data to match qposes length
-    kp_data = kp_data[:qposes.shape[0]]
+    kp_data = kp_data[: qposes.shape[0]]
 
     # Slice arrays to be the range that is being rendered
-    kp_data = kp_data[start_frame:start_frame + n_frames]
-    qposes = qposes[start_frame:start_frame + n_frames]
-    
-    frames=[]
+    kp_data = kp_data[start_frame : start_frame + n_frames]
+    qposes = qposes[start_frame : start_frame + n_frames]
+
+    frames = []
     # render while stepping using mujoco
     with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
         for i, (qpos, kps) in enumerate(zip(qposes, kp_data)):
-            if i%100 == 0:
+            if i % 100 == 0:
                 print(f"rendering frame {i}")
-            
+
             # Set keypoints
             physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
             mj_data.qpos = qpos
             mujoco.mj_forward(mj_model, mj_data)
 
-            renderer.update_scene(mj_data, camera="close_profile", scene_option=scene_option)
+            renderer.update_scene(
+                mj_data, camera="close_profile", scene_option=scene_option
+            )
             pixels = renderer.render()
             video.append_data(pixels)
             frames.append(pixels)
 
     return frames
 
+
 # Render two rats in the same sim! This can be programmatically extended to any number of rats
 # No keypoints or body site rendering unfortunately since they are explicitly named
-def mujoco_pair_viz(data_path1, data_path2, model_xml, n_frames, save_path, start_frame1: int=0, start_frame2: int=0):
+def mujoco_pair_viz(
+    data_path1,
+    data_path2,
+    model_xml,
+    n_frames,
+    save_path,
+    start_frame1: int = 0,
+    start_frame2: int = 0,
+):
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -392,13 +411,13 @@ def mujoco_pair_viz(data_path1, data_path2, model_xml, n_frames, save_path, star
     mj_model = mujoco.MjModel.from_xml_path(model_xml)
     # physics, mj_model = ctrl.create_body_sites(root)
     # physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
-    
+
     # rescale.rescale_subtree(
     #     root,
     #     utils.params["SCALE_FACTOR"],
     #     utils.params["SCALE_FACTOR"],
     # )
-    
+
     # Starting xpos and xquat for mjdata
     _UPRIGHT_POS = (0.0, 0.0, 0.94)
     _UPRIGHT_QUAT = (0.859, 1.0, 1.0, 0.859)
@@ -413,7 +432,7 @@ def mujoco_pair_viz(data_path1, data_path2, model_xml, n_frames, save_path, star
         d1 = pickle.load(file)
         qposes1 = np.array(d1["qpos"])
         kp_data1 = np.array(d1["kp_data"])
-        
+
     with open(data_path2, "rb") as file:
         d2 = pickle.load(file)
         qposes2 = np.array(d2["qpos"])
@@ -422,35 +441,38 @@ def mujoco_pair_viz(data_path1, data_path2, model_xml, n_frames, save_path, star
     renderer = mujoco.Renderer(mj_model, height=HEIGHT, width=WIDTH)
 
     # Make sure there are enough frames to render
-    if qposes1.shape[0] < n_frames-1:
-        raise Exception(f"Trying to render {n_frames} frames when data['qpos'] only has {qposes1.shape[0]}")
+    if qposes1.shape[0] < n_frames - 1:
+        raise Exception(
+            f"Trying to render {n_frames} frames when data['qpos'] only has {qposes1.shape[0]}"
+        )
 
     # slice kp_data to match qposes length
-    kp_data1 = kp_data1[:qposes1.shape[0]]
-    kp_data2 = kp_data2[:qposes2.shape[0]]
+    kp_data1 = kp_data1[: qposes1.shape[0]]
+    kp_data2 = kp_data2[: qposes2.shape[0]]
     # Slice arrays to be the range that is being rendered
-    kp_data1 = kp_data1[start_frame1:start_frame1 + n_frames]
-    qposes1 = qposes1[start_frame1:start_frame1 + n_frames]
-    
-    kp_data2 = kp_data2[start_frame2:start_frame2 + n_frames]
-    qposes2 = qposes2[start_frame2:start_frame2 + n_frames]
-    
-    frames=[]
+    kp_data1 = kp_data1[start_frame1 : start_frame1 + n_frames]
+    qposes1 = qposes1[start_frame1 : start_frame1 + n_frames]
+
+    kp_data2 = kp_data2[start_frame2 : start_frame2 + n_frames]
+    qposes2 = qposes2[start_frame2 : start_frame2 + n_frames]
+
+    frames = []
     # render while stepping using mujoco
     with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
         for i, (qpos1, qpos2) in enumerate(zip(qposes1, qposes2)):
-            if i%100 == 0:
+            if i % 100 == 0:
                 print(f"rendering frame {i}")
-            
+
             # Set keypoints
             # physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
             mj_data.qpos = np.append(qpos1, qpos2)
             mujoco.mj_forward(mj_model, mj_data)
 
-            renderer.update_scene(mj_data, camera="close_profile", scene_option=scene_option)
+            renderer.update_scene(
+                mj_data, camera="close_profile", scene_option=scene_option
+            )
             pixels = renderer.render()
             video.append_data(pixels)
             frames.append(pixels)
 
     return frames
-
