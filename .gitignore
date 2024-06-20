@@ -10,6 +10,9 @@ videos/
 outputs/
 *.mp4
 
+# cluster scripts
+scripts/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

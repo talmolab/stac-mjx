@@ -1,4 +1,5 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
+
 import numpy as np
 import h5py
 import os
@@ -6,6 +7,7 @@ import yaml
 import scipy.io as spio
 import pickle
 from typing import Text
+
 
 def loadmat(filename):
     """
@@ -55,9 +57,11 @@ def _load_params(param_path):
             print(exc)
     return params
 
+
 def init_params(cfg):
     global params
     params = cfg
+
 
 # TODO put this in the STAC class
 def save(fit_data, save_path: Text):
