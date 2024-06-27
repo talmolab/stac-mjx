@@ -1,6 +1,6 @@
 from jax import numpy as jnp
 from jax import jit
-import mjx
+from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
 import utils
