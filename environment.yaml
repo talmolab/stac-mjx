@@ -1,0 +1,22 @@
+name: vnl
+channels:
+  - conda-forge
+  - anaconda
+  - menpo
+dependencies:
+  - python=3.11
+  - numpy
+  - matplotlib
+  - pandas
+  - pip
+  - glew
+  - mesalib
+  - mesa-libgl-cos6-x86_64
+  - glfw3
+  - ipykernel
+  - pip: 
+    - -r requirements.txt 
+
+variables:             # Set MuJoCo environment variables
+  MUJOCO_GL: osmesa
+  PYOPENGL_PLATFORM: osmesa
