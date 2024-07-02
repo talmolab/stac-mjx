@@ -1,11 +1,12 @@
-name: vnl
+name: vnl-test
 channels:
   - conda-forge
   - anaconda
   - menpo
 dependencies:
+  - opencv
   - python=3.11
-  - numpy
+  - numpy<2.0
   - matplotlib
   - pandas
   - pip
@@ -17,6 +18,6 @@ dependencies:
   - pip: 
     - -r requirements.txt 
 
-variables:             # Set MuJoCo environment variables
-  MUJOCO_GL: osmesa
-  PYOPENGL_PLATFORM: osmesa
+#variables:             # Set MuJoCo environment variables
+#  MUJOCO_GL: osmesa
+#  PYOPENGL_PLATFORM: osmesa

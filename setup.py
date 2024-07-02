@@ -16,7 +16,7 @@ setup(
         "enum34",
         "future",
         "lxml",
-        "numpy",
+        "numpy < 2.0",
         "pyopengl",
         "pyparsing",
         "h5py >= 2.9.0",
