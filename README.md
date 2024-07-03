@@ -1,14 +1,11 @@
 # stac-mjx :rat:
-Implementation of STAC using MJX for GPU acceleration. Acceleration is achieved via Jax, which is installed along with the other requirements, below. 
+Implementation of STAC using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html) 
 
 This is part of the VNL project. 
 
-## Requirements
-`stac-mjx` relies on `jax`, which has different versions based on your platform (CPU/GPU/TPU), so build within an environment with `jax` installed. Refer to https://jax.readthedocs.io/en/latest/installation.html. 
-
 ## Installation
 
-Install the rest of the prerequisites. There are two ways to install:
+stac-mjx relies on many prerequisites. Therefore we suggest installing in a new conda environment.
 
 ### Conda Environment (`environment.yaml`)
 
@@ -21,7 +18,7 @@ conda activate stac-mjx-env
 
 ### `setup.py` script
 
-Inside a terminal in a new conda environment:
+Create a conda environment. Then, in a terminal, enter:
 
 ```
 pip install .
@@ -34,9 +31,7 @@ pip install .
 
     `python core/main.py test.skip_transform=True`
 
-3. Render the resulting data using `mujoco_viz()` (see `viz_usage.ipynb`)
-
-We recommend creating a Jupyter notebooks kernel with:
+3. Render the resulting data using `mujoco_viz()` (see `viz_usage.ipynb`). We recommend creating a Jupyter notebooks kernel with:
 
 ```
 python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
