@@ -1,4 +1,4 @@
-name: vnl-test
+name: stac-mjx-env
 channels:
   - conda-forge
   - anaconda
