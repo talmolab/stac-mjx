@@ -1,5 +1,5 @@
 # stac-mjx :rat:
-Implementation of STAC using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html) 
+Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html) 
 
 This is part of the VNL project. 
 
