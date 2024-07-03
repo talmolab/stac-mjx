@@ -19,8 +19,7 @@ imageio[pyav]
 imageio[ffmpeg]
 
 # For headless gpu rendering setup
-# sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 & conda install -c conda-forge glew & conda install -c #conda-forge mesalib & conda install -c anaconda mesa-libgl-cos6-x86_64
-# & conda install -c menpo glfw3
+# sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 & conda install -c conda-forge glew & conda install -c conda-forge mesalib & conda install -c anaconda mesa-libgl-cos6-x86_64 & conda install -c menpo glfw3
 
 # Reactivate with osmesa
 # conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
