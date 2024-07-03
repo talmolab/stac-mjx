@@ -1,25 +1,17 @@
 # stac-mjx :rat:
-Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html).
-
-This is part of the VNL project. 
+Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html). This is part of the VNL project. 
 
 ## Installation
-
 stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment.
 
 ### Conda Environment (`environment.yaml`)
-
 Create and activate the `stac-mjx-env` environment:
-
 ```
 conda env create -f environment.yaml
 conda activate stac-mjx-env
 ```
-
 ### `setup.py` script
-
 In a terminal in a new conda environment, execute:
-
 ```
 pip install .
 ```
@@ -33,9 +25,7 @@ pip install .
     
     Note: this currently will fail w/o supplying a data file.
 
-
 3. Render the resulting data using `mujoco_viz()` from within `viz_usage.ipynb`. Currently, this uses headless rendering on CPU via `osmesa`, which requires its own setup. To set up (currently on supported on Linux), execute the following commands sequentially:
-
    ```
    sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 
    conda install -c conda-forge glew 
