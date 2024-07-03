@@ -36,20 +36,19 @@ pip install .
 
 3. Render the resulting data using `mujoco_viz()` from within `viz_usage.ipynb`. Currently, this uses headless rendering on CPU via `osmesa`, which requires its own setup. To set up (currently on supported on Linux), execute the following commands sequentially:
 
-```
+    ```
     sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 
     conda install -c conda-forge glew 
     conda install -c conda-forge mesalib 
     conda install -c anaconda mesa-libgl-cos6-x86_64 
     conda install -c menpo glfw3
-```
+    ```
+   Finally, set the following environment variables, and reactivate the conda environment:
 
-    Finally, set the following environment variables, and reactivate the conda environment:
-
-```
+    ```
     conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
     conda deactivate && conda activate base
-```
+    ```
 
     We recommend creating a new Jupyter notebooks kernel with:
 
