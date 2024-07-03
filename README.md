@@ -50,11 +50,11 @@ pip install .
     conda deactivate && conda activate base
     ```
 
-    We recommend creating a new Jupyter notebooks kernel with:
+   To ensure all of the above changes are encapsulated in your Jupyter kernel, a new kernel with:
 
-```
+    ```
     python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
-```
+    ```
 
 4. After tuning parameters and confirming the small clip is processed well, run through the whole thing with
     `python stac-mjx/main.py` 
