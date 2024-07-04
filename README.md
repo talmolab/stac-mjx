@@ -4,17 +4,17 @@ Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJ
 ## Installation
 stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment. We currently provide two installation methods; 1. conda environment, 2. pip intall via `setup.py`.
 
-### 1. Conda Environment (`environment.yaml`)
-Create and activate the `stac-mjx-env` environment:
-```
-conda env create -f environment.yaml
-conda activate stac-mjx-env
-```
-### 2. `setup.py` script
-In a terminal in a new conda environment, execute:
-```
-pip install .
-```
+1. Conda Environment (`environment.yaml`)
+   Create and activate the `stac-mjx-env` environment:
+   ```
+   conda env create -f environment.yaml
+   conda activate stac-mjx-env
+   ```
+2. `setup.py` script
+   In a terminal in a new conda environment, from the `stac-mjx` directory, execute:
+   ```
+   pip install .
+   ```
 
 ## Usage
 1. Update the .yaml files in `config/` with the proper information (details WIP).
