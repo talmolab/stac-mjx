@@ -2,15 +2,15 @@
 Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html). This is part of the VNL project. 
 
 ## Installation
-stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment.
+stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment. We currently provide two installation methods; 1. conda environment, 2. pip intall via `setup.py`.
 
-### Conda Environment (`environment.yaml`)
+### 1. Conda Environment (`environment.yaml`)
 Create and activate the `stac-mjx-env` environment:
 ```
 conda env create -f environment.yaml
 conda activate stac-mjx-env
 ```
-### `setup.py` script
+### 2. `setup.py` script
 In a terminal in a new conda environment, execute:
 ```
 pip install .
@@ -42,6 +42,6 @@ pip install .
    ```
    python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
    ```
-   
+
 4. After tuning parameters and confirming the small clip is processed well, run through the whole thing with
     `python stac-mjx/main.py` 
