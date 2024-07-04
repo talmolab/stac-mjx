@@ -44,4 +44,4 @@ stac-mjx relies on many prerequisites, therefore we suggest installing in a new 
    ```
 
 4. After tuning parameters and confirming the small clip is processed well, run through the whole thing with
-    `python stac-mjx/main.py` 
+   `python stac-mjx/main.py` 
