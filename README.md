@@ -40,6 +40,7 @@ stac-mjx relies on many prerequisites, therefore we suggest installing in a new 
    ```
    To ensure all of the above changes are encapsulated in your Jupyter kernel, a create a new kernel with:
    ```
+   conda install ipykernel
    python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
    ```
 

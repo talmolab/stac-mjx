@@ -3,6 +3,7 @@ ipykernel
 mujoco
 mujoco-mjx
 brax
+opencv-python
 wandb
 mediapy
 dm_control
@@ -17,14 +18,3 @@ optax[all]
 jax[cuda12_pip]
 imageio[pyav]
 imageio[ffmpeg]
-
-# For headless gpu rendering setup. Enter these one by one, since some fail.
-# sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 
-# conda install -c conda-forge glew 
-# conda install -c conda-forge mesalib 
-# conda install -c anaconda mesa-libgl-cos6-x86_64 
-# conda install -c menpo glfw3
-
-# Reactivate with osmesa
-# conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
-# conda deactivate && conda activate base
