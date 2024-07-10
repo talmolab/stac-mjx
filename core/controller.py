@@ -13,7 +13,7 @@ from dm_control.locomotion.walkers import rescale
 
 import core.utils as utils
 import core.compute_stac as compute
-import operations as op
+import core.operations as op
 
 import pickle
 import logging
