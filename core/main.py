@@ -20,25 +20,14 @@ import utils
 import controller as ctrl
 
 
-def run_stac(cfg: DictConfig):
+def run_stac(cfg: DictConfig, kp_data):
+    start_time = time.time()
+
     # setting paths
     fit_path = cfg.paths.fit_path
     transform_path = cfg.paths.transform_path
 
     ratpath = cfg.paths.xml
-    kp_names = utils.params["KP_NAMES"]
-    # argsort returns the indices that would sort the array
-    stac_keypoint_order = np.argsort(kp_names)
-    data_path = cfg.paths.data_path
-
-    # Load kp_data, /1000 to scale data (from mm to meters)
-    kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-
-    # Preparing data by reordering and reshaping (TODO: will this stay the same?)
-    # Resulting kp_data is of shape (n_frames, n_keypoints)
-    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
-    kp_data = jnp.transpose(kp_data, (0, 2, 1))
-    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
 
     # Set up mjcf
     root = mjcf.from_path(ratpath)
@@ -100,7 +89,9 @@ def run_stac(cfg: DictConfig):
         mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
     )
 
-    logging.info(f"saving data to {transform_path}")
+    logging.info(
+        f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"
+    )
     utils.save(transform_data, transform_path)
 
     return fit_path, transform_path
@@ -119,7 +110,7 @@ def hydra_entry(cfg: DictConfig):
 
     # XLA flags for Nvidia GPU
     if xla_bridge.get_backend().platform == "gpu":
-        '''
+        """
         os.environ["XLA_FLAGS"] = (
             "--xla_gpu_enable_triton_softmax_fusion=true "
             "--xla_gpu_triton_gemm_any=True "
@@ -127,11 +118,26 @@ def hydra_entry(cfg: DictConfig):
             "--xla_gpu_enable_latency_hiding_scheduler=true "
             "--xla_gpu_enable_highest_priority_async_stream=true "
         )
-        '''
+        """
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
 
-    return run_stac(cfg)
+    # Set up mocap data
+    kp_names = utils.params["KP_NAMES"]
+    # argsort returns the indices that would sort the array
+    stac_keypoint_order = np.argsort(kp_names)
+    data_path = cfg.paths.data_path
+
+    # Load kp_data, /1000 to scale data (from mm to meters)
+    kp_data = utils.loadmat(data_path)["pred"][:] / 1000
+
+    # Preparing data by reordering and reshaping (TODO: will this stay the same?)
+    # Resulting kp_data is of shape (n_frames, n_keypoints)
+    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
+    kp_data = jnp.transpose(kp_data, (0, 2, 1))
+    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
+
+    return run_stac(cfg, kp_data)
 
 
 if __name__ == "__main__":
