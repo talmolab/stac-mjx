@@ -1,3 +1,19 @@
+.DS_Store
+snippets*
+# error data files
+*.npy
+# output files
+*.out
+*.p
+videos/*
+!videos/.dummy
+*.mat
+outputs/
+*.mp4
+
+# cluster scripts
+scripts/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
