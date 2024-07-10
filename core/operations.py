@@ -3,7 +3,7 @@ from jax import jit
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
-import utils
+import core.utils as utils
 
 
 @jit

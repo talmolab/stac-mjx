@@ -16,8 +16,8 @@ import hydra
 from hydra import initialize
 from omegaconf import DictConfig, OmegaConf
 
-import utils
-import controller as ctrl
+import core.utils as utils
+import core.controller as ctrl
 
 
 def run_stac(cfg: DictConfig, kp_data):

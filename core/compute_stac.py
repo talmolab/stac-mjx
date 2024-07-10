@@ -3,9 +3,11 @@
 import jax
 from jax import vmap
 import jax.numpy as jnp
-import stac_base
-import operations as op
-import utils
+
+import core.stac_base as stac_base
+import core.operations as op
+import core.utils as utils
+
 from typing import List, Dict, Tuple, Text
 import time
 import logging

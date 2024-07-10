@@ -5,14 +5,14 @@ import jax
 import jax.numpy as jnp
 from jax import jit
 
-from jaxopt import LBFGSB, LBFGS, ProjectedGradient
+from jaxopt import ProjectedGradient
 from jaxopt.projection import projection_box
 from jaxopt import OptaxSolver
 
 import optax
 
-import operations as op
-import utils
+import core.operations as op
+import core.utils as utils
 
 
 def huber(x, delta=5.0, max=10, max_slope=0.1):
