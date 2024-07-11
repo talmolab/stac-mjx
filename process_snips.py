@@ -40,7 +40,7 @@ def process_snips(cfg, snips_path):
     return main.run_stac(cfg, kp_data)
 
 
-@hydra.main(config_path="./configs", config_name="stac", version_base=None)
+@hydra.main(config_path="./configs", config_name="olveczky_stac", version_base=None)
 def hydra_entry(cfg: DictConfig):
     # Initialize configs and convert to dictionaries
     global_cfg = hydra.compose(config_name="rodent")

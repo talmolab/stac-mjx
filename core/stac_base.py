@@ -225,7 +225,7 @@ def m_opt(
 
 
 # TODO: put these values in config
-learning_rate_fn = optax.constant_schedule(1e-4)
+learning_rate_fn = optax.constant_schedule(5e-4)
 opt = optax.adam(learning_rate_fn, b1=0.0)
 opt = optax.contrib.schedule_free(opt, learning_rate_fn, b1=0.9)
 q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250)

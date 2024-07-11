@@ -300,3 +300,35 @@ def transform(mj_model, kp_data, offsets):
     print(f"Standard deviation: {std}")
 
     return mjx_model, q, x, walker_body_sites, kp_data
+
+
+def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
+    # Extract pose, offsets, data, and all parameters
+    if batched:
+        # prepare batched data to be packaged
+        get_batch_offsets = vmap(op.get_site_pos)
+        offsets = get_batch_offsets(mjx_model).copy()[0]
+        x = x.reshape(-1, x.shape[-1])
+        q = q.reshape(-1, q.shape[-1])
+    else:
+        offsets = op.get_site_pos(mjx_model).copy()
+
+    names_xpos = physics.named.data.xpos.axes.row.names
+
+    print(f"shape of qpos: {q.shape}")
+    kp_data = kp_data.reshape(-1, kp_data.shape[-1])
+    data = {
+        "qpos": q,
+        "xpos": x,
+        "walker_body_sites": walker_body_sites,
+        "offsets": offsets,
+        "names_qpos": utils.params["part_names"],
+        "names_xpos": names_xpos,
+        "kp_data": jnp.copy(kp_data),
+    }
+
+    for k, v in utils.params.items():
+        data[k] = v
+
+    return data
+
