@@ -119,19 +119,18 @@ def hydra_entry(cfg: DictConfig):
 
     # XLA flags for Nvidia GPU
     if xla_bridge.get_backend().platform == "gpu":
-    
-        
+        # Set num. gpus. Enable when support for multiple GPUs is implemented
+        # utils.params["N_GPUS"] = jax.local_device_count("gpu")
         os.environ["XLA_FLAGS"] = (
-            "--xla_gpu_enable_highest_priority_async_stream=true "
-            # You may need to comment these out on a run.ai cluster
             "--xla_gpu_enable_triton_softmax_fusion=true "
             "--xla_gpu_triton_gemm_any=True "
-            "--xla_gpu_enable_async_collectives=true "
-            "--xla_gpu_enable_latency_hiding_scheduler=true "
-            
+
+            # These may provide additional speed ups, but are currently disabled 
+            # due to errors.
+            #"--xla_gpu_enable_highest_priority_async_stream=true "
+            #"--xla_gpu_enable_async_collectives=true "
+            #"--xla_gpu_enable_latency_hiding_scheduler=true "
         )
-        # Set N_GPUS
-        utils.params["N_GPUS"] = jax.local_device_count("gpu")
 
     return run_stac(cfg)
 
