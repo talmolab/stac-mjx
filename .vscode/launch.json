@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Debug core/main.py",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/core/main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "test.skip_transform=True"
+            ]
+        }
+    ]
+}
