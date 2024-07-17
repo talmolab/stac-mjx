@@ -6,6 +6,7 @@ brax
 opencv-python
 wandb
 mediapy
+pynwb
 dm_control
 tqdm
 numba

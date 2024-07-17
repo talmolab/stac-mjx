@@ -7,6 +7,7 @@ import yaml
 import scipy.io as spio
 import pickle
 from typing import Text
+from pynwb import NWBHDF5IO
 
 
 def loadmat(filename):
@@ -18,6 +19,15 @@ def loadmat(filename):
     """
     data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
     return _check_keys(data)
+
+def loadnwb(filename):
+    """
+    loads data in from .nwb file
+    """
+    with NWBHDF5IO(filename, 'r') as io:
+        nwbFile = io.read()
+
+    return nwbFile
 
 
 def _check_keys(dict):
