@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stac-mjx"
+authors = [
+    {name = "Talmo Pereira", email = "talmo@salk.edu"}]
+description="TBD"
+requires-python = ">=3.11"
+keywords = ["TBD"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"]
+dependencies = [
+    "numpy",
+    "attrs",
+    "h5py>=3.8.0",
+    "pynwb",
+    "ndx-pose",
+    "pandas",
+    "simplejson",
+    "imageio",
+    "imageio-ffmpeg",
+    "av"]
+dynamic = ["version", "readme"]
+
+[tool.setuptools.dynamic]
+version = {attr = "stac-mjx.version.__version__"}
+readme = {file = ["README.md"], content-type="text/markdown"}
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-watch",
+    "black",
+    "pydocstyle",
+    "toml",
+    "twine",
+    "build",
+    "mkdocs-material[imaging]",
+    "mkdocs-jupyter",
+    "mkdocstrings[python]>=0.18",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav"]
+
+[project.urls]
+Homepage = "TBD"
+Repository = "https://github.com/talmolab/sleap-io"
+
+[tool.setuptools.packages.find]
+exclude = ["site"]
+
+[tool.black]
+line-length = 88
+
+[pydocstyle]
+convention = "google"
+match-dir = "stac-mjx"
+
+[tool.coverage.run]
+source = ["livecov"]
+
+[tool.pytest.ini_options]
+addopts = "--cov sleap_io --cov-report=lcov:lcov.info --cov-report=term"
