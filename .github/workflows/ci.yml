@@ -5,7 +5,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
-      - "stac-mjx/**"
+      - "core/**"
       - "tests/**"
       - ".github/workflows/ci.yml"
       - "environment.yml"
@@ -13,7 +13,7 @@ on:
     branches:
       - main
     paths:
-      - "stac-mjx/**"
+      - "core/**"
       - "tests/**"
       - ".github/workflows/ci.yml"
       - "environment.yml"
@@ -76,7 +76,7 @@ jobs:
           miniforge-version: latest
           conda-solver: "libmamba"
           environment-file: environment.yml
-          activate-environment: stac-mjx
+          activate-environment: stac-mjx-env
           python-version: ${{ matrix.python }}
 
       - name: Print environment info
