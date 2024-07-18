@@ -3,7 +3,7 @@ paths:
   xml: "././models/rodent.xml"
   fit_path: "fit_sq.p"
   transform_path: "transform_sq.p"
-  data_path: "./save_data_AVG.mat" 
+  data_path: "./tests/data/test_pred_only_1000_frames.mat"
 
 n_fit_frames: 1000
 sampler: "first" # first, every, or random
