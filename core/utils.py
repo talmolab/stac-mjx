@@ -7,7 +7,8 @@ import yaml
 import scipy.io as spio
 import pickle
 from typing import Text
-from pynwb import NWBHDF5IO
+from pynwb import NWBFile, NWBHDF5IO
+from ndx_pose import PoseEstimationSeries, PoseEstimation
 
 
 def loadmat(filename):
@@ -18,16 +19,30 @@ def loadmat(filename):
     which are still mat-objects
     """
     data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
+    print("Pred - mat", data["pred"].shape)
+    print(data["pred"][0,0,:])
     return _check_keys(data)
 
 def loadnwb(filename):
     """
     loads data in from .nwb file
     """
-    with NWBHDF5IO(filename, 'r') as io:
-        nwbFile = io.read()
+    trx = []
+    with NWBHDF5IO(filename, mode='r', load_namespaces=True) as io:
+        read_nwbfile = io.read()
+        read_pe = read_nwbfile.processing['behavior']['PoseEstimation']
 
-    return nwbFile
+        node_names = read_pe.nodes[:].tolist()
+
+        for node_name in node_names:
+            trx.append(read_pe[node_name].data[:])
+
+        trx = np.stack(trx, axis=-1)
+
+    print("nwb shape", trx.shape)
+    print(trx[0,0,:])
+    
+    return trx
 
 
 def _check_keys(dict):
