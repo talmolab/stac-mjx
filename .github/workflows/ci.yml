@@ -5,7 +5,7 @@ on:
   pull_request:
     types: [opened, reopened, synchronize]
     paths:
-      - "core/**"
+      - "stac_mjx/**"
       - "tests/**"
       - ".github/workflows/ci.yml"
       - "environment.yml"
@@ -13,7 +13,7 @@ on:
     branches:
       - main
     paths:
-      - "core/**"
+      - "stac_mjx/**"
       - "tests/**"
       - ".github/workflows/ci.yml"
       - "environment.yml"
@@ -38,7 +38,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: "3.12"
+        python-version: "3.11"
 
     - name: Install dependencies
       run: |
@@ -46,11 +46,11 @@ jobs:
 
     - name: Run Black
       run: |
-        black --check core tests
+        black --check stac-mjx tests
     
     - name: Run pydocstyle
       run: |
-        pydocstyle --convention=google core/
+        pydocstyle --convention=google stac-mjx/
 
   # Tests with pytest
   tests:
@@ -58,8 +58,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-14"]
-        python: ["3.8", "3.12"]
+        os: ["ubuntu-latest"]
+        python: ["3.11"]
         exclude:
           - os: "macos-14"
             python: "3.8"
@@ -87,17 +87,10 @@ jobs:
           conda list
           pip freeze
 
-      - name: Install graphics dependencies on Ubuntu
-        # https://github.com/conda-forge/opencv-feedstock/issues/401
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
-        shell: bash -l {0}
-        run: |
-          sudo apt-get update && sudo apt-get install libglapi-mesa libegl-mesa0 libegl1 libopengl0 libgl1-mesa-glx
-
       - name: Test with pytest (with coverage)
         shell: bash -l {0}
         run: |
-          pytest --cov=sleap_io --cov-report=xml --durations=-1 tests/
+          pytest --cov=stac-mjx --cov-report=xml --durations=-1 tests/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
