@@ -9,6 +9,7 @@ dependencies:
   - matplotlib
   - pandas
   - pip
+  - black
   - glew
   - mesalib
   - mesa-libgl-cos6-x86_64
