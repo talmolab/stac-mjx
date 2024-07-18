@@ -50,9 +50,9 @@ dev = [
     "mkdocs-gen-files",
     "mkdocs-literate-nav"]
 
-[project.urls]
-Homepage = "TBD"
-Repository = "https://github.com/talmolab/sleap-io"
+#[project.urls]
+#Homepage = ""
+#Repository = "https://github.com/talmolab/sleap-io"
 
 [tool.setuptools.packages.find]
 exclude = ["site"]
