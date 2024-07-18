@@ -46,11 +46,11 @@ jobs:
 
     - name: Run Black
       run: |
-        black --check stac-mjx tests
+        black --check stac_mjx tests
     
     - name: Run pydocstyle
       run: |
-        pydocstyle --convention=google stac-mjx/
+        pydocstyle --convention=google stac_mjx/
 
   # Tests with pytest
   tests:
@@ -90,7 +90,7 @@ jobs:
       - name: Test with pytest (with coverage)
         shell: bash -l {0}
         run: |
-          pytest --cov=stac-mjx --cov-report=xml --durations=-1 tests/
+          pytest --cov=stac_mjx --cov-report=xml --durations=-1 tests/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
