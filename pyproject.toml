@@ -15,7 +15,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"]
 dependencies = [
-  "python=3.11",
+  "python>=3.11",
   "numpy<2.0",
   "matplotlib",
   "pandas",
@@ -25,7 +25,7 @@ dependencies = [
   "mesalib",
   "mesa-libgl-cos6-x86_64",
   "glfw3",
-  "ipykernel"]
+  "ipykernel]
 dynamic = ["version", "readme"]
 
 [tool.setuptools.dynamic]
