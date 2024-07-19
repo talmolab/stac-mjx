@@ -1,6 +1,7 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
 import numpy as np
+from jax import numpy as jnp
 import h5py
 import os
 import yaml
@@ -10,39 +11,68 @@ from typing import Text
 from pynwb import NWBFile, NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 
+# Constants 
+MM_TO_M = 0.001
 
-def loadmat(filename):
+def daance_to_stac_mjx(data):
     """
-    this function should be called instead of direct spio.loadmat
-    as it cures the problem of not properly recovering python dictionaries
-    from mat files. It calls the function check keys to cure all entries
-    which are still mat-objects
-    """
-    data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
-    print("Pred - mat", data["pred"].shape)
-    print(data["pred"][0,0,:])
-    return _check_keys(data)
+    Rearrange the data daance .mat mocap ordering
+    to internal order, and scale from millimeters to
+    meters. 
 
-def loadnwb(filename):
+    Args: mocap data arranged in dannce ordering, and
+    stored in mm.
+
+    Out: data rearranged into internal format, scaled to 
+    meters.
     """
-    loads data in from .nwb file
+
+    kp_names = params["KP_NAMES"]
+    # argsort returns the indices that would sort the array
+    stac_keypoint_order = np.argsort(kp_names)
+
+    # Dannce data is stored in mm
+    data = data * MM_TO_M
+    data = jnp.array(data[:, :, stac_keypoint_order])
+    data = jnp.transpose(data, (0, 2, 1))
+    data = jnp.reshape(data, (data.shape[0], -1))
+
+    return data
+
+
+def load_dannce_mat(data_path):
     """
-    trx = []
+    loads in mocap data from .mat file constructed by dannce:
+    (https://github.com/spoonsso/dannce). in particular this means
+    it relies on the data being in millimeters, and that we use the data
+    stored in the "pred" key. 
+    """
+
+    data = spio.loadmat(data_path, struct_as_record=False, squeeze_me=True)
+    data =  _check_keys(data)["pred"][:]
+
+    return daance_to_stac_mjx(data)
+
+
+def load_dannce_nwb(filename):
+    """
+    loads data in from .nwb file. Presumed organized and scaled 
+    equivalent to a dannce .mat file, that has been converted to
+    """
+    data = []
     with NWBHDF5IO(filename, mode='r', load_namespaces=True) as io:
-        read_nwbfile = io.read()
-        read_pe = read_nwbfile.processing['behavior']['PoseEstimation']
+        nwbfile = io.read()
+        pose_est = nwbfile.processing['behavior']['PoseEstimation']
+        #print(pose_est.shape)
 
-        node_names = read_pe.nodes[:].tolist()
+        node_names = pose_est.nodes[:].tolist()
 
         for node_name in node_names:
-            trx.append(read_pe[node_name].data[:])
+            data.append(pose_est[node_name].data[:])
 
-        trx = np.stack(trx, axis=-1)
+        data = np.stack(data, axis=-1)
 
-    print("nwb shape", trx.shape)
-    print(trx[0,0,:])
-    
-    return trx
+    return daance_to_stac_mjx(data)
 
 
 def _check_keys(dict):

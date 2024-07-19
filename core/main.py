@@ -31,15 +31,18 @@ def run_stac(cfg: DictConfig):
     stac_keypoint_order = np.argsort(kp_names)
     data_path = cfg.paths.data_path
 
-    # Load kp_data, /1000 to scale data (from mm to meters)
-    kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-
-    # Preparing data by reordering and reshaping (TODO: will this stay the same?)
-    # Resulting kp_data is of shape (n_frames, n_keypoints)
-    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
-    kp_data = jnp.transpose(kp_data, (0, 2, 1))
-    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
-
+    kp_data = []
+ 
+    # Load by file extension (Probably want to validate by schema 
+    # in the future.)
+    if data_path.endswith('.mat'):
+        kp_data = utils.load_dannce_mat(data_path)
+    elif data_path.endswith('.nwb'):
+        kp_data = utils.load_dannce_nwb(data_path)
+    else:
+        print("Error: Unsupported file extension. Please provide a .nwb or .mat file.")
+        sys.exit(1)
+ 
     # Set up mjcf
     root = mjcf.from_path(ratpath)
     physics, mj_model = ctrl.create_body_sites(root)
