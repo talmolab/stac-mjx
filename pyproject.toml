@@ -24,7 +24,7 @@ dependencies = [
   "mesalib",
   "mesa-libgl-cos6-x86_64",
   "glfw3",
-  "ipykernel]
+  "ipykernel"]
 dynamic = ["version", "readme"]
 
 [tool.setuptools.dynamic]
