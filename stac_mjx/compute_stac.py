@@ -23,7 +23,6 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     Returns:
         mjx.Data: An updated MJX Data
     """
-
     print("Root Optimization:")
     s = time.time()
     q0 = jnp.copy(mjx_data.qpos[:])

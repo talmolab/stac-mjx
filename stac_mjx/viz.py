@@ -194,7 +194,11 @@ def overlay_viz(
     save_path,
     camera: Text = "close_profile",
 ):
-    """TBD."""
+    """Overlays 3D mocap forward kinematics for the model on top the original video.
+    
+    Uses camera parameters from dannce mocap recording setup and aligns the video 
+    of the recording with the rendering of the mujoco forward kinematics and 
+    overlays them."""
     scene_option = wrapper.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -393,7 +397,6 @@ def mujoco_pair_viz(
     start_frame2: int = 0,
 ):
     """Renders two models in the same simulation."""
-
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
