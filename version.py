@@ -1,4 +1,4 @@
-"""This module defines the package version"""
+"""This module defines the package version."""
 
 # Define package version.
 # This is read dynamically by setuptools in pyproject.toml to determine the release version.
