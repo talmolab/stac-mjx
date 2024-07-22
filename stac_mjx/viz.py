@@ -1,5 +1,4 @@
-"""A collection mujoco-mjx vizualization utilities.
-"""
+"""A collection mujoco-mjx vizualization utilities."""
 
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
@@ -393,6 +392,7 @@ def mujoco_pair_viz(
     start_frame1: int = 0,
     start_frame2: int = 0,
 ):
+    "TBD."
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
