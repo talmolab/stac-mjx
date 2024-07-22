@@ -13,6 +13,7 @@ dependencies:
   - glew
   - mesalib
   - mesa-libgl-cos6-x86_64
+  - pytest
   - glfw3
   - ipykernel
   - pip: 
