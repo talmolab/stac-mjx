@@ -195,9 +195,9 @@ def overlay_viz(
     camera: Text = "close_profile",
 ):
     """Overlays 3D mocap forward kinematics for the model on top the original video.
-    
-    Uses camera parameters from dannce mocap recording setup and aligns the video 
-    of the recording with the rendering of the mujoco forward kinematics and 
+
+    Uses camera parameters from dannce mocap recording setup and aligns the video
+    of the recording with the rendering of the mujoco forward kinematics and
     overlays them."""
     scene_option = wrapper.MjvOption()
     # scene_option.geomgroup[1] = 0
