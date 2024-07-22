@@ -392,7 +392,8 @@ def mujoco_pair_viz(
     start_frame1: int = 0,
     start_frame2: int = 0,
 ):
-    "TBD."
+    """Renders two models in the same simulation."""
+
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
