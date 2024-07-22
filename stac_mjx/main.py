@@ -124,12 +124,11 @@ def hydra_entry(cfg: DictConfig):
         os.environ["XLA_FLAGS"] = (
             "--xla_gpu_enable_triton_softmax_fusion=true "
             "--xla_gpu_triton_gemm_any=True "
-
-            # These may provide additional speed ups, but are currently disabled 
+            # These may provide additional speed ups, but are currently disabled
             # due to errors.
-            #"--xla_gpu_enable_highest_priority_async_stream=true "
-            #"--xla_gpu_enable_async_collectives=true "
-            #"--xla_gpu_enable_latency_hiding_scheduler=true "
+            # "--xla_gpu_enable_highest_priority_async_stream=true "
+            # "--xla_gpu_enable_async_collectives=true "
+            # "--xla_gpu_enable_latency_hiding_scheduler=true "
         )
 
     return run_stac(cfg)
