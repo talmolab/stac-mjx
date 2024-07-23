@@ -251,6 +251,7 @@ def transform(mj_model, kp_data, offsets):
         Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
 
     Args:
+        mj_model (mujoco.Model): Physics model.
         kp_data (jnp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
             Keypoint order must match the order in the skeleton file.
         offsets (jnp.ndarray): offsets loaded from offset.p after fit()

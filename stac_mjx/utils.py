@@ -68,6 +68,7 @@ def save(fit_data, save_path: Text):
     """Save data.
 
     Args:
+        fit_data (various): mjx_model, physics, q, x, walker_body_sites, clip_data
         save_path (Text): Path to save data. Defaults to None.
     """
     if os.path.dirname(save_path) != "":

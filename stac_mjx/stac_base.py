@@ -123,7 +123,9 @@ def m_loss(
     """Compute the marker loss for optimization.
 
     Args:
-        offset (jnp.ndarray): vector of offsets to inferred mocap sites
+        offsets (jnp.ndarray): vector of offsets to inferred mocap sites
+        mjx_model (mjx.Model): MJX Model
+        mjx_data (mjx.Data): MJX Data
         env (TYPE): env of current environment.
         kp_data (jnp.ndarray): Mocap data in global coordinates
         time_indices (List): time_indices used for offset estimation
