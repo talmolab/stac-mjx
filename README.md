@@ -16,7 +16,7 @@ conda activate stac-mjx-env
 
 2. For new data, first run stac on just a small subset of the data with
 
-    `python core/main.py test.skip_transform=True`
+    `python stac_mjx/main.py test.skip_transform=True`
     
     Note: this currently will fail w/o supplying a data file.
 

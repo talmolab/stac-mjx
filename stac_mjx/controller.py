@@ -1,3 +1,5 @@
+"""Utilities for mapping between mocap model and physics model."""
+
 from jax import vmap
 from jax import numpy as jnp
 
@@ -22,7 +24,7 @@ from statistics import fmean, pstdev
 
 
 def initialize_part_names(physics):
-    # Get the ids of the limbs, accounting for quaternion and pos
+    """Get the ids of the limbs, accounting for quaternion and position."""
     part_names = physics.named.data.qpos.axes.row.names
     for _ in range(6):
         part_names.insert(0, part_names[0])
@@ -30,7 +32,7 @@ def initialize_part_names(physics):
 
 
 def part_opt_setup(physics) -> None:
-    """Sets up the lists of indices for part optimization
+    """Set up the lists of indices for part optimization.
 
     Args:
         physics (dmcontrol.Physics): _description_
@@ -63,7 +65,7 @@ def part_opt_setup(physics) -> None:
 
 
 def create_keypoint_sites(root):
-    """creates sites for keypoints (used for rendering)
+    """Create sites for keypoints (used for rendering).
 
     Args:
         root (mjcf.Element): root element of mjcf
@@ -94,12 +96,13 @@ def create_keypoint_sites(root):
 
 
 def set_keypoint_sites(physics, sites, kps):
-    """
+    """Bind keypoint sites to physics model.
 
     Args:
         physics (_type_): dmcontrol physics object
         sites (_type_): _description_
         kps (_type_): _description_
+
     Returns:
         (dmcontrol.Physics, mujoco.Model): update physics and model with update site pos
     """
@@ -108,7 +111,7 @@ def set_keypoint_sites(physics, sites, kps):
 
 
 def create_body_sites(root: mjcf.Element):
-    """Creates body site elements using dmcontrol mjcf for each keypoint
+    """Create body site elements using dmcontrol mjcf for each keypoint.
 
     Args:
         root (mjcf.Element):
@@ -151,6 +154,7 @@ def create_body_sites(root: mjcf.Element):
 
 
 def chunk_kp_data(kp_data):
+    """Reshape data for parallel processing."""
     n_frames = utils.params["N_FRAMES_PER_CLIP"]
     total_frames = kp_data.shape[0]
 
@@ -165,6 +169,7 @@ def chunk_kp_data(kp_data):
 
 
 def get_error_stats(errors: jnp.ndarray):
+    """Compute error stats."""
     flattened_errors = errors.reshape(
         -1
     )  # -1 infers the size based on other dimensions
@@ -177,7 +182,7 @@ def get_error_stats(errors: jnp.ndarray):
 
 # TODO: pmap fit and transform if you want to use it with multiple gpus
 def fit(mj_model, kp_data):
-
+    """Do pose optimization."""
     # Create mjx model and data
     mjx_model = mjx.put_model(mj_model)
     mjx_data = mjx.make_data(mjx_model)
@@ -241,22 +246,22 @@ def fit(mj_model, kp_data):
 
 
 def transform(mj_model, kp_data, offsets):
-    """Register skeleton to keypoint data
+    """Register skeleton to keypoint data.
 
         Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
 
     Args:
+        mj_model (mujoco.Model): Physics model.
         kp_data (jnp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
             Keypoint order must match the order in the skeleton file.
         offsets (jnp.ndarray): offsets loaded from offset.p after fit()
     """
-
     # physics, mj_model = set_body_sites(root)
     # utils.params["mj_model"] = mj_model
     # part_opt_setup(physics)
 
     def mjx_setup(kp_data, mj_model):
-        """creates mjxmodel and mjxdata, setting offets
+        """Create mjxmodel and mjxdata and set offet.
 
         Args:
             kp_data (_type_): _description_
