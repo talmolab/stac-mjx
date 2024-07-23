@@ -1,3 +1,5 @@
+"""This module contains utility functions for STAC."""
+
 from jax import numpy as jnp
 from jax import jit
 from mujoco import mjx
@@ -8,7 +10,7 @@ import utils
 
 @jit
 def kinematics(mjx_model: mjx.Model, mjx_data: mjx.Data):
-    """jit compiled forward kinematics
+    """Jit compiled forward kinematics.
 
     Args:
         mjx_model (mjx.Model):
@@ -22,7 +24,7 @@ def kinematics(mjx_model: mjx.Model, mjx_data: mjx.Data):
 
 @jit
 def com_pos(mjx_model: mjx.Model, mjx_data: mjx.Data):
-    """jit compiled com_pos calculation
+    """Jit compiled com_pos calculation.
 
     Args:
         mjx_model (mjx.Model):
@@ -35,7 +37,7 @@ def com_pos(mjx_model: mjx.Model, mjx_data: mjx.Data):
 
 
 def get_site_xpos(mjx_data: mjx.Data):
-    """Gets MjxData.site_xpos of keypoint body sites
+    """Get MjxData.site_xpos of keypoint body sites.
 
     Args:
         mjx_data (mjx.Data):
@@ -47,7 +49,7 @@ def get_site_xpos(mjx_data: mjx.Data):
 
 
 def get_site_pos(mjx_model: mjx.Model):
-    """Gets MjxModel.site_pos of keypoint body sites
+    """Get MjxModel.site_pos of keypoint body sites.
 
     Args:
         mjx_data (mjx.Data):
@@ -59,7 +61,7 @@ def get_site_pos(mjx_model: mjx.Model):
 
 
 def set_site_pos(mjx_model: mjx.Model, offsets):
-    """Sets MjxModel.sites_pos to offsets and returns the new mjx_model
+    """Set MjxModel.sites_pos to offsets and returns the new mjx_model.
 
     Args:
         mjx_model (mjx.Model):
@@ -75,7 +77,7 @@ def set_site_pos(mjx_model: mjx.Model, offsets):
 
 
 def make_qs(q0, qs_to_opt, q):
-    """Creates new set of qs combining initial and new qs for part optimization based on qs_to_opt
+    """Create new set of qs combining initial and new qs for part optimization based on qs_to_opt.
 
     Args:
         q0 (jax.Array): initial joint angles
@@ -89,7 +91,7 @@ def make_qs(q0, qs_to_opt, q):
 
 
 def replace_qs(mjx_model: mjx.Model, mjx_data: mjx.Data, q):
-    """replaces joint angles in mjx.Data with new ones and performs forward kinematics
+    """Replace joint angles in mjx.Data with new ones and performs forward kinematics.
 
     Args:
         mjx_model (mjx.Model):

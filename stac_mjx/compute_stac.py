@@ -97,7 +97,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
 
 def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
-    """Optimize the marker offsets based on proposed joint angles (q)
+    """Optimize the marker offsets based on proposed joint angles (q).
 
     Args:
         mjx_model (mjx.Model): MJX Model
@@ -253,7 +253,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
 
 
 def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
-    # Extract pose, offsets, data, and all parameters
+    """Extract pose, offsets, data, and all parameters."""
     if batched:
         # prepare batched data to be packaged
         get_batch_offsets = vmap(op.get_site_pos)

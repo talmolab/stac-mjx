@@ -1,3 +1,5 @@
+"""This module is the entry point for the stac-mjx algorithm."""
+
 import mujoco
 import jax
 from jax import numpy as jnp
@@ -21,6 +23,7 @@ import controller as ctrl
 
 
 def run_stac(cfg: DictConfig):
+    """Run the core of the stac-mjx algorithm."""
     # setting paths
     fit_path = cfg.paths.fit_path
     transform_path = cfg.paths.transform_path
@@ -108,6 +111,7 @@ def run_stac(cfg: DictConfig):
 
 @hydra.main(config_path="../configs", config_name="stac", version_base=None)
 def hydra_entry(cfg: DictConfig):
+    """Prepare and run the stac-mjx algorith."""
     # Initialize configs and convert to dictionaries
     global_cfg = hydra.compose(config_name="rodent")
     logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
