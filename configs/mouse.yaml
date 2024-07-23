@@ -1,0 +1,195 @@
+# Tolerance for the optimizations of the full model, limb, and root.
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Solver iterations
+ROOT_MAXITER: 100
+Q_MAXITER: 100
+M_MAXITER: 500
+
+KP_NAMES: 
+  - 'Nose' 
+  - 'EarL' 
+  - 'EarR' 
+  - 'TTI' 
+  - 'TailTip' 
+  - 'Head' 
+  - 'Trunk' 
+  - 'Tail_0' 
+  - 'Tail_1' 
+  - 'Tail_2' 
+  - 'ShoulderL'
+  - 'ShoulderR' 
+  - 'HaunchL' 
+  - 'HaunchR' 
+  - 'Neck'
+
+# The model sites used to register the keypoints.
+KEYPOINT_MODEL_PAIRS:
+  Nose: mouse__Head
+  EarL: mouse__Head
+  EarR: mouse__Head
+  TTI: mouse__Thoracic1
+  TailTip: mouse__Tail19
+  Head: mouse__Head
+  Trunk: mouse__Thoracic1
+  Tail_0: mouse__Tail1
+  Tail_1: mouse__Tail2
+  Tail_2: mouse__Tail3
+  ShoulderL: mouse__LScapula
+  ShoulderR: mouse__RScapula
+  HaunchL: mouse__LFemur
+  HaunchR: mouse__RFemur
+  Neck: mouse__Cervical1
+
+
+KEYPOINT_INITIAL_OFFSETS:
+  Nose: 0.000 -0.005 0.0055  # Adjust to align with head
+  EarL: 0.000 -0.006 0.007  # Adjust to align with head
+  EarR: 0.000 -0.006 0.007  # Adjust to align with head
+  TTI: -0.0005 -0.0079 0.0033  # Unchanged
+  TailTip: 0.00007 -0.0093 0.0022  # Unchanged
+  Head: 0.000 -0.005 0.0075  # Adjust for better alignment
+  Trunk: -0.0007 -0.0071 0.0059  # Unchanged
+  Tail_0: -0.0002 -0.0085 0.0029  # Unchanged
+  Tail_1: -0.00004 -0.0090 0.0027  # Unchanged
+  Tail_2: -0.00002 -0.0093 0.0023  # Unchanged
+  ShoulderL: -0.0008 -0.0058 0.0044  # Unchanged
+  ShoulderR: 0.00001 -0.0060 0.0046  # Unchanged
+  HaunchL: -0.0011 -0.0071 0.0031  # Unchanged
+  HaunchR: -0.00001 -0.0071 0.0034  # Unchanged
+  Neck: 0.000 -0.006 0.007  # Adjust for better alignment
+
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  Nose: 1 0 0 1  # Red
+  EarL: 0 1 0 1  # Green
+  EarR: 0 0.8 0 1  # Darker Green
+  TTI: 0 0 1 1  # Blue
+  TailTip: 0.58 0 0.82 1  # Purple
+  Head: 1 0.5 0 1  # Orange
+  Trunk: 0.5 0 0.5 1  # Plum
+  Tail_0: 1 1 0 1  # Yellow
+  Tail_1: 0.8 0.8 0 1  # Darker Yellow
+  Tail_2: 0.4 0.4 0 1  # Olive
+  ShoulderL: 0.27 0.5 0.7 1  # Cerulean
+  ShoulderR: 0.2 0.4 0.6 1  # Darker Cerulean
+  HaunchL: 0.85 0.75 0.85 1  # Thistle
+  HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
+  Neck: 0 1 1 1  # Cyan
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+  - "Trunk"
+  - "HipL"
+  - "HipR"
+  - "ShoulderL"
+  - "ShoulderR"
+  - "TailBase"
+
+INDIVIDUAL_PART_OPTIMIZATION:
+  "r_leg": [
+    "Thoracic1",
+    "Lumbar1",
+    "Lumbar2",
+    "Lumbar3",
+    "Lumbar4",
+    "Lumbar5",
+    "RFemur",
+    "RTibia",
+    "RTarsus",
+    "RMetatarsus1"
+  ]
+  "l_leg": [
+    "Thoracic1",
+    "Lumbar1",
+    "Lumbar2",
+    "Lumbar3",
+    "Lumbar4",
+    "Lumbar5",
+    "LFemur",
+    "LTibia",
+    "LTarsus",
+    "LMetatarsus1"
+  ]
+  "r_arm": [
+    "RScapula",
+    "RHumerus",
+    "RRadius",
+    "RCarpus",
+    "RMetaCarpus1"
+  ]
+  "l_arm": [
+    "LScapula",
+    "LHumerus",
+    "LRadius",
+    "LCarpus",
+    "LMetaCarpus1"
+  ]
+  "head": [
+    "Cervical1",
+    "Cervical2",
+    "Cervical3",
+    "Cervical4",
+    "Cervical5",
+    "Cervical6"
+  ]
+
+# OPTIONAL Lock the mandible to a position if there is no jaw tracking
+MANDIBLE_POS: -0.297
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
+SITES_TO_REGULARIZE:
+  - ShoulderL
+  - ShoulderR
+  - SpineF
+  - SpineL
+  - SpineM
+  - WristL
+  - WristR
+
+N_SAMPLE_FRAMES: 50
+
+# fps to render video at
+RENDER_FPS: 50
+
+# If you want to use a different arena, you can specify it here.
+ARENA_TYPE: DefaultArena
+Z_OFFSET: 0.00
+
+# Path to the model file.
+XML_PATH: "./models/mouse_joints_no_meshes_ellipsoid.xml"
+# SKELETON_PATH: "./models/animal_skeleton.mat"
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+# TODO: raise exception if total frames % frames per clip != 0
+# frames per clip for transform.
+N_FRAMES_PER_CLIP: 360 # 1000 environments
+
+N_GPUS: 1
+
+# Joint names for each keypoint.
+JOINT_NAMES:
+  Nose: "head_joint"
+  EarL: "head_joint"
+  EarR: "head_joint"
+  TTI: "thoracic_joint"
+  TailTip: "tail_joint_20"
+  Head: "head_joint"
+  Trunk: "pelvis_joint"
+  Tail_0: "tail_joint_1"
+  Tail_1: "tail_joint_2"
+  Tail_2: "tail_joint_3"
+  ShoulderL: "left_scapula_joint"
+  ShoulderR: "right_scapula_joint"
+  HaunchL: "left_femur_joint"
+  HaunchR: "right_femur_joint"
+  Neck: "cervical_joint_1"
