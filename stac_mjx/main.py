@@ -35,17 +35,17 @@ def run_stac(cfg: DictConfig):
     data_path = cfg.paths.data_path
 
     kp_data = []
- 
-    # Load by file extension (Probably want to validate by schema 
+
+    # Load by file extension (Probably want to validate by schema
     # in the future.)
-    if data_path.endswith('.mat'):
+    if data_path.endswith(".mat"):
         kp_data = utils.load_dannce_mat(data_path)
-    elif data_path.endswith('.nwb'):
+    elif data_path.endswith(".nwb"):
         kp_data = utils.load_dannce_nwb(data_path)
     else:
         print("Error: Unsupported file extension. Please provide a .nwb or .mat file.")
         sys.exit(1)
- 
+
     # Set up mjcf
     root = mjcf.from_path(ratpath)
     physics, mj_model = ctrl.create_body_sites(root)
