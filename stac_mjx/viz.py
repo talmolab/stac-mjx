@@ -1,3 +1,5 @@
+"""A collection mujoco-mjx vizualization utilities."""
+
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
@@ -192,6 +194,12 @@ def overlay_viz(
     save_path,
     camera: Text = "close_profile",
 ):
+    """Overlay 3D mocap forward kinematics for the model on top the original video.
+
+    Uses camera parameters from dannce mocap recording setup and aligns the video
+    of the recording with the rendering of the mujoco forward kinematics and
+    overlays them.
+    """
     scene_option = wrapper.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -302,6 +310,7 @@ def overlay_viz(
 
 
 def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int = 0):
+    """Render forward kinematics from keypoint positions."""
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
@@ -388,6 +397,7 @@ def mujoco_pair_viz(
     start_frame1: int = 0,
     start_frame2: int = 0,
 ):
+    """Render two models in the same simulation."""
     scene_option = mujoco.MjvOption()
     # scene_option.geomgroup[1] = 0
     scene_option.geomgroup[2] = 1
