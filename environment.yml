@@ -15,10 +15,12 @@ dependencies:
   - mesa-libgl-cos6-x86_64
   - pytest
   - pytest-cov
+  - pynwb
   - glfw3
   - ipykernel
-  - pip: 
-    - -r requirements.txt 
+  - pip
+  - pip:
+    - "--editable=.[dev]"
 
 variables:             # Set MuJoCo environment variables
   MUJOCO_GL: osmesa
