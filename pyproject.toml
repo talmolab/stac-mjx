@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stac-mjx"
+authors = [
+    {name = "Talmo Pereira", email = "talmo@salk.edu"}]
+description="TBD"
+requires-python = ">=3.11"
+keywords = ["TBD"]
+license = {text = "BSD-3-Clause"}
+classifiers = [
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12"]
+dependencies = [
+    "numpy<2.0",
+    "matplotlib",
+    "pandas",
+    "pip",
+    "black",
+    "ipykernel"]
+    dynamic = ["version", "readme"]
+
+[tool.setuptools.dynamic]
+version = {attr = "stac_mjx.version.__version__"}
+readme = {file = ["README.md"], content-type="text/markdown"}
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-watch",
+    "black",
+    "pydocstyle",
+    "toml",
+    "twine",
+    "build"]
+
+[project.urls]
+Homepage = "https://github.com/talmolab/stac-mjx"
+Repository = "https://github.com/talmolab/stac-mjx"
+
+[tool.setuptools.packages.find]
+exclude = ["site"]
+
+[tool.black]
+line-length = 88
+
+[pydocstyle]
+convention = "google"
+match-dir = "stac_mjx"
+
+[tool.coverage.run]
+source = ["livecov"]
+
+[tool.pytest.ini_options]
+addopts = "--cov stac_mjx --cov-report=lcov:lcov.info --cov-report=term"

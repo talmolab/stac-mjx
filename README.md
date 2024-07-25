@@ -2,26 +2,21 @@
 Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html). This is part of the VNL project. 
 
 ## Installation
-stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment. We currently provide two installation methods; 1. conda environment, 2. pip install via `setup.py`.
+stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment, using the provided `environment.yaml`:
 
-1. Conda Environment (`environment.yaml`)
-   Create and activate the `stac-mjx-env` environment:
-   ```
-   conda env create -f environment.yaml
-   conda activate stac-mjx-env
-   ```
-2. `setup.py` script
-   In a terminal in a new conda environment, from the `stac-mjx` directory, execute:
-   ```
-   pip install .
-   ```
+Create and activate the `stac-mjx-env` environment:
+
+```
+conda env create -f environment.yaml
+conda activate stac-mjx-env
+```
 
 ## Usage
 1. Update the .yaml files in `config/` with the proper information (details WIP).
 
 2. For new data, first run stac on just a small subset of the data with
 
-    `python core/main.py test.skip_transform=True`
+    `python stac_mjx/main.py test.skip_transform=True`
     
     Note: this currently will fail w/o supplying a data file.
 
