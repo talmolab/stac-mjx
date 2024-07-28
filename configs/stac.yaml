@@ -5,12 +5,9 @@ paths:
   transform_path: "transform.p"
   data_path: "./tests/data/test_pred_only_1000_frames.mat"
 
-n_fit_frames: 1000
-sampler: "first" # first, every, or random
-first_start: 0 # starting frame for "first" sampler
+n_fit_frames: 999
 
-# Should this be included?
-test:
+cli:
   skip_fit: False
   skip_transform: False
 

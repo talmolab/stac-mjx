@@ -3,12 +3,14 @@
 import jax
 from jax import vmap
 import jax.numpy as jnp
-import stac_base
-import operations as op
-import utils
+
 from typing import List, Dict, Tuple, Text
 import time
 import logging
+
+from stac_mjx import stac_base
+from stac_mjx import utils
+from stac_mjx import operations as op
 
 
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):

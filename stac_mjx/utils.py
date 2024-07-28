@@ -57,7 +57,7 @@ def _load_params(param_path):
     return params
 
 
-def init_params(cfg):
+def init_params(cfg: dict):
     """Initialize parameters from config."""
     global params
     params = cfg

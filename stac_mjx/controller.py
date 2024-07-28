@@ -13,10 +13,10 @@ from typing import Text
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 
-import utils
-from compute_stac import *
-import operations as op
-
+from stac_mjx import utils as utils
+from stac_mjx import compute_stac
+from stac_mjx import operations as op
+from typing import List
 import pickle
 import logging
 import os
@@ -206,12 +206,12 @@ def fit(mj_model, kp_data):
     utils.params["ub"] = ub
 
     # Begin optimization steps
-    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data = compute_stac.root_optimization(mjx_model, mjx_data, kp_data)
 
     for n_iter in range(utils.params["N_ITERS"]):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(
-            mjx_model, mjx_data, kp_data
+        mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+            compute_stac.pose_optimization(mjx_model, mjx_data, kp_data)
         )
 
         for i, (t, e) in enumerate(zip(frame_time, frame_error)):
@@ -224,14 +224,14 @@ def fit(mj_model, kp_data):
         print(f"Standard deviation: {std}")
 
         print("starting offset optimization")
-        mjx_model, mjx_data = offset_optimization(
+        mjx_model, mjx_data = compute_stac.offset_optimization(
             mjx_model, mjx_data, kp_data, offsets, q
         )
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
-    mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(
-        mjx_model, mjx_data, kp_data
+    mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+        compute_stac.pose_optimization(mjx_model, mjx_data, kp_data)
     )
 
     for i, (t, e) in enumerate(zip(frame_time, frame_error)):
@@ -289,8 +289,8 @@ def transform(mj_model, kp_data, offsets):
     mjx_model, mjx_data = vmap_mjx_setup(kp_data, mj_model)
 
     # Vmap optimize functions
-    vmap_root_opt = vmap(root_optimization)
-    vmap_pose_opt = vmap(pose_optimization)
+    vmap_root_opt = vmap(compute_stac.root_optimization)
+    vmap_pose_opt = vmap(compute_stac.pose_optimization)
 
     # q_phase
     mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)

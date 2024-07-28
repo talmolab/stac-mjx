@@ -11,8 +11,8 @@ from jaxopt import OptaxSolver
 
 import optax
 
-import operations as op
-import utils
+from stac_mjx import operations as op
+from stac_mjx import utils
 
 
 def huber(x, delta=5.0, max=10, max_slope=0.1):
