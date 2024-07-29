@@ -1,15 +1,13 @@
 paths:
   model_config: "rodent"
-  xml: "././models/rodent.xml"
+  xml: "./models/rodent.xml"
   fit_path: "fit.p"
   transform_path: "transform.p"
   data_path: "./tests/data/test_pred_only_1000_frames.mat"
 
-n_fit_frames: 999
-
-cli:
-  skip_fit: False
-  skip_transform: False
+n_fit_frames: 1000
+skip_fit: False
+skip_transform: True
 
 mujoco:
   solver: "newton"
