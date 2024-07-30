@@ -117,6 +117,7 @@ def m_loss(
     is_regularized: bool = None,
     reg_coef: float = 0.0,
 ) -> jp.array:
+    # fmt: off
     """Compute the marker residual for optimization.
 
     Args:
@@ -132,7 +133,6 @@ def m_loss(
     Returns:
         _type_: _description_
     """
-
     # fmt: on
     def f(carry, input):
         # Unpack arguments
