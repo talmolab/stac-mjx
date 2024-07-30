@@ -119,7 +119,6 @@ def m_loss(
 ) -> jp.array:
     """Compute the marker residual for optimization.
 
-
     Args:
         offsets (jp.ndarray): vector of offsets to inferred mocap sites
         mjx_model (_type_): MJX Model
