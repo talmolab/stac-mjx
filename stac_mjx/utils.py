@@ -1,7 +1,5 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
-import numpy as np
-import h5py
 import os
 import yaml
 import scipy.io as spio

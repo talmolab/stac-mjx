@@ -3,12 +3,9 @@
 from jax import vmap
 from jax import numpy as jnp
 
-import mujoco
 from mujoco import mjx
 
 import numpy as np
-
-from typing import Text
 
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
@@ -17,9 +14,6 @@ from stac_mjx import utils as utils
 from stac_mjx import compute_stac
 from stac_mjx import operations as op
 from typing import List
-import pickle
-import logging
-import os
 from statistics import fmean, pstdev
 
 

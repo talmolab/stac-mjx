@@ -4,12 +4,10 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 import mujoco
-from jax import numpy as jnp
 import pickle
 import imageio
 import numpy as np
 from typing import List, Dict, Text
-import os
 from dm_control.mujoco import wrapper
 import cv2
 from scipy.ndimage import gaussian_filter

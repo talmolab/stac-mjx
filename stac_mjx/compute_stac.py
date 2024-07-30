@@ -1,12 +1,10 @@
 """Compute stac optimization on data."""
 
 import jax
-from jax import vmap
 import jax.numpy as jnp
 
-from typing import List, Dict, Tuple, Text
+from typing import Tuple
 import time
-import logging
 
 from stac_mjx import stac_base
 from stac_mjx import utils
