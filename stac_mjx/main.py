@@ -1,3 +1,5 @@
+"""User-level API to run stac"""
+
 import mujoco
 import jax
 
@@ -29,7 +31,7 @@ def load_configs(stac_config_path: str, model_config_path: str) -> DictConfig:
 
 
 def run_stac(cfg: DictConfig, kp_data: jax.Array) -> tuple[str, str]:
-    """Runs stac through fit and transform stages (optionally)
+    """Runs stac through fit and transform stages (optionally).
 
     Args:
         cfg (DictConfig): stac config file (standard being stac.yaml)
