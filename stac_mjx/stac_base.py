@@ -16,14 +16,14 @@ import utils
 
 
 def huber(x, delta=5.0, max=10, max_slope=0.1):
-    """Huber loss + sum."""
+    """Compute the Huber loss + sum."""
     x = jnp.where(jnp.abs(x) < delta, 0.5 * x**2, delta * (jnp.abs(x) - 0.5 * delta))
     x = jnp.where(x > max, (x - max) * max_slope + max, x)
     return jnp.sum(x)
 
 
 def squared_error(x):
-    """Squared error + sum"""
+    """Compute the squared error + sum."""
     return jnp.sum(jnp.square(x))
 
 
@@ -50,7 +50,6 @@ def q_loss(
     Returns:
         float: sum of squares scalar loss
     """
-
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
     mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
 
@@ -119,10 +118,14 @@ def m_loss(
     is_regularized: bool = None,
     reg_coef: float = 0.0,
 ):
+    # fmt: off
+    # Black and pydoc conflict, so turn Black off for this doc string.
     """Compute the marker loss for optimization.
 
     Args:
-        offset (jnp.ndarray): vector of offsets to inferred mocap sites
+        offsets (jnp.ndarray): vector of offsets to inferred mocap sites
+        mjx_model (mjx.Model): MJX Model
+        mjx_data (mjx.Data): MJX Data
         env (TYPE): env of current environment.
         kp_data (jnp.ndarray): Mocap data in global coordinates
         time_indices (List): time_indices used for offset estimation
@@ -132,8 +135,7 @@ def m_loss(
         is_regularized (bool, optional): binary vector of offsets to regularize.
         reg_coef (float, optional): L1 regularization coefficient during marker loss.
     """
-
-    # @jit
+    # fmt: on
     def f(carry, input):
         # Unpack arguments
         qpos, kp = input
@@ -194,7 +196,7 @@ def m_opt(
     reg_coef,
     ftol,
 ):
-    """a jitted m_phase optimization
+    """Compute phase optimization.
 
     Args:
         offset0 (_type_): _description_
@@ -209,7 +211,6 @@ def m_opt(
     Returns:
         _type_: _description_
     """
-
     res = m_solver.run(
         offset0,
         mjx_model=mjx_model,
