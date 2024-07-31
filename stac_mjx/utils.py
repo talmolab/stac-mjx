@@ -1,7 +1,5 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
-import numpy as np
-import h5py
 import os
 import yaml
 import scipy.io as spio
@@ -57,7 +55,7 @@ def _load_params(param_path):
     return params
 
 
-def init_params(cfg):
+def init_params(cfg: dict):
     """Initialize parameters from config."""
     global params
     params = cfg

@@ -1,14 +1,14 @@
 """Compute stac optimization on data."""
 
 import jax
-from jax import vmap
 import jax.numpy as jnp
-import stac_base
-import operations as op
-import utils
-from typing import List, Dict, Tuple, Text
+
+from typing import Tuple
 import time
-import logging
+
+from stac_mjx import stac_base
+from stac_mjx import utils
+from stac_mjx import operations as op
 
 
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
@@ -250,34 +250,3 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
         jnp.array(frame_time),
         jnp.array(frame_error),
     )
-
-
-def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
-    """Extract pose, offsets, data, and all parameters."""
-    if batched:
-        # prepare batched data to be packaged
-        get_batch_offsets = vmap(op.get_site_pos)
-        offsets = get_batch_offsets(mjx_model).copy()[0]
-        x = x.reshape(-1, x.shape[-1])
-        q = q.reshape(-1, q.shape[-1])
-    else:
-        offsets = op.get_site_pos(mjx_model).copy()
-
-    names_xpos = physics.named.data.xpos.axes.row.names
-
-    print(f"shape of qpos: {q.shape}")
-    kp_data = kp_data.reshape(-1, kp_data.shape[-1])
-    data = {
-        "qpos": q,
-        "xpos": x,
-        "walker_body_sites": walker_body_sites,
-        "offsets": offsets,
-        "names_qpos": utils.params["part_names"],
-        "names_xpos": names_xpos,
-        "kp_data": jnp.copy(kp_data),
-    }
-
-    for k, v in utils.params.items():
-        data[k] = v
-
-    return data
