@@ -38,7 +38,7 @@ def hydra_entry(cfg: DictConfig):
     # Load kp_data, /1000 to scale data (from mm to meters)
     kp_data = utils.loadmat(data_path)["pred"][:] / 1000
 
-    # Preparing data by reordering and reshaping (TODO: will this stay the same?)
+    # Preparing DANNCE data by reordering and reshaping
     # Resulting kp_data is of shape (n_frames, n_keypoints)
     kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
     kp_data = jnp.transpose(kp_data, (0, 2, 1))
