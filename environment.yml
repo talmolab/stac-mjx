@@ -23,4 +23,3 @@ dependencies:
 variables:             # Set MuJoCo environment variables
   MUJOCO_GL: osmesa
   PYOPENGL_PLATFORM: osmesa
-  
