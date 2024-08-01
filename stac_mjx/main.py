@@ -43,10 +43,15 @@ def run_stac(cfg: DictConfig):
     elif data_path.endswith(".nwb"):
         kp_data = utils.load_dannce_nwb(data_path)
     elif data_path.endswith(".h5"):
-        kp_data = utils.load_h5(data_path)
+        kp_data = utils.load_mouse_h5(data_path)
     else:
         print("Error: Unsupported file extension. Please provide a .nwb or .mat file.")
         sys.exit(1)
+
+    # Flatten keypoint data and log shape
+    if len(kp_data.shape) > 2:
+        kp_data = kp_data.reshape(kp_data.shape[0], -1)
+    logging.info(f"Flattened kp_data shape: {kp_data.shape}")
 
     # Set up mjcf
     root = mjcf.from_path(ratpath)
@@ -79,7 +84,17 @@ def run_stac(cfg: DictConfig):
             )
 
         logging.info(f"fit_data shape: {fit_data.shape}")
+        
+        # Debugging shapes before fitting
+        logging.info(f"mj_model initial shape: {mj_model.nq}, {mj_model.nv}")
+        
+        # The fit_data and mj_model shapes are compatible check
+        if mj_model.nq != fit_data.shape[1]:
+            logging.error(f"Incompatible shapes: mj_model.nq={mj_model.nq}, fit_data.shape[1]={fit_data.shape[1]}")
+            sys.exit(1)
+        
         mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)
+        logging.info(f"mj_model post-fit shape: {mjx_model.nq}, {mjx_model.nv}")
 
         fit_data = ctrl.package_data(
             mjx_model, physics, q, x, walker_body_sites, clip_data
@@ -98,11 +113,18 @@ def run_stac(cfg: DictConfig):
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"]
+
+    #kp_data is reshaped correctly for transform function
+    kp_data = kp_data.reshape(kp_data.shape[0], -1)
     kp_data = ctrl.chunk_kp_data(kp_data)
-    logging.info(f"kp_data shape: {kp_data.shape}")
+    logging.info(f"Reshaped kp_data for transform: {kp_data.shape}")
+
+    # Debugging shapes before transform
+    logging.info(f"mj_model initial shape for transform: {mj_model.nq}, {mj_model.nv}")
     mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(
         mj_model, kp_data, offsets
     )
+    logging.info(f"mj_model post-transform shape: {mjx_model.nq}, {mjx_model.nv}")
 
     transform_data = ctrl.package_data(
         mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
@@ -116,9 +138,9 @@ def run_stac(cfg: DictConfig):
 
 @hydra.main(config_path="../configs", config_name="stac", version_base=None)
 def hydra_entry(cfg: DictConfig):
-    """Prepare and run the stac-mjx algorith."""
+    """Prepare and run the stac-mjx algorithm."""
     # Initialize configs and convert to dictionaries
-    global_cfg = hydra.compose(config_name="rodent")
+    global_cfg = hydra.compose(config_name="mouse")
     logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
     logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
     utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
