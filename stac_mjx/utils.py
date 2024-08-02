@@ -47,7 +47,12 @@ def load_data(filename, params):
     model_inds = np.array(
         [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
     )
+    # Scale mocap data to match model
+    data = data * params["MOCAP_SCALE_FACTOR"]
+    # Sort in kp_names order
     data = jnp.array(data[:, :, model_inds])
+    # Flatten data from [#num frames, #keypoints, xyz]
+    # into [#num frames, #keypointsXYZ]
     data = jnp.transpose(data, (0, 2, 1))
     data = jnp.reshape(data, (data.shape[0], -1))
 
@@ -64,11 +69,14 @@ def load_dannce(filename, names_filename=None):
     """
     node_names = None
     if names_filename is not None:
+        print("load_dance: here")
         mat = spio.loadmat(names_filename)
         node_names = [item[0] for sublist in mat["joint_names"] for item in sublist]
 
-    data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
-    return _check_keys(data)["pred"][:], node_names
+    data = _check_keys(spio.loadmat(filename, struct_as_record=False, squeeze_me=True))[
+        "pred"
+    ]
+    return data, node_names
 
 
 def load_nwb(filename):

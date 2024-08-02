@@ -29,9 +29,6 @@ def run_stac(cfg: DictConfig):
     transform_path = cfg.paths.transform_path
 
     ratpath = cfg.paths.xml
-    kp_names = utils.params["KP_NAMES"]
-    # argsort returns the indices that would sort the array
-    stac_keypoint_order = np.argsort(kp_names)
     data_path = cfg.paths.data_path
 
     kp_data = utils.load_data(data_path, utils.params)

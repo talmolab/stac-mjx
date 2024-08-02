@@ -1,7 +1,10 @@
 # Frames per clip for transform.
 N_FRAMES_PER_CLIP: 360
 
+#This test test file is missing KEYPOINT_NAMES, and should
+#derive its keypoint names from the following file:
 KP_NAMES_PATH: "tests/data/rat23.mat"
+
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -134,6 +137,11 @@ KEYPOINT_COLOR_PAIRS:
 
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: .9
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: .001
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using this with M_REG_COEF. 
