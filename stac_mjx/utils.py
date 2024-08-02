@@ -32,7 +32,7 @@ def load_data(filename, params):
         ValueError if an unsupported filetype is encountered.
     """
     if filename.endswith(".mat"):
-        kp_names_filename = params["KP_NAMES_PATH"]
+        kp_names_filename = params.get("KP_NAMES_PATH", None)
         data, kp_names = load_dannce(filename, names_filename=kp_names_filename)
     elif filename.endswith(".nwb"):
         data, kp_names = load_nwb(filename)
@@ -129,6 +129,7 @@ def _load_params(param_path):
 
 
 def init_params(cfg):
+    """Assign params as a global variable."""
     global params
     params = cfg
 
@@ -137,7 +138,10 @@ def init_params(cfg):
 def save(fit_data, save_path: Text):
     """Save data.
 
+    Save data as .p
+
     Args:
+        fit_data (numpy array): Data to write out.
         save_path (Text): Path to save data. Defaults to None.
     """
     if os.path.dirname(save_path) != "":
