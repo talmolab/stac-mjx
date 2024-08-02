@@ -4,6 +4,7 @@ import numpy as np
 from jax import numpy as jnp
 import h5py
 import os
+import sys
 import yaml
 import scipy.io as spio
 import pickle
@@ -11,60 +12,76 @@ from typing import Text
 from pynwb import NWBFile, NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 
-# Constants 
-MM_TO_M = 0.001
 
-def daance_to_stac_mjx(data):
+def load_data(filename, params):
+    """Main mocap data file loader interface.
+
+    Loads mocap file based on filetype, and returns the data organized
+    for immediate consumption by stac_mjx algorithm.
+
+    Args:
+        filename: path to be loaded, which should have a suppported
+        file type suffix, either .mat or .nwb
+
+    Returns:
+        Data organized into an np array of shape [#frames, keypointXYZ],
+        where 'keypointXYZ represents flattened 3D keypoint components.
+        The data is also scaled by multiplication with "SCALE_FACTOR".
+
+    Raises:
+        ValueError if an unsupported filetype is encountered.
     """
-    Rearrange the data daance .mat mocap ordering
-    to internal order, and scale from millimeters to
-    meters. 
+    if filename.endswith(".mat"):
+        kp_names_filename = params["KP_NAMES_PATH"]
+        data, kp_names = load_dannce(filename, names_filename=kp_names_filename)
+    elif filename.endswith(".nwb"):
+        data, kp_names = load_nwb(filename)
+    else:
+        raise ValueError(
+            "Unsupported file extension. Please provide a .nwb or .mat file."
+        )
 
-    Args: mocap data arranged in dannce ordering, and
-    stored in mm.
+    if kp_names is None:
+        kp_names = params["KP_NAMES"]
 
-    Out: data rearranged into internal format, scaled to 
-    meters.
-    """
-
-    kp_names = params["KP_NAMES"]
-    # argsort returns the indices that would sort the array
-    stac_keypoint_order = np.argsort(kp_names)
-
-    # Dannce data is stored in mm
-    data = data * MM_TO_M
-    data = jnp.array(data[:, :, stac_keypoint_order])
+    model_inds = np.array(
+        [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
+    )
+    data = jnp.array(data[:, :, model_inds])
     data = jnp.transpose(data, (0, 2, 1))
     data = jnp.reshape(data, (data.shape[0], -1))
 
     return data
 
 
-def load_dannce_mat(data_path):
-    """
-    loads in mocap data from .mat file constructed by dannce:
-    (https://github.com/spoonsso/dannce). in particular this means
+def load_dannce(filename, names_filename=None):
+    """Loads in mocap data from .mat file.
+
+    .mat file is presumed to be constructed by dannce:
+    (https://github.com/spoonsso/dannce). In particular this means
     it relies on the data being in millimeters, and that we use the data
-    stored in the "pred" key. 
+    stored in the "pred" key.
     """
+    node_names = None
+    if names_filename is not None:
+        mat = spio.loadmat(names_filename)
+        node_names = [item[0] for sublist in mat["joint_names"] for item in sublist]
 
-    data = spio.loadmat(data_path, struct_as_record=False, squeeze_me=True)
-    data =  _check_keys(data)["pred"][:]
-
-    return daance_to_stac_mjx(data)
+    data = spio.loadmat(filename, struct_as_record=False, squeeze_me=True)
+    return _check_keys(data)["pred"][:], node_names
 
 
-def load_dannce_nwb(filename):
-    """
-    loads data in from .nwb file. Presumed organized and scaled 
+def load_nwb(filename):
+    """Loads data in from .nwb file.
+
+    NWB data is presumed organized and scaled
     equivalent to a dannce .mat file, that has been converted to
+    NWB.
     """
     data = []
-    with NWBHDF5IO(filename, mode='r', load_namespaces=True) as io:
+    with NWBHDF5IO(filename, mode="r", load_namespaces=True) as io:
         nwbfile = io.read()
-        pose_est = nwbfile.processing['behavior']['PoseEstimation']
-        #print(pose_est.shape)
-
+        pose_est = nwbfile.processing["behavior"]["PoseEstimation"]
         node_names = pose_est.nodes[:].tolist()
 
         for node_name in node_names:
@@ -72,13 +89,13 @@ def load_dannce_nwb(filename):
 
         data = np.stack(data, axis=-1)
 
-    return daance_to_stac_mjx(data)
+    return data, node_names
 
 
 def _check_keys(dict):
-    """
-    checks if entries in dictionary are mat-objects. If yes
-    todict is called to change them to nested dictionaries
+    """Checks if entries in dictionary are mat-objects.
+
+    Mat-objects are changed to nested dictionaries.
     """
     for key in dict:
         if isinstance(dict[key], spio.matlab.mat_struct):
@@ -87,9 +104,7 @@ def _check_keys(dict):
 
 
 def _todict(matobj):
-    """
-    A recursive function which constructs from matobjects nested dictionaries
-    """
+    """A recursive function which constructs from matobjects nested dictionaries."""
     dict = {}
     for strg in matobj._fieldnames:
         elem = matobj.__dict__[strg]

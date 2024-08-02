@@ -34,17 +34,10 @@ def run_stac(cfg: DictConfig):
     stac_keypoint_order = np.argsort(kp_names)
     data_path = cfg.paths.data_path
 
-    kp_data = []
+    kp_data = utils.load_data(data_path, utils.params)
 
     # Load by file extension (Probably want to validate by schema
     # in the future.)
-    if data_path.endswith(".mat"):
-        kp_data = utils.load_dannce_mat(data_path)
-    elif data_path.endswith(".nwb"):
-        kp_data = utils.load_dannce_nwb(data_path)
-    else:
-        print("Error: Unsupported file extension. Please provide a .nwb or .mat file.")
-        sys.exit(1)
 
     # Set up mjcf
     root = mjcf.from_path(ratpath)

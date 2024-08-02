@@ -12,7 +12,14 @@ import logging
 
 
 def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
-    """Optimize only the root.
+    """Optimize fit for only the root.
+
+    The root is optimized first so as to remove a common contribution to
+    to rest of the child nodes. The choice of "root" node is somewhat
+    aribitrary since the body model is an undirected graph. The root here
+    is intended to mean the node closest to the center of mass of the
+    animal at rest.
+
 
     Args:
         mjx_model (mjx.Model): MJX Model
@@ -28,6 +35,9 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q0 = jnp.copy(mjx_data.qpos[:])
 
     # Set the center to help with finding the optima (does not need to be exact)
+    # However should be close to the center of mass of the animal. The "magic numbers"
+    # below are for the rodent.xml model. These will need to be changed for other
+    # models, and possibly be computed for arbitray animal models.
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
