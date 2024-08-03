@@ -16,17 +16,20 @@ from ndx_pose import PoseEstimationSeries, PoseEstimation
 def load_data(filename, params):
     """Main mocap data file loader interface.
 
-    Loads mocap file based on filetype, and returns the data organized
+    Loads mocap file based on filetype, and returns the data flattened
     for immediate consumption by stac_mjx algorithm.
 
     Args:
         filename: path to be loaded, which should have a suppported
-        file type suffix, either .mat or .nwb
+        file type suffix, either .mat or .nwb, and presumed to be organized
+        as [num frames, num keypoints, xyz].
 
     Returns:
-        Data organized into an np array of shape [#frames, keypointXYZ],
-        where 'keypointXYZ represents flattened 3D keypoint components.
-        The data is also scaled by multiplication with "SCALE_FACTOR".
+        Mocap data flattened into an np array of shape [#frames, keypointXYZ],
+        where 'keypointXYZ' represents the flattened 3D keypoint components.
+        The data is also scaled by multiplication with "MOCAP_SCALE_FACTOR", e.g.
+        if the mocap data is in mm and the model is in meters, this should be
+        0.001.
 
     Raises:
         ValueError if an unsupported filetype is encountered.
@@ -61,12 +64,12 @@ def load_data(filename, params):
 
 
 def load_dannce(filename, names_filename=None):
-    """Loads in mocap data from .mat file.
+    """Loads mocap data from .mat file.
 
     .mat file is presumed to be constructed by dannce:
-    (https://github.com/spoonsso/dannce). In particular this means
-    it relies on the data being in millimeters, and that we use the data
-    stored in the "pred" key.
+    (https://github.com/spoonsso/dannce). In particular this means it relies on
+    the data being in millimeters [num frames, num keypoints, xyz], and that we
+    use the data stored in the "pred" key.
     """
     node_names = None
     if names_filename is not None:
@@ -80,11 +83,9 @@ def load_dannce(filename, names_filename=None):
 
 
 def load_nwb(filename):
-    """Loads data in from .nwb file.
+    """Loads mocap data from .nwb file.
 
-    NWB data is presumed organized and scaled
-    equivalent to a dannce .mat file, that has been converted to
-    NWB.
+    Data is presumed [num frames, num keypoints, xyz].
     """
     data = []
     with NWBHDF5IO(filename, mode="r", load_namespaces=True) as io:
