@@ -2,7 +2,6 @@
 
 import numpy as np
 from jax import numpy as jnp
-import sys
 import yaml
 import scipy.io as spio
 import pickle

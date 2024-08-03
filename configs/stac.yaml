@@ -4,7 +4,9 @@ paths:
   fit_path: "fit_sq.p"
   transform_path: "transform_sq.p"
   data_path: "tests/data/test_mocap_1000_frames.nwb"
-n_fit_frames: 500
+  
+n_fit_frames: 1000
+
 sampler: "first" # first, every, or random
 first_start: 0 # starting frame for "first" sampler
 
