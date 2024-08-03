@@ -17,7 +17,7 @@ def load_data(filename, params):
     for immediate consumption by stac_mjx algorithm.
 
     Args:
-        filename: path to be loaded, which should have a suppported
+        filename: path to be loaded, which should have a supported
         file type suffix, either .mat or .nwb, and presumed to be organized
         as [num frames, num keypoints, xyz].
 
