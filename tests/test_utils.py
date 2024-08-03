@@ -1,5 +1,4 @@
 from stac_mjx import utils
-import os
 
 """
 Test data loaders for supported file types.
