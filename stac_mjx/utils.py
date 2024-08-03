@@ -2,8 +2,6 @@
 
 import numpy as np
 from jax import numpy as jnp
-import h5py
-import os
 import sys
 import yaml
 import scipy.io as spio
