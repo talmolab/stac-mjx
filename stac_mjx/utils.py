@@ -6,7 +6,7 @@ import yaml
 import scipy.io as spio
 import pickle
 from typing import Text
-from pynwb import NWBFile, NWBHDF5IO
+from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 
 
