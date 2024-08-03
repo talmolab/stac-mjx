@@ -1,9 +1,11 @@
 # Frames per clip for transform.
 N_FRAMES_PER_CLIP: 360
 
-#This test test file is missing KEYPOINT_NAMES, and should
-#derive its keypoint names from the following file:
-KP_NAMES_PATH: "tests/data/rat23.mat"
+# This test test file is missing KEYPOINT_NAMES, and should
+# derive its keypoint names from the following file below,
+# presumed to be derived from label3d:
+# 
+KP_NAMES_LABEL3D_PATH: "tests/data/rat23.mat"
 
 
 # The model sites used to register the keypoints.

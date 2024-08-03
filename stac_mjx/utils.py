@@ -32,7 +32,8 @@ def load_data(filename, params):
         ValueError if an unsupported filetype is encountered.
     """
     if filename.endswith(".mat"):
-        kp_names_filename = params.get("KP_NAMES_PATH", None)
+        # Label3d file
+        kp_names_filename = params.get("KP_NAMES_LABEL3D_PATH", None)
         data, kp_names = load_dannce(filename, names_filename=kp_names_filename)
     elif filename.endswith(".nwb"):
         data, kp_names = load_nwb(filename)
@@ -69,7 +70,6 @@ def load_dannce(filename, names_filename=None):
     """
     node_names = None
     if names_filename is not None:
-        print("load_dance: here")
         mat = spio.loadmat(names_filename)
         node_names = [item[0] for sublist in mat["joint_names"] for item in sublist]
 
