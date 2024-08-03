@@ -88,11 +88,9 @@ def load_nwb(filename):
         nwbfile = io.read()
         pose_est = nwbfile.processing["behavior"]["PoseEstimation"]
         node_names = pose_est.nodes[:].tolist()
-
-        for node_name in node_names:
-            data.append(pose_est[node_name].data[:])
-
-        data = np.stack(data, axis=-1)
+        data = np.stack(
+            [pose_est[node_name].data[:] for node_name in node_names], axis=-1
+        )
 
     return data, node_names
 
