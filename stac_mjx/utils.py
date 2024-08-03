@@ -42,8 +42,7 @@ def load_data(filename, params):
             "Unsupported file extension. Please provide a .nwb or .mat file."
         )
 
-    if kp_names is None:
-        kp_names = params["KP_NAMES"]
+    kp_names = kp_names or params["KP_NAMES"]
 
     model_inds = np.array(
         [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
