@@ -88,7 +88,7 @@ def run_stac(cfg: DictConfig, kp_data: jax.Array) -> tuple[str, str]:
     # Stop here if skipping transform
     if cfg.skip_transform == 1:
         logging.info("skipping transform()")
-        return fit_path, "No transform path"
+        return fit_path, None
 
     logging.info("Running transform()")
     with open(fit_path, "rb") as file:
