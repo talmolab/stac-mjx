@@ -13,7 +13,7 @@ hydra-core
 imageio
 h5py
 flax[all]
-optax[all]
+optax[all] >= 0.2.3
 --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
 jax[cuda12_pip]
 imageio[pyav]

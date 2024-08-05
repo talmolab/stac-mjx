@@ -17,7 +17,7 @@ dependencies:
   - pytest-cov
   - glfw3
   - ipykernel
-  - pip: 
+  - pip:
     - -r requirements.txt 
 
 variables:             # Set MuJoCo environment variables

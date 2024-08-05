@@ -4,23 +4,17 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 import mujoco
-from jax import numpy as jnp
 import pickle
 import imageio
 import numpy as np
 from typing import List, Dict, Text
-import os
 from dm_control.mujoco import wrapper
 import cv2
 from scipy.ndimage import gaussian_filter
 from scipy.spatial.transform import Rotation as R
 
-import utils
-
-# Gotta do this before importing controller
-utils.init_params("../params/params.yaml")
-import controller as ctrl
-import stac_base
+from stac_mjx import utils
+from stac_mjx import controller as ctrl
 
 # Standard image shape for dannce rig data
 # TODO: make this a param
