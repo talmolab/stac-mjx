@@ -29,29 +29,12 @@ def run_stac(cfg: DictConfig):
     transform_path = cfg.paths.transform_path
 
     ratpath = cfg.paths.xml
-    kp_names = utils.params["KP_NAMES"]
-    # argsort returns the indices that would sort the array
-    stac_keypoint_order = np.argsort(kp_names)
     data_path = cfg.paths.data_path
 
-    kp_data = []
+    kp_data = utils.load_data(data_path, utils.params)
 
     # Load by file extension (Probably want to validate by schema
     # in the future.)
-    if data_path.endswith(".mat"):
-        kp_data = utils.load_dannce_mat(data_path)
-    elif data_path.endswith(".nwb"):
-        kp_data = utils.load_dannce_nwb(data_path)
-    elif data_path.endswith(".h5"):
-        kp_data = utils.load_mouse_h5(data_path)
-    else:
-        print("Error: Unsupported file extension. Please provide a .nwb or .mat file.")
-        sys.exit(1)
-
-    # Flatten keypoint data and log shape
-    if len(kp_data.shape) > 2:
-        kp_data = kp_data.reshape(kp_data.shape[0], -1)
-    logging.info(f"Flattened kp_data shape: {kp_data.shape}")
 
     # Set up mjcf
     root = mjcf.from_path(ratpath)
