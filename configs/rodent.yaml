@@ -158,6 +158,11 @@ KEYPOINT_COLOR_PAIRS:
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: .9
 
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: .001
+
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using this with M_REG_COEF. 
 SITES_TO_REGULARIZE:
