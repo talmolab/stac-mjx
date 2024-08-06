@@ -1,5 +1,5 @@
 <mujoco model="mouse">
-    <compiler angle="radian" meshdir="talmolab-smb/kavinder_stac/stac-mjx/meshes/stl"/>
+    <compiler angle="radian" meshdir="/root/vast/jason/stac-mjx-ci/meshes/stl"/>
     <option>
         <flag contact="disable"/>
     </option>

@@ -8,6 +8,7 @@ import pickle
 from typing import Text
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
+import h5py
 
 
 def load_data(filename, params):
@@ -37,19 +38,26 @@ def load_data(filename, params):
         data, kp_names = load_dannce(filename, names_filename=kp_names_filename)
     elif filename.endswith(".nwb"):
         data, kp_names = load_nwb(filename)
+    elif filename.endswith(".h5"):
+        data, kp_names = load_h5(filename)
     else:
         raise ValueError(
             "Unsupported file extension. Please provide a .nwb or .mat file."
         )
 
     kp_names = kp_names or params["KP_NAMES"]
+    print("kp_names: ", kp_names)
 
     model_inds = np.array(
         [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
     )
+
+    print("model_inds", model_inds)
+
     # Scale mocap data to match model
     data = data * params["MOCAP_SCALE_FACTOR"]
     # Sort in kp_names order
+    print("data slice", data[0,0,])
     data = jnp.array(data[:, :, model_inds])
     # Flatten data from [#num frames, #keypoints, xyz]
     # into [#num frames, #keypointsXYZ]
@@ -75,6 +83,7 @@ def load_dannce(filename, names_filename=None):
     data = _check_keys(spio.loadmat(filename, struct_as_record=False, squeeze_me=True))[
         "pred"
     ]
+    print("mat data shape", data.shape)
     return data, node_names
 
 
@@ -94,6 +103,29 @@ def load_nwb(filename):
 
     return data, node_names
 
+def load_h5(filename):
+    """Load .h5 file formatted as [frames, xyz, keypoints].
+
+    Args:
+        filename (str): Path to the .h5 file.
+
+    Returns:
+        dict: Dictionary containing the data from the .h5 file.
+    """
+
+    # TODO add track information
+    data = {}
+    with h5py.File(filename, "r") as f:
+        print("h5 keyps", f.keys())
+        for key in f.keys():
+            
+            data[key] = f[key][()]
+
+    data = np.array(data["tracks"])
+    data = np.squeeze(data, axis = 1)
+    data = np.transpose(data, (0, 2, 1))
+    print("data shape:", data.shape)
+    return data, None
 
 def _check_keys(dict):
     """Checks if entries in dictionary are mat-objects.
@@ -130,20 +162,6 @@ def _load_params(param_path):
             print(exc)
     return params
 
-def load_h5(filename):
-    """Load .h5 file formatted as [frames, xyz, keypoints].
-
-    Args:
-        filename (str): Path to the .h5 file.
-
-    Returns:
-        dict: Dictionary containing the data from the .h5 file.
-    """
-    data = {}
-    with h5py.File(filename, "r") as f:
-        for key in f.keys():
-            data[key] = f[key][()]
-    return data
 
 def init_params(cfg):
     """Assign params as a global variable."""

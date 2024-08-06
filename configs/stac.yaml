@@ -1,9 +1,9 @@
 paths:
-  model_config: "rodent"
-  xml: "././models/rodent.xml"
+  model_config: "mouse"
+  xml: "././models/mouse_with_meshes.xml"
   fit_path: "fit_sq.p"
   transform_path: "transform_sq.p"
-  data_path: "tests/data/test_mocap_1000_frames.nwb"
+  data_path: "tests/data/mouse_aligned_points3d.h5"
   
 n_fit_frames: 1000
 

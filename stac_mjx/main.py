@@ -37,7 +37,9 @@ def run_stac(cfg: DictConfig):
     # in the future.)
 
     # Set up mjcf
+    print("ratpath ", ratpath)
     root = mjcf.from_path(ratpath)
+    print("root ", root)
     physics, mj_model = ctrl.create_body_sites(root)
     ctrl.part_opt_setup(physics)
 
