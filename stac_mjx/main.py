@@ -2,7 +2,7 @@
 
 import mujoco
 import jax
-
+from jax import numpy as jp
 from dm_control import mjcf
 
 import pickle
@@ -30,7 +30,7 @@ def load_configs(stac_config_path: str, model_config_path: str) -> DictConfig:
     return OmegaConf.load(stac_config_path)
 
 
-def run_stac(cfg: DictConfig, kp_data: jax.Array) -> tuple[str, str]:
+def run_stac(cfg: DictConfig, kp_data: jp.ndarray) -> tuple[str, str]:
     """Runs stac through fit and transform stages (optionally).
 
     Args:

@@ -185,7 +185,6 @@ def fit(mj_model, kp_data):
     offsets = jnp.copy(op.get_site_pos(mjx_model))
     offsets *= utils.params["SCALE_FACTOR"]
 
-    # print(mjx_model.site_pos, mjx_model.site_pos.shape)
     mjx_model = op.set_site_pos(mjx_model, offsets)
 
     # forward is used to calculate xpos and such
@@ -314,7 +313,6 @@ def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=F
 
     names_xpos = physics.named.data.xpos.axes.row.names
 
-    print(f"shape of qpos: {q.shape}")
     kp_data = kp_data.reshape(-1, kp_data.shape[-1])
     data = {
         "qpos": q,
