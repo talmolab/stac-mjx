@@ -125,6 +125,7 @@
          <geom name="floor" class="collision_floor" pos="0 0 -1" size="10 10 0.025" type="plane" material="grid"/>
         <light name="spotlight" pos="0 0 5" dir="0 0 -1" diffuse=".8 .8 .8" specular=".2 .2 .2" directional="true" cutoff="45" exponent="20"/>
        <body name="mouse" pos="0 0 0" quat="0 0 0 1">
+        <freejoint name="root"/>
         <geom type="mesh" mesh="Pelvis"/>
         <body name="mouse__Lumbar6_interim_0" pos="0 0.01206 0.00074">
             <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06"/>

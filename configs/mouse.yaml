@@ -82,8 +82,8 @@ KEYPOINT_COLOR_PAIRS:
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
   - "Trunk"
-  - "HipL"
-  - "HipR"
+#  - "HipL"
+#  - "HipR"
   - "ShoulderL"
   - "ShoulderR"
   - "TailBase"
@@ -165,12 +165,12 @@ XML_PATH: "./models/mouse_joints_no_meshes_ellipsoid.xml"
 # SKELETON_PATH: "./models/animal_skeleton.mat"
 
 # What is the size of the animal you'd like to register, relative to the model?
-SCALE_FACTOR: 1.0
+SCALE_FACTOR: 1.3
 
-MOCAP_SCALE_FACTOR: 1.0
+MOCAP_SCALE_FACTOR: .001
 
 # Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
+N_ITERS: 1
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.

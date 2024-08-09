@@ -1,11 +1,13 @@
 paths:
   model_config: "mouse"
+  #model_config: "rat"
   xml: "././models/mouse_with_meshes.xml"
-  fit_path: "fit_sq.p"
+  #xml: "././models/rodent.xml"
+  fit_path: "fit_sq_1_quick.p"
   transform_path: "transform_sq.p"
   data_path: "tests/data/mouse_aligned_points3d.h5"
-  
-n_fit_frames: 1000
+  #data_path: "tests/data/test_mocap_1000_frames.nwb"
+n_fit_frames: 1
 
 sampler: "first" # first, every, or random
 first_start: 0 # starting frame for "first" sampler

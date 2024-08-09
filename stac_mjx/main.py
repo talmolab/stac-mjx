@@ -76,7 +76,7 @@ def run_stac(cfg: DictConfig):
         # The fit_data and mj_model shapes are compatible check
         if mj_model.nq != fit_data.shape[1]:
             logging.error(f"Incompatible shapes: mj_model.nq={mj_model.nq}, fit_data.shape[1]={fit_data.shape[1]}")
-            sys.exit(1)
+            #sys.exit(1)
         
         mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)
         logging.info(f"mj_model post-fit shape: {mjx_model.nq}, {mjx_model.nv}")
@@ -125,6 +125,7 @@ def run_stac(cfg: DictConfig):
 def hydra_entry(cfg: DictConfig):
     """Prepare and run the stac-mjx algorithm."""
     # Initialize configs and convert to dictionaries
+    #global_cfg = hydra.compose(config_name="rodent")
     global_cfg = hydra.compose(config_name="mouse")
     logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
     logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")

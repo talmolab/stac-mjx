@@ -1,5 +1,6 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
+import os
 import numpy as np
 from jax import numpy as jnp
 import yaml

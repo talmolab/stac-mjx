@@ -82,7 +82,7 @@ def create_keypoint_sites(root):
             "site",
             name=name + "_kp",
             type="sphere",
-            size=[0.005],
+            size="0.002",
             rgba=rgba,
             pos=start,
             group=2,
@@ -127,7 +127,7 @@ def create_body_sites(root: mjcf.Element):
             "site",
             name=key,
             type="sphere",
-            size=[0.005],
+            size="0.002",
             rgba="0 0 0 1",
             pos=pos,
             group=3,
@@ -147,6 +147,8 @@ def create_body_sites(root: mjcf.Element):
         key: int(axis.convert_key_item(key))
         for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
     }
+
+    print("site_index_map", utils.params["site_index_map"])
 
     utils.params["part_names"] = initialize_part_names(physics)
 
