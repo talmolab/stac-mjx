@@ -3,7 +3,7 @@ Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJ
 
 ## Installation
 stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment, using the provided `environment.yaml`:
-[Local install before official package publish]
+[Local installation before package is officially published]
 1. Clone the repository `git clone https://github.com/talmolab/stac-mjx.git` and `cd` into it
 2. Create and activate the `stac-mjx-env` environment:
 
@@ -12,7 +12,7 @@ conda env create -f environment.yaml
 conda activate stac-mjx-env
 ```
 
-Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. We show `osmesa` setup as it supports headless rendering which is common in remote/cluster setups. To set up (currently on supported on Linux), execute the following commands sequentially:
+Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. We show `osmesa` setup as it supports headless rendering, which is common in remote/cluster setups. To set up (currently on supported on Linux), execute the following commands sequentially:
    ```
    sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 
    conda install -c conda-forge glew 
