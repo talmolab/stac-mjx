@@ -19,6 +19,7 @@ dependencies:
   - ipykernel
   - pip:
     - -r requirements.txt 
+    - stac_mjx
 
 variables:             # Set MuJoCo environment variables
   MUJOCO_GL: osmesa
