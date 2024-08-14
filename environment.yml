@@ -21,7 +21,6 @@ dependencies:
   - ipykernel
   - pip
   - pip:
-      - -r requirements.txt
       - "--editable=.[dev]"
 
 variables:             # Set MuJoCo environment variables
