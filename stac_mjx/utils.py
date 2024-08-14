@@ -59,11 +59,11 @@ def load_data(filename, params):
     data = data * params["MOCAP_SCALE_FACTOR"]
     # Sort in kp_names order
     print("data slice", data[0,0,])
-    data = jnp.array(data[:, :, model_inds])
+    data = np.array(data[:, :, model_inds])
     # Flatten data from [#num frames, #keypoints, xyz]
     # into [#num frames, #keypointsXYZ]
-    data = jnp.transpose(data, (0, 2, 1))
-    data = jnp.reshape(data, (data.shape[0], -1))
+    data = np.transpose(data, (0, 2, 1))
+    data = np.reshape(data, (data.shape[0], -1))
 
     return data
 

@@ -3,6 +3,7 @@
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
+from dm_control.mjcf import export_with_assets
 import mujoco
 from jax import numpy as jnp
 import pickle
@@ -234,7 +235,7 @@ def overlay_viz(
         root.worldbody.add("camera", **kwargs)
 
     physics, mj_model = ctrl.create_body_sites(root)
-    physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
+    #physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
     physics.forward()
     # Load data
     with open(data_path, "rb") as file:
@@ -308,6 +309,39 @@ def overlay_viz(
 
     return frames
 
+def export_viz(model_xml, out_path, params):
+    scene_option = mujoco.MjvOption()
+    scene_option.geomgroup[1] = 0
+    scene_option.geomgroup[2] = 1
+    scene_option.geomgroup[3] = 1
+    scene_option.sitegroup[0] = 0
+    # scene_option.sitegroup[1] = 0
+    scene_option.sitegroup[2] = 1
+    scene_option.sitegroup[3] = 1
+    scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+    scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
+    scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
+    scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
+    scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = False
+
+    # Load mjx_model and mjx_data and set marker sites
+    root = mjcf.from_path(model_xml)
+    physics, mj_model = ctrl.create_body_sites(root)
+    physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
+
+    kps = utils.load_data("../tests/data/test_mocap_1000_frames.mat", params)[0, :]
+    physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
+
+    mj_data = mujoco.MjData(mj_model)
+    mujoco.mj_forward(mj_model, mj_data)
+
+
+    return mj_data, mj_model
+
+    #export_with_assets(root, "./", out_path)
+
 
 def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int = 0):
     """Render forward kinematics from keypoint positions."""
@@ -358,7 +392,10 @@ def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int = 0):
         )
 
     # slice kp_data to match qposes length
+    print("kp_data shape = ", kp_data.shape)
+    print("qp shape = ", qposes.shape)
     kp_data = kp_data[: qposes.shape[0]]
+    print("kp_data reshape = ", kp_data.shape)
 
     # Slice arrays to be the range that is being rendered
     kp_data = kp_data[start_frame : start_frame + n_frames]
