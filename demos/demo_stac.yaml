@@ -1,11 +1,11 @@
 paths:
   model_config: "rodent"
   xml: "models/rodent.xml"
-  fit_path: "fit.p"
-  transform_path: "transform.p"
-  data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
+  fit_path: "demo_fit.p"
+  transform_path: "demo_transform.p"
+  data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
 
-n_fit_frames: 1000
+n_fit_frames: 10
 skip_fit: False
 skip_transform: True
 

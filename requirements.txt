@@ -12,6 +12,7 @@ numba
 hydra-core
 imageio
 h5py
+nwbwidgets
 flax[all]
 optax[all] >= 0.2.3
 --find-links https://storage.googleapis.com/jax-releases/jax_cuda_releases.html

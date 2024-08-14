@@ -36,7 +36,29 @@ dev = [
     "pydocstyle",
     "toml",
     "twine",
-    "build"]
+    "build",
+    "matplotlib",
+    "ipykernel",
+    "mujoco",
+    "mujoco-mjx",
+    "brax",
+    "opencv-python",
+    "wandb",
+    "mediapy",
+    "pynwb",
+    "dm_control",
+    "tqdm",
+    "numba",
+    "ndx_pose",
+    "hydra-core",
+    "imageio",
+    "h5py",
+    "flax[all]",
+    "optax[all]",
+    "jax[cuda12_pip]",
+    "imageio[pyav]",
+    "imageio[ffmpeg]",
+    ]
 
 [project.urls]
 Homepage = "https://github.com/talmolab/stac-mjx"

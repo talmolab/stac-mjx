@@ -1,14 +1,5 @@
 # Frames per clip for transform.
-N_FRAMES_PER_CLIP: 250
-
-# Tolerance for the optimizations of the full model, limb, and root. 
-# TODO: Re-implement optimizer loops to use these tolerances
-FTOL: 5.0e-03
-ROOT_FTOL: 1.0e-05
-LIMB_FTOL: 1.0e-06
-
-# Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
+N_FRAMES_PER_CLIP: 360
 
 KP_NAMES: 
   - 'Snout' 
@@ -184,6 +175,14 @@ SITES_TO_REGULARIZE:
 RENDER_FPS: 50
 
 N_SAMPLE_FRAMES: 100
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+FTOL: 1.0e-02
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 

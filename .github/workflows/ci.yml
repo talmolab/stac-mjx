@@ -89,8 +89,10 @@ jobs:
 
       - name: Test with pytest (with coverage)
         shell: bash -l {0}
+        # Run pytest but ignore warnings from ndx_pose. If you need to add
+        # more warnings, please consider adding to pyproject.toml
         run: |
-          pytest --cov=stac_mjx --cov-report=xml --durations=-1 tests/
+          pytest --cov=stac_mjx --cov-report=xml --durations=-1 -W ignore::PendingDeprecationWarning tests/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4

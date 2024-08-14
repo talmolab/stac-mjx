@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import utils
 from stac_mjx import controller as ctrl
+from pathlib import Path
 
 
 def load_configs(stac_config_path: str, model_config_path: str) -> DictConfig:
@@ -30,7 +31,9 @@ def load_configs(stac_config_path: str, model_config_path: str) -> DictConfig:
     return OmegaConf.load(stac_config_path)
 
 
-def run_stac(cfg: DictConfig, kp_data: jp.ndarray) -> tuple[str, str]:
+def run_stac(
+    cfg: DictConfig, kp_data: jp.ndarray, base_path: Path = Path.cwd()
+) -> tuple[str, str]:
     """Runs stac through fit and transform stages (optionally).
 
     Args:
@@ -46,13 +49,13 @@ def run_stac(cfg: DictConfig, kp_data: jp.ndarray) -> tuple[str, str]:
     start_time = time.time()
 
     # Gettings paths
-    fit_path = cfg.paths.fit_path
-    transform_path = cfg.paths.transform_path
+    fit_path = base_path / cfg.paths.fit_path
+    transform_path = base_path / cfg.paths.transform_path
 
-    ratpath = cfg.paths.xml
+    xml_path = base_path / cfg.paths.xml
 
     # Set up mjcf
-    root = mjcf.from_path(ratpath)
+    root = mjcf.from_path(xml_path)
     physics, mj_model = ctrl.create_body_sites(root)
     ctrl.part_opt_setup(physics)
 

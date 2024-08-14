@@ -43,7 +43,8 @@ def get_site_xpos(mjx_data: mjx.Data):
         mjx_data (mjx.Data):
 
     Returns:
-        jax.Array: MjxData.site_xpos of keypoint body sites
+        jax.Array: MjxData.site_xpos of keypoint body sites, ie
+        Cartesian coords of body sites.
     """
     return mjx_data.site_xpos[jnp.array(list(utils.params["site_index_map"].values()))]
 
@@ -55,7 +56,8 @@ def get_site_pos(mjx_model: mjx.Model):
         mjx_data (mjx.Data):
 
     Returns:
-        jax.Array: MjxModel.site_pos of keypoint body sites
+        jax.Array: MjxModel.site_pos of keypoint body sites, ie
+        local position offset rel. to body.
     """
     return mjx_model.site_pos[jnp.array(list(utils.params["site_index_map"].values()))]
 
