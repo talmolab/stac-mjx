@@ -43,3 +43,9 @@ def rodent_config_no_kp_names():
 def rodent_config_less_kp_names():
     """Typical model config file."""
     return "tests/data/test_rodent_less_kp_names.yaml"
+
+
+@pytest.fixture
+def stac_config():
+    """Typical model config file."""
+    return "tests/data/test_stac.yaml"

@@ -1,25 +1,25 @@
 from omegaconf import OmegaConf, DictConfig
 from stac_mjx import main
-from tests.fixtures.configs import mock_omegaconf_load, mock_init_params
+from stac_mjx import utils
+from pathlib import Path
+from typing import Dict
+import pytest
+
+_BASE_PATH = Path.cwd()
 
 
-def test_load_configs(mock_omegaconf_load, mock_init_params):
-    # Define test input paths
-    stac_config_path = "/path/to/stac.yaml"
-    model_config_path = "/path/to/model.yaml"
+def test_load_configs(stac_config, rodent_config):
+    # Check that utils.params is not defined before loading
+    with pytest.raises(AttributeError):
+        utils.params
 
     # Call the function
-    result = main.load_configs(stac_config_path, model_config_path)
+    cfg = main.load_configs(_BASE_PATH / stac_config, _BASE_PATH / rodent_config)
 
-    # Assert that OmegaConf.load was called twice with correct arguments
-    mock_omegaconf_load.assert_any_call(model_config_path)
-    mock_omegaconf_load.assert_any_call(stac_config_path)
+    # Assert that the configs are the correct type
+    assert isinstance(cfg, DictConfig)
+    assert isinstance(utils.params, Dict)
 
-    # Assert that init_params was called with the correct argument
-    mock_init_params.assert_called_once_with({"model": "config"})
-
-    # Assert that the result is a DictConfig
-    assert isinstance(result, DictConfig)
-
-    # Assert that the result contains the expected data
-    assert result == OmegaConf.create({"stac": "config"})
+    # Assert that the resulting configs contain the expected data
+    assert cfg.paths.fit_path == "fit.p"
+    assert utils.params["N_FRAMES_PER_CLIP"] == 360

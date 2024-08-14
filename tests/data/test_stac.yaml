@@ -1,0 +1,15 @@
+paths:
+  model_config: "rodent"
+  xml: "models/rodent.xml"
+  fit_path: "fit.p"
+  transform_path: "transform.p"
+  data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
+
+n_fit_frames: 42
+skip_fit: False
+skip_transform: False
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

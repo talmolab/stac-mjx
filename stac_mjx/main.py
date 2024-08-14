@@ -15,7 +15,7 @@ from stac_mjx import controller as ctrl
 from pathlib import Path
 
 
-def load_configs(stac_config_path: str, model_config_path: str) -> DictConfig:
+def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
     """Initializes configs.
 
     Args:
