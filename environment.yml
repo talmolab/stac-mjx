@@ -16,7 +16,6 @@ dependencies:
   - pytest
   - pytest-cov
   - pynwb
-  - nwbwidgets
   - glfw3
   - ipykernel
   - pip
