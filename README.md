@@ -36,36 +36,26 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
 1. Update the .yaml files in `config/` with the proper information (details WIP).
 
 2. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration. Below is an example script, found in `demos/use_api.ipynb`. 
-   TODO: Use our dataloaders in this example
 
    ```python
    from stac_mjx import main
    from stac_mjx import utils
-   from jax import numpy as jp
-   import numpy as np
+   from pathlib import Path
 
-   stac_config_path = "../configs/stac.yaml"
-   model_config_path = "../configs/rodent.yaml"
+   # Set base path to the parent directory of your config files
+   base_path = Path.cwd()
+   stac_config_path = base_path / "demos/demo_stac.yaml"
+   model_config_path = base_path / "configs/rodent.yaml"
 
+   # Load configs
    cfg = main.load_configs(stac_config_path, model_config_path)
-   data_path = "../tests/data/test_pred_only_1000_frames.mat"
-   # Set up mocap data
-   kp_names = utils.params["KP_NAMES"]
-   # argsort returns the indices that would sort the array
-   stac_keypoint_order = np.argsort(kp_names)
-   data_path = cfg.paths.data_path
 
-   # Load kp_data, /1000 to scale data (from mm to meters)
-   kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-
-   # Preparing data by reordering and reshaping
-   # Resulting kp_data is of shape (n_frames, n_keypoints)
-   kp_data = jp.array(kp_data[:, :, stac_keypoint_order])
-   kp_data = jp.transpose(kp_data, (0, 2, 1))
-   kp_data = jp.reshape(kp_data, (kp_data.shape[0], -1))
+   # Load data
+   data_path = base_path / cfg.paths.data_path 
+   kp_data = utils.load_data(data_path, utils.params)
 
    # Run stac
-   main.run_stac(cfg, kp_data)
+   fit_path, transform_path = main.run_stac(cfg, kp_data, base_path)
    ```
 
 3. Render the resulting data using `mujoco_viz()` (example notebook found in `demos/viz_usage.ipynb`):
