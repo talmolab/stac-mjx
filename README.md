@@ -13,7 +13,7 @@ conda activate stac-mjx-env
 ```
 
 Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. We show `osmesa` setup as it supports headless rendering, which is common in remote/cluster setups. To set up (currently on supported on Linux), execute the following commands sequentially:
-   ```
+   ```bash
    sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 
    conda install -c conda-forge glew 
    conda install -c conda-forge mesalib 
@@ -21,12 +21,12 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    conda install -c menpo glfw3
    ```
    Finally, set the following environment variables, and reactivate the conda environment:
-   ```
+   ```bash
    conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
    conda deactivate && conda activate base
    ```
    To ensure all of the above changes are encapsulated in your Jupyter kernel, a create a new kernel with:
-   ```
+   ```bash
    conda install ipykernel
    python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
    ```
@@ -35,7 +35,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
 ## Usage
 1. Update the .yaml files in `config/` with the proper information (details WIP).
 
-2. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration. Below is an example script (also found in `docs/use_api.ipynb`). 
+2. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration. Below is an example script, found in `demos/use_api.ipynb`. 
    TODO: Use our dataloaders in this example
 
    ```python
@@ -48,7 +48,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    model_config_path = "../configs/rodent.yaml"
 
    cfg = main.load_configs(stac_config_path, model_config_path)
-   data_path = "./save_data_avg.mat"
+   data_path = "../tests/data/test_pred_only_1000_frames.mat"
    # Set up mocap data
    kp_names = utils.params["KP_NAMES"]
    # argsort returns the indices that would sort the array
@@ -68,7 +68,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    main.run_stac(cfg, kp_data)
    ```
 
-3. Render the resulting data using `mujoco_viz()` (example notebook found in `docs/viz_usage.ipynb`):
+3. Render the resulting data using `mujoco_viz()` (example notebook found in `demos/viz_usage.ipynb`):
    ```python
    import os
    import mediapy as media
@@ -82,13 +82,13 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
 
    cfg = main.load_configs(stac_config_path, model_config_path)
 
-   rat_xml = "./models/rodent.xml"
-   data_path = "./transform.p"
+   xml_path = "../models/rodent.xml"
+   data_path = "../output.p"
    n_frames=250
-   save_path="./videos/direct_render.mp4"
+   save_path="../videos/direct_render.mp4"
 
    # Call mujoco_viz
-   frames = mujoco_viz(data_path, rat_xml, n_frames, save_path, start_frame=0)
+   frames = mujoco_viz(data_path, xml_path, n_frames, save_path, start_frame=0)
 
    # Show the video in the notebook (it is also saved to the save_path)
    media.show_video(frames, fps=utils.params["RENDER_FPS"])
