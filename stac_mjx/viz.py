@@ -328,15 +328,13 @@ def export_viz(model_xml, out_path, params):
 
     # Load mjx_model and mjx_data and set marker sites
     root = mjcf.from_path(model_xml)
-    physics, mj_model = ctrl.create_body_sites(root)
+    #physics, mj_model = ctrl.create_body_sites(root)
+    kps = utils.load_data("../tests/data/points3d_00_scaleSmooth_1_rpt_15.h5", params)[1000, :]
     physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
-
-    kps = utils.load_data("../tests/data/test_mocap_1000_frames.mat", params)[0, :]
-    physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
+    physics, mj_model = ctrl.set_keypoint_sites_centroid(physics, keypoint_sites, kps)
 
     mj_data = mujoco.MjData(mj_model)
     mujoco.mj_forward(mj_model, mj_data)
-
 
     return mj_data, mj_model
 

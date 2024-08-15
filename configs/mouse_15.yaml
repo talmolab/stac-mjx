@@ -8,42 +8,22 @@ ROOT_MAXITER: 100
 Q_MAXITER: 100
 M_MAXITER: 500
 
-KP_NAMES:
-  - Nose
-  - Ear_R
-  - Ear_L
-  - TTI
-  - TailTip
-  - Head
-  - Trunk
-  - Tail_0
-  - Tail_1
-  - Tail_2
-  - Shoulder_L
-  - Shoulder_R
-  - Knee_L
-  - Knee_R
-  - Neck
-  - Elbow_L
-  - Elbow_R
-  - Wrist_L
-  - Wrist_R
-  - Forepaw_L
-  - Forepaw_R
-  - Heel_L
-  - Heel_R
-  - Spine
-  - Eye_L
-  - Eye_R
-  - Tail_3
-  - Tail_4
-  - Hip_L
-  - Hip_R
-  - Lisfranc_R
-  - MTP_L
-  - Lisfranc_L
-  - MTP_R
-
+KP_NAMES: 
+  - 'Nose' 
+  - 'EarL' 
+  - 'EarR' 
+  - 'TTI' 
+  - 'TailTip' 
+  - 'Head' 
+  - 'Trunk' 
+  - 'Tail_0' 
+  - 'Tail_1' 
+  - 'Tail_2' 
+  - 'ShoulderL'
+  - 'ShoulderR' 
+  - 'HaunchL' 
+  - 'HaunchR' 
+  - 'Neck'
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -65,59 +45,40 @@ KEYPOINT_MODEL_PAIRS:
 
 
 KEYPOINT_INITIAL_OFFSETS:
-  Nose: 0.0 0.0 0.0
-  Ear_R: 0.0 0.0 0.0
-  Ear_L: 0.0 0.0 0.0
-  TTI: 0.0 0.0 0.0
-  TailTip: 0.0 0.0 0.0
-  Head: 0.0 0.0 0.0
-  Trunk: 0.0 0.0 0.0
-  Tail_0: 0.0 0.0 0.0
-  Tail_1: 0.0 0.0 0.0
-  Tail_2: 0.0 0.0 0.0
-  Shoulder_L: 0.0 0.0 0.0
-  Shoulder_R: 0.0 0.0 0.0
-  Knee_L: 0.0 0.0 0.0
-  Knee_R: 0.0 0.0 0.0
-  Neck: 0.0 0.0 0.0
-  Elbow_L: 0.0 0.0 0.0
-  Elbow_R: 0.0 0.0 0.0
-  Wrist_L: 0.0 0.0 0.0
-  Wrist_R: 0.0 0.0 0.0
-  Forepaw_L: 0.0 0.0 0.0
-  Forepaw_R: 0.0 0.0 0.0
-  Heel_L: 0.0 0.0 0.0
-  Heel_R: 0.0 0.0 0.0
-  Spine: 0.0 0.0 0.0
-  Eye_L: 0.0 0.0 0.0
-  Eye_R: 0.0 0.0 0.0
-  Tail_3: 0.0 0.0 0.0
-  Tail_4: 0.0 0.0 0.0
-  Hip_L: 0.0 0.0 0.0
-  Hip_R: 0.0 0.0 0.0
-  Lisfranc_R: 0.0 0.0 0.0
-  MTP_L: 0.0 0.0 0.0
-  Lisfranc_L: 0.0 0.0 0.0
-  MTP_R: 0.0 0.0 0.0
+  Nose: 0.000 -0.005 0.0055  # Adjust to align with head
+  EarL: 0.000 -0.006 0.007  # Adjust to align with head
+  EarR: 0.000 -0.006 0.007  # Adjust to align with head
+  TTI: -0.0005 -0.0079 0.0033  # Unchanged
+  TailTip: 0.00007 -0.0093 0.0022  # Unchanged
+  Head: 0.000 -0.005 0.0075  # Adjust for better alignment
+  Trunk: -0.0007 -0.0071 0.0059  # Unchanged
+  Tail_0: -0.0002 -0.0085 0.0029  # Unchanged
+  Tail_1: -0.00004 -0.0090 0.0027  # Unchanged
+  Tail_2: -0.00002 -0.0093 0.0023  # Unchanged
+  ShoulderL: -0.0008 -0.0058 0.0044  # Unchanged
+  ShoulderR: 0.00001 -0.0060 0.0046  # Unchanged
+  HaunchL: -0.0011 -0.0071 0.0031  # Unchanged
+  HaunchR: -0.00001 -0.0071 0.0034  # Unchanged
+  Neck: 0.000 -0.006 0.007  # Adjust for better alignment
 
 
 # Color to use for each keypoint when visualizing the results
-# KEYPOINT_COLOR_PAIRS:
-#   Nose: 1 0 0 1  # Red
-#   EarL: 0 1 0 1  # Green
-#   EarR: 0 0.8 0 1  # Darker Green
-#   TTI: 0 0 1 1  # Blue
-#   TailTip: 0.58 0 0.82 1  # Purple
-#   Head: 1 0.5 0 1  # Orange
-#   Trunk: 0.5 0 0.5 1  # Plum
-#   Tail_0: 1 1 0 1  # Yellow
-#   Tail_1: 0.8 0.8 0 1  # Darker Yellow
-#   Tail_2: 0.4 0.4 0 1  # Olive
-#   ShoulderL: 0.27 0.5 0.7 1  # Cerulean
-#   ShoulderR: 0.2 0.4 0.6 1  # Darker Cerulean
-#   HaunchL: 0.85 0.75 0.85 1  # Thistle
-#   HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
-#   Neck: 0 1 1 1  # Cyan
+KEYPOINT_COLOR_PAIRS:
+  Nose: 1 0 0 1  # Red
+  EarL: 0 1 0 1  # Green
+  EarR: 0 0.8 0 1  # Darker Green
+  TTI: 0 0 1 1  # Blue
+  TailTip: 0.58 0 0.82 1  # Purple
+  Head: 1 0.5 0 1  # Orange
+  Trunk: 0.5 0 0.5 1  # Plum
+  Tail_0: 1 1 0 1  # Yellow
+  Tail_1: 0.8 0.8 0 1  # Darker Yellow
+  Tail_2: 0.4 0.4 0 1  # Olive
+  ShoulderL: 0.27 0.5 0.7 1  # Cerulean
+  ShoulderR: 0.2 0.4 0.6 1  # Darker Cerulean
+  HaunchL: 0.85 0.75 0.85 1  # Thistle
+  HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
+  Neck: 0 1 1 1  # Cyan
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
   - "Trunk"
@@ -217,20 +178,20 @@ N_FRAMES_PER_CLIP: 360 # 1000 environments
 
 N_GPUS: 1
 
-# # Joint names for each keypoint.
-# JOINT_NAMES:
-#   Nose: "head_joint"
-#   EarL: "head_joint"
-#   EarR: "head_joint"
-#   TTI: "thoracic_joint"
-#   TailTip: "tail_joint_20"
-#   Head: "head_joint"
-#   Trunk: "pelvis_joint"
-#   Tail_0: "tail_joint_1"
-#   Tail_1: "tail_joint_2"
-#   Tail_2: "tail_joint_3"
-#   ShoulderL: "left_scapula_joint"
-#   ShoulderR: "right_scapula_joint"
-#   HaunchL: "left_femur_joint"
-#   HaunchR: "right_femur_joint"
-#   Neck: "cervical_joint_1"
+# Joint names for each keypoint.
+JOINT_NAMES:
+  Nose: "head_joint"
+  EarL: "head_joint"
+  EarR: "head_joint"
+  TTI: "thoracic_joint"
+  TailTip: "tail_joint_20"
+  Head: "head_joint"
+  Trunk: "pelvis_joint"
+  Tail_0: "tail_joint_1"
+  Tail_1: "tail_joint_2"
+  Tail_2: "tail_joint_3"
+  ShoulderL: "left_scapula_joint"
+  ShoulderR: "right_scapula_joint"
+  HaunchL: "left_femur_joint"
+  HaunchR: "right_femur_joint"
+  Neck: "cervical_joint_1"

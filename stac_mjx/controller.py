@@ -64,6 +64,45 @@ def part_opt_setup(physics) -> None:
     utils.params["indiv_parts"] = indiv_parts
 
 
+def compute_keypoint_centroid(kps):
+    import numpy as np
+    # Reshape the array from (1, 3N) to (N, 3)
+    pts = kps.reshape(-1, 3)
+
+    # Compute the centroid
+    centroid = np.mean(pts, axis=0)
+
+    return centroid
+
+def create_keypoint_sites_centroid(root, kps):
+    # Reshape the array from (1, 3N) to (N, 3)
+    pts = kps.reshape(-1, 3)
+    # Compute the centroid
+    centroid = np.mean(pts, axis=0)
+    print("centroid", centroid)
+    
+    keypoint_sites = []
+    # set up keypoint rendering by adding the kp sites to the root body
+    for id, name in enumerate(utils.params["KEYPOINT_MODEL_PAIRS"]):
+        start = (np.random.rand(3) - 0.5) * 0.001
+        rgba = utils.params["KEYPOINT_COLOR_PAIRS"][name]
+        site = root.worldbody.add(
+            "site",
+            name=name + "_kp",
+            type="sphere",
+            size="0.002",
+            rgba=rgba,
+            pos=start,
+            group=2,
+        )
+        keypoint_sites.append(site)
+
+    physics = mjcf.Physics.from_mjcf_model(root)
+
+    # return physics, mj_model, and sites (to use in bind())
+    return physics, physics.model.ptr, keypoint_sites, kp
+
+
 def create_keypoint_sites(root):
     """Create sites for keypoints (used for rendering).
 
@@ -95,7 +134,7 @@ def create_keypoint_sites(root):
     return physics, physics.model.ptr, keypoint_sites
 
 
-def set_keypoint_sites(physics, sites, kps):
+def set_keypoint_sites_centroid(physics, sites, kps):
     """Bind keypoint sites to physics model.
 
     Args:
@@ -106,6 +145,22 @@ def set_keypoint_sites(physics, sites, kps):
     Returns:
         (dmcontrol.Physics, mujoco.Model): update physics and model with update site pos
     """
+    theta = np.radians(35)
+    c, s = np.cos(theta), np.sin(theta)
+    R = np.array(((c, -s, 0), (s, c, 0), (0,0,1)))    
+    
+    
+    
+    pts = kps.reshape(-1, 3)
+    # Compute the centroid
+    centroid = np.mean(pts, axis=0)
+    print("centroid", centroid)
+    pts = pts - centroid
+    pts = pts @ R.T
+
+    kps = pts.reshape(-1)
+
+
     physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr
 
@@ -130,7 +185,7 @@ def create_body_sites(root: mjcf.Element):
             size="0.002",
             rgba="0 0 0 1",
             pos=pos,
-            group=3,
+            group=2,
         )
         body_sites.append(site)
 
