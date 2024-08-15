@@ -12,6 +12,7 @@ from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import utils
 from stac_mjx import controller as ctrl
+from stac_mjx.controller import STAC
 from pathlib import Path
 
 
@@ -98,6 +99,76 @@ def run_stac(
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"]
+    kp_data = ctrl.chunk_kp_data(kp_data)
+    logging.info(f"kp_data shape: {kp_data.shape}")
+    mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(
+        mj_model, kp_data, offsets
+    )
+
+    transform_data = ctrl.package_data(
+        mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
+    )
+
+    logging.info(
+        f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"
+    )
+    utils.save(transform_data, transform_path)
+
+    return fit_path, transform_path
+
+
+def load_configs_NEW(stac_config_path: Path, model_config_path: Path) -> DictConfig:
+    """Initializes configs.
+
+    Args:
+        stac_config_path (str): path to stac yaml file
+        model_config_path (str): path to model yaml file
+
+    Returns:
+        DictConfig: stac.yaml config to use in run_stac()
+    """
+
+    return OmegaConf.load(stac_config_path), OmegaConf.to_container(
+        OmegaConf.load(model_config_path), resolve=True
+    )
+
+
+def run_stac_NEW(
+    stac_cfg: DictConfig, model_cfg, kp_data: jp.ndarray, base_path: Path = Path.cwd()
+) -> tuple[str, str]:
+    start_time = time.time()
+
+    # Gettings paths
+    fit_path = base_path / stac_cfg.paths.fit_path
+    transform_path = base_path / stac_cfg.paths.transform_path
+
+    xml_path = base_path / stac_cfg.paths.xml
+
+    stac = STAC(xml_path, stac_cfg, model_cfg)
+    # Run fit if not skipping
+    if stac_cfg.skip_fit != 1:
+        fit_data = kp_data[: stac_cfg.n_fit_frames]
+        logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
+        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(fit_data)
+
+        fit_data = ctrl.package_data(
+            mjx_model, physics, q, x, walker_body_sites, clip_data
+        )
+
+        logging.info(f"saving data to {fit_path}")
+        utils.save(fit_data, fit_path)
+
+    # Stop here if skipping transform
+    if stac_cfg.skip_transform == 1:
+        logging.info("skipping transform()")
+        return fit_path, None
+
+    logging.info("Running transform()")
+    with open(fit_path, "rb") as file:
+        fit_data = pickle.load(file)
+
+    offsets = fit_data["offsets"]
+    # TODO: call chunk_kp_data inside STAC
     kp_data = ctrl.chunk_kp_data(kp_data)
     logging.info(f"kp_data shape: {kp_data.shape}")
     mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(

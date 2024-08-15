@@ -11,7 +11,7 @@ from stac_mjx import utils
 from stac_mjx import operations as op
 
 
-def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
+def root_optimization(mjx_model, mjx_data, kp_data, ub, lb, frame: int = 0):
     """Optimize fit for only the root.
 
     The root is optimized first so as to remove a common contribution to
@@ -61,17 +61,16 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         qs_to_opt,
         kps_to_opt,
         q0,
-        utils.params["ROOT_FTOL"],
+        lb,
+        ub,
     )
-    q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
+    # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
 
     r = time.time()
 
-    mjx_data = op.replace_qs(
-        mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param)
-    )
+    mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
     print(f"Replace 1 finished in {time.time()-r}")
 
     q0 = jnp.copy(mjx_data.qpos[:])
@@ -88,17 +87,16 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         qs_to_opt,
         kps_to_opt,
         q0,
-        utils.params["ROOT_FTOL"],
+        lb,
+        ub,
     )
 
-    q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
+    # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
-    mjx_data = op.replace_qs(
-        mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, q_opt_param)
-    )
+    mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
 
     print(f"Replace 2 finished in {time.time()-r}")
     print(f"Root optimization finished in {time.time()-s}")
@@ -106,7 +104,9 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     return mjx_data
 
 
-def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
+def offset_optimization(
+    mjx_model, mjx_data, kp_data, offsets, q, n_sample_frames, is_regularized
+):
     """Optimize the marker offsets based on proposed joint angles (q).
 
     Args:
@@ -124,22 +124,13 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     # shuffle frames to get sample frames
     all_indices = jnp.arange(kp_data.shape[0])
     shuffled_indices = jax.random.permutation(key, all_indices, independent=True)
-    time_indices = shuffled_indices[: utils.params["N_SAMPLE_FRAMES"]]
+    time_indices = shuffled_indices[:n_sample_frames]
 
     s = time.time()
     print("Begining offset optimization:")
 
     # Define initial position of the optimization
     offset0 = op.get_site_pos(mjx_model).flatten()
-
-    # Define which offsets to regularize
-    is_regularized = []
-    for k in utils.params["site_index_map"].keys():
-        if any(n == k for n in utils.params["SITES_TO_REGULARIZE"]):
-            is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
-        else:
-            is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
-    is_regularized = jnp.stack(is_regularized).flatten()
 
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
@@ -153,7 +144,6 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
         offsets,
         is_regularized,
         utils.params["M_REG_COEF"],
-        utils.params["ROOT_FTOL"],
     )
 
     offset_opt_param = res.params
@@ -170,7 +160,7 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     return mjx_model, mjx_data
 
 
-def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
+def pose_optimization(mjx_model, mjx_data, kp_data, lb, ub) -> Tuple:
     """Perform q_phase over the entire clip.
 
     Optimizes limbs and head independently.
@@ -203,18 +193,12 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
 
         # While body opt, then part opt
         mjx_data, res = stac_base.q_opt(
-            mjx_model,
-            mjx_data,
-            kp_data[n_frame, :],
-            qs_to_opt,
-            kps_to_opt,
-            q0,
-            utils.params["FTOL"],
+            mjx_model, mjx_data, kp_data[n_frame, :], qs_to_opt, kps_to_opt, q0, lb, ub
         )
 
-        q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
+        # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
 
-        mjx_data = op.replace_qs(mjx_model, mjx_data, q_opt_param)
+        mjx_data = op.replace_qs(mjx_model, mjx_data, res.params)
 
         for part in parts:
             q0 = jnp.copy(mjx_data.qpos[:])
@@ -226,12 +210,13 @@ def pose_optimization(mjx_model, mjx_data, kp_data) -> Tuple:
                 part,
                 kps_to_opt,
                 q0,
-                utils.params["LIMB_FTOL"],
+                lb,
+                ub,
             )
-            q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
+            # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
 
             mjx_data = op.replace_qs(
-                mjx_model, mjx_data, op.make_qs(q0, part, q_opt_param)
+                mjx_model, mjx_data, op.make_qs(q0, part, res.params)
             )
 
         return mjx_data, res.state.error

@@ -77,15 +77,12 @@ def q_opt(
     marker_ref_arr: jp.ndarray,
     qs_to_opt: jp.ndarray,
     kps_to_opt: jp.ndarray,
-    # maxiter: int,
     q0: jp.ndarray,
-    ftol: float,
+    lb,
+    ub,
 ):
     """Update q_pose using estimated marker parameters."""
-    lb = utils.params["lb"]
-    ub = utils.params["ub"]
     try:
-
         return mjx_data, q_solver.run(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
@@ -191,7 +188,6 @@ def m_opt(
     initial_offsets,
     is_regularized,
     reg_coef,
-    ftol,
 ):
     """Compute phase optimization.
 
