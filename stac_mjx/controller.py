@@ -3,23 +3,17 @@
 from jax import vmap
 from jax import numpy as jnp
 
-import mujoco
 from mujoco import mjx
 
 import numpy as np
 
-from typing import Text
-
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 
-import utils
-from compute_stac import *
-import operations as op
-
-import pickle
-import logging
-import os
+from stac_mjx import utils as utils
+from stac_mjx import compute_stac
+from stac_mjx import operations as op
+from typing import List
 from statistics import fmean, pstdev
 
 
@@ -191,7 +185,6 @@ def fit(mj_model, kp_data):
     offsets = jnp.copy(op.get_site_pos(mjx_model))
     offsets *= utils.params["SCALE_FACTOR"]
 
-    # print(mjx_model.site_pos, mjx_model.site_pos.shape)
     mjx_model = op.set_site_pos(mjx_model, offsets)
 
     # forward is used to calculate xpos and such
@@ -206,12 +199,12 @@ def fit(mj_model, kp_data):
     utils.params["ub"] = ub
 
     # Begin optimization steps
-    mjx_data = root_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data = compute_stac.root_optimization(mjx_model, mjx_data, kp_data)
 
     for n_iter in range(utils.params["N_ITERS"]):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(
-            mjx_model, mjx_data, kp_data
+        mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+            compute_stac.pose_optimization(mjx_model, mjx_data, kp_data)
         )
 
         for i, (t, e) in enumerate(zip(frame_time, frame_error)):
@@ -224,14 +217,14 @@ def fit(mj_model, kp_data):
         print(f"Standard deviation: {std}")
 
         print("starting offset optimization")
-        mjx_model, mjx_data = offset_optimization(
+        mjx_model, mjx_data = compute_stac.offset_optimization(
             mjx_model, mjx_data, kp_data, offsets, q
         )
 
     # Optimize the pose for the whole sequence
     print("Final pose optimization")
-    mjx_data, q, walker_body_sites, x, frame_time, frame_error = pose_optimization(
-        mjx_model, mjx_data, kp_data
+    mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+        compute_stac.pose_optimization(mjx_model, mjx_data, kp_data)
     )
 
     for i, (t, e) in enumerate(zip(frame_time, frame_error)):
@@ -289,8 +282,8 @@ def transform(mj_model, kp_data, offsets):
     mjx_model, mjx_data = vmap_mjx_setup(kp_data, mj_model)
 
     # Vmap optimize functions
-    vmap_root_opt = vmap(root_optimization)
-    vmap_pose_opt = vmap(pose_optimization)
+    vmap_root_opt = vmap(compute_stac.root_optimization)
+    vmap_pose_opt = vmap(compute_stac.pose_optimization)
 
     # q_phase
     mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data)
@@ -305,3 +298,33 @@ def transform(mj_model, kp_data, offsets):
     print(f"Standard deviation: {std}")
 
     return mjx_model, q, x, walker_body_sites, kp_data
+
+
+def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
+    """Extract pose, offsets, data, and all parameters."""
+    if batched:
+        # prepare batched data to be packaged
+        get_batch_offsets = vmap(op.get_site_pos)
+        offsets = get_batch_offsets(mjx_model).copy()[0]
+        x = x.reshape(-1, x.shape[-1])
+        q = q.reshape(-1, q.shape[-1])
+    else:
+        offsets = op.get_site_pos(mjx_model).copy()
+
+    names_xpos = physics.named.data.xpos.axes.row.names
+
+    kp_data = kp_data.reshape(-1, kp_data.shape[-1])
+    data = {
+        "qpos": q,
+        "xpos": x,
+        "walker_body_sites": walker_body_sites,
+        "offsets": offsets,
+        "names_qpos": utils.params["part_names"],
+        "names_xpos": names_xpos,
+        "kp_data": jnp.copy(kp_data),
+    }
+
+    for k, v in utils.params.items():
+        data[k] = v
+
+    return data

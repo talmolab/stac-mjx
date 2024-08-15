@@ -5,7 +5,7 @@ from jax import jit
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
-import utils
+from stac_mjx import utils
 
 
 @jit

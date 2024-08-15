@@ -1,3 +1,5 @@
+lcov.info
+
 .DS_Store
 snippets*
 # error data files
@@ -7,7 +9,6 @@ snippets*
 *.p
 videos/*
 !videos/.dummy
-*.mat
 outputs/
 *.mp4
 

@@ -1,43 +1,61 @@
-"""This module is the entry point for the stac-mjx algorithm."""
+"""User-level API to run stac."""
 
 import mujoco
 import jax
-from jax import numpy as jnp
-from jax.lib import xla_bridge
+from jax import numpy as jp
 from dm_control import mjcf
-import numpy as np
 
-import os
 import pickle
 import time
-import argparse
-import random
 import logging
-import sys
-import hydra
-from hydra import initialize
 from omegaconf import DictConfig, OmegaConf
 
-import utils
-import controller as ctrl
+from stac_mjx import utils
+from stac_mjx import controller as ctrl
+from pathlib import Path
 
 
-def run_stac(cfg: DictConfig):
-    """Run the core of the stac-mjx algorithm."""
-    # setting paths
-    fit_path = cfg.paths.fit_path
-    transform_path = cfg.paths.transform_path
+def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
+    """Initializes configs.
 
-    ratpath = cfg.paths.xml
-    data_path = cfg.paths.data_path
+    Args:
+        stac_config_path (str): path to stac yaml file
+        model_config_path (str): path to model yaml file
 
-    kp_data = utils.load_data(data_path, utils.params)
+    Returns:
+        DictConfig: stac.yaml config to use in run_stac()
+    """
+    utils.init_params(
+        OmegaConf.to_container(OmegaConf.load(model_config_path), resolve=True)
+    )
+    return OmegaConf.load(stac_config_path)
 
-    # Load by file extension (Probably want to validate by schema
-    # in the future.)
+
+def run_stac(
+    cfg: DictConfig, kp_data: jp.ndarray, base_path: Path = Path.cwd()
+) -> tuple[str, str]:
+    """Runs stac through fit and transform stages (optionally).
+
+    Args:
+        cfg (DictConfig): stac config file (standard being stac.yaml)
+        kp_data (jp.Array): Keypoint data of shape (frame, X),
+                            where X is a flattened array of keypoint coordinates
+                            in the order specified by the model config file (KEYPOINT_MODEL_PAIRS)
+
+
+    Returns:
+        tuple[str, str]: (fit_path, transform_path)
+    """
+    start_time = time.time()
+
+    # Gettings paths
+    fit_path = base_path / cfg.paths.fit_path
+    transform_path = base_path / cfg.paths.transform_path
+
+    xml_path = base_path / cfg.paths.xml
 
     # Set up mjcf
-    root = mjcf.from_path(ratpath)
+    root = mjcf.from_path(xml_path)
     physics, mj_model = ctrl.create_body_sites(root)
     ctrl.part_opt_setup(physics)
 
@@ -48,23 +66,17 @@ def run_stac(cfg: DictConfig):
 
     mj_model.opt.iterations = cfg.mujoco.iterations
     mj_model.opt.ls_iterations = cfg.mujoco.ls_iterations
+
+    # Runs faster on GPU with this
     mj_model.opt.jacobian = 0  # dense
 
     # Run fit if not skipping
-    if cfg.test.skip_fit != 1:
+    if cfg.skip_fit != 1:
         logging.info(f"kp_data shape: {kp_data.shape}")
-        if cfg.sampler == "first":
-            logging.info("Sampling the first n frames")
-            fit_data = kp_data[: cfg.n_fit_frames]
-        elif cfg.sampler == "every":
-            logging.info("Sampling every x frames")
-            every = kp_data.shape[0] // cfg.n_fit_frames
-            fit_data = kp_data[::every]
-        elif cfg.sampler == "random":
-            logging.info("Sampling n random frames")
-            fit_data = jax.random.choice(
-                jax.random.PRNGKey(0), kp_data, (cfg.n_fit_frames,), replace=False
-            )
+        logging.info(f"Sampling {cfg.n_fit_frames} random frames for fit")
+        fit_data = jax.random.choice(
+            jax.random.PRNGKey(0), kp_data, (cfg.n_fit_frames,), replace=False
+        )
 
         logging.info(f"fit_data shape: {fit_data.shape}")
         mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)
@@ -77,9 +89,9 @@ def run_stac(cfg: DictConfig):
         utils.save(fit_data, fit_path)
 
     # Stop here if skipping transform
-    if cfg.test.skip_transform == 1:
+    if cfg.skip_transform == 1:
         logging.info("skipping transform()")
-        return fit_path, "none"
+        return fit_path, None
 
     logging.info("Running transform()")
     with open(fit_path, "rb") as file:
@@ -96,40 +108,9 @@ def run_stac(cfg: DictConfig):
         mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
     )
 
-    logging.info(f"saving data to {transform_path}")
+    logging.info(
+        f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"
+    )
     utils.save(transform_data, transform_path)
 
     return fit_path, transform_path
-
-
-@hydra.main(config_path="../configs", config_name="stac", version_base=None)
-def hydra_entry(cfg: DictConfig):
-    """Prepare and run the stac-mjx algorith."""
-    # Initialize configs and convert to dictionaries
-    global_cfg = hydra.compose(config_name="rodent")
-    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
-    logging.info(f"global_cfg: {OmegaConf.to_yaml(cfg)}")
-    utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
-
-    # Don't preallocate RAM?
-    os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-
-    # XLA flags for Nvidia GPU
-    if xla_bridge.get_backend().platform == "gpu":
-        # Set num. gpus. Enable when support for multiple GPUs is implemented
-        # utils.params["N_GPUS"] = jax.local_device_count("gpu")
-        os.environ["XLA_FLAGS"] = (
-            "--xla_gpu_enable_triton_softmax_fusion=true "
-            "--xla_gpu_triton_gemm_any=True "
-            # These may provide additional speed ups, but are currently disabled
-            # due to errors.
-            # "--xla_gpu_enable_highest_priority_async_stream=true "
-            # "--xla_gpu_enable_async_collectives=true "
-            # "--xla_gpu_enable_latency_hiding_scheduler=true "
-        )
-
-    return run_stac(cfg)
-
-
-if __name__ == "__main__":
-    hydra_entry()
