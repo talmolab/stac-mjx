@@ -1,4 +1,4 @@
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import DictConfig
 from stac_mjx import main
 from stac_mjx import utils
 from pathlib import Path

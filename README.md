@@ -25,7 +25,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
    conda deactivate && conda activate base
    ```
-   To ensure all of the above changes are encapsulated in your Jupyter kernel, a create a new kernel with:
+   To ensure all of the above changes are encapsulated in your Jupyter kernel, create a new kernel with:
    ```bash
    conda install ipykernel
    python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
