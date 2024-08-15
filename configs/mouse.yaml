@@ -209,7 +209,7 @@ SCALE_FACTOR: 1.0
 MOCAP_SCALE_FACTOR: .001
 
 # Number of alternating pose and offset optimization rounds. 
-N_ITERS: 1
+N_ITERS: 6
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
