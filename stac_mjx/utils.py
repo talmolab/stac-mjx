@@ -52,7 +52,7 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
             "Keypoint names not provided. Please provide an ordered list of keypoint names \
             corresponding to the keypoint data order."
         )
-    print(len(kp_names), data.shape[2])
+
     if len(kp_names) != data.shape[2]:
         raise ValueError(
             f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
@@ -61,6 +61,8 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
     model_inds = np.array(
         [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
     )
+    sorted_kp_names = [kp_names[i] for i in model_inds]
+
     # Scale mocap data to match model
     data = data * params["MOCAP_SCALE_FACTOR"]
     # Sort in kp_names order
@@ -70,7 +72,7 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
     data = jnp.transpose(data, (0, 2, 1))
     data = jnp.reshape(data, (data.shape[0], -1))
 
-    return data
+    return data, sorted_kp_names
 
 
 def load_dannce(filename, names_filename=None):

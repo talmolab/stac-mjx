@@ -11,7 +11,9 @@ from stac_mjx import utils
 from stac_mjx import operations as op
 
 
-def root_optimization(mjx_model, mjx_data, kp_data, ub, lb, frame: int = 0):
+def root_optimization(
+    mjx_model, mjx_data, kp_data, lb, ub, site_idxs, trunk_kps, frame: int = 0
+):
     """Optimize fit for only the root.
 
     The root is optimized first so as to remove a common contribution to
@@ -42,17 +44,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, ub, lb, frame: int = 0):
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     # kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-    kps_to_opt = jnp.repeat(
-        jnp.array(
-            [
-                any(
-                    [n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]]
-                )
-                for kp_name in utils.params["KP_NAMES"]
-            ]
-        ),
-        3,
-    )
+    kps_to_opt = jnp.repeat(trunk_kps, 3)
     j = time.time()
     mjx_data, res = stac_base.q_opt(
         mjx_model,
@@ -63,6 +55,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, ub, lb, frame: int = 0):
         q0,
         lb,
         ub,
+        site_idxs,
     )
     # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
 
@@ -89,6 +82,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, ub, lb, frame: int = 0):
         q0,
         lb,
         ub,
+        site_idxs,
     )
 
     # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
@@ -105,7 +99,15 @@ def root_optimization(mjx_model, mjx_data, kp_data, ub, lb, frame: int = 0):
 
 
 def offset_optimization(
-    mjx_model, mjx_data, kp_data, offsets, q, n_sample_frames, is_regularized
+    mjx_model,
+    mjx_data,
+    kp_data,
+    offsets,
+    q,
+    n_sample_frames,
+    is_regularized,
+    site_idxs,
+    m_reg_coef,
 ):
     """Optimize the marker offsets based on proposed joint angles (q).
 
@@ -130,7 +132,7 @@ def offset_optimization(
     print("Begining offset optimization:")
 
     # Define initial position of the optimization
-    offset0 = op.get_site_pos(mjx_model).flatten()
+    offset0 = op.get_site_pos(mjx_model, site_idxs).flatten()
 
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)
@@ -143,14 +145,17 @@ def offset_optimization(
         q,
         offsets,
         is_regularized,
-        utils.params["M_REG_COEF"],
+        m_reg_coef,
+        site_idxs,
     )
 
     offset_opt_param = res.params
     print(f"Final error of {res.state.error}")
 
     # Set pose to the optimized m and step forward.
-    mjx_model = op.set_site_pos(mjx_model, jnp.reshape(offset_opt_param, (-1, 3)))
+    mjx_model = op.set_site_pos(
+        mjx_model, jnp.reshape(offset_opt_param, (-1, 3)), site_idxs
+    )
 
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = op.kinematics(mjx_model, mjx_data)
@@ -160,7 +165,9 @@ def offset_optimization(
     return mjx_model, mjx_data
 
 
-def pose_optimization(mjx_model, mjx_data, kp_data, lb, ub) -> Tuple:
+def pose_optimization(
+    mjx_model, mjx_data, kp_data, lb, ub, site_idxs, indiv_parts
+) -> Tuple:
     """Perform q_phase over the entire clip.
 
     Optimizes limbs and head independently.
@@ -179,12 +186,10 @@ def pose_optimization(mjx_model, mjx_data, kp_data, lb, ub) -> Tuple:
     x = []
     walker_body_sites = []
 
-    parts = utils.params["indiv_parts"]
-
     # Iterate through all of the frames
     frames = jnp.arange(kp_data.shape[0])
 
-    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["KP_NAMES"]), dtype=bool), 3)
+    kps_to_opt = jnp.ones(kp_data.shape[1], dtype=bool)
     qs_to_opt = jnp.ones(mjx_model.nq, dtype=bool)
     print("Pose Optimization:")
 
@@ -193,7 +198,15 @@ def pose_optimization(mjx_model, mjx_data, kp_data, lb, ub) -> Tuple:
 
         # While body opt, then part opt
         mjx_data, res = stac_base.q_opt(
-            mjx_model, mjx_data, kp_data[n_frame, :], qs_to_opt, kps_to_opt, q0, lb, ub
+            mjx_model,
+            mjx_data,
+            kp_data[n_frame, :],
+            qs_to_opt,
+            kps_to_opt,
+            q0,
+            lb,
+            ub,
+            site_idxs,
         )
 
         # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
@@ -212,6 +225,7 @@ def pose_optimization(mjx_model, mjx_data, kp_data, lb, ub) -> Tuple:
                 q0,
                 lb,
                 ub,
+                site_idxs,
             )
             # q_opt_param = jnp.clip(res.params, utils.params["lb"], utils.params["ub"])
 
@@ -227,11 +241,11 @@ def pose_optimization(mjx_model, mjx_data, kp_data, lb, ub) -> Tuple:
     for n_frame in frames:
         loop_start = time.time()
 
-        mjx_data, error = f(mjx_data, kp_data, n_frame, parts)
+        mjx_data, error = f(mjx_data, kp_data, n_frame, indiv_parts)
 
         q.append(mjx_data.qpos[:])
         x.append(mjx_data.xpos[:])
-        walker_body_sites.append(op.get_site_xpos(mjx_data))
+        walker_body_sites.append(op.get_site_xpos(mjx_data, site_idxs))
 
         frame_time.append(time.time() - loop_start)
         frame_error.append(error)

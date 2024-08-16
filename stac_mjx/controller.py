@@ -1,8 +1,9 @@
 """Utilities for mapping between mocap model and physics model."""
 
 from jax import vmap
-from jax import numpy as jnp
+from jax import numpy as jp
 
+import mujoco
 from mujoco import mjx
 
 import numpy as np
@@ -17,15 +18,20 @@ from typing import List
 
 
 class STAC:
-    def __init__(self, xml_path, stac_cfg, model_cfg):
+    def __init__(self, xml_path: str, stac_cfg, model_cfg, kp_names: List[str]):
         self.stac_cfg = stac_cfg
         self.model_cfg = model_cfg
 
         root = mjcf.from_path(xml_path)
-        physics, mj_model, self._site_index_map, self._part_names = (
+        physics, mj_model, self._site_index_map, self._part_names, self._body_names = (
             self.create_body_sites(root)
         )
         self._indiv_parts = self.part_opt_setup(physics)
+
+        self._site_idxs = jp.array(list(self._site_index_map.values()))
+        self._trunk_kps = jp.array(
+            [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
+        )
 
         mj_model.opt.solver = {
             "cg": mujoco.mjtSolver.mjSOL_CG,
@@ -42,34 +48,32 @@ class STAC:
         is_regularized = []
         for k in self._site_index_map.keys():
             if any(n == k for n in model_cfg.get("SITES_TO_REGULARIZE", [])):
-                is_regularized.append(jnp.array([1.0, 1.0, 1.0]))
+                is_regularized.append(jp.array([1.0, 1.0, 1.0]))
             else:
-                is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
-        self._is_regularized = jnp.stack(is_regularized).flatten()
+                is_regularized.append(jp.array([0.0, 0.0, 0.0]))
+        self._is_regularized = jp.stack(is_regularized).flatten()
 
         # Create mjx model and data
         self.mjx_model = mjx.put_model(mj_model)
         self.mjx_data = mjx.make_data(self.mjx_model)
 
         # Get and set the offsets of the markers
-        self._offsets = jnp.copy(op.get_site_pos(self.mjx_model))
+        self._offsets = jp.copy(op.get_site_pos(self.mjx_model, self._site_idxs))
         self._offsets *= self.model_cfg["SCALE_FACTOR"]
 
-        self.mjx_model = op.set_site_pos(self.mjx_model, self._offsets)
+        self.mjx_model = op.set_site_pos(self.mjx_model, self._offsets, self._site_idxs)
 
         # Calculate initial xpos and such
         self.mjx_data = mjx.kinematics(self.mjx_model, self.mjx_data)
         self.mjx_data = mjx.com_pos(self.mjx_model, self.mjx_data)
 
         # Set joint bounds
-        self._lb = jnp.minimum(
-            jnp.concatenate(
-                [-jnp.inf * jnp.ones(7), self.mjx_model.jnt_range[1:][:, 0]]
-            ),
+        self._lb = jp.minimum(
+            jp.concatenate([-jp.inf * jp.ones(7), self.mjx_model.jnt_range[1:][:, 0]]),
             0.0,
         )
-        self._ub = jnp.concatenate(
-            [jnp.inf * jnp.ones(7), self.mjx_model.jnt_range[1:][:, 1]]
+        self._ub = jp.concatenate(
+            [jp.inf * jp.ones(7), self.mjx_model.jnt_range[1:][:, 1]]
         )
 
     def initialize_part_names(self, physics):
@@ -86,16 +90,8 @@ class STAC:
             physics (dmcontrol.Physics): _description_
         """
 
-        def get_part_ids(physics, parts: List) -> jnp.ndarray:
-            """Get the part ids for a given list of parts.
-
-            Args:
-                env (TYPE): Environment
-                parts (List): List of part names
-
-            Returns:
-                jnp.ndarray: an array of idxs
-            """
+        def get_part_ids(physics, parts: List) -> jp.ndarray:
+            """Get the part ids for a given list of parts."""
             part_names = physics.named.data.qpos.axes.row.names
             return np.array(
                 [any(part in name for part in parts) for name in part_names]
@@ -104,7 +100,7 @@ class STAC:
         if self.model_cfg["INDIVIDUAL_PART_OPTIMIZATION"] is None:
             indiv_parts = []
         else:
-            indiv_parts = jnp.array(
+            indiv_parts = jp.array(
                 [
                     get_part_ids(physics, parts)
                     for parts in self.model_cfg["INDIVIDUAL_PART_OPTIMIZATION"].values()
@@ -124,9 +120,9 @@ class STAC:
         """
         keypoint_sites = []
         # set up keypoint rendering by adding the kp sites to the root body
-        for id, name in enumerate(utils.params["KEYPOINT_MODEL_PAIRS"]):
+        for id, name in enumerate(self.model_cfg["KEYPOINT_MODEL_PAIRS"]):
             start = (np.random.rand(3) - 0.5) * 0.001
-            rgba = utils.params["KEYPOINT_COLOR_PAIRS"][name]
+            rgba = self.model_cfg["KEYPOINT_COLOR_PAIRS"][name]
             site = root.worldbody.add(
                 "site",
                 name=name + "_kp",
@@ -194,7 +190,9 @@ class STAC:
 
         part_names = self.initialize_part_names(physics)
 
-        return physics, physics.model.ptr, site_index_map, part_names
+        body_names = physics.named.data.xpos.axes.row.names
+
+        return physics, physics.model.ptr, site_index_map, part_names, body_names
 
     def chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
@@ -210,13 +208,13 @@ class STAC:
 
         return kp_data
 
-    def get_error_stats(self, errors: jnp.ndarray):
+    def get_error_stats(self, errors: jp.ndarray):
         """Compute error stats."""
         flattened_errors = errors.reshape(-1)
 
         # Calculate mean and standard deviation
-        mean = jnp.mean(flattened_errors)
-        std = jnp.std(flattened_errors)
+        mean = jp.mean(flattened_errors)
+        std = jp.std(flattened_errors)
 
         return flattened_errors, mean, std
 
@@ -224,15 +222,27 @@ class STAC:
     def fit(self, kp_data):
         """Do pose optimization."""
         # Begin optimization steps
-        mjx_data = compute_stac.root_optimization(
-            mjx_model, mjx_data, kp_data, self._lb, self._ub
+        self.mjx_data = compute_stac.root_optimization(
+            self.mjx_model,
+            self.mjx_data,
+            kp_data,
+            self._lb,
+            self._ub,
+            self._site_idxs,
+            self._trunk_kps,
         )
 
         for n_iter in range(self.model_cfg["N_ITERS"]):
-            print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg["N_ITERS"]}")
-            mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+            print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
+            self.mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
                 compute_stac.pose_optimization(
-                    mjx_model, mjx_data, kp_data, self._lb, self._ub
+                    self.mjx_model,
+                    self.mjx_data,
+                    kp_data,
+                    self._lb,
+                    self._ub,
+                    self._site_idxs,
+                    self._indiv_parts,
                 )
             )
 
@@ -246,21 +256,29 @@ class STAC:
             print(f"Standard deviation: {std}")
 
             print("starting offset optimization")
-            mjx_model, mjx_data = compute_stac.offset_optimization(
-                mjx_model,
-                mjx_data,
+            self.mjx_model, self.mjx_data = compute_stac.offset_optimization(
+                self.mjx_model,
+                self.mjx_data,
                 kp_data,
                 self._offsets,
                 q,
                 self.model_cfg["N_SAMPLE_FRAMES"],
                 self._is_regularized,
+                self._site_idxs,
+                self.model_cfg["M_REG_COEF"],
             )
 
         # Optimize the pose for the whole sequence
         print("Final pose optimization")
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+        self.mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
             compute_stac.pose_optimization(
-                mjx_model, mjx_data, kp_data, self._lb, self._ub
+                self.mjx_model,
+                self.mjx_data,
+                kp_data,
+                self._lb,
+                self._ub,
+                self._site_idxs,
+                self._indiv_parts,
             )
         )
 
@@ -272,7 +290,7 @@ class STAC:
         print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
-        return mjx_model, q, x, walker_body_sites, kp_data
+        return q, x, walker_body_sites, kp_data
 
     def transform(self, mj_model, kp_data, offsets):
         """Register skeleton to keypoint data.
@@ -281,14 +299,14 @@ class STAC:
 
         Args:
             mj_model (mujoco.Model): Physics model.
-            kp_data (jnp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
+            kp_data (jp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
                 Keypoint order must match the order in the skeleton file.
-            offsets (jnp.ndarray): offsets loaded from offset.p after fit()
+            offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Set joint bounds
-        lb = jnp.concatenate([-jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 0]])
-        lb = jnp.minimum(lb, 0.0)
-        ub = jnp.concatenate([jnp.inf * jnp.ones(7), mjx_model.jnt_range[1:][:, 1]])
+        lb = jp.concatenate([-jp.inf * jp.ones(7), self.mjx_model.jnt_range[1:][:, 0]])
+        lb = jp.minimum(lb, 0.0)
+        ub = jp.concatenate([jp.inf * jp.ones(7), self.mjx_model.jnt_range[1:][:, 1]])
 
         def mjx_setup(kp_data, mj_model):
             """Create mjxmodel and mjxdata and set offet.
@@ -304,7 +322,7 @@ class STAC:
             mjx_data = mjx.make_data(mjx_model)
 
             # Set the offsets.
-            mjx_model = op.set_site_pos(mjx_model, offsets)
+            mjx_model = op.set_site_pos(mjx_model, offsets, self._site_idxs)
 
             # forward is used to calculate xpos and such
             mjx_data = mjx.kinematics(mjx_model, mjx_data)
@@ -315,16 +333,18 @@ class STAC:
         vmap_mjx_setup = vmap(mjx_setup, in_axes=(0, None))
 
         # Create batch mjx model and data where batch_size = kp_data.shape[0]
-        mjx_model, mjx_data = vmap_mjx_setup(kp_data, mj_model)
+        self.mjx_model, mjx_data = vmap_mjx_setup(kp_data, mj_model)
 
         # Vmap optimize functions
         vmap_root_opt = vmap(compute_stac.root_optimization)
         vmap_pose_opt = vmap(compute_stac.pose_optimization)
 
         # q_phase
-        mjx_data = vmap_root_opt(mjx_model, mjx_data, kp_data, lb, ub)
+        mjx_data = vmap_root_opt(
+            self.mjx_model, self.mjx_data, kp_data, self._lb, self._ub, self._site_idxs
+        )
         mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
-            mjx_model, mjx_data, kp_data, lb, ub
+            mjx_model, mjx_data, kp_data, lb, ub, self._site_idxs, self._indiv_parts
         )
 
         flattened_errors, mean, std = self.get_error_stats(frame_error)
@@ -333,22 +353,21 @@ class STAC:
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
 
-        return mjx_model, q, x, walker_body_sites, kp_data
+        return self.mjx_model, q, x, walker_body_sites, kp_data
 
-    def package_data(
-        self, mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False
-    ):
-        """Extract pose, offsets, data, and all parameters."""
+    def package_data(self, q, x, walker_body_sites, kp_data, batched=False):
+        """Extract pose, offsets, data, and all parameters.
+        walker_body_sites is the marker positions for each frame--
+            the rodent model's kp_data equivalent
+        """
         if batched:
             # prepare batched data to be packaged
             get_batch_offsets = vmap(op.get_site_pos)
-            offsets = get_batch_offsets(mjx_model).copy()[0]
+            offsets = get_batch_offsets(self.mjx_model).copy()[0]
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:
-            offsets = op.get_site_pos(mjx_model).copy()
-
-        names_xpos = physics.named.data.xpos.axes.row.names
+            offsets = op.get_site_pos(self.mjx_model, self._site_idxs).copy()
 
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
         data = {
@@ -357,11 +376,11 @@ class STAC:
             "walker_body_sites": walker_body_sites,
             "offsets": offsets,
             "names_qpos": self._part_names,
-            "names_xpos": names_xpos,
-            "kp_data": jnp.copy(kp_data),
+            "names_xpos": self._body_names,
+            "kp_data": jp.copy(kp_data),
         }
 
-        for k, v in utils.params.items():
+        for k, v in self.model_cfg.items():
             data[k] = v
 
         return data

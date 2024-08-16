@@ -14,6 +14,7 @@ from stac_mjx import utils
 from stac_mjx import controller as ctrl
 from stac_mjx.controller import STAC
 from pathlib import Path
+from typing import List
 
 
 def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
@@ -134,7 +135,11 @@ def load_configs_NEW(stac_config_path: Path, model_config_path: Path) -> DictCon
 
 
 def run_stac_NEW(
-    stac_cfg: DictConfig, model_cfg, kp_data: jp.ndarray, base_path: Path = Path.cwd()
+    stac_cfg: DictConfig,
+    model_cfg,
+    kp_data: jp.ndarray,
+    kp_names: List[str],
+    base_path: Path = Path.cwd(),
 ) -> tuple[str, str]:
     start_time = time.time()
 
@@ -144,16 +149,15 @@ def run_stac_NEW(
 
     xml_path = base_path / stac_cfg.paths.xml
 
-    stac = STAC(xml_path, stac_cfg, model_cfg)
+    stac = STAC(xml_path, stac_cfg, model_cfg, kp_names)
+
     # Run fit if not skipping
     if stac_cfg.skip_fit != 1:
         fit_data = kp_data[: stac_cfg.n_fit_frames]
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
-        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(fit_data)
+        mjx_model, q, x, walker_body_sites, clip_data = stac.fit(fit_data)
 
-        fit_data = ctrl.package_data(
-            mjx_model, physics, q, x, walker_body_sites, clip_data
-        )
+        fit_data = stac.package_data(q, x, walker_body_sites, clip_data)
 
         logging.info(f"saving data to {fit_path}")
         utils.save(fit_data, fit_path)

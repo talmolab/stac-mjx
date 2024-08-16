@@ -46,10 +46,10 @@ def get_site_xpos(mjx_data: mjx.Data, site_idxs: jp.ndarray):
         jax.Array: MjxData.site_xpos of keypoint body sites, ie
         Cartesian coords of body sites.
     """
-    return mjx_data.site_xpos[jp.array(list(utils.params["site_index_map"].values()))]
+    return mjx_data.site_xpos[site_idxs]
 
 
-def get_site_pos(mjx_model: mjx.Model):
+def get_site_pos(mjx_model: mjx.Model, site_idxs: jp.ndarray):
     """Get MjxModel.site_pos of keypoint body sites.
 
     Args:
@@ -59,10 +59,10 @@ def get_site_pos(mjx_model: mjx.Model):
         jax.Array: MjxModel.site_pos of keypoint body sites, ie
         local position offset rel. to body.
     """
-    return mjx_model.site_pos[jp.array(list(utils.params["site_index_map"].values()))]
+    return mjx_model.site_pos[site_idxs]
 
 
-def set_site_pos(mjx_model: mjx.Model, offsets):
+def set_site_pos(mjx_model: mjx.Model, offsets, site_idxs: jp.ndarray):
     """Set MjxModel.sites_pos to offsets and returns the new mjx_model.
 
     Args:
@@ -72,8 +72,7 @@ def set_site_pos(mjx_model: mjx.Model, offsets):
     Returns:
         mjx_model: Resulting mjx.Model
     """
-    indices = np.fromiter(utils.params["site_index_map"].values(), dtype=int)
-    new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
+    new_site_pos = mjx_model.site_pos.at[site_idxs].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 

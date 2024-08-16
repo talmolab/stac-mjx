@@ -88,9 +88,13 @@ KEYPOINT_INITIAL_OFFSETS:
   WristR: 0. 0. 0.0
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
-  - "Spine"
-  - "Hip"
-  - "Shoulder"
+  - "SpineF"
+  - "SpineL"
+  - "SpineM"
+  - "HipL"
+  - "HipR"
+  - "ShoulderL"
+  - "ShoulderR"
   - "TailBase"
   
 INDIVIDUAL_PART_OPTIMIZATION:
