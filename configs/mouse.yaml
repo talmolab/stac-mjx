@@ -48,8 +48,8 @@ KP_NAMES:
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
   Nose: mouse__Head
-  EarL: mouse__Head
-  EarR: mouse__Head
+  Ear_R: mouse__Head
+  Ear_L: mouse__Head
   TTI: mouse__Thoracic1
   TailTip: mouse__Tail19
   Head: mouse__Head
@@ -57,11 +57,30 @@ KEYPOINT_MODEL_PAIRS:
   Tail_0: mouse__Tail1
   Tail_1: mouse__Tail2
   Tail_2: mouse__Tail3
-  ShoulderL: mouse__LScapula
-  ShoulderR: mouse__RScapula
-  HaunchL: mouse__LFemur
-  HaunchR: mouse__RFemur
-  Neck: mouse__Cervical1
+  Shoulder_L: mouse__LScapula
+  Shoulder_R: mouse__RScapula
+  Knee_L: mouse__LFemur
+  Knee_R: mouse__RFemur
+  Neck: mouse__Cervical8
+  Elbow_L: mouse__LHumerus
+  Elbow_R: mouse__RHumerus
+  Wrist_L: mouse__LUlna
+  Wrist_R: mouse__RUlna
+  Forepaw_L: mouse__LMetaCarpus3
+  Forepaw_R: mouse__RMetaCarpus3
+  Heel_L: mouse__LTibia
+  Heel_R: mouse__RTibia
+  Spine: mouse__Thoracic13
+  Eye_L: mouse__Head
+  Eye_R: mouse__Head
+  Tail_3: mouse__Tail10  #presume numbers grow towards end
+  Tail_4: mouse__Tail16  #double check these
+  Hip_L: mouse__LFemur_interim_0
+  Hip_R: mouse__RFemur_interim_0
+  Lisfranc_L: mouse__LTarsus_interim_0
+  Lisfranc_R: mouse__RTarsus_interim_0
+  MTP_L: mouse__RTarsus_interim_0
+  MTP_R: mouse__RTarsus_interim_0
 
 
 KEYPOINT_INITIAL_OFFSETS:
@@ -120,60 +139,60 @@ KEYPOINT_INITIAL_OFFSETS:
 #   Neck: 0 1 1 1  # Cyan
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
-  - "Trunk"
-#  - "HipL"
-#  - "HipR"
-  - "ShoulderL"
-  - "ShoulderR"
-  - "TailBase"
+ - "Trunk"
+ - "HipL"
+ - "HipR"
+ - "ShoulderL"
+ - "ShoulderR"
+# - "TailBase"
 
 INDIVIDUAL_PART_OPTIMIZATION:
-  "r_leg": [
-    "Thoracic1",
-    "Lumbar1",
-    "Lumbar2",
-    "Lumbar3",
-    "Lumbar4",
-    "Lumbar5",
-    "RFemur",
-    "RTibia",
-    "RTarsus",
-    "RMetatarsus1"
-  ]
-  "l_leg": [
-    "Thoracic1",
-    "Lumbar1",
-    "Lumbar2",
-    "Lumbar3",
-    "Lumbar4",
-    "Lumbar5",
-    "LFemur",
-    "LTibia",
-    "LTarsus",
-    "LMetatarsus1"
-  ]
-  "r_arm": [
-    "RScapula",
-    "RHumerus",
-    "RRadius",
-    "RCarpus",
-    "RMetaCarpus1"
-  ]
-  "l_arm": [
-    "LScapula",
-    "LHumerus",
-    "LRadius",
-    "LCarpus",
-    "LMetaCarpus1"
-  ]
-  "head": [
-    "Cervical1",
-    "Cervical2",
-    "Cervical3",
-    "Cervical4",
-    "Cervical5",
-    "Cervical6"
-  ]
+#   "r_leg": [
+#     "Thoracic1",
+#     "Lumbar1",
+#     "Lumbar2",
+#     "Lumbar3",
+#     "Lumbar4",
+#     "Lumbar5",
+#     "RFemur",
+#     "RTibia",
+#     "RTarsus",
+#     "RMetatarsus1"
+#   ]
+#   "l_leg": [
+#     "Thoracic1",
+#     "Lumbar1",
+#     "Lumbar2",
+#     "Lumbar3",
+#     "Lumbar4",
+#     "Lumbar5",
+#     "LFemur",
+#     "LTibia",
+#     "LTarsus",
+#     "LMetatarsus1"
+#   ]
+#   "r_arm": [
+#     "RScapula",
+#     "RHumerus",
+#     "RRadius",
+#     "RCarpus",
+#     "RMetaCarpus1"
+#   ]
+#   "l_arm": [
+#     "LScapula",
+#     "LHumerus",
+#     "LRadius",
+#     "LCarpus",
+#     "LMetaCarpus1"
+#   ]
+#   "head": [
+#     "Cervical1",
+#     "Cervical2",
+#     "Cervical3",
+#     "Cervical4",
+#     "Cervical5",
+#     "Cervical6"
+#   ]
 
 # OPTIONAL Lock the mandible to a position if there is no jaw tracking
 MANDIBLE_POS: -0.297
@@ -182,13 +201,13 @@ MANDIBLE_POS: -0.297
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 1
 SITES_TO_REGULARIZE:
-  - ShoulderL
-  - ShoulderR
-  - SpineF
-  - SpineL
-  - SpineM
-  - WristL
-  - WristR
+   - ShoulderL
+   - ShoulderR
+#   - SpineF
+#   - SpineL
+#   - SpineM
+#   - WristL
+#   - WristR
 
 N_SAMPLE_FRAMES: 50
 
@@ -200,7 +219,7 @@ ARENA_TYPE: DefaultArena
 Z_OFFSET: 0.00
 
 # Path to the model file.
-XML_PATH: "./models/mouse_joints_no_meshes_ellipsoid.xml"
+# XML_PATH: "./models/mouse_joints_no_meshes_ellipsoid.xml"
 # SKELETON_PATH: "./models/animal_skeleton.mat"
 
 # What is the size of the animal you'd like to register, relative to the model?
@@ -209,7 +228,7 @@ SCALE_FACTOR: 1.0
 MOCAP_SCALE_FACTOR: .001
 
 # Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
+N_ITERS: 1
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
@@ -217,6 +236,7 @@ N_FRAMES_PER_CLIP: 360 # 1000 environments
 
 N_GPUS: 1
 
+# TODO REMOVE PERMANENTLY (Ask Kavinder)
 # # Joint names for each keypoint.
 # JOINT_NAMES:
 #   Nose: "head_joint"
