@@ -75,11 +75,19 @@ def compute_keypoint_centroid(kps):
     return centroid
 
 def create_keypoint_sites_centroid(root, kps):
-    # Reshape the array from (1, 3N) to (N, 3)
+    # Rotation
+    theta = np.radians(35)
+    c, s = np.cos(theta), np.sin(theta)
+    R = np.array(((c, -s, 0), (s, c, 0), (0,0,1)))    
+    
+    # Compute the centroid    
     pts = kps.reshape(-1, 3)
-    # Compute the centroid
     centroid = np.mean(pts, axis=0)
     print("centroid", centroid)
+
+    # Subtract centroid & rotate
+    pts = pts - centroid
+    pts = pts @ R.T
     
     keypoint_sites = []
     # set up keypoint rendering by adding the kp sites to the root body
@@ -92,7 +100,7 @@ def create_keypoint_sites_centroid(root, kps):
             type="sphere",
             size="0.002",
             rgba=rgba,
-            pos=start,
+            pos=pts[id],
             group=2,
         )
         keypoint_sites.append(site)
@@ -100,7 +108,7 @@ def create_keypoint_sites_centroid(root, kps):
     physics = mjcf.Physics.from_mjcf_model(root)
 
     # return physics, mj_model, and sites (to use in bind())
-    return physics, physics.model.ptr, keypoint_sites, kp
+    return physics, physics.model.ptr, keypoint_sites
 
 
 def create_keypoint_sites(root):
@@ -150,7 +158,6 @@ def set_keypoint_sites_centroid(physics, sites, kps):
     R = np.array(((c, -s, 0), (s, c, 0), (0,0,1)))    
     
     
-    
     pts = kps.reshape(-1, 3)
     # Compute the centroid
     centroid = np.mean(pts, axis=0)
@@ -159,7 +166,6 @@ def set_keypoint_sites_centroid(physics, sites, kps):
     pts = pts @ R.T
 
     kps = pts.reshape(-1)
-
 
     physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr

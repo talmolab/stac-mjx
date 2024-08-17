@@ -1,5 +1,6 @@
 paths:
-  model_config: "mouse"
+  # model_config is not used?
+  #model_config: "mouse"
   #model_config: "rat"
   xml: "././models/mouse_with_meshes.xml"
   #xml: "././models/rodent.xml"
