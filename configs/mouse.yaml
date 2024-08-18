@@ -230,45 +230,43 @@ KEYPOINT_INITIAL_OFFSETS:
 
 
 # Color to use for each keypoint when visualizing the results
-# KEYPOINT_COLOR_PAIRS:
-#   Nose: 1 0 0 1  # Red
-#   Ear_L: 0 1 0 1  # Green
-#   Ear_R: 0 0.8 0 1  # Darker Green
-#   TTI: 0 0 1 1  # Blue
-#   TailTip: 0.58 0 0.82 1  # Purple
-#   Head: 1 0.5 0 1  # Orange
-#   Trunk: 0.5 0 0.5 1  # Plum
-#   Tail_0: 1 1 0 1  # Yellow
-#   Tail_1: 0.8 0.8 0 1  # Darker Yellow
-#   Tail_2: 0.4 0.4 0 1  # Olive
-#   Shoulder_L: 0.27 0.5 0.7 1  # Cerulean
-#   Shoulder_R: 0.2 0.4 0.6 1  # Darker Cerulean
-#   HaunchL: 0.85 0.75 0.85 1  # Thistle
-#   HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
-#   Knee_L: 0 0 0 1 
-#   Knee_R: 0 0 0 1
-#   Neck: 0 0 0 1
-#   Elbow_L: 0 0 0 1
-#   Elbow_R: 0 0 0 1
-#   Wrist_L: 0 0 0 1
-#   Wrist_R: 0 0 0 1
-#   Forepaw_L: 0 0 0 1
-#   Forepaw_R: 0 0 0 1
-#   Heel_L: 0 0 0 1
-#   Heel_R: 0 0 0 1
-#   Spine: 0 0 0 1
-#   Eye_L: 0 0 0 1
-#   Eye_R: 0 0 0 1
-#   Tail_3: 0 0 0 1
-#   Tail_4: 0 0 0 1
-#   Hip_L: 0 0 0 1
-#   Hip_R: 0 0 0 1
-#   Lisfranc_R: 0 0 0 1
-#   MTP_L: 0 0 0 1
-#   Lisfranc_L: 0 0 0 1
-#   MTP_R: 0 0 0 1
-
-
+KEYPOINT_COLOR_PAIRS:
+  Nose: 1 0 0 1  # Red
+  Ear_L: 0 1 0 1  # Green
+  Ear_R: 0 0.8 0 1  # Darker Green
+  TTI: 0 0 1 1  # Blue
+  TailTip: 0.58 0 0.82 1  # Purple
+  Head: 1 0.5 0 1  # Orange
+  Trunk: 0.5 0 0.5 1  # Plum
+  Tail_0: 1 1 0 1  # Yellow
+  Tail_1: 0.8 0.8 0 1  # Darker Yellow
+  Tail_2: 0.4 0.4 0 1  # Olive
+  Shoulder_L: 0.27 0.5 0.7 1  # Cerulean
+  Shoulder_R: 0.2 0.4 0.6 1  # Darker Cerulean
+  HaunchL: 0.85 0.75 0.85 1  # Thistle
+  HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
+  Knee_L: 0 0 0 1 
+  Knee_R: 0 0 0 1
+  Neck: 0 0 0 1
+  Elbow_L: 0 0 0 1
+  Elbow_R: 0 0 0 1
+  Wrist_L: 0 0 0 1
+  Wrist_R: 0 0 0 1
+  Forepaw_L: 0 0 0 1
+  Forepaw_R: 0 0 0 1
+  Heel_L: 0 0 0 1
+  Heel_R: 0 0 0 1
+  Spine: 0 0 0 1
+  Eye_L: 0 0 0 1
+  Eye_R: 0 0 0 1
+  Tail_3: 0 0 0 1
+  Tail_4: 0 0 0 1
+  Hip_L: 0 0 0 1
+  Hip_R: 0 0 0 1
+  Lisfranc_R: 0 0 0 1
+  MTP_L: 0 0 0 1
+  Lisfranc_L: 0 0 0 1
+  MTP_R: 0 0 0 1
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
  - "Trunk"
