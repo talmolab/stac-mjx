@@ -1,14 +1,14 @@
 paths:
-  # model_config is not used?
-  #model_config: "mouse"
-  #model_config: "rat"
+  model_config: "mouse"
+ # model_config: "rat"
   xml: "././models/mouse_with_meshes.xml"
   #xml: "././models/rodent.xml"
-  fit_path: "fit_sq_1_quick.p"
+  fit_path: "fit_mouse.p"
   transform_path: "transform_sq.p"
-  data_path: "tests/data/mouse_aligned_points3d.h5"
+  data_path: "tests/data/points3d_00_scaleSmooth_1_rpt_15.h5"
+  #data_path: "tests/data/mouse_aligned_points3d.h5"
   #data_path: "tests/data/test_mocap_1000_frames.nwb"
-n_fit_frames: 1
+n_fit_frames: 1000
 
 sampler: "first" # first, every, or random
 first_start: 0 # starting frame for "first" sampler
@@ -16,7 +16,7 @@ first_start: 0 # starting frame for "first" sampler
 # Should this be included?
 test:
   skip_fit: False
-  skip_transform: False
+  skip_transform: True
 
 mujoco:
   solver: "newton"

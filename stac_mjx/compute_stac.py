@@ -41,18 +41,18 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
     qs_to_opt = jnp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
-    # kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["kp_names"]), dtype=bool), 3)
-    kps_to_opt = jnp.repeat(
-        jnp.array(
-            [
-                any(
-                    [n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]]
-                )
-                for kp_name in utils.params["KP_NAMES"]
-            ]
-        ),
-        3,
-    )
+    kps_to_opt = jnp.repeat(jnp.ones(len(utils.params["KP_NAMES"]), dtype=bool), 3)
+    # kps_to_opt = jnp.repeat(
+    #     jnp.array(
+    #         [
+    #             any(
+    #                 [n in kp_name for n in utils.params["TRUNK_OPTIMIZATION_KEYPOINTS"]]
+    #             )
+    #             for kp_name in utils.params["KP_NAMES"]
+    #         ]
+    #     ),
+    #     3,
+    # )
     j = time.time()
     mjx_data, res = stac_base.q_opt(
         mjx_model,
@@ -132,7 +132,8 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
     # Define initial position of the optimization
     offset0 = op.get_site_pos(mjx_model).flatten()
 
-    # Define which offsets to regularize
+    # Define which offsets to regularize (ie which offsets we're confident about
+    # so can therefore be left out of opmtimization.)
     is_regularized = []
     for k in utils.params["site_index_map"].keys():
         if any(n == k for n in utils.params["SITES_TO_REGULARIZE"]):
@@ -140,6 +141,8 @@ def offset_optimization(mjx_model, mjx_data, kp_data, offsets, q):
         else:
             is_regularized.append(jnp.array([0.0, 0.0, 0.0]))
     is_regularized = jnp.stack(is_regularized).flatten()
+
+    print("is_regularized", is_regularized)
 
     keypoints = jnp.array(kp_data[time_indices, :])
     q = jnp.take(q, time_indices, axis=0)

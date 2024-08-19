@@ -74,80 +74,25 @@ def compute_keypoint_centroid(kps):
 
     return centroid
 
-
-def rotate_points(points, alpha, theta):
-    theta *= 3.1415/180
-    alpha *= 3.1415/180    
-    
-    R_x = np.array([
-        [1, 0, 0],
-        [0, np.cos(alpha), -np.sin(alpha)],
-        [0, np.sin(alpha), np.cos(alpha)]
-    ])
-
-
-    # # Rotation matrix around the Y-axis (pitch)
-    # R_y = np.array([
-    #     [np.cos(phi), 0, np.sin(phi)],
-    #     [0, 1, 0],
-    #     [-np.sin(phi), 0, np.cos(phi)]
-    # ])
-
-    # Rotation matrix around the Z-axis (yaw)
-    R_z = np.array([
-        [np.cos(theta), -np.sin(theta), 0],
-        [np.sin(theta), np.cos(theta), 0],
-        [0, 0, 1]
-    ])
-
-    # Combined rotation: first Y-axis, then Z-axis
-    R_combined = np.dot(R_z, R_x)
-
-    # Rotate the points
-    rotated_points = np.dot(points, R_combined.T)
-    #rotate_points = np.dot(R_combined, points)
-
-    return rotated_points
-
 def create_keypoint_sites_centroid(root, kps):
-    # Rotation
-    #theta = np.radians(-50)
-    #c, s = np.cos(theta), np.sin(theta)
-    #R = np.array(((c, -s, 0), (s, c, 0), (0,0,1)))    
-    
-    # Compute the centroid    
+    # Reshape the array from (1, 3N) to (N, 3)
     pts = kps.reshape(-1, 3)
-    print("pts shape", pts.shape)
+    # Compute the centroid
     centroid = np.mean(pts, axis=0)
     print("centroid", centroid)
-
-    # Subtract centroid & rotate
-    pts = pts - centroid
-    #pts = rotate_points(pts, -50, -45)
-    pts = rotate_points(pts, -55, -35)
-    #pts = rotate_points(pts, -50, 0)
-    # Works for z rot
-    #pts = rotate_points(pts, -45, 0)
-    pts = pts - np.array([0, .05, 0])
-    
-    
-    #pts = pts @ R.T
     
     keypoint_sites = []
     # set up keypoint rendering by adding the kp sites to the root body
     for id, name in enumerate(utils.params["KEYPOINT_MODEL_PAIRS"]):
-        #start = (np.random.rand(3) - 0.5) * 0.001
-    
+        start = (np.random.rand(3) - 0.5) * 0.001
         rgba = utils.params["KEYPOINT_COLOR_PAIRS"][name]
-        
-        # Keypoints
         site = root.worldbody.add(
             "site",
             name=name + "_kp",
             type="sphere",
             size="0.002",
             rgba=rgba,
-            pos=pts[id],
+            pos=start,
             group=2,
         )
         keypoint_sites.append(site)
@@ -155,7 +100,7 @@ def create_keypoint_sites_centroid(root, kps):
     physics = mjcf.Physics.from_mjcf_model(root)
 
     # return physics, mj_model, and sites (to use in bind())
-    return physics, physics.model.ptr, keypoint_sites
+    return physics, physics.model.ptr, keypoint_sites, kp
 
 
 def create_keypoint_sites(root):
@@ -205,6 +150,7 @@ def set_keypoint_sites_centroid(physics, sites, kps):
     R = np.array(((c, -s, 0), (s, c, 0), (0,0,1)))    
     
     
+    
     pts = kps.reshape(-1, 3)
     # Compute the centroid
     centroid = np.mean(pts, axis=0)
@@ -213,6 +159,7 @@ def set_keypoint_sites_centroid(physics, sites, kps):
     pts = pts @ R.T
 
     kps = pts.reshape(-1)
+
 
     physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr
@@ -232,26 +179,6 @@ def set_keypoint_sites(physics, sites, kps):
     physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr
 
-def create_tendons(root: mjcf.Element):
-    tendon_sites = []
-    for key, v in utils.params["KEYPOINT_MODEL_PAIRS"].items():
-        #pos = utils.params["KEYPOINT_INITIAL_OFFSETS"][key]
-        rgba = utils.params["KEYPOINT_COLOR_PAIRS"][key]
-        tendon = root.tendon.add(
-            "spatial",
-            name = key+"-"+v,
-            width="0.0002",
-            rgba = rgba,
-            limited=False,
-        )
-        tendon.add("site",
-                 site = key + "_kp")
-        tendon.add("site",
-                 site = key)
-            
-    physics = mjcf.Physics.from_mjcf_model(root)
-    return physics, physics.model.ptr
-
 
 def create_body_sites(root: mjcf.Element):
     """Create body site elements using dmcontrol mjcf for each keypoint.
@@ -264,8 +191,8 @@ def create_body_sites(root: mjcf.Element):
     """
     body_sites = []
     for key, v in utils.params["KEYPOINT_MODEL_PAIRS"].items():
+        print("v",v)
         parent = root.find("body", v)
-        print("Parent v",v)
         pos = utils.params["KEYPOINT_INITIAL_OFFSETS"][key]
         site = parent.add(
             "site",
@@ -288,8 +215,7 @@ def create_body_sites(root: mjcf.Element):
 
     axis = physics.named.model.site_pos._axes[0]
     utils.params["site_index_map"] = {
-        key: int(axis.convert_key_item(key))
-        for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
+        key: int(axis.convert_key_item(key)) for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
     }
 
     print("site_index_map", utils.params["site_index_map"])

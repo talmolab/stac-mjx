@@ -525,9 +525,9 @@ if __name__ == '__main__':
   def main(argv) -> None:
     del argv
     
-    cfg = OmegaConf.load("../configs/mouse_15.yaml")
+    cfg = OmegaConf.load("../configs/mouse.yaml")
     utils.init_params(cfg)
-    mj_data, mj_model = export_viz("../models/mouse_with_meshes_short.xml", "", utils.params)
+    mj_data, mj_model = export_viz("../models/mouse_with_meshes.xml", "", utils.params)
     mj_model.opt.gravity = (0,0,0)
     _launch_internal(mj_model, mj_data, run_physics_thread = True, show_left_ui=True, show_right_ui=True)
     #launch_passive(mj_model, mj_data)
