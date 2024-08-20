@@ -125,9 +125,7 @@ def create_keypoint_sites_centroid(root, kps):
     pts = pts - centroid
     #pts = rotate_points(pts, -50, -45)
     pts = rotate_points(pts, -55, -35)
-    #pts = rotate_points(pts, -50, 0)
-    # Works for z rot
-    #pts = rotate_points(pts, -45, 0)
+    # Translation
     pts = pts - np.array([0, .05, 0])
     
     
@@ -271,7 +269,7 @@ def create_body_sites(root: mjcf.Element):
             "site",
             name=key,
             type="sphere",
-            size="0.002",
+            size="0.001",
             rgba="0 0 0 1",
             pos=pos,
             group=2,
@@ -292,7 +290,7 @@ def create_body_sites(root: mjcf.Element):
         for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
     }
 
-    print("site_index_map", utils.params["site_index_map"])
+    #print("site_index_map", utils.params["site_index_map"])
 
     utils.params["part_names"] = initialize_part_names(physics)
 
