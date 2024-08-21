@@ -173,8 +173,8 @@ def m_loss(
             (
                 mjx_model,
                 mjx_data,
-                kp_data.shape[1], # TODO FIX THIS (Try kp_data.shape[1], but may have jax compl. issues)
-                kp_data.shape[1],
+                jnp.zeros(kp_data.shape[1]),
+                jnp.zeros(kp_data.shape[1]),
                 initial_offsets,
                 is_regularized,
             ),

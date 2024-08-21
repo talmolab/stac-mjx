@@ -119,11 +119,13 @@
       <geom contype="0" conaffinity="1" condim="3"/>
     </default>
     <worldbody>
-        <camera name="close_profile" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2" fovy="20"/>  
+        <camera name="com" mode="fixed" pos="0.06 .3 0.5" xyaxes="-1 0 0 0 0 1" fovy="90"/>
+        <!--camera name="close_profile" mode="trackcom" pos=".3 -.3 0.25" xyaxes="1 1 0 -1 1 2" fovy="20"/!--> 
         <!-- <camera name="side" mode="targetbody" pos="0 -3 1" xyaxes="1 0 0 0 1 2" fovy="20"/>    -->
-        <!-- <camera name="side_alt" mode="targetbody" pos="0.5 -0.561 0.199" xyaxes="0.766 0.643 0.000 -0.162 0.192 0.968"/>   --> -->
-         <geom name="floor" class="collision_floor" pos="0 0 -1" size="10 10 0.025" type="plane" material="grid"/>
-        <light name="spotlight" pos="0 0 5" dir="0 0 -1" diffuse=".8 .8 .8" specular=".2 .2 .2" directional="true" cutoff="45" exponent="20"/>
+        <!-- <camera name="side_alt" mode="targetbody" pos="0.5 -0.561 0.199" xyaxes="0.766 0.643 0.000 -0.162 0.192 0.968"/>   -->        
+        <!-- <camera name="com" mode="fixed" pos="0.06 .3 0.5" xyaxes="-1 0 0 0 0 1" zaxis="0 1 0" fovy="90"/> -->
+        <geom name="floor" class="collision_floor" pos="0 -1 0" zaxis = "0 1 0" size="10 10 0.025" type="plane" material="grid"/>
+        <light name="spotlight" pos="0 5 0" dir="0 -1 0" diffuse=".8 .8 .8" specular=".2 .2 .2" directional="true" cutoff="45" exponent="20"/>
        <body name="mouse" pos="0 0 0" quat="0 0 0 1">
         <freejoint name="root"/>
         <geom type="mesh" mesh="Pelvis"/>

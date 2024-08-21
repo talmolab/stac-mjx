@@ -212,20 +212,6 @@ def set_keypoint_sites_centroid(physics, sites, kps):
 
     kps = pts.reshape(-1)
 
-    physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
-    return physics, physics.model.ptr
-
-def set_keypoint_sites(physics, sites, kps):
-    """Bind keypoint sites to physics model.
-
-    Args:
-        physics (_type_): dmcontrol physics object
-        sites (_type_): _description_
-        kps (_type_): _description_
-
-    Returns:
-        (dmcontrol.Physics, mujoco.Model): update physics and model with update site pos
-    """
 
     physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr
@@ -248,6 +234,21 @@ def create_tendons(root: mjcf.Element):
                  site = key)
             
     physics = mjcf.Physics.from_mjcf_model(root)
+    return physics, physics.model.ptr
+
+def set_keypoint_sites(physics, sites, kps):
+    """Bind keypoint sites to physics model.
+
+    Args:
+        physics (_type_): dmcontrol physics object
+        sites (_type_): _description_
+        kps (_type_): _description_
+
+    Returns:
+        (dmcontrol.Physics, mujoco.Model): update physics and model with update site pos
+    """
+
+    physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
     return physics, physics.model.ptr
 
 
@@ -286,8 +287,7 @@ def create_body_sites(root: mjcf.Element):
 
     axis = physics.named.model.site_pos._axes[0]
     utils.params["site_index_map"] = {
-        key: int(axis.convert_key_item(key))
-        for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
+        key: int(axis.convert_key_item(key)) for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
     }
 
     #print("site_index_map", utils.params["site_index_map"])

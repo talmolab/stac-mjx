@@ -417,7 +417,7 @@ def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int = 0):
             mujoco.mj_forward(mj_model, mj_data)
 
             renderer.update_scene(
-                mj_data, camera="close_profile", scene_option=scene_option
+                mj_data, camera="com", scene_option=scene_option
             )
             pixels = renderer.render()
             video.append_data(pixels)
