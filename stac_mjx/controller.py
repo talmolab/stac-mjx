@@ -263,7 +263,7 @@ class STAC:
         print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
-        return self.package_data(mjx_model, q, x, walker_body_sites, kp_data)
+        return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
 
     def transform(self, kp_data, offsets):
         """Register skeleton to keypoint data.
