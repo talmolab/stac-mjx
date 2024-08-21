@@ -18,6 +18,7 @@ def test_load_nwb(rodent_config, mocap_nwb):
 
     data, sorted_kp_names = utils.load_data(_BASE_PATH / mocap_nwb, params)
     assert data.shape == (1000, 69)
+    assert len(sorted_kp_names) == 23
 
 
 def test_load_mat_no_label3d(rodent_config, mocap_mat):
@@ -29,6 +30,7 @@ def test_load_mat_no_label3d(rodent_config, mocap_mat):
 
     data, sorted_kp_names = utils.load_data(_BASE_PATH / mocap_mat, params)
     assert data.shape == (1000, 69)
+    assert len(sorted_kp_names) == 23
 
 
 def test_load_mat_w_label3d(rodent_config_label3d, mocap_mat):
@@ -44,6 +46,7 @@ def test_load_mat_w_label3d(rodent_config_label3d, mocap_mat):
         _BASE_PATH / params.get("KP_NAMES_LABEL3D_PATH", None),
     )
     assert data.shape == (1000, 69)
+    assert len(sorted_kp_names) == 23
 
 
 def test_load_mat_no_kp_names(rodent_config_no_kp_names, mocap_mat):

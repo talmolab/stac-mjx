@@ -1,13 +1,13 @@
-"""Utilities for mapping between mocap model and physics model."""
+"""STAC class handling high level functionality of stac-mjx."""
 
-from jax import vmap
+import jax
 from jax import numpy as jp
-from tqdm import tqdm
+
+import numpy as np
+
 import mujoco
 from mujoco import mjx
-from copy import deepcopy
-import numpy as np
-import imageio
+
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
@@ -15,8 +15,13 @@ from dm_control.mujoco.wrapper.mjbindings import enums
 from stac_mjx import utils as utils
 from stac_mjx import compute_stac
 from stac_mjx import operations as op
+
 from typing import List, Union
 from pathlib import Path
+from copy import deepcopy
+
+import imageio
+from tqdm import tqdm
 
 
 class STAC:
@@ -305,17 +310,16 @@ class STAC:
 
             return mjx_model, mjx_data
 
-        vmap_mjx_setup = vmap(mjx_setup, in_axes=(0, None))
-
-        # Create batch mjx model and data where batch_size = kp_data.shape[0]
-        mjx_model, mjx_data = vmap_mjx_setup(batched_kp_data, self._mj_model)
+        mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
+            batched_kp_data, self._mj_model
+        )
 
         # Vmap optimize functions
-        vmap_root_opt = vmap(
+        vmap_root_opt = jax.vmap(
             compute_stac.root_optimization,
             in_axes=(0, 0, 0, None, None, None, None),
         )
-        vmap_pose_opt = vmap(
+        vmap_pose_opt = jax.vmap(
             compute_stac.pose_optimization,
             in_axes=(0, 0, 0, None, None, None, None),
         )
@@ -324,7 +328,7 @@ class STAC:
         mjx_data = vmap_root_opt(
             mjx_model,
             mjx_data,
-            kp_data,
+            batched_kp_data,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -333,7 +337,7 @@ class STAC:
         mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
             mjx_model,
             mjx_data,
-            kp_data,
+            batched_kp_data,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -347,7 +351,7 @@ class STAC:
         print(f"Standard deviation: {std}")
 
         return self._package_data(
-            mjx_model, q, x, walker_body_sites, kp_data, batched=True
+            mjx_model, q, x, walker_body_sites, batched_kp_data, batched=True
         )
 
     def _package_data(self, mjx_model, q, x, walker_body_sites, kp_data, batched=False):
@@ -357,7 +361,7 @@ class STAC:
         """
         if batched:
             # prepare batched data to be packaged
-            get_batch_offsets = vmap(op.get_site_pos)
+            get_batch_offsets = jax.vmap(op.get_site_pos)
             offsets = get_batch_offsets(mjx_model).copy()[0]
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
