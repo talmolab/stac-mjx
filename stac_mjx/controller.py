@@ -362,7 +362,7 @@ class STAC:
         if batched:
             # prepare batched data to be packaged
             get_batch_offsets = jax.vmap(op.get_site_pos)
-            offsets = get_batch_offsets(mjx_model).copy()[0]
+            offsets = get_batch_offsets(mjx_model, self._body_site_idxs).copy()[0]
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:

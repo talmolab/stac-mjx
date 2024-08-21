@@ -53,7 +53,7 @@ def test_load_mat_no_kp_names(rodent_config_no_kp_names, mocap_mat):
     params = utils._load_params(_BASE_PATH / rodent_config_no_kp_names)
     assert params is not None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(KeyError):
         data, sorted_kp_names = utils.load_data(
             _BASE_PATH / mocap_mat,
             params,

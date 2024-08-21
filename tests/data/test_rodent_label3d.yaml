@@ -1,3 +1,5 @@
+MJCF_PATH: "models/rodent.xml"
+
 # Frames per clip for transform.
 N_FRAMES_PER_CLIP: 360
 
