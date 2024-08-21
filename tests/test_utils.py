@@ -16,7 +16,7 @@ def test_load_nwb(rodent_config, mocap_nwb):
     params = utils._load_params(_BASE_PATH / rodent_config)
     assert params is not None
 
-    data = utils.load_data(_BASE_PATH / mocap_nwb, params)
+    data, sorted_kp_names = utils.load_data(_BASE_PATH / mocap_nwb, params)
     assert data.shape == (1000, 69)
 
 
@@ -27,7 +27,7 @@ def test_load_mat_no_label3d(rodent_config, mocap_mat):
     params = utils._load_params(_BASE_PATH / rodent_config)
     assert params is not None
 
-    data = utils.load_data(_BASE_PATH / mocap_mat, params)
+    data, sorted_kp_names = utils.load_data(_BASE_PATH / mocap_mat, params)
     assert data.shape == (1000, 69)
 
 
@@ -38,7 +38,7 @@ def test_load_mat_w_label3d(rodent_config_label3d, mocap_mat):
     params = utils._load_params(_BASE_PATH / rodent_config_label3d)
     assert params is not None
 
-    data = utils.load_data(
+    data, sorted_kp_names = utils.load_data(
         _BASE_PATH / mocap_mat,
         params,
         _BASE_PATH / params.get("KP_NAMES_LABEL3D_PATH", None),
@@ -51,7 +51,7 @@ def test_load_mat_no_kp_names(rodent_config_no_kp_names, mocap_mat):
     assert params is not None
 
     with pytest.raises(ValueError):
-        data = utils.load_data(
+        data, sorted_kp_names = utils.load_data(
             _BASE_PATH / mocap_mat,
             params,
         )
@@ -62,7 +62,7 @@ def test_load_mat_less_kp_names(rodent_config_less_kp_names, mocap_mat):
     assert params is not None
 
     with pytest.raises(ValueError):
-        data = utils.load_data(
+        data, sorted_kp_names = utils.load_data(
             _BASE_PATH / mocap_mat,
             params,
         )

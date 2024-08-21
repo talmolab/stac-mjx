@@ -14,12 +14,14 @@ def test_load_configs(stac_config, rodent_config):
         utils.params
 
     # Call the function
-    cfg = main.load_configs(_BASE_PATH / stac_config, _BASE_PATH / rodent_config)
+    stac_cfg, model_cfg = main.load_configs(
+        _BASE_PATH / stac_config, _BASE_PATH / rodent_config
+    )
 
     # Assert that the configs are the correct type
-    assert isinstance(cfg, DictConfig)
-    assert isinstance(utils.params, Dict)
+    assert isinstance(stac_cfg, DictConfig)
+    assert isinstance(model_cfg, Dict)
 
     # Assert that the resulting configs contain the expected data
-    assert cfg.paths.fit_path == "fit.p"
-    assert utils.params["N_FRAMES_PER_CLIP"] == 360
+    assert stac_cfg.fit_path == "fit.p"
+    assert model_cfg["N_FRAMES_PER_CLIP"] == 360
