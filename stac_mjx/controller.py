@@ -2,33 +2,40 @@
 
 from jax import vmap
 from jax import numpy as jp
-
+from tqdm import tqdm
 import mujoco
 from mujoco import mjx
-
+from copy import deepcopy
 import numpy as np
-
+import imageio
 from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
+from dm_control.mujoco.wrapper.mjbindings import enums
 
 from stac_mjx import utils as utils
 from stac_mjx import compute_stac
 from stac_mjx import operations as op
-from typing import List
+from typing import List, Union
+from pathlib import Path
 
 
 class STAC:
     def __init__(self, xml_path: str, stac_cfg, model_cfg, kp_names: List[str]):
         self.stac_cfg = stac_cfg
         self.model_cfg = model_cfg
-
-        root = mjcf.from_path(xml_path)
-        physics, mj_model, self._site_index_map, self._part_names, self._body_names = (
-            self.create_body_sites(root)
-        )
+        self._kp_names = kp_names
+        self._root = mjcf.from_path(xml_path)
+        (
+            physics,
+            mj_model,
+            self._body_site_idxs,
+            self._is_regularized,
+            self._part_names,
+            self._body_names,
+        ) = self.create_body_sites(self._root)
         self._indiv_parts = self.part_opt_setup(physics)
 
-        self._site_idxs = jp.array(list(self._site_index_map.values()))
+        # self._body_site_idxs = jp.array(list(self._site_index_map.values()))
         self._trunk_kps = jp.array(
             [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
         )
@@ -44,24 +51,19 @@ class STAC:
         # Runs faster on GPU with this
         mj_model.opt.jacobian = 0  # dense
 
-        # Define which offsets to regularize
-        is_regularized = []
-        for k in self._site_index_map.keys():
-            if any(n == k for n in model_cfg.get("SITES_TO_REGULARIZE", [])):
-                is_regularized.append(jp.array([1.0, 1.0, 1.0]))
-            else:
-                is_regularized.append(jp.array([0.0, 0.0, 0.0]))
-        self._is_regularized = jp.stack(is_regularized).flatten()
+        self._mj_model = mj_model
 
         # Create mjx model and data
         self.mjx_model = mjx.put_model(mj_model)
         self.mjx_data = mjx.make_data(self.mjx_model)
 
         # Get and set the offsets of the markers
-        self._offsets = jp.copy(op.get_site_pos(self.mjx_model, self._site_idxs))
+        self._offsets = jp.copy(op.get_site_pos(self.mjx_model, self._body_site_idxs))
         self._offsets *= self.model_cfg["SCALE_FACTOR"]
 
-        self.mjx_model = op.set_site_pos(self.mjx_model, self._offsets, self._site_idxs)
+        self.mjx_model = op.set_site_pos(
+            self.mjx_model, self._offsets, self._body_site_idxs
+        )
 
         # Calculate initial xpos and such
         self.mjx_data = mjx.kinematics(self.mjx_model, self.mjx_data)
@@ -109,50 +111,6 @@ class STAC:
 
         return indiv_parts
 
-    def create_keypoint_sites(self, root):
-        """Create sites for keypoints (used for rendering).
-
-        Args:
-            root (mjcf.Element): root element of mjcf
-
-        Returns:
-            (dmcontrol.Physics, mujoco.Model, [mjcf.Element]): physics, mjmodel, and list of the created sites
-        """
-        keypoint_sites = []
-        # set up keypoint rendering by adding the kp sites to the root body
-        for id, name in enumerate(self.model_cfg["KEYPOINT_MODEL_PAIRS"]):
-            start = (np.random.rand(3) - 0.5) * 0.001
-            rgba = self.model_cfg["KEYPOINT_COLOR_PAIRS"][name]
-            site = root.worldbody.add(
-                "site",
-                name=name + "_kp",
-                type="sphere",
-                size=[0.005],
-                rgba=rgba,
-                pos=start,
-                group=2,
-            )
-            keypoint_sites.append(site)
-
-        physics = mjcf.Physics.from_mjcf_model(root)
-
-        # return physics, mj_model, and sites (to use in bind())
-        return physics, physics.model.ptr, keypoint_sites
-
-    def set_keypoint_sites(self, physics, sites, kps):
-        """Bind keypoint sites to physics model.
-
-        Args:
-            physics (_type_): dmcontrol physics object
-            sites (_type_): _description_
-            kps (_type_): _description_
-
-        Returns:
-            (dmcontrol.Physics, mujoco.Model): update physics and model with update site pos
-        """
-        physics.bind(sites).pos[:] = np.reshape(kps.T, (-1, 3))
-        return physics, physics.model.ptr
-
     def create_body_sites(self, root: mjcf.Element):
         """Create body site elements using dmcontrol mjcf for each keypoint.
 
@@ -192,7 +150,23 @@ class STAC:
 
         body_names = physics.named.data.xpos.axes.row.names
 
-        return physics, physics.model.ptr, site_index_map, part_names, body_names
+        # Define which offsets to regularize
+        is_regularized = []
+        for k in site_index_map.keys():
+            if any(n == k for n in self.model_cfg.get("SITES_TO_REGULARIZE", [])):
+                is_regularized.append(jp.array([1.0, 1.0, 1.0]))
+            else:
+                is_regularized.append(jp.array([0.0, 0.0, 0.0]))
+        is_regularized = jp.stack(is_regularized).flatten()
+
+        return (
+            physics,
+            physics.model.ptr,
+            jp.array(list(site_index_map.values())),
+            is_regularized,
+            part_names,
+            body_names,
+        )
 
     def chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
@@ -228,7 +202,7 @@ class STAC:
             kp_data,
             self._lb,
             self._ub,
-            self._site_idxs,
+            self._body_site_idxs,
             self._trunk_kps,
         )
 
@@ -241,7 +215,7 @@ class STAC:
                     kp_data,
                     self._lb,
                     self._ub,
-                    self._site_idxs,
+                    self._body_site_idxs,
                     self._indiv_parts,
                 )
             )
@@ -264,7 +238,7 @@ class STAC:
                 q,
                 self.model_cfg["N_SAMPLE_FRAMES"],
                 self._is_regularized,
-                self._site_idxs,
+                self._body_site_idxs,
                 self.model_cfg["M_REG_COEF"],
             )
 
@@ -277,7 +251,7 @@ class STAC:
                 kp_data,
                 self._lb,
                 self._ub,
-                self._site_idxs,
+                self._body_site_idxs,
                 self._indiv_parts,
             )
         )
@@ -322,7 +296,7 @@ class STAC:
             mjx_data = mjx.make_data(mjx_model)
 
             # Set the offsets.
-            mjx_model = op.set_site_pos(mjx_model, offsets, self._site_idxs)
+            mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)
 
             # forward is used to calculate xpos and such
             mjx_data = mjx.kinematics(mjx_model, mjx_data)
@@ -341,10 +315,21 @@ class STAC:
 
         # q_phase
         mjx_data = vmap_root_opt(
-            self.mjx_model, self.mjx_data, kp_data, self._lb, self._ub, self._site_idxs
+            self.mjx_model,
+            self.mjx_data,
+            kp_data,
+            self._lb,
+            self._ub,
+            self._body_site_idxs,
         )
         mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
-            mjx_model, mjx_data, kp_data, lb, ub, self._site_idxs, self._indiv_parts
+            mjx_model,
+            mjx_data,
+            kp_data,
+            lb,
+            ub,
+            self._body_site_idxs,
+            self._indiv_parts,
         )
 
         flattened_errors, mean, std = self.get_error_stats(frame_error)
@@ -367,20 +352,160 @@ class STAC:
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:
-            offsets = op.get_site_pos(self.mjx_model, self._site_idxs).copy()
+            offsets = op.get_site_pos(self.mjx_model, self._body_site_idxs).copy()
 
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
-        data = {
-            "qpos": q,
-            "xpos": x,
-            "walker_body_sites": walker_body_sites,
-            "offsets": offsets,
-            "names_qpos": self._part_names,
-            "names_xpos": self._body_names,
-            "kp_data": jp.copy(kp_data),
-        }
+
+        data = {}
 
         for k, v in self.model_cfg.items():
             data[k] = v
 
+        data.update(
+            {
+                "qpos": q,
+                "xpos": x,
+                "walker_body_sites": walker_body_sites,
+                "offsets": offsets,
+                "names_qpos": self._part_names,
+                "names_xpos": self._body_names,
+                "kp_data": jp.copy(kp_data),
+                "kp_names": self._kp_names,
+            }
+        )
+
         return data
+
+    def _create_keypoint_sites(self):
+        """Create sites for keypoints (used for rendering only).
+
+        Args:
+            root (mjcf.Element): root element of mjcf
+
+        Returns:
+            (dmcontrol.Physics, mujoco.Model, [mjcf.Element]): physics, mjmodel, and list of the created sites
+        """
+        keypoint_sites = []
+        keypoint_site_names = []
+        # set up keypoint rendering by adding the kp sites to the root body
+        for id, name in enumerate(self.model_cfg["KEYPOINT_MODEL_PAIRS"]):
+            start = (np.random.rand(3) - 0.5) * 0.001
+            rgba = self.model_cfg["KEYPOINT_COLOR_PAIRS"][name]
+            site_name = name + "_kp"
+            keypoint_site_names.append(site_name)
+            site = self._root.worldbody.add(
+                "site",
+                name=site_name,
+                type="sphere",
+                size=[0.005],
+                rgba=rgba,
+                pos=start,
+                group=2,
+            )
+            keypoint_sites.append(site)
+
+        physics = mjcf.Physics.from_mjcf_model(self._root)
+
+        axis = physics.named.model.site_pos._axes[0]
+        # Combine the two lists of site names and create the index map
+        site_index_map = {
+            key: int(axis.convert_key_item(key))
+            for key in list(self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys())
+            + keypoint_site_names
+        }
+        body_site_idxs = [
+            site_index_map[n] for n in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
+        ]
+        keypoint_site_idxs = [site_index_map[n] for n in keypoint_site_names]
+        self._body_site_idxs = body_site_idxs
+        self._keypoint_site_idxs = keypoint_site_idxs
+
+        return deepcopy(physics.model.ptr), body_site_idxs, keypoint_site_idxs
+
+    def render(
+        self,
+        qposes: jp.ndarray,
+        kp_data: jp.ndarray,
+        offsets: jp.ndarray,
+        n_frames: int,
+        save_path: Union[str, Path],
+        start_frame: int = 0,
+        camera: Union[int, str] = 0,
+        height: int = 1200,
+        width: int = 1920,
+    ):
+        """Creates rendering using the instantiated model, given the user's qposes and kp_data
+
+        Args:
+            qposes (jp.ndarray): Set of model joint angles corresponding to kp_data
+            kp_data (jp.ndarray): Set of motion capture keypoints
+            n_frames (int): Number of frames to render
+            save_path (str): path to save
+            render_fps (int): fps to save video as
+            start_frame (int, optional): Starting frame of qposes/kp_data to render at. Defaults to 0.
+        """
+        if qposes.shape[0] != kp_data.shape[0]:
+            raise ValueError(
+                f"length of qposes ({qposes.shape[0]}) is not equal to the length of kp_data({kp_data.shape[0]})"
+            )
+        if start_frame < 0 or start_frame > kp_data.shape[0]:
+            raise ValueError(
+                f"start_frame ({start_frame}) must be non-negative and less than the length of kp_data ({kp_data.shape[0]})"
+            )
+        if start_frame + n_frames > kp_data.shape[0]:
+            raise ValueError(
+                f"start_frame + n_frames ({start_frame} + {n_frames})must be less than the length of given qposes and kp_data ({kp_data.shape[0]})"
+            )
+
+        render_mj_model, body_site_idxs, keypoint_site_idxs = (
+            self._create_keypoint_sites()
+        )
+        render_mj_model.site_pos[body_site_idxs] = offsets
+
+        scene_option = mujoco.MjvOption()
+        scene_option.geomgroup[2] = 1
+        scene_option.sitegroup[2] = 1
+
+        scene_option.sitegroup[3] = 1
+        scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+        scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
+        scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
+        scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
+        scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
+        scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
+        scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = False
+
+        mj_data = mujoco.MjData(render_mj_model)
+
+        mujoco.mj_kinematics(render_mj_model, mj_data)
+
+        renderer = mujoco.Renderer(render_mj_model, height=height, width=width)
+
+        # Make sure there are enough frames to render
+        if qposes.shape[0] < n_frames - 1:
+            raise Exception(
+                f"Trying to render {n_frames} frames when data['qpos'] only has {qposes.shape[0]}"
+            )
+
+        # slice kp_data to match qposes length
+        kp_data = kp_data[: qposes.shape[0]]
+
+        # Slice arrays to be the range that is being rendered
+        kp_data = kp_data[start_frame : start_frame + n_frames]
+        qposes = qposes[start_frame : start_frame + n_frames]
+
+        frames = []
+        # render while stepping using mujoco
+        with imageio.get_writer(save_path, fps=self.model_cfg["RENDER_FPS"]) as video:
+            for qpos, kps in tqdm(zip(qposes, kp_data)):
+                # Set keypoints
+                render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
+                mj_data.qpos = qpos
+                mujoco.mj_forward(render_mj_model, mj_data)
+
+                renderer.update_scene(mj_data, camera=camera, scene_option=scene_option)
+                pixels = renderer.render()
+                video.append_data(pixels)
+                frames.append(pixels)
+
+        return frames

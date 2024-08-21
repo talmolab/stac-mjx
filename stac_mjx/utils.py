@@ -147,12 +147,6 @@ def _load_params(param_path):
     return params
 
 
-def init_params(cfg: dict):
-    """Initialize parameters from config."""
-    global params
-    params = cfg
-
-
 # TODO put this in the STAC class
 def save(fit_data, save_path: Text):
     """Save data.
