@@ -10,15 +10,18 @@ from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import main
 from stac_mjx import utils
+from pathlib import Path
 
 
 @hydra.main(config_path="./configs", config_name="stac", version_base=None)
-def hydra_entry(cfg: DictConfig):
+def hydra_entry(stac_cfg: DictConfig):
     # Initialize configs and convert to dictionaries
-    global_cfg = hydra.compose(config_name=cfg.paths.model_config)
-    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
-    logging.info(f"global_cfg: {OmegaConf.to_yaml(global_cfg)}")
-    utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
+    model_cfg = hydra.compose(config_name=stac_cfg.model_config)
+    logging.info(f"cfg: {OmegaConf.to_yaml(stac_cfg)}")
+    logging.info(f"model_cfg: {OmegaConf.to_yaml(model_cfg)}")
+    model_cfg = OmegaConf.to_container(model_cfg, resolve=True)
+
+    base_path = Path.cwd()
 
     # XLA flags for Nvidia GPU
     if xla_bridge.get_backend().platform == "gpu":
@@ -29,22 +32,12 @@ def hydra_entry(cfg: DictConfig):
         # Set N_GPUS
         utils.params["N_GPUS"] = jax.local_device_count("gpu")
 
-    # Set up mocap data
-    kp_names = utils.params["KP_NAMES"]
-    # argsort returns the indices that sort the array to match the order of marker sites
-    stac_keypoint_order = np.argsort(kp_names)
-    data_path = cfg.paths.data_path
+    data_path = base_path / stac_cfg.data_path
+    kp_data, sorted_kp_names = utils.load_data(data_path, model_cfg)
 
-    # Load kp_data, /1000 to scale data (from mm to meters)
-    kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-
-    # Preparing DANNCE data by reordering and reshaping
-    # Resulting kp_data is of shape (n_frames, n_keypoints)
-    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
-    kp_data = jnp.transpose(kp_data, (0, 2, 1))
-    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
-
-    return main.run_stac(cfg, kp_data)
+    return main.run_stac(
+        stac_cfg, model_cfg, kp_data, sorted_kp_names, base_path=base_path
+    )
 
 
 if __name__ == "__main__":
