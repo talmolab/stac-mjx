@@ -51,9 +51,7 @@ def run_stac(
     if stac_cfg.skip_fit != 1:
         fit_data = kp_data[: stac_cfg.n_fit_frames]
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
-        q, x, walker_body_sites, clip_data = stac.fit(fit_data)
-
-        fit_data = stac.package_data(q, x, walker_body_sites, clip_data)
+        fit_data = stac.fit(fit_data)
 
         logging.info(f"saving data to {fit_path}")
         utils.save(fit_data, fit_path)
@@ -68,16 +66,9 @@ def run_stac(
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"]
-    # TODO: call chunk_kp_data inside STAC
-    kp_data = ctrl.chunk_kp_data(kp_data)
-    logging.info(f"kp_data shape: {kp_data.shape}")
-    mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(
-        mj_model, kp_data, offsets
-    )
 
-    transform_data = ctrl.package_data(
-        mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
-    )
+    logging.info(f"kp_data shape: {kp_data.shape}")
+    transform_data = stac.transform(kp_data, offsets)
 
     logging.info(
         f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"
