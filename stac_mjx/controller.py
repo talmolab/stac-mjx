@@ -25,6 +25,8 @@ from tqdm import tqdm
 
 
 class STAC:
+    """Main class with key functionality for skeletal registration and rendering"""
+
     def __init__(self, xml_path: str, stac_cfg, model_cfg, kp_names: List[str]):
         self.stac_cfg = stac_cfg
         self.model_cfg = model_cfg
@@ -37,7 +39,7 @@ class STAC:
             self._is_regularized,
             self._part_names,
             self._body_names,
-        ) = self.create_body_sites(self._root)
+        ) = self._create_body_sites(self._root)
         self._indiv_parts = self.part_opt_setup(physics)
 
         # self._body_site_idxs = jp.array(list(self._site_index_map.values()))
@@ -100,7 +102,7 @@ class STAC:
 
         return indiv_parts
 
-    def create_body_sites(self, root: mjcf.Element):
+    def _create_body_sites(self, root: mjcf.Element):
         """Create body site elements using dmcontrol mjcf for each keypoint.
 
         Args:
@@ -157,7 +159,7 @@ class STAC:
             body_names,
         )
 
-    def chunk_kp_data(self, kp_data):
+    def _chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
         n_frames = self.model_cfg["N_FRAMES_PER_CLIP"]
         total_frames = kp_data.shape[0]
@@ -171,7 +173,7 @@ class STAC:
 
         return kp_data
 
-    def get_error_stats(self, errors: jp.ndarray):
+    def _get_error_stats(self, errors: jp.ndarray):
         """Compute error stats."""
         flattened_errors = errors.reshape(-1)
 
@@ -183,8 +185,14 @@ class STAC:
 
     # TODO: pmap fit and transform if you want to use it with multiple gpus
     def fit(self, kp_data):
-        """Do pose optimization."""
+        """Alternate between pose and offset optimization for a set number of iterations.
 
+        Args:
+            kp_data (jp.ndarray): Mocap keypoints to fit to
+
+        Returns:
+            Dict: Output data packaged in a dictionary.
+        """
         # Create mjx model and data
         mjx_model = mjx.put_model(self._mj_model)
         mjx_data = mjx.make_data(mjx_model)
@@ -227,7 +235,7 @@ class STAC:
             for i, (t, e) in enumerate(zip(frame_time, frame_error)):
                 print(f"Frame {i+1} done in {t} with a final error of {e}")
 
-            flattened_errors, mean, std = self.get_error_stats(frame_error)
+            flattened_errors, mean, std = self._get_error_stats(frame_error)
             # Print the results
             print(f"Flattened array shape: {flattened_errors.shape}")
             print(f"Mean: {mean}")
@@ -263,7 +271,7 @@ class STAC:
         for i, (t, e) in enumerate(zip(frame_time, frame_error)):
             print(f"Frame {i+1} done in {t} with a final error of {e}")
 
-        flattened_errors, mean, std = self.get_error_stats(frame_error)
+        flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
         print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
@@ -282,7 +290,7 @@ class STAC:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
-        batched_kp_data = self.chunk_kp_data(kp_data)
+        batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data
         mjx_model = mjx.put_model(self._mj_model)
@@ -344,7 +352,7 @@ class STAC:
             self._indiv_parts,
         )
 
-        flattened_errors, mean, std = self.get_error_stats(frame_error)
+        flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
         print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
@@ -356,8 +364,8 @@ class STAC:
 
     def _package_data(self, mjx_model, q, x, walker_body_sites, kp_data, batched=False):
         """Extract pose, offsets, data, and all parameters.
-        walker_body_sites is the marker positions for each frame--
-            the rodent model's kp_data equivalent
+
+        walker_body_sites is the marker positions for each frame--the rodent model's kp_data equivalent
         """
         if batched:
             # prepare batched data to be packaged
@@ -445,19 +453,30 @@ class STAC:
         height: int = 1200,
         width: int = 1920,
     ):
-        """Creates rendering using the instantiated model, given the user's qposes and kp_data
+        """Creates rendering using the instantiated model, given the user's qposes and kp_data.
 
         Args:
-            qposes (jp.ndarray): Set of model joint angles corresponding to kp_data
-            kp_data (jp.ndarray): Set of motion capture keypoints
-            n_frames (int): Number of frames to render
-            save_path (str): path to save
-            render_fps (int): fps to save video as
+            qposes (jp.ndarray): Set of model joint angles corresponding to kp_data.
+            kp_data (jp.ndarray): Set of motion capture keypoints.
+            offsets (jp.ndarray): array of marker offsets.
+            n_frames (int): Number of frames to render.
+            save_path (str): Path to save.
             start_frame (int, optional): Starting frame of qposes/kp_data to render at. Defaults to 0.
+            camera (Union[int, str], optional): Mujoco camera name. Defaults to 0.
+            height (int, optional): Height in pixels. Defaults to 1200.
+            width (int, optional): Width in pixels. Defaults to 1920.
+
+        Raises:
+            ValueError: qposes and kp_data must have same length (shape[0])
+            ValueError: start_frame must be a non-negative value and within the length of kp_data/qposes
+            ValueError: start_frame + n_frames must be within the length of kp_data/qposes
+
+        Returns:
+            List: List of rendered frames.
         """
         if qposes.shape[0] != kp_data.shape[0]:
             raise ValueError(
-                f"length of qposes ({qposes.shape[0]}) is not equal to the length of kp_data({kp_data.shape[0]})"
+                f"Length of qposes ({qposes.shape[0]}) is not equal to the length of kp_data({kp_data.shape[0]})"
             )
         if start_frame < 0 or start_frame > kp_data.shape[0]:
             raise ValueError(
@@ -465,7 +484,7 @@ class STAC:
             )
         if start_frame + n_frames > kp_data.shape[0]:
             raise ValueError(
-                f"start_frame + n_frames ({start_frame} + {n_frames})must be less than the length of given qposes and kp_data ({kp_data.shape[0]})"
+                f"start_frame + n_frames ({start_frame} + {n_frames}) must be less than the length of given qposes and kp_data ({kp_data.shape[0]})"
             )
 
         render_mj_model, body_site_idxs, keypoint_site_idxs = (
@@ -491,12 +510,6 @@ class STAC:
         mujoco.mj_kinematics(render_mj_model, mj_data)
 
         renderer = mujoco.Renderer(render_mj_model, height=height, width=width)
-
-        # Make sure there are enough frames to render
-        if qposes.shape[0] < n_frames - 1:
-            raise Exception(
-                f"Trying to render {n_frames} frames when data['qpos'] only has {qposes.shape[0]}"
-            )
 
         # slice kp_data to match qposes length
         kp_data = kp_data[: qposes.shape[0]]

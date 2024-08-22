@@ -37,7 +37,6 @@ def viz_stac(
     Returns:
         (List): List of frames
     """
-
     xml_path = base_path / model_cfg["MJCF_PATH"]
 
     # Load data

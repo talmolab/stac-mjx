@@ -11,7 +11,7 @@ from stac_mjx import utils
 from stac_mjx import controller as ctrl
 from stac_mjx.controller import STAC
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 
 def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
@@ -24,7 +24,6 @@ def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-
     return OmegaConf.load(stac_config_path), OmegaConf.to_container(
         OmegaConf.load(model_config_path), resolve=True
     )
@@ -32,11 +31,23 @@ def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
 
 def run_stac(
     stac_cfg: DictConfig,
-    model_cfg,
+    model_cfg: Dict,
     kp_data: jp.ndarray,
     kp_names: List[str],
     base_path: Path = Path.cwd(),
 ) -> tuple[str, str]:
+    """High level function for running skeletal registration.
+
+    Args:
+        stac_cfg (DictConfig): Stac config file.
+        model_cfg (Dict): Model config file.
+        kp_data (jp.ndarray): Mocap keypoints to fit to.
+        kp_names (List[str]): Ordered list of keypoint names.
+        base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
+
+    Returns:
+        tuple[str, str]: Paths to saved outputs (fit and transform).
+    """
     start_time = time.time()
 
     # Getting paths
