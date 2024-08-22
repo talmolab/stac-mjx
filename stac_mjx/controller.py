@@ -16,7 +16,8 @@ from stac_mjx import utils as utils
 from stac_mjx import compute_stac
 from stac_mjx import operations as op
 
-from typing import List, Union
+from omegaconf import DictConfig
+from typing import List, Union, Dict
 from pathlib import Path
 from copy import deepcopy
 
@@ -25,9 +26,19 @@ from tqdm import tqdm
 
 
 class STAC:
-    """Main class with key functionality for skeletal registration and rendering"""
+    """Main class with key functionality for skeletal registration and rendering."""
 
-    def __init__(self, xml_path: str, stac_cfg, model_cfg, kp_names: List[str]):
+    def __init__(
+        self, xml_path: str, stac_cfg: DictConfig, model_cfg: Dict, kp_names: List[str]
+    ):
+        """Init STAC class, taking values from configs and creating values needed for stac.
+
+        Args:
+            xml_path (str): Path to model MJCF.
+            stac_cfg (DictConfig): Stac config file.
+            model_cfg (Dict): Model config file.
+            kp_names (List[str]): Ordered list of mocap keypoint names.
+        """
         self.stac_cfg = stac_cfg
         self.model_cfg = model_cfg
         self._kp_names = kp_names
