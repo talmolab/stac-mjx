@@ -1,5 +1,3 @@
-import mujoco.memory_leak_test
-import pytest
 from pathlib import Path
 
 from stac_mjx import main
