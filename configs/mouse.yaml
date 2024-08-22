@@ -154,43 +154,43 @@ KEYPOINT_MODEL_PAIRS:
   MTP_L: mouse__LTarsus_interim_0
   MTP_R: mouse__RTarsus_interim_0
 
-KEYPOINT_COLOR_PAIRS:
-  Nose: 1 1 0 1  # Yellow
-  Ear_L: 0 1 0 0  # Green
-  Ear_R: 0 1 0 1  # Darker Green
-  TTI: 0 0 1 1  # Blue
-  Head: 1 0 0 1  # Orange
-  Trunk: 0 1 0 1  # Plum
-  Tail_0: 0 0 1 1  # Yellow
-  Tail_1: 1 0 0 1  # Darker Yellow
-  Tail_2: 0 1 0 1  # Olive
-  Tail_3: 0 1 0 1
-  Tail_4: 0 0 1 1
-  TailTip: 0.58 0 0.82 1  # Purple
-  Shoulder_L: 0 0 1 1  # Cerulean
-  Shoulder_R: 0 0 1 1  # Darker Cerulean
-  HaunchL: 1 0 0 1  # Thistle
-  HaunchR: 1 0 0 1  # Darker Thistle
-  Knee_L: 0 1 0 1 
-  Knee_R: 0 1 0 1
-  Neck: 1 0 0 1
-  Elbow_L: 0 1 0 1
-  Elbow_R: 0 1 0 1
-  Wrist_L: 0 0 1 1
-  Wrist_R: 0 0 1 1
-  Forepaw_L: 1 0 0 1
-  Forepaw_R: 1 0 0 1
-  Heel_L: 0 1 0 1
-  Heel_R: 0 1 0 1
-  Spine: 0 0 1 1
-  Eye_L: 1 0 0 1
-  Eye_R: 1 0 0 1
-  Hip_L: 1 0 0 1
-  Hip_R: 1 0 0 1
-  Lisfranc_L: 0 1 0 1
-  Lisfranc_R: 0 1 0 1
-  MTP_L: 0 0 1 1
-  MTP_R: 0 0 1 1
+# KEYPOINT_COLOR_PAIRS:
+#   Nose: 1 1 0 1  # Yellow
+#   Ear_L: 0 1 0 0  # Green
+#   Ear_R: 0 1 0 1  # Darker Green
+#   TTI: 0 0 1 1  # Blue
+#   Head: 1 0 0 1  # Orange
+#   Trunk: 0 1 0 1  # Plum
+#   Tail_0: 0 0 1 1  # Yellow
+#   Tail_1: 1 0 0 1  # Darker Yellow
+#   Tail_2: 0 1 0 1  # Olive
+#   Tail_3: 0 1 0 1
+#   Tail_4: 0 0 1 1
+#   TailTip: 0.58 0 0.82 1  # Purple
+#   Shoulder_L: 0 0 1 1  # Cerulean
+#   Shoulder_R: 0 0 1 1  # Darker Cerulean
+#   HaunchL: 1 0 0 1  # Thistle
+#   HaunchR: 1 0 0 1  # Darker Thistle
+#   Knee_L: 0 1 0 1 
+#   Knee_R: 0 1 0 1
+#   Neck: 1 0 0 1
+#   Elbow_L: 0 1 0 1
+#   Elbow_R: 0 1 0 1
+#   Wrist_L: 0 0 1 1
+#   Wrist_R: 0 0 1 1
+#   Forepaw_L: 1 0 0 1
+#   Forepaw_R: 1 0 0 1
+#   Heel_L: 0 1 0 1
+#   Heel_R: 0 1 0 1
+#   Spine: 0 0 1 1
+#   Eye_L: 1 0 0 1
+#   Eye_R: 1 0 0 1
+#   Hip_L: 1 0 0 1
+#   Hip_R: 1 0 0 1
+#   Lisfranc_L: 0 1 0 1
+#   Lisfranc_R: 0 1 0 1
+#   MTP_L: 0 0 1 1
+#   MTP_R: 0 0 1 1
 
 KEYPOINT_INITIAL_OFFSETS:
   Nose: 0.0 0.0 0.0

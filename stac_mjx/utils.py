@@ -2,7 +2,7 @@
 
 import os
 import numpy as np
-from jax import numpy as jnp
+from jax import numpy as jp
 import yaml
 import scipy.io as spio
 import pickle
@@ -10,18 +10,21 @@ from typing import Text
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
+from pathlib import Path
+from typing import Dict
 
 
-def load_data(filename, params):
+def load_data(file_path: Path, params: Dict, label3d_path=None):
     """Main mocap data file loader interface.
 
     Loads mocap file based on filetype, and returns the data flattened
     for immediate consumption by stac_mjx algorithm.
 
     Args:
-        filename: path to be loaded, which should have a supported
+        file_path: path to be loaded, which should have a supported
         file type suffix, either .mat or .nwb, and presumed to be organized
         as [num frames, num keypoints, xyz].
+        params:
 
     Returns:
         Mocap data flattened into an np array of shape [#frames, keypointXYZ],
@@ -33,14 +36,13 @@ def load_data(filename, params):
     Raises:
         ValueError if an unsupported filetype is encountered.
     """
-    if filename.endswith(".mat"):
-        # Label3d file
-        kp_names_filename = params.get("KP_NAMES_LABEL3D_PATH", None)
-        data, kp_names = load_dannce(filename, names_filename=kp_names_filename)
-    elif filename.endswith(".nwb"):
-        data, kp_names = load_nwb(filename)
-    elif filename.endswith(".h5"):
-        data, kp_names = load_h5(filename)
+     # using pathlib
+    if file_path.suffix == ".mat":
+        data, kp_names = load_dannce(str(file_path), names_filename=label3d_path)
+    elif file_path.suffix == ".nwb":
+        data, kp_names = load_nwb(file_path)
+    elif file_path.suffix == ".h5":
+        data, kp_names = load_h5(file_path)
     else:
         raise ValueError(
             "Unsupported file extension. Please provide a .nwb or .mat file."
@@ -48,6 +50,28 @@ def load_data(filename, params):
 
     kp_names = kp_names or params["KP_NAMES"]
     print("kp_names: ", kp_names)
+
+    if kp_names is None:
+        raise ValueError(
+            "Keypoint names not provided. Please provide an ordered list of keypoint names \
+            corresponding to the keypoint data order."
+        )
+    print(len(kp_names), data.shape[2])
+    if len(kp_names) != data.shape[2]:
+        raise ValueError(
+            f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
+        )
+
+    if kp_names is None:
+        raise ValueError(
+            "Keypoint names not provided. Please provide an ordered list of keypoint names \
+            corresponding to the keypoint data order."
+        )
+    print(len(kp_names), data.shape[2])
+    if len(kp_names) != data.shape[2]:
+        raise ValueError(
+            f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
+        )
 
     model_inds = np.array(
         [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
@@ -164,8 +188,8 @@ def _load_params(param_path):
     return params
 
 
-def init_params(cfg):
-    """Assign params as a global variable."""
+def init_params(cfg: dict):
+    """Initialize parameters from config."""
     global params
     params = cfg
 
