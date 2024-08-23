@@ -4,7 +4,7 @@ MJCF_PATH: "models/rodent.xml"
 N_FRAMES_PER_CLIP: 360
 
 # No KP_NAMES
-# KP_NAMES: 
+# KP_NAMES:
  
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:

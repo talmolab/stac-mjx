@@ -1,7 +1,6 @@
-import jax
-from jax import numpy as jnp
+"""CLI script for running rodent skeletal registration"""
+
 from jax.lib import xla_bridge
-import numpy as np
 
 import os
 import logging

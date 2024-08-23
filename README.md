@@ -35,12 +35,19 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
 ## Usage
 1. Update the .yaml files in `config/` with the proper information (details WIP).
 
-2. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration. Below is an example script, found in `demos/use_api.ipynb`. 
+2. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration. Below is an example script, found in `demos/use_api.ipynb`. A CLI script using the rodent model is also provided at `run_rodent.py`
 
    ```python
    from stac_mjx import main
    from stac_mjx import utils
    from pathlib import Path
+   import os
+   # XLA flags for Nvidia GPU
+   if xla_bridge.get_backend().platform == "gpu":
+    os.environ["XLA_FLAGS"] = (
+        "--xla_gpu_enable_triton_softmax_fusion=true "
+        "--xla_gpu_triton_gemm_any=True "
+    )
 
    # Set base path to the parent directory of your config files
    base_path = Path.cwd()
@@ -48,14 +55,20 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    model_config_path = base_path / "configs/rodent.yaml"
 
    # Load configs
-   cfg = main.load_configs(stac_config_path, model_config_path)
+   stac_cfg, model_cfg = main.load_configs(stac_config_path, model_config_path)
 
    # Load data
    data_path = base_path / cfg.paths.data_path 
-   kp_data = utils.load_data(data_path, utils.params)
+   kp_data, sorted_kp_names = utils.load_data(data_path, model_cfg)
 
    # Run stac
-   fit_path, transform_path = main.run_stac(cfg, kp_data, base_path)
+   fit_path, transform_path = main.run_stac(
+    stac_cfg, 
+    model_cfg, 
+    kp_data, 
+    sorted_kp_names, 
+    base_path=base_path
+   )
    ```
 
 3. Render the resulting data using `mujoco_viz()` (example notebook found in `demos/viz_usage.ipynb`):
@@ -63,25 +76,25 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    import os
    import mediapy as media
 
-   from stac_mjx.viz import mujoco_viz
+   from stac_mjx.viz import viz_stac
    from stac_mjx import main
-   from stac_mjx import utils
+   from pathlib import Path
 
-   stac_config_path = "../configs/stac.yaml"
-   model_config_path = "../configs/rodent.yaml"
+   base_path = Path.cwd()
+   stac_config_path = base_path / "demos/demo_stac.yaml"
+   model_config_path = base_path / "configs/rodent.yaml"
 
-   cfg = main.load_configs(stac_config_path, model_config_path)
+   stac_cfg, model_cfg = main.load_configs(stac_config_path, model_config_path)
 
-   xml_path = "../models/rodent.xml"
-   data_path = "../output.p"
-   n_frames=250
-   save_path="../videos/direct_render.mp4"
+   data_path = base_path / "demo_fit.p"
+   n_frames = 250
+   save_path = base_path / "videos/direct_render.mp4"
 
    # Call mujoco_viz
-   frames = mujoco_viz(data_path, xml_path, n_frames, save_path, start_frame=0)
+   frames = viz_stac(data_path, stac_cfg, model_cfg, n_frames, save_path, start_frame=0, camera="close_profile", base_path=Path.cwd().parent)
 
    # Show the video in the notebook (it is also saved to the save_path)
-   media.show_video(frames, fps=utils.params["RENDER_FPS"])
+   media.show_video(frames, fps=model_cfg["RENDER_FPS"])
    ```
    
 4. If the rendering is poor, it's likely that some hyperparameter tuning is necessary. (details WIP)
