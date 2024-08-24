@@ -15,7 +15,7 @@ import os
 
 
 def enable_xla_flags():
-    """Enables XLA Flags for faster runtime on Nvidia GPUs"""
+    """Enables XLA Flags for faster runtime on Nvidia GPUs."""
     if xla_bridge.get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = (
             "--xla_gpu_enable_triton_softmax_fusion=true "
