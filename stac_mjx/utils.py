@@ -8,9 +8,18 @@ import scipy.io as spio
 import pickle
 from typing import Text
 from pynwb import NWBHDF5IO
-from ndx_pose import PoseEstimationSeries, PoseEstimation
 from pathlib import Path
 from typing import Dict
+from jax.lib import xla_bridge
+import os
+
+
+def enable_xla_flags():
+    if xla_bridge.get_backend().platform == "gpu":
+        os.environ["XLA_FLAGS"] = (
+            "--xla_gpu_enable_triton_softmax_fusion=true "
+            "--xla_gpu_triton_gemm_any=True "
+        )
 
 
 def load_data(file_path: Path, params: Dict, label3d_path=None):
@@ -147,7 +156,6 @@ def _load_params(param_path):
     return params
 
 
-# TODO put this in the STAC class
 def save(fit_data, save_path: Text):
     """Save data.
 

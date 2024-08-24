@@ -8,7 +8,6 @@ import logging
 from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import utils
-from stac_mjx import controller as ctrl
 from stac_mjx.controller import STAC
 from pathlib import Path
 from typing import List, Dict
@@ -48,6 +47,8 @@ def run_stac(
     Returns:
         tuple[str, str]: Paths to saved outputs (fit and transform).
     """
+    utils.enable_xla_flags()
+
     start_time = time.time()
 
     # Getting paths

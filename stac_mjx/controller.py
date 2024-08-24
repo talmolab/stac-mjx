@@ -24,6 +24,13 @@ from copy import deepcopy
 import imageio
 from tqdm import tqdm
 
+# Root position (3) + quaternion (7) in qpos
+_ROOT_QPOS_LB = -jp.inf * jp.ones(7)
+_ROOT_QPOS_UB = jp.inf * jp.ones(7)
+
+# Prepend this to list of part names for one-to-one correspondence with qpos
+_ROOT_NAMES = ["root"] * 6
+
 
 class STAC:
     """Main class with key functionality for skeletal registration and rendering."""
@@ -44,16 +51,15 @@ class STAC:
         self._kp_names = kp_names
         self._root = mjcf.from_path(xml_path)
         (
-            physics,
+            # physics,
             mj_model,
             self._body_site_idxs,
             self._is_regularized,
             self._part_names,
             self._body_names,
         ) = self._create_body_sites(self._root)
-        self._indiv_parts = self.part_opt_setup(physics)
+        self._indiv_parts = self.part_opt_setup()
 
-        # self._body_site_idxs = jp.array(list(self._site_index_map.values()))
         self._trunk_kps = jp.array(
             [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
         )
@@ -73,32 +79,23 @@ class STAC:
 
         # Set joint bounds
         self._lb = jp.minimum(
-            jp.concatenate([-jp.inf * jp.ones(7), self._mj_model.jnt_range[1:][:, 0]]),
+            jp.concatenate([_ROOT_QPOS_LB, self._mj_model.jnt_range[1:][:, 0]]),
             0.0,
         )
-        self._ub = jp.concatenate(
-            [jp.inf * jp.ones(7), self._mj_model.jnt_range[1:][:, 1]]
-        )
+        self._ub = jp.concatenate([_ROOT_QPOS_UB, self._mj_model.jnt_range[1:][:, 1]])
 
-    def initialize_part_names(self, physics):
-        """Get the ids of the limbs, accounting for quaternion and position."""
-        part_names = physics.named.data.qpos.axes.row.names
-        for _ in range(6):
-            part_names.insert(0, part_names[0])
-        return part_names
-
-    def part_opt_setup(self, physics):
+    def part_opt_setup(self):
         """Set up the lists of indices for part optimization.
 
         Args:
-            physics (dmcontrol.Physics): _description_
+            physics (dmcontrol.Physics): See Mujoco dm_control docs
         """
 
-        def get_part_ids(physics, parts: List) -> jp.ndarray:
+        def get_part_ids(parts: List) -> jp.ndarray:
             """Get the part ids for a given list of parts."""
-            part_names = physics.named.data.qpos.axes.row.names
-            return np.array(
-                [any(part in name for part in parts) for name in part_names]
+            # part_names = physics.named.data.qpos.axes.row.names
+            return jp.array(
+                [any(part in name for part in parts) for name in self._part_names]
             )
 
         if self.model_cfg["INDIVIDUAL_PART_OPTIMIZATION"] is None:
@@ -106,7 +103,7 @@ class STAC:
         else:
             indiv_parts = jp.array(
                 [
-                    get_part_ids(physics, parts)
+                    get_part_ids(parts)
                     for parts in self.model_cfg["INDIVIDUAL_PART_OPTIMIZATION"].values()
                 ]
             )
@@ -147,8 +144,7 @@ class STAC:
             key: int(axis.convert_key_item(key))
             for key in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
         }
-
-        part_names = self.initialize_part_names(physics)
+        part_names = _ROOT_NAMES + physics.named.data.qpos.axes.row.names
 
         body_names = physics.named.data.xpos.axes.row.names
 
@@ -162,7 +158,7 @@ class STAC:
         is_regularized = jp.stack(is_regularized).flatten()
 
         return (
-            physics,
+            # physics,
             physics.model.ptr,
             jp.array(list(site_index_map.values())),
             is_regularized,
