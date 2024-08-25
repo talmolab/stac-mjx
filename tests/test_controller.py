@@ -13,7 +13,9 @@ def test_init_stac(mocap_nwb, stac_config, rodent_config):
         _BASE_PATH / stac_config, _BASE_PATH / rodent_config
     )
 
-    kp_data, sorted_kp_names = utils.load_data(_BASE_PATH / mocap_nwb, model_cfg)
+    kp_data, sorted_kp_names = utils.load_data(
+        _BASE_PATH / stac_cfg.data_path, model_cfg
+    )
 
     xml_path = _BASE_PATH / model_cfg["MJCF_PATH"]
 

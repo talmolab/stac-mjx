@@ -8,6 +8,7 @@ import scipy.io as spio
 import pickle
 from typing import Text
 from pynwb import NWBHDF5IO
+from ndx_pose import PoseEstimationSeries, PoseEstimation
 from pathlib import Path
 from typing import Dict
 from jax.lib import xla_bridge
