@@ -34,6 +34,7 @@ def q_loss(
     qs_to_opt: jp.ndarray,
     kps_to_opt: jp.ndarray,
     initial_q: jp.ndarray,
+    site_idxs: jp.ndarray,
 ) -> float:
     """Compute the marker loss for q_phase optimization.
 
@@ -60,7 +61,7 @@ def q_loss(
     mjx_data = op.com_pos(mjx_model, mjx_data)
 
     # Get marker site xpos
-    markers = op.get_site_xpos(mjx_data).flatten()
+    markers = op.get_site_xpos(mjx_data, site_idxs).flatten()
     residual = kp_data - markers
 
     # Set irrelevant body sites to 0
@@ -77,15 +78,13 @@ def q_opt(
     marker_ref_arr: jp.ndarray,
     qs_to_opt: jp.ndarray,
     kps_to_opt: jp.ndarray,
-    # maxiter: int,
     q0: jp.ndarray,
-    ftol: float,
+    lb,
+    ub,
+    site_idxs,
 ):
     """Update q_pose using estimated marker parameters."""
-    lb = utils.params["lb"]
-    ub = utils.params["ub"]
     try:
-
         return mjx_data, q_solver.run(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
@@ -95,6 +94,7 @@ def q_opt(
             qs_to_opt=qs_to_opt,
             kps_to_opt=kps_to_opt,
             initial_q=q0,
+            site_idxs=site_idxs,
         )
 
     except ValueError as ex:
@@ -114,6 +114,7 @@ def m_loss(
     kp_data: jp.ndarray,
     q: jp.ndarray,
     initial_offsets: jp.ndarray,
+    site_idxs: jp.ndarray,
     is_regularized: bool = None,
     reg_coef: float = 0.0,
 ) -> jp.array:
@@ -146,12 +147,12 @@ def m_loss(
 
         # Set qpos and offsets
         mjx_data = mjx_data.replace(qpos=qpos)
-        mjx_model = op.set_site_pos(mjx_model, jp.reshape(offsets, (-1, 3)))
+        mjx_model = op.set_site_pos(mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs)
 
         # Forward kinematics
         mjx_data = op.kinematics(mjx_model, mjx_data)
         mjx_data = op.com_pos(mjx_model, mjx_data)
-        markers = op.get_site_xpos(mjx_data).flatten()
+        markers = op.get_site_xpos(mjx_data, site_idxs).flatten()
 
         # Accumulate squared residual
         residual = residual + jp.square((kp - markers))
@@ -191,7 +192,7 @@ def m_opt(
     initial_offsets,
     is_regularized,
     reg_coef,
-    ftol,
+    site_idxs,
 ):
     """Compute phase optimization.
 
@@ -217,6 +218,7 @@ def m_opt(
         initial_offsets=initial_offsets,
         is_regularized=is_regularized,
         reg_coef=reg_coef,
+        site_idxs=site_idxs,
     )
 
     return res

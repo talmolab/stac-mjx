@@ -1,6 +1,6 @@
 """This module contains utility functions for STAC."""
 
-from jax import numpy as jnp
+from jax import numpy as jp
 from jax import jit
 from mujoco import mjx
 from mujoco.mjx._src import smooth
@@ -36,7 +36,7 @@ def com_pos(mjx_model: mjx.Model, mjx_data: mjx.Data):
     return smooth.com_pos(mjx_model, mjx_data)
 
 
-def get_site_xpos(mjx_data: mjx.Data):
+def get_site_xpos(mjx_data: mjx.Data, site_idxs: jp.ndarray):
     """Get MjxData.site_xpos of keypoint body sites.
 
     Args:
@@ -46,10 +46,10 @@ def get_site_xpos(mjx_data: mjx.Data):
         jax.Array: MjxData.site_xpos of keypoint body sites, ie
         Cartesian coords of body sites.
     """
-    return mjx_data.site_xpos[jnp.array(list(utils.params["site_index_map"].values()))]
+    return mjx_data.site_xpos[site_idxs]
 
 
-def get_site_pos(mjx_model: mjx.Model):
+def get_site_pos(mjx_model: mjx.Model, site_idxs: jp.ndarray):
     """Get MjxModel.site_pos of keypoint body sites.
 
     Args:
@@ -59,10 +59,10 @@ def get_site_pos(mjx_model: mjx.Model):
         jax.Array: MjxModel.site_pos of keypoint body sites, ie
         local position offset rel. to body.
     """
-    return mjx_model.site_pos[jnp.array(list(utils.params["site_index_map"].values()))]
+    return mjx_model.site_pos[site_idxs]
 
 
-def set_site_pos(mjx_model: mjx.Model, offsets):
+def set_site_pos(mjx_model: mjx.Model, offsets, site_idxs: jp.ndarray):
     """Set MjxModel.sites_pos to offsets and returns the new mjx_model.
 
     Args:
@@ -72,8 +72,7 @@ def set_site_pos(mjx_model: mjx.Model, offsets):
     Returns:
         mjx_model: Resulting mjx.Model
     """
-    indices = np.fromiter(utils.params["site_index_map"].values(), dtype=int)
-    new_site_pos = mjx_model.site_pos.at[indices].set(offsets)
+    new_site_pos = mjx_model.site_pos.at[site_idxs].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 
@@ -87,9 +86,9 @@ def make_qs(q0, qs_to_opt, q):
         q (jax.Array): new joint angles
 
     Returns:
-        jnp.Array: resulting set of joint angles
+        jp.Array: resulting set of joint angles
     """
-    return jnp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jnp.copy(q))
+    return jp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jp.copy(q))
 
 
 def replace_qs(mjx_model: mjx.Model, mjx_data: mjx.Data, q):

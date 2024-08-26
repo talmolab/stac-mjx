@@ -1,94 +1,63 @@
 """A collection mujoco-mjx vizualization utilities."""
 
-from dm_control import mjcf
-from dm_control.locomotion.walkers import rescale
-from dm_control.mujoco.wrapper.mjbindings import enums
-import mujoco
 import pickle
-import imageio
 import numpy as np
-
-from stac_mjx import utils
-from stac_mjx import controller as ctrl
-
-# Standard image shape for dannce rig data
-# TODO: make this a param
-HEIGHT = 1200
-WIDTH = 1920
+from pathlib import Path
+from stac_mjx.controller import STAC
+from omegaconf import DictConfig
+from typing import Union, Dict
 
 
-def mujoco_viz(data_path, model_xml, n_frames, save_path, start_frame: int = 0):
-    """Render forward kinematics from keypoint positions."""
-    scene_option = mujoco.MjvOption()
-    # scene_option.geomgroup[1] = 0
-    scene_option.geomgroup[2] = 1
-    # scene_option.geomgroup[3] = 0
-    # scene_option.sitegroup[0] = 0
-    # scene_option.sitegroup[1] = 0
-    scene_option.sitegroup[2] = 1
+def viz_stac(
+    data_path: Union[Path, str],
+    stac_cfg: DictConfig,
+    model_cfg: Dict,
+    n_frames: int,
+    save_path: Union[Path, str],
+    start_frame: int = 0,
+    camera: Union[int, str] = 0,
+    height: int = 1200,
+    width: int = 1920,
+    base_path: Path = Path.cwd(),
+):
+    """Render forward kinematics from keypoint positions.
 
-    scene_option.sitegroup[3] = 1
-    scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
-    scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
-    scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
-    scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
-    scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
-    scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
-    scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = False
+    Args:
+        data_path (Union[Path, str]): Path to stac output pickle file
+        stac_cfg (DictConfig): stac_cfg file
+        model_cfg (Dict): model_cfg file
+        n_frames (int): number of frames to render
+        save_path (Union[Path, str]): Path to save rendered video (.mp4)
+        start_frame (int, optional): Starting rendering frame. Defaults to 0.
+        camera (Union[int, str], optional): Camera name (or number), defined in MJCF. Defaults to 0.
+        height (int, optional): Rendering pixel height. Defaults to 1200.
+        width (int, optional): Rendering pixel width. Defaults to 1920.
+        base_path (Path, optional): Base path for path strings in configs. Defaults to Path.cwd().
 
-    # Load mjx_model and mjx_data and set marker sites
-    root = mjcf.from_path(model_xml)
-    physics, mj_model = ctrl.create_body_sites(root)
-    physics, mj_model, keypoint_sites = ctrl.create_keypoint_sites(root)
-
-    rescale.rescale_subtree(
-        root,
-        utils.params["SCALE_FACTOR"],
-        utils.params["SCALE_FACTOR"],
-    )
-
-    mj_data = mujoco.MjData(mj_model)
-
-    mujoco.mj_kinematics(mj_model, mj_data)
+    Returns:
+        (List): List of frames
+    """
+    xml_path = base_path / model_cfg["MJCF_PATH"]
 
     # Load data
     with open(data_path, "rb") as file:
         d = pickle.load(file)
         qposes = np.array(d["qpos"])
         kp_data = np.array(d["kp_data"])
+        kp_names = d["kp_names"]
+        offsets = d["offsets"]
 
-    renderer = mujoco.Renderer(mj_model, height=HEIGHT, width=WIDTH)
-
-    # Make sure there are enough frames to render
-    if qposes.shape[0] < n_frames - 1:
-        raise Exception(
-            f"Trying to render {n_frames} frames when data['qpos'] only has {qposes.shape[0]}"
-        )
-
-    # slice kp_data to match qposes length
-    kp_data = kp_data[: qposes.shape[0]]
-
-    # Slice arrays to be the range that is being rendered
-    kp_data = kp_data[start_frame : start_frame + n_frames]
-    qposes = qposes[start_frame : start_frame + n_frames]
-
-    frames = []
-    # render while stepping using mujoco
-    with imageio.get_writer(save_path, fps=utils.params["RENDER_FPS"]) as video:
-        for i, (qpos, kps) in enumerate(zip(qposes, kp_data)):
-            if i % 100 == 0:
-                print(f"rendering frame {i}")
-
-            # Set keypoints
-            physics, mj_model = ctrl.set_keypoint_sites(physics, keypoint_sites, kps)
-            mj_data.qpos = qpos
-            mujoco.mj_forward(mj_model, mj_data)
-
-            renderer.update_scene(
-                mj_data, camera="close_profile", scene_option=scene_option
-            )
-            pixels = renderer.render()
-            video.append_data(pixels)
-            frames.append(pixels)
-
-    return frames
+    # initialize STAC to create mj_model with scaling and marker body sites according to config
+    # Set the learned offsets for body sites manually
+    stac = STAC(xml_path, stac_cfg, model_cfg, kp_names)
+    return stac.render(
+        qposes,
+        kp_data,
+        offsets,
+        n_frames,
+        save_path,
+        start_frame,
+        camera,
+        height,
+        width,
+    )

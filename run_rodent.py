@@ -1,7 +1,6 @@
-import jax
-from jax import numpy as jnp
+"""CLI script for running rodent skeletal registration"""
+
 from jax.lib import xla_bridge
-import numpy as np
 
 import os
 import logging
@@ -10,15 +9,31 @@ from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import main
 from stac_mjx import utils
+from pathlib import Path
+
+
+def load_and_run_stac(stac_cfg, model_cfg):
+    base_path = Path.cwd()
+
+    data_path = base_path / stac_cfg.data_path
+    kp_data, sorted_kp_names = utils.load_data(data_path, model_cfg)
+
+    fit_path, transform_path = main.run_stac(
+        stac_cfg, model_cfg, kp_data, sorted_kp_names, base_path=base_path
+    )
+
+    logging.info(
+        f"Run complete. \n fit path: {fit_path} \n transform path: {transform_path}"
+    )
 
 
 @hydra.main(config_path="./configs", config_name="stac", version_base=None)
-def hydra_entry(cfg: DictConfig):
-    # Initialize configs and convert to dictionaries
-    global_cfg = hydra.compose(config_name=cfg.paths.model_config)
-    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
-    logging.info(f"global_cfg: {OmegaConf.to_yaml(global_cfg)}")
-    utils.init_params(OmegaConf.to_container(global_cfg, resolve=True))
+def hydra_entry(stac_cfg: DictConfig):
+    # Initialize configs
+    model_cfg = hydra.compose(config_name="rodent")
+    logging.info(f"cfg: {OmegaConf.to_yaml(stac_cfg)}")
+    logging.info(f"model_cfg: {OmegaConf.to_yaml(model_cfg)}")
+    model_cfg = OmegaConf.to_container(model_cfg, resolve=True)
 
     # XLA flags for Nvidia GPU
     if xla_bridge.get_backend().platform == "gpu":
@@ -26,29 +41,9 @@ def hydra_entry(cfg: DictConfig):
             "--xla_gpu_enable_triton_softmax_fusion=true "
             "--xla_gpu_triton_gemm_any=True "
         )
-        # Set N_GPUS
-        utils.params["N_GPUS"] = jax.local_device_count("gpu")
 
-    # Set up mocap data
-    kp_names = utils.params["KP_NAMES"]
-    # argsort returns the indices that sort the array to match the order of marker sites
-    stac_keypoint_order = np.argsort(kp_names)
-    data_path = cfg.paths.data_path
-
-    # Load kp_data, /1000 to scale data (from mm to meters)
-    kp_data = utils.loadmat(data_path)["pred"][:] / 1000
-
-    # Preparing DANNCE data by reordering and reshaping
-    # Resulting kp_data is of shape (n_frames, n_keypoints)
-    kp_data = jnp.array(kp_data[:, :, stac_keypoint_order])
-    kp_data = jnp.transpose(kp_data, (0, 2, 1))
-    kp_data = jnp.reshape(kp_data, (kp_data.shape[0], -1))
-
-    return main.run_stac(cfg, kp_data)
+    load_and_run_stac(stac_cfg, model_cfg)
 
 
 if __name__ == "__main__":
-    fit_path, transform_path = hydra_entry()
-    logging.info(
-        f"Run complete. \n fit path: {fit_path} \n transform path: {transform_path}"
-    )
+    hydra_entry()

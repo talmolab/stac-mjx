@@ -1,9 +1,6 @@
 """User-level API to run stac."""
 
-import mujoco
-import jax
 from jax import numpy as jp
-from dm_control import mjcf
 
 import pickle
 import time
@@ -11,8 +8,9 @@ import logging
 from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import utils
-from stac_mjx import controller as ctrl
+from stac_mjx.controller import STAC
 from pathlib import Path
+from typing import List, Dict
 
 
 def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
@@ -25,71 +23,53 @@ def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-    utils.init_params(
-        OmegaConf.to_container(OmegaConf.load(model_config_path), resolve=True)
+    return OmegaConf.load(stac_config_path), OmegaConf.to_container(
+        OmegaConf.load(model_config_path), resolve=True
     )
-    return OmegaConf.load(stac_config_path)
 
 
 def run_stac(
-    cfg: DictConfig, kp_data: jp.ndarray, base_path: Path = Path.cwd()
+    stac_cfg: DictConfig,
+    model_cfg: Dict,
+    kp_data: jp.ndarray,
+    kp_names: List[str],
+    base_path: Path = Path.cwd(),
 ) -> tuple[str, str]:
-    """Runs stac through fit and transform stages (optionally).
+    """High level function for running skeletal registration.
 
     Args:
-        cfg (DictConfig): stac config file (standard being stac.yaml)
-        kp_data (jp.Array): Keypoint data of shape (frame, X),
-                            where X is a flattened array of keypoint coordinates
-                            in the order specified by the model config file (KEYPOINT_MODEL_PAIRS)
-
+        stac_cfg (DictConfig): Stac config file.
+        model_cfg (Dict): Model config file.
+        kp_data (jp.ndarray): Mocap keypoints to fit to.
+        kp_names (List[str]): Ordered list of keypoint names.
+        base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
 
     Returns:
-        tuple[str, str]: (fit_path, transform_path)
+        tuple[str, str]: Paths to saved outputs (fit and transform).
     """
+    utils.enable_xla_flags()
+
     start_time = time.time()
 
-    # Gettings paths
-    fit_path = base_path / cfg.paths.fit_path
-    transform_path = base_path / cfg.paths.transform_path
+    # Getting paths
+    fit_path = base_path / stac_cfg.fit_path
+    transform_path = base_path / stac_cfg.transform_path
 
-    xml_path = base_path / cfg.paths.xml
+    xml_path = base_path / model_cfg["MJCF_PATH"]
 
-    # Set up mjcf
-    root = mjcf.from_path(xml_path)
-    physics, mj_model = ctrl.create_body_sites(root)
-    ctrl.part_opt_setup(physics)
-
-    mj_model.opt.solver = {
-        "cg": mujoco.mjtSolver.mjSOL_CG,
-        "newton": mujoco.mjtSolver.mjSOL_NEWTON,
-    }[cfg.mujoco.solver.lower()]
-
-    mj_model.opt.iterations = cfg.mujoco.iterations
-    mj_model.opt.ls_iterations = cfg.mujoco.ls_iterations
-
-    # Runs faster on GPU with this
-    mj_model.opt.jacobian = 0  # dense
+    stac = STAC(xml_path, stac_cfg, model_cfg, kp_names)
 
     # Run fit if not skipping
-    if cfg.skip_fit != 1:
-        logging.info(f"kp_data shape: {kp_data.shape}")
-        logging.info(f"Sampling {cfg.n_fit_frames} random frames for fit")
-        fit_data = jax.random.choice(
-            jax.random.PRNGKey(0), kp_data, (cfg.n_fit_frames,), replace=False
-        )
-
-        logging.info(f"fit_data shape: {fit_data.shape}")
-        mjx_model, q, x, walker_body_sites, clip_data = ctrl.fit(mj_model, fit_data)
-
-        fit_data = ctrl.package_data(
-            mjx_model, physics, q, x, walker_body_sites, clip_data
-        )
+    if stac_cfg.skip_fit != 1:
+        fit_data = kp_data[: stac_cfg.n_fit_frames]
+        logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
+        fit_data = stac.fit(fit_data)
 
         logging.info(f"saving data to {fit_path}")
         utils.save(fit_data, fit_path)
 
     # Stop here if skipping transform
-    if cfg.skip_transform == 1:
+    if stac_cfg.skip_transform == 1:
         logging.info("skipping transform()")
         return fit_path, None
 
@@ -98,15 +78,9 @@ def run_stac(
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"]
-    kp_data = ctrl.chunk_kp_data(kp_data)
-    logging.info(f"kp_data shape: {kp_data.shape}")
-    mjx_model, q, x, walker_body_sites, kp_data = ctrl.transform(
-        mj_model, kp_data, offsets
-    )
 
-    transform_data = ctrl.package_data(
-        mjx_model, physics, q, x, walker_body_sites, kp_data, batched=True
-    )
+    logging.info(f"kp_data shape: {kp_data.shape}")
+    transform_data = stac.transform(kp_data, offsets)
 
     logging.info(
         f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"

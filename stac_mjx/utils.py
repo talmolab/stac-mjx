@@ -11,6 +11,17 @@ from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 from pathlib import Path
 from typing import Dict
+from jax.lib import xla_bridge
+import os
+
+
+def enable_xla_flags():
+    """Enables XLA Flags for faster runtime on Nvidia GPUs."""
+    if xla_bridge.get_backend().platform == "gpu":
+        os.environ["XLA_FLAGS"] = (
+            "--xla_gpu_enable_triton_softmax_fusion=true "
+            "--xla_gpu_triton_gemm_any=True "
+        )
 
 
 def load_data(file_path: Path, params: Dict, label3d_path=None):
@@ -52,7 +63,7 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
             "Keypoint names not provided. Please provide an ordered list of keypoint names \
             corresponding to the keypoint data order."
         )
-    print(len(kp_names), data.shape[2])
+
     if len(kp_names) != data.shape[2]:
         raise ValueError(
             f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
@@ -61,6 +72,8 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
     model_inds = np.array(
         [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
     )
+    sorted_kp_names = [kp_names[i] for i in model_inds]
+
     # Scale mocap data to match model
     data = data * params["MOCAP_SCALE_FACTOR"]
     # Sort in kp_names order
@@ -70,7 +83,7 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
     data = jnp.transpose(data, (0, 2, 1))
     data = jnp.reshape(data, (data.shape[0], -1))
 
-    return data
+    return data, sorted_kp_names
 
 
 def load_dannce(filename, names_filename=None):
@@ -145,13 +158,6 @@ def _load_params(param_path):
     return params
 
 
-def init_params(cfg: dict):
-    """Initialize parameters from config."""
-    global params
-    params = cfg
-
-
-# TODO put this in the STAC class
 def save(fit_data, save_path: Text):
     """Save data.
 
