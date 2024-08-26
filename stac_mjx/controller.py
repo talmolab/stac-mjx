@@ -51,7 +51,6 @@ class STAC:
         self._kp_names = kp_names
         self._root = mjcf.from_path(xml_path)
         (
-            # physics,
             mj_model,
             self._body_site_idxs,
             self._is_regularized,
@@ -88,12 +87,11 @@ class STAC:
         """Set up the lists of indices for part optimization.
 
         Args:
-            physics (dmcontrol.Physics): See Mujoco dm_control docs
+            physics (dmcontrol.Physics): (See Mujoco dm_control docs)[https://github.com/google-deepmind/dm_control/blob/bdb1ab54c4c24cd89283fb18f06a6a54b6c0803b/dm_control/mjcf/physics.py#L434]
         """
 
         def get_part_ids(parts: List) -> jp.ndarray:
             """Get the part ids for a given list of parts."""
-            # part_names = physics.named.data.qpos.axes.row.names
             return jp.array(
                 [any(part in name for part in parts) for name in self._part_names]
             )
@@ -206,7 +204,6 @@ class STAC:
 
         # Get and set the offsets of the markers
         self._offsets = jp.copy(op.get_site_pos(mjx_model, self._body_site_idxs))
-        # self._offsets *= self.model_cfg["SCALE_FACTOR"]
 
         mjx_model = op.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
 
