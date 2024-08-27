@@ -10,7 +10,7 @@ from stac_mjx import utils
 from stac_mjx import operations as op
 
 
-def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
+def root_optimization(mjx_model, mjx_data, kp_data, kp_names, frame: int = 0):
     """Optimize fit for only the root.
 
     The root is optimized first so as to remove a common contribution to
@@ -24,6 +24,7 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
         mjx_model (mjx.Model): MJX Model
         mjx_data (mjx.Data): MJX Data
         kp_data (jp.Array): Keypoint data
+        kp_names: TODO
         frame (int, optional): Frame to optimize. Defaults to 0.
 
     Returns:
@@ -75,7 +76,16 @@ def root_optimization(mjx_model, mjx_data, kp_data, frame: int = 0):
 
     q0 = jp.copy(mjx_data.qpos[:])
 
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    if "ROOT_OPTIMIZATION" in utils.params:
+        idx = 3*kp_names.index(utils.params["ROOT_OPTIMIZATION_KP"])
+        q0 = q0.at[:3].set(kp_data[frame, :][idx:idx+3])
+        
+    for key in utils.params["site_index_map"].keys():
+        if any(site == key for site in utils.params["ROOT_OPTIMIZATION_KP"])
+           q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+
+
+    
 
     # Trunk only optimization
     j = time.time()

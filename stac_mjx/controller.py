@@ -23,7 +23,6 @@ def initialize_part_names(physics):
         part_names.insert(0, part_names[0])
     return part_names
 
-
 def part_opt_setup(physics) -> None:
     """Set up the lists of indices for part optimization.
 
@@ -66,7 +65,6 @@ def compute_keypoint_centroid(kps):
     centroid = np.mean(pts, axis=0)
 
     return centroid
-
 
 def rotate_points(points, alpha, theta):
     theta *= 3.1415/180
@@ -279,6 +277,7 @@ def create_body_sites(root: mjcf.Element):
     # Usage of physics: binding = physics.bind(body_sites)
 
     axis = physics.named.model.site_pos._axes[0]
+    print("names", physics.named.data.qpos.axes.row.names)
     utils.params["site_index_map"] = {
         key: int(axis.convert_key_item(key)) for key in utils.params["KEYPOINT_MODEL_PAIRS"].keys()
     }
@@ -318,7 +317,7 @@ def get_error_stats(errors: jp.ndarray):
 
 
 # TODO: pmap fit and transform if you want to use it with multiple gpus
-def fit(mj_model, kp_data):
+def fit(mj_model, kp_data, kp_names_sorted):
     """Do pose optimization."""
     # Create mjx model and data
     mjx_model = mjx.put_model(mj_model)
@@ -342,7 +341,7 @@ def fit(mj_model, kp_data):
     utils.params["ub"] = ub
 
     # Begin optimization steps
-    mjx_data = compute_stac.root_optimization(mjx_model, mjx_data, kp_data)
+    mjx_data = compute_stac.root_optimization(mjx_model, mjx_data, kp_data, kp_names_sorted)
 
     for n_iter in range(utils.params["N_ITERS"]):
         print(f"Calibration iteration: {n_iter + 1}/{utils.params['N_ITERS']}")
@@ -442,6 +441,11 @@ def transform(mj_model, kp_data, offsets):
 
     return mjx_model, q, x, walker_body_sites, kp_data
 
+# def get_idx_for_model_part(physics):
+#     names = physics.named.data.qpos.axes.row.names
+#     for(name
+
+#     physics.named.data.qpos.axes.row.names
 
 def package_data(mjx_model, physics, q, x, walker_body_sites, kp_data, batched=False):
     """Extract pose, offsets, data, and all parameters."""
