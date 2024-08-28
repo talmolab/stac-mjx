@@ -75,6 +75,7 @@ def root_optimization(
 
     q0 = jp.copy(mjx_data.qpos[:])
 
+    # JEF TODO FIX MAGIC NUMBERS
     q0 = q0.at[:3].set(kp_data[frame, :][12:15])
 
     # Trunk only optimization
@@ -92,7 +93,7 @@ def root_optimization(
         site_idxs,
     )
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))

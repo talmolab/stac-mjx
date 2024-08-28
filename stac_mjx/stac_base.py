@@ -171,8 +171,8 @@ def m_loss(
             (
                 mjx_model,
                 mjx_data,
-                jp.zeros(69),
-                jp.zeros(69),
+                jp.zeros(kp_data.shape[1]),
+                jp.zeros(kp_data.shape[1]),
                 initial_offsets,
                 is_regularized,
             ),

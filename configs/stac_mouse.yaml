@@ -1,0 +1,12 @@
+fit_path: "fit_mouse.p"
+transform_path: "transform.p"
+data_path: "tests/data/points3d_00_scaleSmooth_1_rpt_15.h5"
+
+n_fit_frames: 1000
+skip_fit: False
+skip_transform: True
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4
