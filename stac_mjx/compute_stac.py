@@ -14,6 +14,7 @@ def root_optimization(
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
+    root_kp_idx, 
     lb: jp.ndarray,
     ub: jp.ndarray,
     site_idxs: jp.ndarray,
@@ -49,7 +50,9 @@ def root_optimization(
     # However should be close to the center of mass of the animal. The "magic numbers"
     # below are for the rodent.xml model. These will need to be changed for other
     # models, and possibly be computed for arbitray animal models.
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    root_kp_range = slice(root_kp_idx,root_kp_idx+3)
+    print("root_kp_range", root_kp_range)
+    q0 = q0.at[:3].set(kp_data[frame, :][root_kp_range])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
@@ -74,9 +77,7 @@ def root_optimization(
     print(f"Replace 1 finished in {time.time()-r}")
 
     q0 = jp.copy(mjx_data.qpos[:])
-
-    # JEF TODO FIX MAGIC NUMBERS
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    q0 = q0.at[:3].set(kp_data[frame, :][root_kp_range])
 
     # Trunk only optimization
     j = time.time()

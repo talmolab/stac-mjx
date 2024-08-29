@@ -59,9 +59,13 @@ class STAC:
         ) = self._create_body_sites(self._root)
         self._indiv_parts = self.part_opt_setup()
 
+        self._root_kp = self.model_cfg["ROOT_OPTIMIZATION_KEYPOINT"]
+
         self._trunk_kps = jp.array(
             [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
         )
+
+
 
         mj_model.opt.solver = {
             "cg": mujoco.mjtSolver.mjSOL_CG,
@@ -212,10 +216,13 @@ class STAC:
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Begin optimization steps
+        
+        root_kp_idx = self._kp_names.index(self.model_cfg["ROOT_OPTIMIZATION_KEYPOINT"])
         mjx_data = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
             kp_data,
+            root_kp_idx,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -498,9 +505,9 @@ class STAC:
 
         scene_option = mujoco.MjvOption()
         scene_option.geomgroup[2] = 1
-        scene_option.sitegroup[2] = 1
+        scene_option.sitegroup[2] = 0
 
-        scene_option.sitegroup[3] = 1
+        scene_option.sitegroup[3] = 0
         scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
         scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True

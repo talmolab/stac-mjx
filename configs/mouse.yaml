@@ -272,7 +272,7 @@ KEYPOINT_COLOR_PAIRS:
 
 
 # Root optimization
-ROOT_OPTIMIZATION_KP: Spine
+ROOT_OPTIMIZATION_KEYPOINT: Spine
 
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
@@ -349,7 +349,7 @@ SITES_TO_REGULARIZE:
 N_SAMPLE_FRAMES: 50
 
 # fps to render video at
-RENDER_FPS: 50
+RENDER_FPS: 30
 
 # If you want to use a different arena, you can specify it here.
 ARENA_TYPE: DefaultArena
