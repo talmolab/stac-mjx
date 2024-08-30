@@ -41,8 +41,7 @@ def root_optimization(
     Returns:
         mjx.Data: An updated MJX Data
     """
-    print("Root Optimization:")
-    s = time.time()
+
     q0 = jp.copy(mjx_data.qpos[:])
 
     # Set the center to help with finding the optima (does not need to be exact)
@@ -53,7 +52,6 @@ def root_optimization(
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
-    j = time.time()
 
     # NEW OPTIMIZE
     final_params, final_loss, num_iters = stac_base.q_opt_NEW(
@@ -69,18 +67,9 @@ def root_optimization(
         tol=1e-5,
     )
 
-    # Print final results
-    print(
-        f"q_opt 1 finished in {time.time()-j} at iteration {num_iters}, Loss: {final_loss}"
-    )
-
-    r = time.time()
-
     mjx_data = op.replace_qs(
         mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, final_params)
     )
-
-    print(f"Replace 1 finished in {time.time()-r}")
 
     return mjx_data
 

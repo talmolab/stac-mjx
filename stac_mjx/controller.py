@@ -23,6 +23,7 @@ from copy import deepcopy
 
 import imageio
 from tqdm import tqdm
+import time
 
 # Root position (3) + quaternion (7) in qpos
 _ROOT_QPOS_LB = -jp.inf * jp.ones(7)
@@ -235,7 +236,9 @@ class STAC:
         # mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Begin optimization steps
-        mjx_data = self._vmap_root_opt(
+        print("Root Optimization:")
+        r = time.time()
+        mjx_data, final_loss, num_iters = self._vmap_root_opt(
             mjx_model,
             mjx_data,
             kp_data,
@@ -245,6 +248,10 @@ class STAC:
             self._trunk_kps,
         )
 
+        # Print final results
+        print(
+            f"Root opt finished in {time.time()-r} at iteration {num_iters}, Loss: {final_loss}"
+        )
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
             mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
