@@ -83,6 +83,24 @@ class STAC:
         )
         self._ub = jp.concatenate([_ROOT_QPOS_UB, self._mj_model.jnt_range[1:][:, 1]])
 
+        # Vmap optimize functions
+        self._vmap_root_opt = jax.vmap(
+            compute_stac.root_optimization,
+            in_axes=(0, 0, 0, None, None, None, None),
+        )
+
+        self._vmap_pose_opt = jax.vmap(
+            compute_stac.pose_optimization,
+            in_axes=(0, 0, 0, None, None, None, None),
+        )
+
+        self._vmap_offset_opt = jax.vmap(
+            compute_stac.offset_optimization,
+            in_axes=(0, 0, 0, None, 0, None, None, None, None),
+        )
+
+        self._mjx_setup = jax.vmap(self.mjx_setup, in_axes=(0, None, None))
+
     def part_opt_setup(self):
         """Set up the lists of indices for part optimization.
 
@@ -201,21 +219,23 @@ class STAC:
         Returns:
             Dict: Output data packaged in a dictionary.
         """
+        kp_data = jp.expand_dims(kp_data, axis=0)
         # Create mjx model and data
         mjx_model = mjx.put_model(self._mj_model)
         mjx_data = mjx.make_data(mjx_model)
 
         # Get and set the offsets of the markers
-        self._offsets = jp.copy(op.get_site_pos(mjx_model, self._body_site_idxs))
+        offsets = jp.copy(op.get_site_pos(mjx_model, self._body_site_idxs))
 
-        mjx_model = op.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
+        # mjx_model = op.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
+        mjx_model, mjx_data = self._mjx_setup(kp_data, self._mj_model, offsets)
 
         # Calculate initial xpos and such
-        mjx_data = mjx.kinematics(mjx_model, mjx_data)
-        mjx_data = mjx.com_pos(mjx_model, mjx_data)
+        # mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        # mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Begin optimization steps
-        mjx_data = compute_stac.root_optimization(
+        mjx_data = self._vmap_root_opt(
             mjx_model,
             mjx_data,
             kp_data,
@@ -228,7 +248,7 @@ class STAC:
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
             mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
-                compute_stac.pose_optimization(
+                self._vmap_pose_opt(
                     mjx_model,
                     mjx_data,
                     kp_data,
@@ -239,7 +259,9 @@ class STAC:
                 )
             )
 
-            for i, (t, e, it) in enumerate(zip(frame_time, frame_error, frame_iter)):
+            for i, (t, e, it) in enumerate(
+                zip(frame_time[0], frame_error[0], frame_iter[0])
+            ):
                 print(
                     f"Frame {i+1} done in {t} with a final error of {e} after {it} total iterations"
                 )
@@ -254,11 +276,11 @@ class STAC:
             print(f"Standard deviation of total iters: {std_it}")
 
             print("starting offset optimization")
-            mjx_model, mjx_data = compute_stac.offset_optimization(
+            mjx_model, mjx_data = self._vmap_offset_opt(
                 mjx_model,
                 mjx_data,
                 kp_data,
-                self._offsets,
+                offsets,
                 q,
                 self.model_cfg["N_SAMPLE_FRAMES"],
                 self._is_regularized,
@@ -269,7 +291,7 @@ class STAC:
         # Optimize the pose for the whole sequence
         print("Final pose optimization")
         mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
-            compute_stac.pose_optimization(
+            self._vmap_pose_opt(
                 mjx_model,
                 mjx_data,
                 kp_data,
@@ -280,7 +302,9 @@ class STAC:
             )
         )
 
-        for i, (t, e, it) in enumerate(zip(frame_time, frame_error, frame_iter)):
+        for i, (t, e, it) in enumerate(
+            zip(frame_time[0], frame_error[0], frame_iter[0])
+        ):
             print(
                 f"Frame {i+1} done in {t} with a final error of {e} after {it} total iterations"
             )
@@ -293,6 +317,28 @@ class STAC:
         print(f"Standard deviation of total iters: {std_it}")
 
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
+
+    def mjx_setup(self, kp_data, mj_model, offsets):
+        """Create mjxmodel and mjxdata and set offet.
+
+        Args:
+            kp_data (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        # Create mjx model and data
+        mjx_model = mjx.put_model(mj_model)
+        mjx_data = mjx.make_data(mjx_model)
+
+        # Set the offsets.
+        mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+
+        # forward is used to calculate xpos and such
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
+
+        return mjx_model, mjx_data
 
     def transform(self, kp_data, offsets):
         """Register skeleton to keypoint data.
@@ -312,44 +358,10 @@ class STAC:
         mjx_model = mjx.put_model(self._mj_model)
         mjx_data = mjx.make_data(mjx_model)
 
-        def mjx_setup(kp_data, mj_model):
-            """Create mjxmodel and mjxdata and set offet.
-
-            Args:
-                kp_data (_type_): _description_
-
-            Returns:
-                _type_: _description_
-            """
-            # Create mjx model and data
-            mjx_model = mjx.put_model(mj_model)
-            mjx_data = mjx.make_data(mjx_model)
-
-            # Set the offsets.
-            mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)
-
-            # forward is used to calculate xpos and such
-            mjx_data = mjx.kinematics(mjx_model, mjx_data)
-            mjx_data = mjx.com_pos(mjx_model, mjx_data)
-
-            return mjx_model, mjx_data
-
-        mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
-            batched_kp_data, self._mj_model
-        )
-
-        # Vmap optimize functions
-        vmap_root_opt = jax.vmap(
-            compute_stac.root_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
-        )
-        vmap_pose_opt = jax.vmap(
-            compute_stac.pose_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
-        )
+        mjx_model, mjx_data = self._mjx_setup(batched_kp_data, self._mj_model, offsets)
 
         # q_phase
-        mjx_data = vmap_root_opt(
+        mjx_data = self._vmap_root_opt(
             mjx_model,
             mjx_data,
             batched_kp_data,
@@ -359,7 +371,7 @@ class STAC:
             self._trunk_kps,
         )
         mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
-            vmap_pose_opt(
+            self._vmap_pose_opt(
                 mjx_model,
                 mjx_data,
                 batched_kp_data,
