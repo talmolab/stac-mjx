@@ -8,5 +8,5 @@ coverage:
     patch: #  Only measures lines adjusted in the pull request.
       default:
         target: auto
-        threshold: 5%
+        threshold: 0%
         informational: false # true: Patch coverage for stats only.
