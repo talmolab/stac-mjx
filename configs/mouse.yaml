@@ -10,42 +10,6 @@ ROOT_MAXITER: 100
 Q_MAXITER: 100
 M_MAXITER: 500
 
-# KP_NAMES:
-#   - Nose
-#   # - Ear_R
-#   # - Ear_L
-#   - TTI
-#   - TailTip
-#   # - Head
-#   # - Trunk
-#   # - Tail_0
-#   # - Tail_1
-#   # - Tail_2
-#   # - Shoulder_L
-#   # - Shoulder_R
-#   # - Knee_L
-#   # - Knee_R
-#   # - Neck
-#   # - Elbow_L
-#   # - Elbow_R
-#   # - Wrist_L
-#   # - Wrist_R
-#   # - Forepaw_L
-#   # - Forepaw_R
-#   # - Heel_L
-#   # - Heel_R
-#   - Spine
-#   # - Eye_L
-#   # - Eye_R
-#   # - Tail_3
-#   # - Tail_4
-#   # - Hip_L
-#   # - Hip_R
-#   # - Lisfranc_R
-#   # - MTP_L
-#   # - Lisfranc_L
-#   # - MTP_R
-
 KP_NAMES:
   - Nose
   - Ear_R
@@ -83,43 +47,6 @@ KP_NAMES:
   - MTP_R
 
 
-# The model sites used to register the keypoints.
-# KEYPOINT_MODEL_PAIRS:
-#   Nose: mouse__Head
-#   # Ear_R: mouse__Head
-#   # Ear_L: mouse__Head
-#   TTI: mouse__Thoracic1
-#   # Head: mouse__Head
-#   # Trunk: mouse__Thoracic1
-#   # Tail_0: mouse__Tail1
-#   # Tail_1: mouse__Tail2
-#   # Tail_2: mouse__Tail3
-#   # Tail_3: mouse__Tail10  #presume numbers grow towards end
-#   # Tail_4: mouse__Tail16  #double check these
-#   TailTip: mouse__Tail19
-#   # Shoulder_L: mouse__LScapula
-#   # Shoulder_R: mouse__RScapula
-#   # Knee_L: mouse__LFemur
-#   # Knee_R: mouse__RFemur
-#   # Neck: mouse__Cervical8
-#   # Elbow_L: mouse__LHumerus
-#   # Elbow_R: mouse__RHumerus
-#   # Wrist_L: mouse__LMetaCarpus3
-#   # Wrist_R:  mouse__RMetaCarpus3
-#   # Forepaw_L: mouse__LMetaCarpus3
-#   # Forepaw_R: mouse__RMetaCarpus3
-#   # Heel_L: mouse__LTibia
-#   # Heel_R: mouse__RTibia
-#   Spine: mouse__Thoracic13
-#   # Eye_L: mouse__Head
-#   # Eye_R: mouse__Head
-#   # Hip_L: mouse__LFemur_interim_0
-#   # Hip_R: mouse__RFemur_interim_0
-#   # Lisfranc_L: mouse__LTarsus_interim_0
-#   # Lisfranc_R: mouse__RTarsus_interim_0
-#   # MTP_L: mouse__LTarsus_interim_0
-#   # MTP_R: mouse__RTarsus_interim_0
-
 KEYPOINT_MODEL_PAIRS:
   Nose: mouse__Head
   Ear_R: mouse__Head
@@ -129,9 +56,9 @@ KEYPOINT_MODEL_PAIRS:
   Trunk: mouse__Thoracic1
   Tail_0: mouse__Tail1
   Tail_1: mouse__Tail2
-  Tail_2: mouse__Tail3
-  Tail_3: mouse__Tail10  #presume numbers grow towards end
-  Tail_4: mouse__Tail16  #double check these
+  Tail_2: mouse__Tail7
+  Tail_3: mouse__Tail13  
+  Tail_4: mouse__Tail16
   TailTip: mouse__Tail20
   Shoulder_L: mouse__LScapula
   Shoulder_R: mouse__RScapula
@@ -151,48 +78,11 @@ KEYPOINT_MODEL_PAIRS:
   Eye_R: mouse__Head
   Hip_L: mouse__LFemur_interim_0
   Hip_R: mouse__RFemur_interim_0
-  Lisfranc_L: mouse__LTarsus_interim_0
-  Lisfranc_R: mouse__RTarsus_interim_0
+  Lisfranc_L: mouse__LBPhalange3
+  Lisfranc_R: mouse__RBPhalange3
   MTP_L: mouse__LTarsus_interim_0
   MTP_R: mouse__RTarsus_interim_0
 
-# KEYPOINT_COLOR_PAIRS:
-#   Nose: 1 1 0 1  # Yellow
-#   Ear_L: 0 1 0 0  # Green
-#   Ear_R: 0 1 0 1  # Darker Green
-#   TTI: 0 0 1 1  # Blue
-#   Head: 1 0 0 1  # Orange
-#   Trunk: 0 1 0 1  # Plum
-#   Tail_0: 0 0 1 1  # Yellow
-#   Tail_1: 1 0 0 1  # Darker Yellow
-#   Tail_2: 0 1 0 1  # Olive
-#   Tail_3: 0 1 0 1
-#   Tail_4: 0 0 1 1
-#   TailTip: 0.58 0 0.82 1  # Purple
-#   Shoulder_L: 0 0 1 1  # Cerulean
-#   Shoulder_R: 0 0 1 1  # Darker Cerulean
-#   HaunchL: 1 0 0 1  # Thistle
-#   HaunchR: 1 0 0 1  # Darker Thistle
-#   Knee_L: 0 1 0 1 
-#   Knee_R: 0 1 0 1
-#   Neck: 1 0 0 1
-#   Elbow_L: 0 1 0 1
-#   Elbow_R: 0 1 0 1
-#   Wrist_L: 0 0 1 1
-#   Wrist_R: 0 0 1 1
-#   Forepaw_L: 1 0 0 1
-#   Forepaw_R: 1 0 0 1
-#   Heel_L: 0 1 0 1
-#   Heel_R: 0 1 0 1
-#   Spine: 0 0 1 1
-#   Eye_L: 1 0 0 1
-#   Eye_R: 1 0 0 1
-#   Hip_L: 1 0 0 1
-#   Hip_R: 1 0 0 1
-#   Lisfranc_L: 0 1 0 1
-#   Lisfranc_R: 0 1 0 1
-#   MTP_L: 0 0 1 1
-#   MTP_R: 0 0 1 1
 
 KEYPOINT_INITIAL_OFFSETS:
   Nose: 0.0 0.0 0.0
@@ -243,6 +133,8 @@ KEYPOINT_COLOR_PAIRS:
   Tail_0: 1 1 0 1  # Yellow
   Tail_1: 0.8 0.8 0 1  # Darker Yellow
   Tail_2: 0.4 0.4 0 1  # Olive
+  Tail_3: 0.58 0 0.82 1  # Purple
+  Tail_4: 0.58 0 0.82 1  # Purple
   Shoulder_L: 0.27 0.5 0.7 1  # Cerulean
   Shoulder_R: 0.2 0.4 0.6 1  # Darker Cerulean
   HaunchL: 0.85 0.75 0.85 1  # Thistle
@@ -257,14 +149,12 @@ KEYPOINT_COLOR_PAIRS:
   Forepaw_L: 1 1 0 1  # Yellow
   Forepaw_R: 1 0.5 0 1  # Orange
   Heel_L: 0.85 0.75 0.85 1  # Thistle
-  Heel_R: 0.8 0.6 0.8 1  # Darker Thistle
+  Heel_R: 0.85 0.75 0.85 1  # Thistle
   Spine: 0 0 1 1  # Blue
   Eye_L: 1 0 0 1  # Red
   Eye_R: 1 0 0 1  # Red
-  Tail_3: 0.58 0 0.82 1  # Purple
-  Tail_4: 0.58 0 0.82 1  # Purple
   Hip_L: 0.85 0.75 0.85 1  # Thistle
-  Hip_R: 0.8 0.6 0.8 1  # Darker Thistle
+  Hip_R: 0.85 0.75 0.85 1  # Thistle
   Lisfranc_R: 0 1 0 1  # Green
   MTP_L: 1 0 0 1  # Red
   Lisfranc_L: 0 0.8 0 1  # Darker Green
@@ -282,6 +172,7 @@ TRUNK_OPTIMIZATION_KEYPOINTS:
  - "ShoulderL"
  - "ShoulderR"
 # - "TailBase"
+
 
 INDIVIDUAL_PART_OPTIMIZATION:
 #   "r_leg": [
@@ -334,6 +225,7 @@ INDIVIDUAL_PART_OPTIMIZATION:
 # OPTIONAL Lock the mandible to a position if there is no jaw tracking
 MANDIBLE_POS: -0.297
 
+
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 0.0
@@ -355,10 +247,6 @@ RENDER_FPS: 30
 ARENA_TYPE: DefaultArena
 Z_OFFSET: 0.00
 
-# Path to the model file.
-# XML_PATH: "./models/mouse_joints_no_meshes_ellipsoid.xml"
-# SKELETON_PATH: "./models/animal_skeleton.mat"
-
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: 1.0
 
@@ -372,22 +260,3 @@ N_ITERS: 6
 N_FRAMES_PER_CLIP: 360 # 1000 environments
 
 N_GPUS: 1
-
-# TODO REMOVE PERMANENTLY (Ask Kavinder)
-# # Joint names for each keypoint.
-# JOINT_NAMES:
-#   Nose: "head_joint"
-#   EarL: "head_joint"
-#   EarR: "head_joint"
-#   TTI: "thoracic_joint"
-#   TailTip: "tail_joint_20"
-#   Head: "head_joint"
-#   Trunk: "pelvis_joint"
-#   Tail_0: "tail_joint_1"
-#   Tail_1: "tail_joint_2"
-#   Tail_2: "tail_joint_3"
-#   ShoulderL: "left_scapula_joint"
-#   ShoulderR: "right_scapula_joint"
-#   HaunchL: "left_femur_joint"
-#   HaunchR: "right_femur_joint"
-#   Neck: "cervical_joint_1"
