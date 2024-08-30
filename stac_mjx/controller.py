@@ -178,15 +178,18 @@ class STAC:
 
         return kp_data
 
-    def _get_error_stats(self, errors: jp.ndarray):
+    def _get_error_stats(self, errors: jp.ndarray, total_iters):
         """Compute error stats."""
         flattened_errors = errors.reshape(-1)
-
+        flattened_iters = total_iters.reshape(-1)
         # Calculate mean and standard deviation
-        mean = jp.mean(flattened_errors)
-        std = jp.std(flattened_errors)
+        mean_e = jp.mean(flattened_errors)
+        std_e = jp.std(flattened_errors)
 
-        return flattened_errors, mean, std
+        mean_it = jp.mean(flattened_iters)
+        std_it = jp.std(flattened_iters)
+
+        return mean_e, std_e, mean_it, std_it
 
     # TODO: pmap fit and transform if you want to use it with multiple gpus
     def fit(self, kp_data):
@@ -224,7 +227,7 @@ class STAC:
 
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
-            mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+            mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
                 compute_stac.pose_optimization(
                     mjx_model,
                     mjx_data,
@@ -236,14 +239,19 @@ class STAC:
                 )
             )
 
-            for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-                print(f"Frame {i+1} done in {t} with a final error of {e}")
+            for i, (t, e, it) in enumerate(zip(frame_time, frame_error, frame_iter)):
+                print(
+                    f"Frame {i+1} done in {t} with a final error of {e} after {it} total iterations"
+                )
 
-            flattened_errors, mean, std = self._get_error_stats(frame_error)
+            mean_e, std_e, mean_it, std_it = self._get_error_stats(
+                frame_error, frame_iter
+            )
             # Print the results
-            print(f"Flattened array shape: {flattened_errors.shape}")
-            print(f"Mean: {mean}")
-            print(f"Standard deviation: {std}")
+            print(f"Mean error: {mean_e}")
+            print(f"Standard deviation of error: {std_e}")
+            print(f"Mean total iters: {mean_it}")
+            print(f"Standard deviation of total iters: {std_it}")
 
             print("starting offset optimization")
             mjx_model, mjx_data = compute_stac.offset_optimization(
@@ -260,7 +268,7 @@ class STAC:
 
         # Optimize the pose for the whole sequence
         print("Final pose optimization")
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+        mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
             compute_stac.pose_optimization(
                 mjx_model,
                 mjx_data,
@@ -272,14 +280,18 @@ class STAC:
             )
         )
 
-        for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-            print(f"Frame {i+1} done in {t} with a final error of {e}")
+        for i, (t, e, it) in enumerate(zip(frame_time, frame_error, frame_iter)):
+            print(
+                f"Frame {i+1} done in {t} with a final error of {e} after {it} total iterations"
+            )
 
-        flattened_errors, mean, std = self._get_error_stats(frame_error)
+        mean_e, std_e, mean_it, std_it = self._get_error_stats(frame_error, frame_iter)
         # Print the results
-        print(f"Flattened array shape: {flattened_errors.shape}")
-        print(f"Mean: {mean}")
-        print(f"Standard deviation: {std}")
+        print(f"Mean error: {mean_e}")
+        print(f"Standard deviation of error: {std_e}")
+        print(f"Mean total iters: {mean_it}")
+        print(f"Standard deviation of total iters: {std_it}")
+
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
 
     def transform(self, kp_data, offsets):
@@ -346,21 +358,24 @@ class STAC:
             self._body_site_idxs,
             self._trunk_kps,
         )
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
-            mjx_model,
-            mjx_data,
-            batched_kp_data,
-            self._lb,
-            self._ub,
-            self._body_site_idxs,
-            self._indiv_parts,
+        mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
+            vmap_pose_opt(
+                mjx_model,
+                mjx_data,
+                batched_kp_data,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                self._indiv_parts,
+            )
         )
 
-        flattened_errors, mean, std = self._get_error_stats(frame_error)
+        mean_e, std_e, mean_it, std_it = self._get_error_stats(frame_error, frame_iter)
         # Print the results
-        print(f"Flattened array shape: {flattened_errors.shape}")
-        print(f"Mean: {mean}")
-        print(f"Standard deviation: {std}")
+        print(f"Mean error: {mean_e}")
+        print(f"Standard deviation of error: {std_e}")
+        print(f"Mean total iters: {mean_it}")
+        print(f"Standard deviation of total iters: {std_it}")
 
         return self._package_data(
             mjx_model, q, x, walker_body_sites, batched_kp_data, batched=True

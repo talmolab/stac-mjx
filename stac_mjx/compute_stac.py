@@ -54,7 +54,9 @@ def root_optimization(
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
     j = time.time()
-    mjx_data, res = stac_base.q_opt(
+
+    # NEW OPTIMIZE
+    final_params, final_loss, num_iters = stac_base.q_opt_NEW(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -64,41 +66,21 @@ def root_optimization(
         lb,
         ub,
         site_idxs,
+        tol=1e-5,
     )
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    # Print final results
+    print(
+        f"q_opt 1 finished in {time.time()-j} at iteration {num_iters}, Loss: {final_loss}"
+    )
 
     r = time.time()
 
-    mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
+    mjx_data = op.replace_qs(
+        mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, final_params)
+    )
+
     print(f"Replace 1 finished in {time.time()-r}")
-
-    q0 = jp.copy(mjx_data.qpos[:])
-
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
-
-    # Trunk only optimization
-    j = time.time()
-    print("starting q_opt 2")
-    mjx_data, res = stac_base.q_opt(
-        mjx_model,
-        mjx_data,
-        kp_data[frame, :],
-        qs_to_opt,
-        kps_to_opt,
-        q0,
-        lb,
-        ub,
-        site_idxs,
-    )
-
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
-    r = time.time()
-
-    mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
-
-    print(f"Replace 2 finished in {time.time()-r}")
-    print(f"Root optimization finished in {time.time()-s}")
 
     return mjx_data
 
@@ -211,9 +193,8 @@ def pose_optimization(
 
     def f(mjx_data, kp_data, n_frame, parts):
         q0 = jp.copy(mjx_data.qpos[:])
-
-        # While body opt, then part opt
-        mjx_data, res = stac_base.q_opt(
+        total_iters = 0
+        final_params, final_loss, num_iters = stac_base.q_opt_NEW(
             mjx_model,
             mjx_data,
             kp_data[n_frame, :],
@@ -223,45 +204,50 @@ def pose_optimization(
             lb,
             ub,
             site_idxs,
+            tol=1e-3,
         )
-
-        mjx_data = op.replace_qs(mjx_model, mjx_data, res.params)
+        total_iters += num_iters
+        mjx_data = op.replace_qs(mjx_model, mjx_data, final_params)
 
         for part in parts:
             q0 = jp.copy(mjx_data.qpos[:])
 
-            mjx_data, res = stac_base.q_opt(
+            final_params, final_loss, num_iters = stac_base.q_opt_NEW(
                 mjx_model,
                 mjx_data,
                 kp_data[n_frame, :],
-                part,
+                qs_to_opt,
                 kps_to_opt,
                 q0,
                 lb,
                 ub,
                 site_idxs,
+                tol=1e-6,
             )
 
             mjx_data = op.replace_qs(
-                mjx_model, mjx_data, op.make_qs(q0, part, res.params)
+                mjx_model, mjx_data, op.make_qs(q0, part, final_params)
             )
+            total_iters += num_iters
 
-        return mjx_data, res.state.error
+        return mjx_data, final_loss, total_iters
 
     # Optimize over each frame, storing all the results
     frame_time = []
     frame_error = []
+    frame_iters = []
     for n_frame in frames:
         loop_start = time.time()
 
-        mjx_data, error = f(mjx_data, kp_data, n_frame, indiv_parts)
+        mjx_data, final_loss, total_iters = f(mjx_data, kp_data, n_frame, indiv_parts)
 
         q.append(mjx_data.qpos[:])
         x.append(mjx_data.xpos[:])
         walker_body_sites.append(op.get_site_xpos(mjx_data, site_idxs))
 
         frame_time.append(time.time() - loop_start)
-        frame_error.append(error)
+        frame_error.append(final_loss)
+        frame_iters.append(total_iters)
 
     print(f"Pose Optimization done in {time.time()-s}")
     return (
@@ -271,4 +257,5 @@ def pose_optimization(
         jp.array(x),
         jp.array(frame_time),
         jp.array(frame_error),
+        jp.array(frame_iters),
     )
