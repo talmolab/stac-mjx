@@ -212,15 +212,17 @@ class STAC:
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Begin optimization steps
-        mjx_data = compute_stac.root_optimization(
-            mjx_model,
-            mjx_data,
-            kp_data,
-            self._lb,
-            self._ub,
-            self._body_site_idxs,
-            self._trunk_kps,
-        )
+        # Skip root optimization if model is fixed (no free joint at root)
+        if self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+            mjx_data = compute_stac.root_optimization(
+                mjx_model,
+                mjx_data,
+                kp_data,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                self._trunk_kps,
+            )
 
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
@@ -337,15 +339,16 @@ class STAC:
         )
 
         # q_phase
-        mjx_data = vmap_root_opt(
-            mjx_model,
-            mjx_data,
-            batched_kp_data,
-            self._lb,
-            self._ub,
-            self._body_site_idxs,
-            self._trunk_kps,
-        )
+        if self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+            mjx_data = vmap_root_opt(
+                mjx_model,
+                mjx_data,
+                batched_kp_data,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                self._trunk_kps,
+            )
         mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
             mjx_model,
             mjx_data,

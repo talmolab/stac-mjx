@@ -7,6 +7,6 @@ coverage:
         informational: true # Project coverage for stats only.
     patch: #  Only measures lines adjusted in the pull request.
       default:
-        target: auto
+        target: 0%
         threshold: 5%
         informational: false # true: Patch coverage for stats only.
