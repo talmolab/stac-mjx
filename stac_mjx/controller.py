@@ -316,7 +316,9 @@ class STAC:
         print(f"Mean total iters: {mean_it}")
         print(f"Standard deviation of total iters: {std_it}")
 
-        return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
+        return self._package_data(
+            mjx_model, q, x, walker_body_sites, kp_data, batched=True
+        )
 
     def mjx_setup(self, kp_data, mj_model, offsets):
         """Create mjxmodel and mjxdata and set offet.
