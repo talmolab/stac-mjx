@@ -204,7 +204,7 @@ def pose_optimization(
             lb,
             ub,
             site_idxs,
-            tol=1e-3,
+            tol=1e-4,
         )
         total_iters += num_iters
         mjx_data = op.replace_qs(mjx_model, mjx_data, final_params)

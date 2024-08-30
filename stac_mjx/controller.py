@@ -84,20 +84,20 @@ class STAC:
         self._ub = jp.concatenate([_ROOT_QPOS_UB, self._mj_model.jnt_range[1:][:, 1]])
 
         # Vmap optimize functions
-        self._vmap_root_opt = jax.vmap(
+        self._vmap_root_opt = jax.jit(jax.vmap(
             compute_stac.root_optimization,
             in_axes=(0, 0, 0, None, None, None, None),
-        )
+        ))
 
-        self._vmap_pose_opt = jax.vmap(
+        self._vmap_pose_opt = jax.jit(jax.vmap(
             compute_stac.pose_optimization,
             in_axes=(0, 0, 0, None, None, None, None),
-        )
+        ))
 
-        self._vmap_offset_opt = jax.vmap(
+        self._vmap_offset_opt = jax.jit(jax.vmap(
             compute_stac.offset_optimization,
             in_axes=(0, 0, 0, None, 0, None, None, None, None),
-        )
+        ))
 
         self._mjx_setup = jax.vmap(self.mjx_setup, in_axes=(0, None, None))
 
