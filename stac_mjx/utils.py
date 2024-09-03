@@ -143,7 +143,6 @@ def load_h5(filename):
     data = np.array(data["tracks"])
     data = np.squeeze(data, axis = 1)
     data = np.transpose(data, (0, 2, 1))
-    print("data shape:", data.shape)
     return data, None
 
 def _check_keys(dict):

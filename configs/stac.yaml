@@ -2,7 +2,7 @@ fit_path: "fit.p"
 transform_path: "transform.p"
 data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
 
-n_fit_frames: 1000
+n_fit_frames: 1
 skip_fit: False
 skip_transform: True
 

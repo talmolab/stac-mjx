@@ -44,7 +44,7 @@ class STAC:
             xml_path (str): Path to model MJCF.
             stac_cfg (DictConfig): Stac config file.
             model_cfg (Dict): Model config file.
-            kp_names (List[str]): Ordered list of mocap keypoint names.
+            kp_names (List[str]): List of mocap keypoint names, ordered corresponding to mocap data (kp_data)
         """
         self.stac_cfg = stac_cfg
         self.model_cfg = model_cfg
@@ -59,8 +59,16 @@ class STAC:
         ) = self._create_body_sites(self._root)
         self._indiv_parts = self.part_opt_setup()
 
-        self._root_kp = self.model_cfg["ROOT_OPTIMIZATION_KEYPOINT"]
 
+        print("kp_names_sorted: ", kp_names)
+
+        if "ROOT_OPTIMIZATION_KEYPOINT" in self.model_cfg:
+            self._root_kp_idx = 3*self._kp_names.index(self.model_cfg["ROOT_OPTIMIZATION_KEYPOINT"])
+        else:
+            self._root_kp_idx = 3*self._kp_names.index(self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"][0])
+
+        print("root_kp_idx: ", self._root_kp_idx)
+        
         self._trunk_kps = jp.array(
             [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
         )
@@ -146,8 +154,11 @@ class STAC:
             key: int(axis.convert_key_item(key))
             for key in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
         }
+        
+        # Joint names from mjcf
         part_names = _ROOT_NAMES + physics.named.data.qpos.axes.row.names
 
+        # Body names from mjcf
         body_names = physics.named.data.xpos.axes.row.names
 
         # Define which offsets to regularize
@@ -217,12 +228,11 @@ class STAC:
 
         # Begin optimization steps
         
-        root_kp_idx = self._kp_names.index(self.model_cfg["ROOT_OPTIMIZATION_KEYPOINT"])
         mjx_data = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
             kp_data,
-            root_kp_idx,
+            self._root_kp_idx,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -348,6 +358,7 @@ class STAC:
             mjx_model,
             mjx_data,
             batched_kp_data,
+            self._root_kp_idx, 
             self._lb,
             self._ub,
             self._body_site_idxs,

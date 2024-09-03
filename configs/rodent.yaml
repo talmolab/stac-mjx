@@ -99,6 +99,8 @@ TRUNK_OPTIMIZATION_KEYPOINTS:
   - "ShoulderR"
   - "TailBase"
   
+ROOT_OPTIMIZATION_KEYPOINT: SpineF
+
 INDIVIDUAL_PART_OPTIMIZATION:
   "r_leg": [
     "vertebra_1",

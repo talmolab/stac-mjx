@@ -51,7 +51,6 @@ def root_optimization(
     # below are for the rodent.xml model. These will need to be changed for other
     # models, and possibly be computed for arbitray animal models.
     root_kp_range = slice(root_kp_idx,root_kp_idx+3)
-    print("root_kp_range", root_kp_range)
     q0 = q0.at[:3].set(kp_data[frame, :][root_kp_range])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
@@ -163,7 +162,7 @@ def offset_optimization(
     offset_opt_param = res.params
     print(f"Final error of {res.state.error}")
 
-    # Set pose to the optimized m and step forward.
+    # Set body sites according to optimized offsets
     mjx_model = op.set_site_pos(
         mjx_model, jp.reshape(offset_opt_param, (-1, 3)), site_idxs
     )
