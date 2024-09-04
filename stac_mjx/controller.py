@@ -270,7 +270,7 @@ def create_body_sites(root: mjcf.Element):
             "site",
             name=key,
             type="sphere",
-            size="0.001",
+            size="0.005",
             rgba="0 0 0 1",
             pos=pos,
             group=2,
