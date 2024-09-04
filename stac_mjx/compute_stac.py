@@ -188,7 +188,7 @@ def pose_optimization(
     lb: jp.ndarray,
     ub: jp.ndarray,
     site_idxs: jp.ndarray,
-    indiv_parts: List[jp.ndarray],a
+    indiv_parts: List[jp.ndarray],
 ) -> Tuple:
     """Perform q_phase over the entire clip.
 
