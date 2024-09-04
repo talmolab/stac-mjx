@@ -50,12 +50,15 @@ def root_optimization(
     # However should be close to the center of mass of the animal. The "magic numbers"
     # below are for the rodent.xml model. These will need to be changed for other
     # models, and possibly be computed for arbitray animal models.
+    print("root_kp_idx", root_kp_idx)
     root_kp_range = slice(root_kp_idx,root_kp_idx+3)
     q0 = q0.at[:3].set(kp_data[frame, :][root_kp_range])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
+    print("trunk_kps", trunk_kps)
     kps_to_opt = jp.repeat(trunk_kps, 3)
     j = time.time()
+    print("Here")
     mjx_data, res = stac_base.q_opt(
         mjx_model,
         mjx_data,
@@ -182,7 +185,7 @@ def pose_optimization(
     lb: jp.ndarray,
     ub: jp.ndarray,
     site_idxs: jp.ndarray,
-    indiv_parts: List[jp.ndarray],
+    indiv_parts: List[jp.ndarray],a
 ) -> Tuple:
     """Perform q_phase over the entire clip.
 

@@ -83,6 +83,7 @@ def q_opt(
     ub,
     site_idxs,
 ):
+    jax.debug.print("q_opt")
     """Update q_pose using estimated marker parameters."""
     try:
         return mjx_data, q_solver.run(
