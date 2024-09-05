@@ -134,7 +134,7 @@
         <!-- <camera name="mouse_top" mode="trackcom" pos="0 -.2 0.2" xyaxes="-1 0 0 0 -1 -1"/> -->
         <geom type="mesh" mesh="Pelvis"/>
         <body name="mouse__Lumbar6_interim_0" pos="0 0.01206 0.00074">
-             <camera name="center_of_mass" mode="trackcom" pos="0 .15 -.75" xyaxes="-1 0 0 0 1 .1"/>
+             <camera name="center_of_mass" mode="trackcom" pos="0 .05 -.25" xyaxes="-1 0 0 0 1 .1"/>
             <!-- <camera name="center_of_mass" mode="trackcom" pos="0 0 0" xyaxes="1 0 0 0 1 0"/> -->
             <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06"/>
             <joint name="mouse__Lumbar6_bending" pos="0 0 0" axis="0 0 1" limited="true" range="-0.0872665 0.0872665"/>
