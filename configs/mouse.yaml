@@ -233,8 +233,8 @@ MANDIBLE_POS: -0.297
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 0.0
 SITES_TO_REGULARIZE:
-#   - ShoulderL
-#   - ShoulderR
+   - ShoulderL
+   - ShoulderR
 #   - SpineF
 #   - SpineL
 #   - SpineM
@@ -256,10 +256,10 @@ SCALE_FACTOR: 1.0
 MOCAP_SCALE_FACTOR: .001
 
 # Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
+N_ITERS: 1
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
-N_FRAMES_PER_CLIP: 360 # 1000 environments
+N_FRAMES_PER_CLIP: 250 # 1000 environments
 
 N_GPUS: 1
