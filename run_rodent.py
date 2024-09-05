@@ -12,14 +12,14 @@ from stac_mjx import utils
 from pathlib import Path
 
 
-def load_and_run_stac(stac_cfg, model_cfg):
+def load_and_run_stac(cfg):
     base_path = Path.cwd()
 
-    data_path = base_path / stac_cfg.data_path
-    kp_data, sorted_kp_names = utils.load_data(data_path, model_cfg)
+    data_path = base_path / cfg.stac.data_path
+    kp_data, sorted_kp_names = utils.load_data(data_path, cfg)
 
     fit_path, transform_path = main.run_stac(
-        stac_cfg, model_cfg, kp_data, sorted_kp_names, base_path=base_path
+        cfg, kp_data, sorted_kp_names, base_path=base_path
     )
 
     logging.info(
@@ -27,13 +27,14 @@ def load_and_run_stac(stac_cfg, model_cfg):
     )
 
 
-@hydra.main(config_path="./configs", config_name="stac", version_base=None)
-def hydra_entry(stac_cfg: DictConfig):
+@hydra.main(config_path="./configs", config_name="config", version_base=None)
+def hydra_entry(cfg: DictConfig):
+    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
     # Initialize configs
-    model_cfg = hydra.compose(config_name="rodent")
-    logging.info(f"cfg: {OmegaConf.to_yaml(stac_cfg)}")
-    logging.info(f"model_cfg: {OmegaConf.to_yaml(model_cfg)}")
-    model_cfg = OmegaConf.to_container(model_cfg, resolve=True)
+    # model_cfg = hydra.compose(config_name="rodent")
+    # logging.info(f"cfg: {OmegaConf.to_yaml(stac_cfg)}")
+    # logging.info(f"model_cfg: {OmegaConf.to_yaml(model_cfg)}")
+    # model_cfg = OmegaConf.to_container(model_cfg, resolve=True)
 
     # XLA flags for Nvidia GPU
     if xla_bridge.get_backend().platform == "gpu":
@@ -42,7 +43,7 @@ def hydra_entry(stac_cfg: DictConfig):
             "--xla_gpu_triton_gemm_any=True "
         )
 
-    load_and_run_stac(stac_cfg, model_cfg)
+    load_and_run_stac(cfg)
 
 
 if __name__ == "__main__":

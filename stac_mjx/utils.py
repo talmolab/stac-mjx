@@ -10,7 +10,7 @@ from typing import Text
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 from pathlib import Path
-from typing import Dict
+from omegaconf import DictConfig
 from jax.lib import xla_bridge
 import os
 
@@ -24,7 +24,7 @@ def enable_xla_flags():
         )
 
 
-def load_data(file_path: Path, params: Dict, label3d_path=None):
+def load_data(cfg: DictConfig, base_path: Path = Path.cwd(), label3d_path=None):
     """Main mocap data file loader interface.
 
     Loads mocap file based on filetype, and returns the data flattened
@@ -46,6 +46,7 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
     Raises:
         ValueError if an unsupported filetype is encountered.
     """
+    file_path = base_path / cfg.stac.data_path
     # using pathlib
     if file_path.suffix == ".mat":
         data, kp_names = load_dannce(str(file_path), names_filename=label3d_path)
@@ -56,7 +57,7 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
             "Unsupported file extension. Please provide a .nwb or .mat file."
         )
 
-    kp_names = kp_names or params["KP_NAMES"]
+    kp_names = kp_names or cfg.model.KP_NAMES
 
     if kp_names is None:
         raise ValueError(
@@ -69,13 +70,14 @@ def load_data(file_path: Path, params: Dict, label3d_path=None):
             f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
         )
 
-    model_inds = np.array(
-        [kp_names.index(src) for src, dst in params["KEYPOINT_MODEL_PAIRS"].items()]
-    )
+    model_inds = [
+        kp_names.index(src) for src, dst in cfg.model.KEYPOINT_MODEL_PAIRS.items()
+    ]
+
     sorted_kp_names = [kp_names[i] for i in model_inds]
 
     # Scale mocap data to match model
-    data = data * params["MOCAP_SCALE_FACTOR"]
+    data = data * cfg.model.MOCAP_SCALE_FACTOR
     # Sort in kp_names order
     data = jnp.array(data[:, :, model_inds])
     # Flatten data from [#num frames, #keypoints, xyz]

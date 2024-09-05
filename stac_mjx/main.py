@@ -11,9 +11,10 @@ from stac_mjx import utils
 from stac_mjx.controller import STAC
 from pathlib import Path
 from typing import List, Dict
+import hydra
 
 
-def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
+def load_configs(relative_path: str) -> DictConfig:
     """Initializes configs.
 
     Args:
@@ -23,14 +24,16 @@ def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-    return OmegaConf.load(stac_config_path), OmegaConf.to_container(
-        OmegaConf.load(model_config_path), resolve=True
-    )
+    # Initialize Hydra and set the config path
+    with hydra.initialize(config_path=relative_path):
+        # Compose the configuration by specifying the config name
+        cfg = hydra.compose(config_name="config")
+    return cfg
 
 
 def run_stac(
-    stac_cfg: DictConfig,
-    model_cfg: Dict,
+    cfg: DictConfig,
+    # model_cfg: Dict,
     kp_data: jp.ndarray,
     kp_names: List[str],
     base_path: Path = Path.cwd(),
@@ -52,16 +55,16 @@ def run_stac(
     start_time = time.time()
 
     # Getting paths
-    fit_path = base_path / stac_cfg.fit_path
-    transform_path = base_path / stac_cfg.transform_path
+    fit_path = base_path / cfg.stac.fit_path
+    transform_path = base_path / cfg.stac.transform_path
 
-    xml_path = base_path / model_cfg["MJCF_PATH"]
+    xml_path = base_path / cfg.model.MJCF_PATH
 
-    stac = STAC(xml_path, stac_cfg, model_cfg, kp_names)
+    stac = STAC(xml_path, cfg, kp_names)
 
     # Run fit if not skipping
-    if stac_cfg.skip_fit != 1:
-        fit_data = kp_data[: stac_cfg.n_fit_frames]
+    if cfg.stac.skip_fit != 1:
+        fit_data = kp_data[: cfg.stac.n_fit_frames]
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
         fit_data = stac.fit(fit_data)
 
@@ -69,7 +72,7 @@ def run_stac(
         utils.save(fit_data, fit_path)
 
     # Stop here if skipping transform
-    if stac_cfg.skip_transform == 1:
+    if cfg.stac.skip_transform == 1:
         logging.info("skipping transform()")
         return fit_path, None
 
