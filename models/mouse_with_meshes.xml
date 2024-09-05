@@ -109,18 +109,16 @@
         <mesh name="Tail7" file="Tail7.stl"/>
         <mesh name="Tail8" file="Tail8.stl"/>
         <mesh name="Tail9" file="Tail9.stl"/>
-        <texture type="skybox" builtin="gradient" rgb1=".3 .5 .7" rgb2="0 0 0" width="32" height="512"/>
+        <texture type="skybox" builtin="gradient" rgb1="0 0 0" rgb2="0 0 0" width="32" height="512"/>
         <texture name="body" type="cube" builtin="flat" mark="cross" width="128" height="128" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" markrgb="1 1 1" random="0.01"/>
         <material name="body" texture="body" texuniform="true" rgba="0.8 0.6 .4 1"/>
         <texture name="grid" type="2d" builtin="checker" width="512" height="200" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
-        <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>  
+        <material name="grid" texture="grid" texrepeat="10 10" texuniform="true" reflectance=".2"/>  
     </asset>
     <default class="collision_floor">
       <geom contype="0" conaffinity="1" condim="3"/>
     </default>
     <worldbody>
-        <camera name="center_of_mass" mode="fixed" pos="0.025 -.09 0.65" xyaxes="-1 0 0 0 -.94 -.34" fovy="90"/>
-
         <!-- <camera name="center_of_mass" mode="fixed" pos="0.05 .22 0.56" xyaxes="1 0 0 0 .71 -.71" fovy="90"/> -->
         <!-- <camera name="center_of_mass" mode="fixed" pos="0.08 .14 0.54" xyaxes="1 0 0 0 .71 -.71" fovy="90"/> -->
         <!-- <camera name="center_of_mass" mode="fixed" pos="0.08 .3 0.4" xyaxes="-1 0 0 0 0 1" fovy="90"/> -->
@@ -128,12 +126,16 @@
         <!-- <camera name="side" mode="targetbody" pos="0 -3 1" xyaxes="1 0 0 0 1 2" fovy="20"/>    -->
         <!-- <camera name="side_alt" mode="targetbody" pos="0.5 -0.561 0.199" xyaxes="0.766 0.643 0.000 -0.162 0.192 0.968"/>   -->        
         <!-- <camera name="com" mode="fixed" pos="0.06 .3 0.5" xyaxes="-1 0 0 0 0 1" zaxis="0 1 0" fovy="90"/> -->
-        <geom name="floor" class="collision_floor" pos="0 .025 0" zaxis = "0 -1 0" size="10 10 0.025" type="plane" material="grid"/>
-        <light name="spotlight" pos="0 -5 0" dir="0 1 0" diffuse=".8 .8 .8" specular=".2 .2 .2" directional="true" cutoff="45" exponent="20"/>
+        <geom name="floor" class="collision_floor" pos="0 .1 0" zaxis = "0.004 -.961 -.167" size="1.25 1.25 0.025" type="plane" material="grid"/>
+        <light name="spotlight" pos="0 -5 0" dir="0 1 0" diffuse=".8 .8 .8" specular=".4 .4 .4" directional="true" cutoff="45" exponent="20"/>
        <body name="mouse" pos="0 0 0" quat="0 0 0 1">
         <freejoint name="root"/>
+        <!-- <camera name="mouse_top" mode="trackcom" pos="0 -.2 0.2" xyaxes="-1 0 0 0 -1 -1"/> -->
+        <!-- <camera name="mouse_top" mode="trackcom" pos="0 -.2 0.2" xyaxes="-1 0 0 0 -1 -1"/> -->
         <geom type="mesh" mesh="Pelvis"/>
         <body name="mouse__Lumbar6_interim_0" pos="0 0.01206 0.00074">
+             <camera name="center_of_mass" mode="trackcom" pos="0 .15 -.75" xyaxes="-1 0 0 0 1 .1"/>
+            <!-- <camera name="center_of_mass" mode="trackcom" pos="0 0 0" xyaxes="1 0 0 0 1 0"/> -->
             <inertial pos="0 0 0" mass="1e-06" diaginertia="1e-06 1e-06 1e-06"/>
             <joint name="mouse__Lumbar6_bending" pos="0 0 0" axis="0 0 1" limited="true" range="-0.0872665 0.0872665"/>
             <body name="mouse__Lumbar6_interim_1" pos="0 0 0">
