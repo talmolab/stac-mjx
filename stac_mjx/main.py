@@ -72,6 +72,10 @@ def run_stac(
     if stac_cfg.skip_transform == 1:
         logging.info("skipping transform()")
         return fit_path, None
+    elif kp_data.shape[0] % model_cfg["N_FRAMES_PER_CLIP"] != 0:
+        raise ValueError(
+            f"N_FRAMES_PER_CLIP ({model_cfg['N_FRAMES_PER_CLIP']}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
+        )
 
     logging.info("Running transform()")
     with open(fit_path, "rb") as file:
