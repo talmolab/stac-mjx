@@ -77,6 +77,7 @@ def set_site_pos(mjx_model: mjx.Model, offsets, site_idxs: jp.ndarray):
     return mjx_model
 
 
+@jit
 def make_qs(q0, qs_to_opt, q):
     """Create new set of qs combining initial and new qs for part optimization based on qs_to_opt.
 
@@ -88,7 +89,7 @@ def make_qs(q0, qs_to_opt, q):
     Returns:
         jp.Array: resulting set of joint angles
     """
-    return jp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jp.copy(q))
+    return (1 - qs_to_opt) * q0 + qs_to_opt * q
 
 
 def replace_qs(mjx_model: mjx.Model, mjx_data: mjx.Data, q):
@@ -102,11 +103,7 @@ def replace_qs(mjx_model: mjx.Model, mjx_data: mjx.Data, q):
     Returns:
         mjx.Data: resulting mjx Data
     """
-    if q is None:
-        print("optimization failed, continuing")
-
-    else:
-        mjx_data = mjx_data.replace(qpos=q)
-        mjx_data = kinematics(mjx_model, mjx_data)
+    mjx_data = mjx_data.replace(qpos=q)
+    mjx_data = kinematics(mjx_model, mjx_data)
 
     return mjx_data

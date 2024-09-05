@@ -2,7 +2,7 @@
 
 import jax
 import jax.numpy as jp
-from jax import jit
+from jax import jit, vmap
 
 from jaxopt import ProjectedGradient
 from jaxopt.projection import projection_box
@@ -13,6 +13,8 @@ import optax
 from stac_mjx import operations as op
 from stac_mjx import utils
 import functools
+
+from functools import wraps
 
 
 def huber(x, delta=5.0, max=10, max_slope=0.1):
@@ -229,7 +231,6 @@ def q_loss(
     return residual
 
 
-@jit
 def q_opt_NEW(
     mjx_model,
     mjx_data,
@@ -240,12 +241,12 @@ def q_opt_NEW(
     lb,
     ub,
     site_idxs,
-    learning_rate=3e-4,
+    tol,
+    learning_rate=1e-3,
     num_iterations=1000,
-    tol=1e-5,
 ):
     # Define the Adam optimizer
-    optimizer = optax.adam(learning_rate)
+    optimizer = optax.adamw(learning_rate)
 
     # Initialize the optimizer state
     opt_state = optimizer.init(q0)
@@ -271,7 +272,7 @@ def q_opt_NEW(
     def update(carry):
         params, opt_state, cur_loss, prev_loss, iteration = carry
         loss, grads = loss_and_grad(params)
-        updates, new_opt_state = optimizer.update(grads, opt_state)
+        updates, new_opt_state = optimizer.update(grads, opt_state, params)
         new_params = optax.apply_updates(params, updates)
         # Project the parameters back into the feasible region
         new_params = optax.projections.projection_box(new_params, lb, ub)

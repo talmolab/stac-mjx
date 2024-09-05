@@ -84,21 +84,12 @@ class STAC:
         )
         self._ub = jp.concatenate([_ROOT_QPOS_UB, self._mj_model.jnt_range[1:][:, 1]])
 
-        # Vmap optimize functions
-        self._vmap_root_opt = jax.jit(jax.vmap(
-            compute_stac.root_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
-        ))
-
-        self._vmap_pose_opt = jax.jit(jax.vmap(
-            compute_stac.pose_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
-        ))
-
-        self._vmap_offset_opt = jax.jit(jax.vmap(
-            compute_stac.offset_optimization,
-            in_axes=(0, 0, 0, None, 0, None, None, None, None),
-        ))
+        self._vmap_offset_opt = jax.jit(
+            jax.vmap(
+                compute_stac.offset_optimization,
+                in_axes=(0, 0, 0, None, 0, None, None, None, None),
+            )
+        )
 
         self._mjx_setup = jax.vmap(self.mjx_setup, in_axes=(0, None, None))
 
@@ -199,14 +190,12 @@ class STAC:
 
     def _get_error_stats(self, errors: jp.ndarray, total_iters):
         """Compute error stats."""
-        flattened_errors = errors.reshape(-1)
-        flattened_iters = total_iters.reshape(-1)
         # Calculate mean and standard deviation
-        mean_e = jp.mean(flattened_errors)
-        std_e = jp.std(flattened_errors)
+        mean_e = jp.mean(errors)
+        std_e = jp.std(errors)
 
-        mean_it = jp.mean(flattened_iters)
-        std_it = jp.std(flattened_iters)
+        mean_it = jp.mean(total_iters)
+        std_it = jp.std(total_iters)
 
         return mean_e, std_e, mean_it, std_it
 
@@ -238,7 +227,7 @@ class STAC:
         # Begin optimization steps
         print("Root Optimization:")
         r = time.time()
-        mjx_data, final_loss, num_iters = self._vmap_root_opt(
+        mjx_data, final_loss, num_iters = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
             kp_data,
@@ -255,7 +244,7 @@ class STAC:
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
             mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
-                self._vmap_pose_opt(
+                compute_stac.pose_optimization(
                     mjx_model,
                     mjx_data,
                     kp_data,
@@ -265,10 +254,12 @@ class STAC:
                     self._indiv_parts,
                 )
             )
-
-            for i, (t, e, it) in enumerate(
-                zip(frame_time[0], frame_error[0], frame_iter[0])
-            ):
+            frame_time, frame_error, frame_iter = (
+                frame_time.flatten(),
+                frame_error.flatten(),
+                frame_iter.flatten(),
+            )
+            for i, (t, e, it) in enumerate(zip(frame_time, frame_error, frame_iter)):
                 print(
                     f"Frame {i+1} done in {t} with a final error of {e} after {it} total iterations"
                 )
@@ -283,13 +274,23 @@ class STAC:
             print(f"Standard deviation of total iters: {std_it}")
 
             print("starting offset optimization")
+            q = jp.swapaxes(q, 0, 1)
+            key = jax.random.PRNGKey(0)
+
+            # shuffle frames to get sample frames
+            all_indices = jp.arange(kp_data.shape[1])
+            shuffled_indices = jax.random.permutation(
+                key, all_indices, independent=True
+            )
+            time_indices = shuffled_indices[: self.model_cfg["N_SAMPLE_FRAMES"]]
+
             mjx_model, mjx_data = self._vmap_offset_opt(
                 mjx_model,
                 mjx_data,
                 kp_data,
                 offsets,
                 q,
-                self.model_cfg["N_SAMPLE_FRAMES"],
+                time_indices,
                 self._is_regularized,
                 self._body_site_idxs,
                 self.model_cfg["M_REG_COEF"],
@@ -298,7 +299,7 @@ class STAC:
         # Optimize the pose for the whole sequence
         print("Final pose optimization")
         mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
-            self._vmap_pose_opt(
+            compute_stac.pose_optimization(
                 mjx_model,
                 mjx_data,
                 kp_data,
@@ -308,10 +309,12 @@ class STAC:
                 self._indiv_parts,
             )
         )
-
-        for i, (t, e, it) in enumerate(
-            zip(frame_time[0], frame_error[0], frame_iter[0])
-        ):
+        frame_time, frame_error, frame_iter = (
+            frame_time.flatten(),
+            frame_error.flatten(),
+            frame_iter.flatten(),
+        )
+        for i, (t, e, it) in enumerate(zip(frame_time, frame_error, frame_iter)):
             print(
                 f"Frame {i+1} done in {t} with a final error of {e} after {it} total iterations"
             )
@@ -370,7 +373,7 @@ class STAC:
         mjx_model, mjx_data = self._mjx_setup(batched_kp_data, self._mj_model, offsets)
 
         # q_phase
-        mjx_data = self._vmap_root_opt(
+        mjx_data = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
             batched_kp_data,

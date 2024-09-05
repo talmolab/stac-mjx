@@ -9,6 +9,14 @@ import time
 from stac_mjx import stac_base
 from stac_mjx import operations as op
 
+jit_vmap_q_opt_NEW = jax.jit(
+    jax.vmap(stac_base.q_opt_NEW, in_axes=(0, 0, 0, 0, None, 0, None, None, None, None))
+)
+
+jit_vmap_replace_qs = jax.jit(jax.vmap(op.replace_qs))
+
+jit_vmap_get_site_xpos = jax.jit(jax.vmap(op.get_site_xpos, in_axes=(0, None)))
+
 
 def root_optimization(
     mjx_model,
@@ -41,37 +49,38 @@ def root_optimization(
     Returns:
         mjx.Data: An updated MJX Data
     """
-
-    q0 = jp.copy(mjx_data.qpos[:])
-
     # Set the center to help with finding the optima (does not need to be exact)
     # However should be close to the center of mass of the animal. The "magic numbers"
     # below are for the rodent.xml model. These will need to be changed for other
     # models, and possibly be computed for arbitray animal models.
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
-    qs_to_opt = jp.zeros_like(q0, dtype=bool)
-    qs_to_opt = qs_to_opt.at[:7].set(True)
+    s = time.time()
+    q0 = mjx_data.qpos.at[:, :3].set(kp_data[:, frame, 12:15])
+
+    qs_to_opt = jp.zeros_like(mjx_data.qpos, dtype=bool)
+    qs_to_opt = qs_to_opt.at[:, :7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
 
     # NEW OPTIMIZE
-    final_params, final_loss, num_iters = stac_base.q_opt_NEW(
+    final_params, final_loss, num_iters = jit_vmap_q_opt_NEW(
         mjx_model,
         mjx_data,
-        kp_data[frame, :],
+        kp_data[:, frame, :],
         qs_to_opt,
         kps_to_opt,
         q0,
         lb,
         ub,
         site_idxs,
-        tol=1e-5,
+        1e-5,
     )
+    r = time.time()
 
-    mjx_data = op.replace_qs(
+    print(f"opt done in {r - s}")
+    mjx_data = jit_vmap_replace_qs(
         mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, final_params)
     )
-
-    return mjx_data
+    print(f"replace done in {time.time()-r}")
+    return mjx_data, final_loss, num_iters
 
 
 def offset_optimization(
@@ -80,7 +89,7 @@ def offset_optimization(
     kp_data: jp.ndarray,
     offsets: jp.ndarray,
     q: jp.ndarray,
-    n_sample_frames: int,
+    time_indices: jp.ndarray,
     is_regularized: jp.ndarray,
     site_idxs: jp.ndarray,
     m_reg_coef: float,
@@ -101,12 +110,6 @@ def offset_optimization(
     Returns:
         (mjx.Model, mjx.Data): An updated MJX Model and Data
     """
-    key = jax.random.PRNGKey(0)
-
-    # shuffle frames to get sample frames
-    all_indices = jp.arange(kp_data.shape[0])
-    shuffled_indices = jax.random.permutation(key, all_indices, independent=True)
-    time_indices = shuffled_indices[:n_sample_frames]
 
     s = time.time()
     print("Begining offset optimization:")
@@ -174,47 +177,47 @@ def pose_optimization(
     walker_body_sites = []
 
     # Iterate through all of the frames
-    frames = jp.arange(kp_data.shape[0])
+    frames = jp.arange(kp_data.shape[1])
 
-    kps_to_opt = jp.ones(kp_data.shape[1], dtype=bool)
-    qs_to_opt = jp.ones(mjx_model.nq, dtype=bool)
+    kps_to_opt = jp.ones(kp_data.shape[2], dtype=bool)
+    qs_to_opt = jp.ones(mjx_data.qpos.shape, dtype=bool)
     print("Pose Optimization:")
 
     def f(mjx_data, kp_data, n_frame, parts):
-        q0 = jp.copy(mjx_data.qpos[:])
+        q0 = mjx_data.qpos
         total_iters = 0
-        final_params, final_loss, num_iters = stac_base.q_opt_NEW(
+        final_params, final_loss, num_iters = jit_vmap_q_opt_NEW(
             mjx_model,
             mjx_data,
-            kp_data[n_frame, :],
+            kp_data[:, n_frame, :],
             qs_to_opt,
             kps_to_opt,
             q0,
             lb,
             ub,
             site_idxs,
-            tol=1e-4,
+            1e-3,
         )
         total_iters += num_iters
-        mjx_data = op.replace_qs(mjx_model, mjx_data, final_params)
+        mjx_data = jit_vmap_replace_qs(mjx_model, mjx_data, final_params)
 
         for part in parts:
-            q0 = jp.copy(mjx_data.qpos[:])
+            q0 = mjx_data.qpos
 
-            final_params, final_loss, num_iters = stac_base.q_opt_NEW(
+            final_params, final_loss, num_iters = jit_vmap_q_opt_NEW(
                 mjx_model,
                 mjx_data,
-                kp_data[n_frame, :],
+                kp_data[:, n_frame, :],
                 qs_to_opt,
                 kps_to_opt,
                 q0,
                 lb,
                 ub,
                 site_idxs,
-                tol=1e-6,
+                1e-6,
             )
 
-            mjx_data = op.replace_qs(
+            mjx_data = jit_vmap_replace_qs(
                 mjx_model, mjx_data, op.make_qs(q0, part, final_params)
             )
             total_iters += num_iters
@@ -230,9 +233,9 @@ def pose_optimization(
 
         mjx_data, final_loss, total_iters = f(mjx_data, kp_data, n_frame, indiv_parts)
 
-        q.append(mjx_data.qpos[:])
-        x.append(mjx_data.xpos[:])
-        walker_body_sites.append(op.get_site_xpos(mjx_data, site_idxs))
+        q.append(mjx_data.qpos)
+        x.append(mjx_data.xpos)
+        walker_body_sites.append(jit_vmap_get_site_xpos(mjx_data, site_idxs))
 
         frame_time.append(time.time() - loop_start)
         frame_error.append(final_loss)
