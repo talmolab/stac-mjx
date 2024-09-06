@@ -10,22 +10,21 @@ from omegaconf import DictConfig, OmegaConf
 from stac_mjx import utils
 from stac_mjx.controller import STAC
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Dict, Union
 import hydra
 
 
-def load_configs(relative_path: str) -> DictConfig:
+def load_configs(config_dir: Union[Path, str]) -> DictConfig:
     """Initializes configs.
 
     Args:
-        stac_config_path (str): path to stac yaml file
-        model_config_path (str): path to model yaml file
+        config_dir ([Path, str]): absolute path to config directory
 
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
     # Initialize Hydra and set the config path
-    with hydra.initialize(config_path=relative_path):
+    with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name
         cfg = hydra.compose(config_name="config")
     return cfg
