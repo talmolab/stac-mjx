@@ -24,7 +24,7 @@ def enable_xla_flags():
         )
 
 
-def load_data(cfg: DictConfig, base_path: Path = Path.cwd(), label3d_path=None):
+def load_data(cfg: DictConfig, base_path: Path = Path.cwd()):
     """Main mocap data file loader interface.
 
     Loads mocap file based on filetype, and returns the data flattened
@@ -49,6 +49,7 @@ def load_data(cfg: DictConfig, base_path: Path = Path.cwd(), label3d_path=None):
     file_path = base_path / cfg.stac.data_path
     # using pathlib
     if file_path.suffix == ".mat":
+        label3d_path = cfg.model.get("KP_NAMES_LABEL3D_PATH", None)
         data, kp_names = load_dannce(str(file_path), names_filename=label3d_path)
     elif file_path.suffix == ".nwb":
         data, kp_names = load_nwb(file_path)

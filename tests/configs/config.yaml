@@ -1,0 +1,4 @@
+defaults:
+  - stac: test_stac
+  - model: test_rodent
+  - _self_
