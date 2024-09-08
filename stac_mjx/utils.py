@@ -6,7 +6,7 @@ from jax import numpy as jnp
 import yaml
 import scipy.io as spio
 import pickle
-from typing import Text
+from typing import Text, Union
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 from pathlib import Path
@@ -24,17 +24,15 @@ def enable_xla_flags():
         )
 
 
-def load_data(cfg: DictConfig, base_path=None):
+def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
     """Main mocap data file loader interface.
 
     Loads mocap file based on filetype, and returns the data flattened
     for immediate consumption by stac_mjx algorithm.
 
     Args:
-        file_path: path to be loaded, which should have a supported
-        file type suffix, either .mat or .nwb, and presumed to be organized
-        as [num frames, num keypoints, xyz].
-        params:
+        cfg (DictConfig): Configs.
+        base_path (Union[Path, None], optional): Base path for file paths in configs. Defaults to None.
 
     Returns:
         Mocap data flattened into an np array of shape [#frames, keypointXYZ],
@@ -45,6 +43,8 @@ def load_data(cfg: DictConfig, base_path=None):
 
     Raises:
         ValueError if an unsupported filetype is encountered.
+        ValueError if ordered list of keypoint names is missing or
+        does not match number of keypoints.
     """
     if base_path is None:
         base_path = Path.cwd()

@@ -15,10 +15,10 @@ import hydra
 
 
 def load_configs(config_dir: Union[Path, str]) -> DictConfig:
-    """Initializes configs.
+    """Initializes configs with hydra.
 
     Args:
-        config_dir ([Path, str]): absolute path to config directory
+        config_dir ([Path, str]): Absolute path to config directory.
 
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
@@ -32,7 +32,6 @@ def load_configs(config_dir: Union[Path, str]) -> DictConfig:
 
 def run_stac(
     cfg: DictConfig,
-    # model_cfg: Dict,
     kp_data: jp.ndarray,
     kp_names: List[str],
     base_path=None,
@@ -40,8 +39,7 @@ def run_stac(
     """High level function for running skeletal registration.
 
     Args:
-        stac_cfg (DictConfig): Stac config file.
-        model_cfg (Dict): Model config file.
+        cfg (DictConfig): Configs.
         kp_data (jp.ndarray): Mocap keypoints to fit to.
         kp_names (List[str]): Ordered list of keypoint names.
         base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().

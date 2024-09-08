@@ -39,8 +39,7 @@ class STAC:
 
         Args:
             xml_path (str): Path to model MJCF.
-            stac_cfg (DictConfig): Stac config file.
-            model_cfg (Dict): Model config file.
+            cfg (DictConfig): Configs for this run.
             kp_names (List[str]): Ordered list of mocap keypoint names.
         """
         # self.stac_cfg = stac_cfg
@@ -82,11 +81,7 @@ class STAC:
         self._ub = jp.concatenate([_ROOT_QPOS_UB, self._mj_model.jnt_range[1:][:, 1]])
 
     def part_opt_setup(self):
-        """Set up the lists of indices for part optimization.
-
-        Args:
-            physics (dmcontrol.Physics): (See Mujoco dm_control docs)[https://github.com/google-deepmind/dm_control/blob/bdb1ab54c4c24cd89283fb18f06a6a54b6c0803b/dm_control/mjcf/physics.py#L434]
-        """
+        """Set up the lists of indices for part optimization."""
 
         def get_part_ids(parts: List) -> jp.ndarray:
             """Get the part ids for a given list of parts."""
@@ -113,7 +108,8 @@ class STAC:
             root (mjcf.Element):
 
         Returns:
-            dmcontrol.Physics, mujoco.Model:
+            mujoco.Model, list of marker site indices, boolean mask for offset
+            regularization, lists for part names and body names.
         """
         for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
             parent = root.find("body", v)
@@ -241,7 +237,6 @@ class STAC:
 
             flattened_errors, mean, std = self._get_error_stats(frame_error)
             # Print the results
-            print(f"Flattened array shape: {flattened_errors.shape}")
             print(f"Mean: {mean}")
             print(f"Standard deviation: {std}")
 
@@ -277,7 +272,6 @@ class STAC:
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
-        print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
@@ -359,7 +353,6 @@ class STAC:
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
-        print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
 
