@@ -13,14 +13,9 @@ from pathlib import Path
 
 
 def load_and_run_stac(cfg):
-    base_path = Path.cwd()
+    kp_data, sorted_kp_names = utils.load_data(cfg)
 
-    data_path = base_path / cfg.stac.data_path
-    kp_data, sorted_kp_names = utils.load_data(data_path, cfg)
-
-    fit_path, transform_path = main.run_stac(
-        cfg, kp_data, sorted_kp_names, base_path=base_path
-    )
+    fit_path, transform_path = main.run_stac(cfg, kp_data, sorted_kp_names)
 
     logging.info(
         f"Run complete. \n fit path: {fit_path} \n transform path: {transform_path}"
