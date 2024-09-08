@@ -17,7 +17,7 @@ def viz_stac(
     camera: Union[int, str] = 0,
     height: int = 1200,
     width: int = 1920,
-    base_path: Path = Path.cwd(),
+    base_path=None,
 ):
     """Render forward kinematics from keypoint positions.
 
@@ -35,6 +35,9 @@ def viz_stac(
     Returns:
         (List): List of frames
     """
+    if base_path is None:
+        base_path = Path.cwd()
+
     xml_path = base_path / cfg.model.MJCF_PATH
 
     # Load data

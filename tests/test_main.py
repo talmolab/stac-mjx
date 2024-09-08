@@ -5,8 +5,6 @@ from pathlib import Path
 from typing import Dict
 import pytest
 
-_BASE_PATH = Path.cwd()
-
 
 def test_load_configs(config):
     # Check that utils.params is not defined before loading

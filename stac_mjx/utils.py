@@ -24,7 +24,7 @@ def enable_xla_flags():
         )
 
 
-def load_data(cfg: DictConfig, base_path: Path = Path.cwd()):
+def load_data(cfg: DictConfig, base_path=None):
     """Main mocap data file loader interface.
 
     Loads mocap file based on filetype, and returns the data flattened
@@ -46,6 +46,9 @@ def load_data(cfg: DictConfig, base_path: Path = Path.cwd()):
     Raises:
         ValueError if an unsupported filetype is encountered.
     """
+    if base_path is None:
+        base_path = Path.cwd()
+
     file_path = base_path / cfg.stac.data_path
     # using pathlib
     if file_path.suffix == ".mat":

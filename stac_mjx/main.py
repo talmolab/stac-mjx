@@ -35,7 +35,7 @@ def run_stac(
     # model_cfg: Dict,
     kp_data: jp.ndarray,
     kp_names: List[str],
-    base_path: Path = Path.cwd(),
+    base_path=None,
 ) -> tuple[str, str]:
     """High level function for running skeletal registration.
 
@@ -49,6 +49,9 @@ def run_stac(
     Returns:
         tuple[str, str]: Paths to saved outputs (fit and transform).
     """
+    if base_path is None:
+        base_path = Path.cwd()
+
     utils.enable_xla_flags()
 
     start_time = time.time()
