@@ -199,6 +199,11 @@ class STAC:
 
         return mean_e, std_e, mean_it, std_it
 
+    def _print_avg_error_and_iters(self, stepname, final_loss, num_iters, time):
+        print(
+            f"{stepname} opt finished in {time} with avg iteration: {jp.mean(num_iters)}, loss: {jp.mean(final_loss)}"
+        )
+
     # TODO: pmap fit and transform if you want to use it with multiple gpus
     def fit(self, kp_data):
         """Alternate between pose and offset optimization for a set number of iterations.
@@ -236,11 +241,13 @@ class STAC:
             self._body_site_idxs,
             self._trunk_kps,
         )
-
-        # Print final results
-        print(
-            f"Root opt finished in {time.time()-r} at iteration {num_iters}, Loss: {final_loss}"
-        )
+        t = time.time() - r
+        print(final_loss, num_iters, t)
+        self._print_avg_error_and_iters("root", final_loss, num_iters, t)
+        # # Print final results
+        # print(
+        #     f"Root opt finished in {time.time()-r} at iteration {num_iters}, Loss: {final_loss}"
+        # )
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
             mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
@@ -284,17 +291,26 @@ class STAC:
             )
             time_indices = shuffled_indices[: self.model_cfg["N_SAMPLE_FRAMES"]]
 
-            mjx_model, mjx_data = self._vmap_offset_opt(
-                mjx_model,
-                mjx_data,
-                kp_data,
-                offsets,
-                q,
-                time_indices,
-                self._is_regularized,
-                self._body_site_idxs,
-                self.model_cfg["M_REG_COEF"],
+            r = time.time()
+            mjx_model, mjx_data, final_loss, num_iters = (
+                compute_stac.offset_optimization(
+                    mjx_model,
+                    mjx_data,
+                    kp_data,
+                    offsets,
+                    q,
+                    time_indices,
+                    self._is_regularized,
+                    self._body_site_idxs,
+                    self.model_cfg["M_REG_COEF"],
+                )
             )
+            self._print_avg_error_and_iters(
+                "offset", final_loss, num_iters, time.time() - r
+            )
+            # print(
+            #     f"offset opt finished in {time.time()-r} at iteration {num_iters}, Loss: {final_loss}"
+            # )
 
         # Optimize the pose for the whole sequence
         print("Final pose optimization")
@@ -363,6 +379,8 @@ class STAC:
                 Keypoint order must match the order in the skeleton file.
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
+        print("Starting transform")
+
         # Create batches of kp_data
         batched_kp_data = self._chunk_kp_data(kp_data)
 
@@ -372,8 +390,10 @@ class STAC:
 
         mjx_model, mjx_data = self._mjx_setup(batched_kp_data, self._mj_model, offsets)
 
+        print("Root optimization: ")
+        r = time.time()
         # q_phase
-        mjx_data = compute_stac.root_optimization(
+        mjx_data, final_loss, num_iters = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
             batched_kp_data,
@@ -382,8 +402,14 @@ class STAC:
             self._body_site_idxs,
             self._trunk_kps,
         )
+
+        self._print_avg_error_and_iters("root", final_loss, num_iters, time.time() - r)
+        # print(
+        #     f"root opt finished in {time.time()-r} at iteration {num_iters}, Loss: {final_loss}"
+        # )
+
         mjx_data, q, walker_body_sites, x, frame_time, frame_error, frame_iter = (
-            self._vmap_pose_opt(
+            compute_stac.pose_optimization(
                 mjx_model,
                 mjx_data,
                 batched_kp_data,

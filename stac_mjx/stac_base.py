@@ -129,8 +129,8 @@ def m_loss(
             (
                 mjx_model,
                 mjx_data,
-                jp.zeros(69),
-                jp.zeros(69),
+                jp.zeros(kp_data.shape[1]),
+                jp.zeros(kp_data.shape[1]),
                 initial_offsets,
                 is_regularized,
             ),
@@ -229,6 +229,72 @@ def q_loss(
     residual = squared_error(residual)
 
     return residual
+
+
+def m_opt_NEW(
+    offset0,
+    mjx_model,
+    mjx_data,
+    keypoints,
+    q,
+    initial_offsets,
+    is_regularized,
+    reg_coef,
+    site_idxs,
+    tol,
+    learning_rate=1e-3,
+    num_iterations=1000,
+):
+    # Define the Adam optimizer
+    optimizer = optax.adamw(learning_rate)
+
+    # Initialize the optimizer state
+    opt_state = optimizer.init(offset0)
+
+    @jax.jit
+    def loss_and_grad(params):
+        return jax.value_and_grad(
+            functools.partial(
+                m_loss,
+                mjx_model=mjx_model,
+                mjx_data=mjx_data,
+                kp_data=keypoints,
+                q=q,
+                initial_offsets=initial_offsets,
+                is_regularized=is_regularized,
+                reg_coef=reg_coef,
+                site_idxs=site_idxs,
+            )
+        )(params)
+
+    # Define the update step
+    @jax.jit
+    def update(carry):
+        params, opt_state, cur_loss, prev_loss, iteration = carry
+        loss, grads = loss_and_grad(params)
+        updates, new_opt_state = optimizer.update(grads, opt_state, params)
+        new_params = optax.apply_updates(params, updates)
+        return (new_params, new_opt_state, loss, cur_loss, iteration + 1)
+
+    # Define the condition function for while_loop
+    @jax.jit
+    def cond_fun(carry):
+        params, opt_state, cur_loss, prev_loss, iteration = carry
+        return jp.logical_and(
+            iteration < num_iterations, jp.abs(cur_loss - prev_loss) >= tol
+        )
+
+    # Initialize the carry for the while_loop
+    init_carry = (offset0, opt_state, jp.inf, -jp.inf, 0)
+
+    # Run the optimization using while_loop
+    final_carry = jax.lax.while_loop(
+        cond_fun, update, init_carry  # Only pass along the carry
+    )
+
+    final_params, opt_state, final_loss, _, num_iters = final_carry
+
+    return final_params, final_loss, num_iters
 
 
 def q_opt_NEW(

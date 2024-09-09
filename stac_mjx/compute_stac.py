@@ -13,9 +13,19 @@ jit_vmap_q_opt_NEW = jax.jit(
     jax.vmap(stac_base.q_opt_NEW, in_axes=(0, 0, 0, 0, None, 0, None, None, None, None))
 )
 
+jit_vmap_m_opt_NEW = jax.jit(
+    jax.vmap(stac_base.m_opt_NEW, in_axes=(0, 0, 0, 0, 0, None, None, None, None, None))
+)
+
 jit_vmap_replace_qs = jax.jit(jax.vmap(op.replace_qs))
 
 jit_vmap_get_site_xpos = jax.jit(jax.vmap(op.get_site_xpos, in_axes=(0, None)))
+
+jit_vmap_get_site_pos = jax.jit(jax.vmap(op.get_site_pos, in_axes=(0, None)))
+
+jit_vmap_set_site_pos = jax.jit(jax.vmap(op.set_site_pos, in_axes=(0, 0, None)))
+
+jit_vmap_kinematics = jax.jit(jax.vmap(op.kinematics))
 
 
 def root_optimization(
@@ -111,16 +121,15 @@ def offset_optimization(
         (mjx.Model, mjx.Data): An updated MJX Model and Data
     """
 
-    s = time.time()
     print("Begining offset optimization:")
 
+    cur_offsets = jit_vmap_get_site_pos(mjx_model, site_idxs)
     # Define initial position of the optimization
-    offset0 = op.get_site_pos(mjx_model, site_idxs).flatten()
+    offset0 = jp.reshape(cur_offsets, (kp_data.shape[0], -1))
+    keypoints = jp.take(kp_data, time_indices, axis=1)
+    q = jp.take(q, time_indices, axis=1)
 
-    keypoints = jp.array(kp_data[time_indices, :])
-    q = jp.take(q, time_indices, axis=0)
-
-    res = stac_base.m_opt(
+    final_params, final_loss, num_iters = jit_vmap_m_opt_NEW(
         offset0,
         mjx_model,
         mjx_data,
@@ -130,22 +139,21 @@ def offset_optimization(
         is_regularized,
         m_reg_coef,
         site_idxs,
+        1e-4,
     )
 
-    offset_opt_param = res.params
-    print(f"Final error of {res.state.error}")
+    # offset_opt_param = res.params
+    # print(f"Final error of {res.state.error}")
 
     # Set pose to the optimized m and step forward.
-    mjx_model = op.set_site_pos(
-        mjx_model, jp.reshape(offset_opt_param, (-1, 3)), site_idxs
+    mjx_model = jit_vmap_set_site_pos(
+        mjx_model, jp.reshape(final_params, (kp_data.shape[0], -1, 3)), site_idxs
     )
 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = op.kinematics(mjx_model, mjx_data)
+    mjx_data = jit_vmap_kinematics(mjx_model, mjx_data)
 
-    print(f"offset optimization finished in {time.time()-s}")
-
-    return mjx_model, mjx_data
+    return mjx_model, mjx_data, final_loss, num_iters
 
 
 def pose_optimization(
