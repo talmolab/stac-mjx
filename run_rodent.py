@@ -9,7 +9,6 @@ from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import main
 from stac_mjx import utils
-from pathlib import Path
 
 
 def load_and_run_stac(cfg):

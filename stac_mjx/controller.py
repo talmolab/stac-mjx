@@ -17,7 +17,7 @@ from stac_mjx import compute_stac
 from stac_mjx import operations as op
 
 from omegaconf import OmegaConf, DictConfig
-from typing import List, Union, Dict
+from typing import List, Union
 from pathlib import Path
 from copy import deepcopy
 import imageio

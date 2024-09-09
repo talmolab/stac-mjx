@@ -10,7 +10,7 @@ from omegaconf import DictConfig, OmegaConf
 from stac_mjx import utils
 from stac_mjx.controller import STAC
 from pathlib import Path
-from typing import List, Dict, Union
+from typing import List, Union
 import hydra
 
 
