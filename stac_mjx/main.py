@@ -68,6 +68,7 @@ def run_stac(
         logging.info(f"saving data to {fit_path}")
         utils.save(fit_data, fit_path)
 
+    logging.info(f"fit took {time.time() - start_time} seconds")
     # Stop here if skipping transform
     if stac_cfg.skip_transform == 1:
         logging.info("skipping transform()")
