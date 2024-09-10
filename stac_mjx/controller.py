@@ -28,6 +28,7 @@ from tqdm import tqdm
 _ROOT_QPOS_LB = -jp.inf
 _ROOT_QPOS_UB = jp.inf
 
+# mujoco jnt_type values: https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjtjoint
 _JOINT_TYPE_DIMS = {
     0: 7,
     1: 4,
@@ -37,6 +38,9 @@ _JOINT_TYPE_DIMS = {
 
 
 def _align_joint_dims(types, ranges, names):
+    """Creates lower and upper bounds (as jax arrays)
+    for qpos dimensions, alongside a list of names for
+    the parts that correspond to those dimensions."""
     lb = []
     ub = []
     part_names = []
