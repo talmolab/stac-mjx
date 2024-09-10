@@ -38,9 +38,7 @@ _JOINT_TYPE_DIMS = {
 
 
 def _align_joint_dims(types, ranges, names):
-    """Creates lower and upper bounds (as jax arrays)
-    for qpos dimensions, alongside a list of names for
-    the parts that correspond to those dimensions."""
+    """Creates bounds and joint names aligned with qpos dimensions."""
     lb = []
     ub = []
     part_names = []
