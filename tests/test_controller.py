@@ -29,11 +29,17 @@ def test_init_stac(mocap_nwb, stac_config, rodent_config):
 
 def test_align_joint_dims():
     from jax import numpy as jp
+    import mujoco
 
-    types = [0, 1, 2, 3]
-    ranges = [[0.0, 0.0], [0.0, 1.0], [-1.0, 1.0], [-1.0, 1.0]]
-    names = ["root", "balljoint", "slidejoint", "hingejoint"]
-    lb, ub, part_names = _align_joint_dims(types, ranges, names)
+    joint_types = [
+        mujoco.mjtJoint.mjJNT_FREE,
+        mujoco.mjtJoint.mjJNT_HINGE,
+        mujoco.mjtJoint.mjJNT_BALL,
+        mujoco.mjtJoint.mjJNT_SLIDE,
+    ]
+    ranges = [[0.0, 0.0], [-0.1, 0.1], [0.0, 1.0], [-0.5, 0.5]]
+    names = ["root", "hingejoint", "balljoint", "slidejoint"]
+    lb, ub, part_names = _align_joint_dims(joint_types, ranges, names)
     print(lb)
 
     true_lb = jp.array(
@@ -41,16 +47,16 @@ def test_align_joint_dims():
             -jp.inf,
             -jp.inf,
             -jp.inf,
-            -jp.inf,
-            -jp.inf,
-            -jp.inf,
-            -jp.inf,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
             -1.0,
             -1.0,
+            -1.0,
+            -1.0,
+            -0.1,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            -0.5,
         ]
     )
 
@@ -59,16 +65,16 @@ def test_align_joint_dims():
             jp.inf,
             jp.inf,
             jp.inf,
-            jp.inf,
-            jp.inf,
-            jp.inf,
-            jp.inf,
             1.0,
             1.0,
             1.0,
             1.0,
+            0.1,
             1.0,
             1.0,
+            1.0,
+            1.0,
+            0.5,
         ]
     )
     assert jp.array_equal(lb, true_lb)
@@ -81,10 +87,10 @@ def test_align_joint_dims():
         "root",
         "root",
         "root",
+        "hingejoint",
         "balljoint",
         "balljoint",
         "balljoint",
         "balljoint",
         "slidejoint",
-        "hingejoint",
     ]

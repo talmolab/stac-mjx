@@ -24,16 +24,16 @@ from copy import deepcopy
 import imageio
 from tqdm import tqdm
 
-# Root position (3) + quaternion (7) in qpos
-_ROOT_QPOS_LB = -jp.inf
-_ROOT_QPOS_UB = jp.inf
+# Root = position (3) + quaternion (4)
+_ROOT_QPOS_LB = jp.concatenate([-jp.inf * jp.ones(3), -1.0 * jp.ones(4)])
+_ROOT_QPOS_UB = jp.concatenate([jp.inf * jp.ones(3), 1.0 * jp.ones(4)])
 
-# mujoco jnt_type values: https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjtjoint
-_JOINT_TYPE_DIMS = {
-    0: 7,
-    1: 4,
-    2: 1,
-    3: 1,
+# mujoco jnt_type enums: https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjtjoint
+_MUJOCO_JOINT_TYPE_DIMS = {
+    mujoco.mjtJoint.mjJNT_FREE: 7,
+    mujoco.mjtJoint.mjJNT_BALL: 4,
+    mujoco.mjtJoint.mjJNT_SLIDE: 1,
+    mujoco.mjtJoint.mjJNT_HINGE: 1,
 }
 
 
@@ -43,11 +43,11 @@ def _align_joint_dims(types, ranges, names):
     ub = []
     part_names = []
     for type, range, name in zip(types, ranges, names):
-        dims = _JOINT_TYPE_DIMS[type]
+        dims = _MUJOCO_JOINT_TYPE_DIMS[type]
         # Set inf bounds for freejoint
-        if type == 0:
-            lb.append(_ROOT_QPOS_LB * jp.ones(dims))
-            ub.append(_ROOT_QPOS_UB * jp.ones(dims))
+        if type == mujoco.mjtJoint.mjJNT_FREE:
+            lb.append(_ROOT_QPOS_LB)
+            ub.append(_ROOT_QPOS_UB)
             part_names += [name] * dims
         else:
             lb.append(range[0] * jp.ones(dims))
