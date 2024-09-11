@@ -180,7 +180,6 @@ class STAC:
             key: int(axis.convert_key_item(key))
             for key in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
         }
-        part_names = _ROOT_NAMES + physics.named.data.qpos.axes.row.names
 
         body_names = physics.named.data.xpos.axes.row.names
 
@@ -365,7 +364,7 @@ class STAC:
         # Vmap optimize functions
         vmap_root_opt = jax.vmap(
             compute_stac.root_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
+            in_axes=(0, 0, 0, None, None, None, None, None),
         )
         vmap_pose_opt = jax.vmap(
             compute_stac.pose_optimization,
