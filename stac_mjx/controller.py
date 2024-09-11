@@ -24,12 +24,37 @@ from copy import deepcopy
 import imageio
 from tqdm import tqdm
 
-# Root position (3) + quaternion (7) in qpos
-_ROOT_QPOS_LB = -jp.inf * jp.ones(7)
-_ROOT_QPOS_UB = jp.inf * jp.ones(7)
+# Root = position (3) + quaternion (4)
+_ROOT_QPOS_LB = jp.concatenate([-jp.inf * jp.ones(3), -1.0 * jp.ones(4)])
+_ROOT_QPOS_UB = jp.concatenate([jp.inf * jp.ones(3), 1.0 * jp.ones(4)])
 
-# Prepend this to list of part names for one-to-one correspondence with qpos
-_ROOT_NAMES = ["root"] * 6
+# mujoco jnt_type enums: https://mujoco.readthedocs.io/en/latest/APIreference/APItypes.html#mjtjoint
+_MUJOCO_JOINT_TYPE_DIMS = {
+    mujoco.mjtJoint.mjJNT_FREE: 7,
+    mujoco.mjtJoint.mjJNT_BALL: 4,
+    mujoco.mjtJoint.mjJNT_SLIDE: 1,
+    mujoco.mjtJoint.mjJNT_HINGE: 1,
+}
+
+
+def _align_joint_dims(types, ranges, names):
+    """Creates bounds and joint names aligned with qpos dimensions."""
+    lb = []
+    ub = []
+    part_names = []
+    for type, range, name in zip(types, ranges, names):
+        dims = _MUJOCO_JOINT_TYPE_DIMS[type]
+        # Set inf bounds for freejoint
+        if type == mujoco.mjtJoint.mjJNT_FREE:
+            lb.append(_ROOT_QPOS_LB)
+            ub.append(_ROOT_QPOS_UB)
+            part_names += [name] * dims
+        else:
+            lb.append(range[0] * jp.ones(dims))
+            ub.append(range[1] * jp.ones(dims))
+            part_names += [name] * dims
+
+    return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
 
 
 class STAC:
@@ -51,12 +76,22 @@ class STAC:
         self._kp_names = kp_names
         self._root = mjcf.from_path(xml_path)
         (
-            mj_model,
+            self._mj_model,
             self._body_site_idxs,
             self._is_regularized,
-            self._part_names,
-            self._body_names,
         ) = self._create_body_sites(self._root)
+
+        self._body_names = [
+            self._mj_model.body(i).name for i in range(self._mj_model.nbody)
+        ]
+
+        joint_names = [self._mj_model.joint(i).name for i in range(self._mj_model.njnt)]
+
+        # Set up bounds and part_names based on joint ranges, taking into account the dimensionality of parameters
+        self._lb, self._ub, self._part_names = _align_joint_dims(
+            self._mj_model.jnt_type, self._mj_model.jnt_range, joint_names
+        )
+
         self._indiv_parts = self.part_opt_setup()
 
 
@@ -75,25 +110,16 @@ class STAC:
 
 
 
-        mj_model.opt.solver = {
+        self._mj_model.opt.solver = {
             "cg": mujoco.mjtSolver.mjSOL_CG,
             "newton": mujoco.mjtSolver.mjSOL_NEWTON,
         }[stac_cfg.mujoco.solver.lower()]
 
-        mj_model.opt.iterations = stac_cfg.mujoco.iterations
-        mj_model.opt.ls_iterations = stac_cfg.mujoco.ls_iterations
+        self._mj_model.opt.iterations = stac_cfg.mujoco.iterations
+        self._mj_model.opt.ls_iterations = stac_cfg.mujoco.ls_iterations
 
         # Runs faster on GPU with this
-        mj_model.opt.jacobian = 0  # dense
-
-        self._mj_model = mj_model
-
-        # Set joint bounds
-        self._lb = jp.minimum(
-            jp.concatenate([_ROOT_QPOS_LB, self._mj_model.jnt_range[1:][:, 0]]),
-            0.0,
-        )
-        self._ub = jp.concatenate([_ROOT_QPOS_UB, self._mj_model.jnt_range[1:][:, 1]])
+        self._mj_model.opt.jacobian = 0  # dense
 
     def part_opt_setup(self):
         """Set up the lists of indices for part optimization.
@@ -154,11 +180,8 @@ class STAC:
             key: int(axis.convert_key_item(key))
             for key in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
         }
-        
-        # Joint names from mjcf
         part_names = _ROOT_NAMES + physics.named.data.qpos.axes.row.names
 
-        # Body names from mjcf
         body_names = physics.named.data.xpos.axes.row.names
 
         # Define which offsets to regularize
@@ -175,8 +198,6 @@ class STAC:
             physics.model.ptr,
             jp.array(list(site_index_map.values())),
             is_regularized,
-            part_names,
-            body_names,
         )
 
     def _chunk_kp_data(self, kp_data):
@@ -227,12 +248,10 @@ class STAC:
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Begin optimization steps
-        
         mjx_data = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
             kp_data,
-            #self._root_kp_idx,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -358,7 +377,6 @@ class STAC:
             mjx_model,
             mjx_data,
             batched_kp_data,
-            #self._root_kp_idx, 
             self._lb,
             self._ub,
             self._body_site_idxs,
