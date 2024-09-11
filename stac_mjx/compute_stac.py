@@ -14,7 +14,7 @@ def root_optimization(
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
-    #root_kp_idx, 
+    root_kp_idx, 
     lb: jp.ndarray,
     ub: jp.ndarray,
     site_idxs: jp.ndarray,
