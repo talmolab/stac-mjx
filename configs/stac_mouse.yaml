@@ -1,8 +1,8 @@
 fit_path: "fit_mouse.p"
-transform_path: "transform_out_mouse.p"
+transform_path: "transform_mouse.p"
 data_path: "tests/data/points3d_00_scaleSmooth_1_rpt_15.h5"
 
-n_fit_frames: 1
+n_fit_frames: 3600
 skip_fit: False
 skip_transform: False
 
