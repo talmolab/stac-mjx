@@ -232,7 +232,7 @@ class STAC:
             mjx_model,
             mjx_data,
             kp_data,
-            #self._root_kp_idx,
+            self._root_kp_idx,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -311,6 +311,7 @@ class STAC:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
+        kp_data = kp_data[:1, :]
         batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data
@@ -346,7 +347,7 @@ class STAC:
         # Vmap optimize functions
         vmap_root_opt = jax.vmap(
             compute_stac.root_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
+            in_axes=(0, 0, 0, None, None, None, None, None),
         )
         vmap_pose_opt = jax.vmap(
             compute_stac.pose_optimization,
@@ -358,7 +359,7 @@ class STAC:
             mjx_model,
             mjx_data,
             batched_kp_data,
-            #self._root_kp_idx, 
+            self._root_kp_idx, 
             self._lb,
             self._ub,
             self._body_site_idxs,

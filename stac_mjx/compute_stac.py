@@ -14,7 +14,7 @@ def root_optimization(
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
-    #root_kp_idx, 
+    root_kp_idx, 
     lb: jp.ndarray,
     ub: jp.ndarray,
     site_idxs: jp.ndarray,
@@ -50,7 +50,7 @@ def root_optimization(
     # However should be close to the center of mass of the animal. The "magic numbers"
     # below are for the rodent.xml model. These will need to be changed for other
     # models, and possibly be computed for arbitray animal models.
-    root_kp_idx = 15
+    #root_kp_idx = 15
     print("root_kp_idx", root_kp_idx)
     root_kp_range = slice(root_kp_idx,root_kp_idx+3)
     q0 = q0.at[:3].set(kp_data[frame, :][root_kp_range])
