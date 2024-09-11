@@ -98,8 +98,8 @@ class STAC:
             "newton": mujoco.mjtSolver.mjSOL_NEWTON,
         }[cfg.stac.mujoco.solver.lower()]
 
-        self._mj_model.opt.iterations = cfg.stac_cfg.mujoco.iterations
-        self._mj_model.opt.ls_iterations = cfg.stac_cfg.mujoco.ls_iterations
+        self._mj_model.opt.iterations = cfg.stac.mujoco.iterations
+        self._mj_model.opt.ls_iterations = cfg.stac.mujoco.ls_iterations
 
         # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
