@@ -48,6 +48,7 @@ def test_load_mat_w_label3d(rodent_config_label3d, mocap_mat):
     assert data.shape == (1000, 69)
     assert len(sorted_kp_names) == 23
 
+
 def test_load_h5(mouse_config, mocap_h5):
     """
     Test loading data from a .h5 file
@@ -60,6 +61,7 @@ def test_load_h5(mouse_config, mocap_h5):
 
     assert data.shape == (3600, 102)
     assert len(sorted_kp_names) == 34
+
 
 def test_load_mat_no_kp_names(rodent_config_no_kp_names, mocap_mat):
     params = utils._load_params(_BASE_PATH / rodent_config_no_kp_names)
