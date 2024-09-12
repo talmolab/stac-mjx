@@ -1,7 +1,7 @@
 MJCF_PATH: "models/rodent.xml"
 
 # Frames per clip for transform.
-N_FRAMES_PER_CLIP: 250
+N_FRAMES_PER_CLIP: 1
 
 # Tolerance for the optimizations of the full model, limb, and root. 
 # TODO: Re-implement optimizer loops to use these tolerances
@@ -10,7 +10,7 @@ ROOT_FTOL: 1.0e-05
 LIMB_FTOL: 1.0e-06
 
 # Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
+N_ITERS: 1
 
 KP_NAMES: 
   - 'Snout' 
@@ -98,8 +98,6 @@ TRUNK_OPTIMIZATION_KEYPOINTS:
   - "ShoulderL"
   - "ShoulderR"
   - "TailBase"
-  
-ROOT_OPTIMIZATION_KEYPOINT: SpineF
 
 INDIVIDUAL_PART_OPTIMIZATION:
   "r_leg": [

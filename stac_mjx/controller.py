@@ -94,18 +94,10 @@ class STAC:
 
         self._indiv_parts = self.part_opt_setup()
 
-        if "ROOT_OPTIMIZATION_KEYPOINT" in self.model_cfg:
-            self._root_kp_idx = 3*self._kp_names.index(self.model_cfg["ROOT_OPTIMIZATION_KEYPOINT"])
-        else:
-            self._root_kp_idx = 3*self._kp_names.index(self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"][0])
-
-        print("root_kp_idx: ", self._root_kp_idx)
         
         self._trunk_kps = jp.array(
             [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
         )
-
-
 
         self._mj_model.opt.solver = {
             "cg": mujoco.mjtSolver.mjSOL_CG,
@@ -248,7 +240,6 @@ class STAC:
             mjx_model,
             mjx_data,
             kp_data,
-            self._root_kp_idx,
             self._lb,
             self._ub,
             self._body_site_idxs,
@@ -363,7 +354,7 @@ class STAC:
         # Vmap optimize functions
         vmap_root_opt = jax.vmap(
             compute_stac.root_optimization,
-            in_axes=(0, 0, 0, None, None, None, None, None),
+            in_axes=(0, 0, 0, None, None, None, None),
         )
         vmap_pose_opt = jax.vmap(
             compute_stac.pose_optimization,
@@ -375,7 +366,6 @@ class STAC:
             mjx_model,
             mjx_data,
             batched_kp_data,
-            self._root_kp_idx,
             self._lb,
             self._ub,
             self._body_site_idxs,

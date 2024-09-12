@@ -160,11 +160,6 @@ KEYPOINT_COLOR_PAIRS:
   Lisfranc_L: 0 0.8 0 1  # Darker Green
   MTP_R: 0.2 0.4 0.6 1  # Darker Cerulean
 
-
-# Root optimization
-ROOT_OPTIMIZATION_KEYPOINT: Trunk
-
-
 TRUNK_OPTIMIZATION_KEYPOINTS:
  - "Trunk"
  - "HipL"
