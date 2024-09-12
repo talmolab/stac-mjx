@@ -169,8 +169,6 @@ class STAC:
             for key in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
         }
 
-        body_names = physics.named.data.xpos.axes.row.names
-
         # Define which offsets to regularize
         is_regularized = []
         for k in site_index_map.keys():
