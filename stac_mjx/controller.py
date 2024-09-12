@@ -317,7 +317,9 @@ class STAC:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
-        kp_data = kp_data[:1, :]
+
+        # Enable for debugging mouse for low GPU mem. machines:
+        # kp_data = kp_data[:1, :] 
         batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data
