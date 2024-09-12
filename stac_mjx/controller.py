@@ -317,9 +317,6 @@ class STAC:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
-
-        # Enable for debugging mouse for low GPU mem. machines:
-        # kp_data = kp_data[:1, :]
         batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data
@@ -524,9 +521,9 @@ class STAC:
 
         scene_option = mujoco.MjvOption()
         scene_option.geomgroup[2] = 1
-        scene_option.sitegroup[2] = 0
+        scene_option.sitegroup[2] = 1
 
-        scene_option.sitegroup[3] = 0
+        scene_option.sitegroup[3] = 1
         scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
         scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
