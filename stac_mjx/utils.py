@@ -137,9 +137,7 @@ def load_h5(filename):
     # TODO add track information
     data = {}
     with h5py.File(filename, "r") as f:
-        print("h5 keyps", f.keys())
         for key in f.keys():
-
             data[key] = f[key][()]
 
     data = np.array(data["tracks"])
