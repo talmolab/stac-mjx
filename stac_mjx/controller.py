@@ -319,7 +319,7 @@ class STAC:
         # Create batches of kp_data
 
         # Enable for debugging mouse for low GPU mem. machines:
-        # kp_data = kp_data[:1, :] 
+        # kp_data = kp_data[:1, :]
         batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data

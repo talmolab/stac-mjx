@@ -127,12 +127,13 @@ def load_nwb(filename):
 
 def load_h5(filename):
     """Load .h5 file formatted as [frames, xyz, keypoints].
+
     Args:
         filename (str): Path to the .h5 file.
+        
     Returns:
         dict: Dictionary containing the data from the .h5 file.
     """
-
     # TODO add track information
     data = {}
     with h5py.File(filename, "r") as f:
