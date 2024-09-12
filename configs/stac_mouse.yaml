@@ -3,8 +3,8 @@ transform_path: "transform_mouse.p"
 data_path: "tests/data/test_mouse_mocap_3600_frames.h5"
 
 n_fit_frames: 3600
-skip_fit: True
-skip_transform: False
+skip_fit: False
+skip_transform: True
 
 mujoco:
   solver: "newton"
