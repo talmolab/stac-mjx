@@ -130,7 +130,7 @@ def load_h5(filename):
 
     Args:
         filename (str): Path to the .h5 file.
-        
+
     Returns:
         dict: Dictionary containing the data from the .h5 file.
     """
