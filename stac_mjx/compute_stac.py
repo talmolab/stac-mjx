@@ -49,9 +49,9 @@ def root_optimization(
     # KEYPOINT_MODEL_PAIRS that is near the center of the model, not
     # necessarily exactly so. The value of 3*18 is chosen for the
     # rodent.xml, corresponding to the index of 'SpineL' keypoint.
-    # For the mouse model this should be 3*5, corresponding 'Trunk'   
-    root_kp_idx = 3*18
-    root_kp_range = slice(root_kp_idx,root_kp_idx+3)
+    # For the mouse model this should be 3*5, corresponding 'Trunk'
+    root_kp_idx = 3 * 18
+    root_kp_range = slice(root_kp_idx, root_kp_idx + 3)
     q0 = q0.at[:3].set(kp_data[frame, :][root_kp_range])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)

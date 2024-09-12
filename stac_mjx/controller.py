@@ -94,7 +94,6 @@ class STAC:
 
         self._indiv_parts = self.part_opt_setup()
 
-        
         self._trunk_kps = jp.array(
             [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
         )

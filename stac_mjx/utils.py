@@ -124,6 +124,7 @@ def load_nwb(filename):
 
     return data, node_names
 
+
 def load_h5(filename):
     """Load .h5 file formatted as [frames, xyz, keypoints].
     Args:
@@ -141,9 +142,10 @@ def load_h5(filename):
             data[key] = f[key][()]
 
     data = np.array(data["tracks"])
-    data = np.squeeze(data, axis = 1)
+    data = np.squeeze(data, axis=1)
     data = np.transpose(data, (0, 2, 1))
     return data, None
+
 
 def _check_keys(dict):
     """Checks if entries in dictionary are mat-objects.
