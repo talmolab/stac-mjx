@@ -80,7 +80,7 @@ KEYPOINT_MODEL_PAIRS:
   Hip_R: mouse__RFemur_interim_0
   Lisfranc_L: mouse__LBPhalange3
   Lisfranc_R: mouse__RBPhalange3
-  MTP_L: mouse__LTarsus_interim_0    #MTP refers to joint, but 
+  MTP_L: mouse__LTarsus_interim_0
   MTP_R: mouse__RTarsus_interim_0
 
 
@@ -220,10 +220,6 @@ INDIVIDUAL_PART_OPTIMIZATION:
 #     "mouse__Cervical6"
 #   ]
 
-# OPTIONAL Lock the mandible to a position if there is no jaw tracking
-MANDIBLE_POS: -0.297
-
-
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 0.0
@@ -255,6 +251,6 @@ N_ITERS: 6
 
 # TODO: raise exception if total frames % frames per clip != 0
 # frames per clip for transform.
-N_FRAMES_PER_CLIP: 1 # 1000 environments
+N_FRAMES_PER_CLIP: 360 # 1000 environments
 
 N_GPUS: 1
