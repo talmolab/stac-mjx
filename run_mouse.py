@@ -1,4 +1,4 @@
-"""CLI script for running rodent skeletal registration"""
+"""CLI script for running mouse skeletal registration"""
 
 from jax.lib import xla_bridge
 

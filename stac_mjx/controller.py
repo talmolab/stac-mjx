@@ -233,6 +233,7 @@ class STAC:
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Begin optimization steps
+        # Skip root optimization if model is fixed (no free joint at root)
         mjx_data = compute_stac.root_optimization(
             mjx_model,
             mjx_data,
