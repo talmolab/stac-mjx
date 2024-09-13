@@ -234,15 +234,16 @@ class STAC:
 
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
-        mjx_data = compute_stac.root_optimization(
-            mjx_model,
-            mjx_data,
-            kp_data,
-            self._lb,
-            self._ub,
-            self._body_site_idxs,
-            self._trunk_kps,
-        )
+        if self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+            mjx_data = compute_stac.root_optimization(
+                mjx_model,
+                mjx_data,
+                kp_data,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                self._trunk_kps,
+            )
 
         for n_iter in range(self.model_cfg["N_ITERS"]):
             print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
