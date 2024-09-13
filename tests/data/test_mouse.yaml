@@ -1,14 +1,16 @@
 MJCF_PATH: "models/mouse_with_meshes.xml"
 
+# Frames per clip for transform.
+N_FRAMES_PER_CLIP: 360 # 1000 environments
+
 # Tolerance for the optimizations of the full model, limb, and root.
+# TODO: Re-implement optimizer loops to use these tolerances
 FTOL: 1.0e-04
 ROOT_FTOL: 1.0e-05
 LIMB_FTOL: 1.0e-06
 
-# Solver iterations
-ROOT_MAXITER: 100
-Q_MAXITER: 100
-M_MAXITER: 500
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
 
 KP_NAMES:
   - Nose
@@ -83,7 +85,7 @@ KEYPOINT_MODEL_PAIRS:
   MTP_L: mouse__LTarsus_interim_0
   MTP_R: mouse__RTarsus_interim_0
 
-
+# The initial offsets for each keypoint in meters.
 KEYPOINT_INITIAL_OFFSETS:
   Nose: 0.0 0.0 0.0
   Ear_R: 0.0 0.0 0.0
@@ -120,53 +122,12 @@ KEYPOINT_INITIAL_OFFSETS:
   Lisfranc_L: 0.0 0.0 0.0
   MTP_R: 0.0 0.0 0.0
 
-
-# Color to use for each keypoint when visualizing the results
-KEYPOINT_COLOR_PAIRS:
-  Nose: 1 0 0 1  # Red
-  Ear_L: 0 1 0 1  # Green
-  Ear_R: 0 0.8 0 1  # Darker Green
-  TTI: 0 0 1 1  # Blue
-  TailTip: 0.58 0 0.82 1  # Purple
-  Head: 1 0.5 0 1  # Orange
-  Trunk: 0.5 0 0.5 1  # Plum
-  Tail_0: 1 1 0 1  # Yellow
-  Tail_1: 0.8 0.8 0 1  # Darker Yellow
-  Tail_2: 0.4 0.4 0 1  # Olive
-  Tail_3: 0.58 0 0.82 1  # Purple
-  Tail_4: 0.58 0 0.82 1  # Purple
-  Shoulder_L: 0.27 0.5 0.7 1  # Cerulean
-  Shoulder_R: 0.2 0.4 0.6 1  # Darker Cerulean
-  HaunchL: 0.85 0.75 0.85 1  # Thistle
-  HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
-  Knee_L: 0.27 0.5 0.7 1  # Cerulean
-  Knee_R: 0.2 0.4 0.6 1  # Darker Cerulean
-  Neck: 0.5 0 0.5 1  # Plum
-  Elbow_L: 0 0.8 0 1  # Darker Green
-  Elbow_R: 0 1 0 1  # Green
-  Wrist_L: 0.4 0.4 0 1  # Olive
-  Wrist_R: 0.8 0.8 0 1  # Darker Yellow
-  Forepaw_L: 1 1 0 1  # Yellow
-  Forepaw_R: 1 0.5 0 1  # Orange
-  Heel_L: 0.85 0.75 0.85 1  # Thistle
-  Heel_R: 0.85 0.75 0.85 1  # Thistle
-  Spine: 0 0 1 1  # Blue
-  Eye_L: 1 0 0 1  # Red
-  Eye_R: 1 0 0 1  # Red
-  Hip_L: 0.85 0.75 0.85 1  # Thistle
-  Hip_R: 0.85 0.75 0.85 1  # Thistle
-  Lisfranc_R: 0 1 0 1  # Green
-  MTP_L: 1 0 0 1  # Red
-  Lisfranc_L: 0 0.8 0 1  # Darker Green
-  MTP_R: 0.2 0.4 0.6 1  # Darker Cerulean
-
 TRUNK_OPTIMIZATION_KEYPOINTS:
  - "Trunk"
  - "HipL"
  - "HipR"
  - "ShoulderL"
  - "ShoulderR"
-
 
 INDIVIDUAL_PART_OPTIMIZATION:
 #   "r_leg": [
@@ -220,9 +181,53 @@ INDIVIDUAL_PART_OPTIMIZATION:
 #     "mouse__Cervical6"
 #   ]
 
-# If you have reason to believe that the initial offsets are correct for particular keypoints, 
-# you can regularize those sites using _SITES_TO_REGULARIZE. 
-M_REG_COEF: 0.0
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  Nose: 1 0 0 1  # Red
+  Ear_L: 0 1 0 1  # Green
+  Ear_R: 0 0.8 0 1  # Darker Green
+  TTI: 0 0 1 1  # Blue
+  TailTip: 0.58 0 0.82 1  # Purple
+  Head: 1 0.5 0 1  # Orange
+  Trunk: 0.5 0 0.5 1  # Plum
+  Tail_0: 1 1 0 1  # Yellow
+  Tail_1: 0.8 0.8 0 1  # Darker Yellow
+  Tail_2: 0.4 0.4 0 1  # Olive
+  Tail_3: 0.58 0 0.82 1  # Purple
+  Tail_4: 0.58 0 0.82 1  # Purple
+  Shoulder_L: 0.27 0.5 0.7 1  # Cerulean
+  Shoulder_R: 0.2 0.4 0.6 1  # Darker Cerulean
+  HaunchL: 0.85 0.75 0.85 1  # Thistle
+  HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
+  Knee_L: 0.27 0.5 0.7 1  # Cerulean
+  Knee_R: 0.2 0.4 0.6 1  # Darker Cerulean
+  Neck: 0.5 0 0.5 1  # Plum
+  Elbow_L: 0 0.8 0 1  # Darker Green
+  Elbow_R: 0 1 0 1  # Green
+  Wrist_L: 0.4 0.4 0 1  # Olive
+  Wrist_R: 0.8 0.8 0 1  # Darker Yellow
+  Forepaw_L: 1 1 0 1  # Yellow
+  Forepaw_R: 1 0.5 0 1  # Orange
+  Heel_L: 0.85 0.75 0.85 1  # Thistle
+  Heel_R: 0.85 0.75 0.85 1  # Thistle
+  Spine: 0 0 1 1  # Blue
+  Eye_L: 1 0 0 1  # Red
+  Eye_R: 1 0 0 1  # Red
+  Hip_L: 0.85 0.75 0.85 1  # Thistle
+  Hip_R: 0.85 0.75 0.85 1  # Thistle
+  Lisfranc_R: 0 1 0 1  # Green
+  MTP_L: 1 0 0 1  # Red
+  Lisfranc_L: 0 0.8 0 1  # Darker Green
+  MTP_R: 0.2 0.4 0.6 1  # Darker Cerulean
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1.0
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: .001
+
 SITES_TO_REGULARIZE:
    - ShoulderL
    - ShoulderR
@@ -232,25 +237,10 @@ SITES_TO_REGULARIZE:
 #   - WristL
 #   - WristR
 
-N_SAMPLE_FRAMES: 50
-
-# fps to render video at
 RENDER_FPS: 30
 
-# If you want to use a different arena, you can specify it here.
-ARENA_TYPE: DefaultArena
-Z_OFFSET: 0.00
+N_SAMPLE_FRAMES: 50
 
-# What is the size of the animal you'd like to register, relative to the model?
-SCALE_FACTOR: 1.0
-
-MOCAP_SCALE_FACTOR: .001
-
-# Number of alternating pose and offset optimization rounds. 
-N_ITERS: 6
-
-# TODO: raise exception if total frames % frames per clip != 0
-# frames per clip for transform.
-N_FRAMES_PER_CLIP: 360 # 1000 environments
-
-N_GPUS: 1
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 0.0

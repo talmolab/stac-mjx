@@ -169,4 +169,4 @@ N_ITERS: 6
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 1
 
-TIME_BINS: 0.02
+
