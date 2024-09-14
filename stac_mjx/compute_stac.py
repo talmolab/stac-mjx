@@ -45,11 +45,13 @@ def root_optimization(
     s = time.time()
     q0 = jp.copy(mjx_data.qpos[:])
 
-    # Set the center to help with finding the optima (does not need to be exact)
-    # However should be close to the center of mass of the animal. The "magic numbers"
-    # below are for the rodent.xml model. These will need to be changed for other
-    # models, and possibly be computed for arbitray animal models.
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    # Set the root_kp_index below according to a keypoint in the
+    # KEYPOINT_MODEL_PAIRS that is near the center of the model, not
+    # necessarily exactly so. The value of 3*18 is chosen for the
+    # rodent.xml, corresponding to the index of 'SpineL' keypoint.
+    # For the mouse model this should be 3*5, corresponding 'Trunk'
+    root_kp_idx = 3 * 18
+    q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
@@ -74,8 +76,7 @@ def root_optimization(
     print(f"Replace 1 finished in {time.time()-r}")
 
     q0 = jp.copy(mjx_data.qpos[:])
-
-    q0 = q0.at[:3].set(kp_data[frame, :][12:15])
+    q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
 
     # Trunk only optimization
     j = time.time()
@@ -92,7 +93,7 @@ def root_optimization(
         site_idxs,
     )
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
     mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
@@ -161,7 +162,7 @@ def offset_optimization(
     offset_opt_param = res.params
     print(f"Final error of {res.state.error}")
 
-    # Set pose to the optimized m and step forward.
+    # Set body sites according to optimized offsets
     mjx_model = op.set_site_pos(
         mjx_model, jp.reshape(offset_opt_param, (-1, 3)), site_idxs
     )

@@ -22,9 +22,21 @@ def mocap_nwb():
 
 
 @pytest.fixture
+def mocap_h5():
+    """Typical h5 file. Format expected is [frames, xyz, keypoints]"""
+    return "tests/data/test_mouse_mocap_3600_frames.h5"
+
+
+@pytest.fixture
 def rodent_config_label3d():
     """Rodent yaml file that refers to label3d data file."""
     return "tests/data/test_rodent_label3d.yaml"
+
+
+@pytest.fixture
+def mouse_config():
+    """Mouse config file w/ keypoint names."""
+    return "tests/data/test_mouse.yaml"
 
 
 @pytest.fixture
