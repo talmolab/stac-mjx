@@ -19,6 +19,12 @@ def rodent_config():
 
 
 @pytest.fixture
+def mouse_config():
+    """Mouse config file w/ keypoint names."""
+    return "test_mouse.yaml"
+
+
+@pytest.fixture
 def rodent_config_no_kp_names():
     """Typical model config file."""
     return "test_rodent_no_kp_names.yaml"

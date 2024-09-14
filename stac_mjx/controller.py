@@ -339,18 +339,12 @@ class STAC:
             batched_kp_data, self._mj_model
         )
 
-        # Vmap optimize functions
-        vmap_root_opt = jax.vmap(
-            compute_stac.root_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
-        )
-        vmap_pose_opt = jax.vmap(
-            compute_stac.pose_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
-        )
-
-        # q_phase
+        # q_phase - root
         if self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+            vmap_root_opt = jax.vmap(
+                compute_stac.root_optimization,
+                in_axes=(0, 0, 0, None, None, None, None),
+            )
             mjx_data = vmap_root_opt(
                 mjx_model,
                 mjx_data,
@@ -360,6 +354,12 @@ class STAC:
                 self._body_site_idxs,
                 self._trunk_kps,
             )
+
+        # q_phase - pose
+        vmap_pose_opt = jax.vmap(
+            compute_stac.pose_optimization,
+            in_axes=(0, 0, 0, None, None, None, None),
+        )
         mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
             mjx_model,
             mjx_data,

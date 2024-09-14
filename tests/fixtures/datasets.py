@@ -19,3 +19,9 @@ def mocap_mat():
 def mocap_nwb():
     """Typical nwb file."""
     return "tests/data/test_rodent_mocap_1000_frames.nwb"
+
+
+@pytest.fixture
+def mocap_h5():
+    """Typical h5 file. Format expected is [frames, xyz, keypoints]"""
+    return "tests/data/test_mouse_mocap_3600_frames.h5"

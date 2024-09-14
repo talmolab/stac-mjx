@@ -78,3 +78,20 @@ def test_load_mat_less_kp_names(config, rodent_config_less_kp_names, mocap_mat):
 
     with pytest.raises(ValueError):
         data, sorted_kp_names = utils.load_data(cfg)
+
+
+def test_load_h5(config, mouse_config, mocap_h5):
+    """
+    Test loading data from a .h5 file
+    """
+
+    cfg = load_config_with_overrides(
+        config,
+        stac_data_path_override=mocap_h5,
+        model_override=mouse_config,
+    )
+
+    data, sorted_kp_names = utils.load_data(cfg)
+
+    assert data.shape == (3600, 102)
+    assert len(sorted_kp_names) == 34

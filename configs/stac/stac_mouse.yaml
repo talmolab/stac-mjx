@@ -1,0 +1,12 @@
+fit_path: "fit_mouse.p"
+transform_path: "transform_mouse.p"
+data_path: "tests/data/test_mouse_mocap_3600_frames.h5"
+
+n_fit_frames: 250
+skip_fit: False
+skip_transform: True
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

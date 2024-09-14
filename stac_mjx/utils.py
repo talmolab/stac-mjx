@@ -9,6 +9,7 @@ import pickle
 from typing import Text, Union
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
+import h5py
 from pathlib import Path
 from omegaconf import DictConfig
 from jax.lib import xla_bridge
@@ -56,6 +57,8 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
         data, kp_names = load_dannce(str(file_path), names_filename=label3d_path)
     elif file_path.suffix == ".nwb":
         data, kp_names = load_nwb(file_path)
+    elif file_path.suffix == ".h5":
+        data, kp_names = load_h5(file_path)
     else:
         raise ValueError(
             "Unsupported file extension. Please provide a .nwb or .mat file."
@@ -126,6 +129,27 @@ def load_nwb(filename):
         )
 
     return data, node_names
+
+
+def load_h5(filename):
+    """Load .h5 file formatted as [frames, xyz, keypoints].
+
+    Args:
+        filename (str): Path to the .h5 file.
+
+    Returns:
+        dict: Dictionary containing the data from the .h5 file.
+    """
+    # TODO add track information
+    data = {}
+    with h5py.File(filename, "r") as f:
+        for key in f.keys():
+            data[key] = f[key][()]
+
+    data = np.array(data["tracks"])
+    data = np.squeeze(data, axis=1)
+    data = np.transpose(data, (0, 2, 1))
+    return data, None
 
 
 def _check_keys(dict):
