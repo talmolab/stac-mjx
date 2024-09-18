@@ -1,0 +1,4 @@
+defaults:
+  - stac: demo
+  - model: rodent
+  - _self_

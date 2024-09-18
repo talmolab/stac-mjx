@@ -10,36 +10,36 @@ from omegaconf import DictConfig, OmegaConf
 from stac_mjx import utils
 from stac_mjx.controller import STAC
 from pathlib import Path
-from typing import List, Dict
+from typing import List, Union
+import hydra
 
 
-def load_configs(stac_config_path: Path, model_config_path: Path) -> DictConfig:
-    """Initializes configs.
+def load_configs(config_dir: Union[Path, str]) -> DictConfig:
+    """Initializes configs with hydra.
 
     Args:
-        stac_config_path (str): path to stac yaml file
-        model_config_path (str): path to model yaml file
+        config_dir ([Path, str]): Absolute path to config directory.
 
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-    return OmegaConf.load(stac_config_path), OmegaConf.to_container(
-        OmegaConf.load(model_config_path), resolve=True
-    )
+    # Initialize Hydra and set the config path
+    with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
+        # Compose the configuration by specifying the config name
+        cfg = hydra.compose(config_name="config")
+    return cfg
 
 
 def run_stac(
-    stac_cfg: DictConfig,
-    model_cfg: Dict,
+    cfg: DictConfig,
     kp_data: jp.ndarray,
     kp_names: List[str],
-    base_path: Path = Path.cwd(),
+    base_path=None,
 ) -> tuple[str, str]:
     """High level function for running skeletal registration.
 
     Args:
-        stac_cfg (DictConfig): Stac config file.
-        model_cfg (Dict): Model config file.
+        cfg (DictConfig): Configs.
         kp_data (jp.ndarray): Mocap keypoints to fit to.
         kp_names (List[str]): Ordered list of keypoint names.
         base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
@@ -47,21 +47,24 @@ def run_stac(
     Returns:
         tuple[str, str]: Paths to saved outputs (fit and transform).
     """
+    if base_path is None:
+        base_path = Path.cwd()
+
     utils.enable_xla_flags()
 
     start_time = time.time()
 
     # Getting paths
-    fit_path = base_path / stac_cfg.fit_path
-    transform_path = base_path / stac_cfg.transform_path
+    fit_path = base_path / cfg.stac.fit_path
+    transform_path = base_path / cfg.stac.transform_path
 
-    xml_path = base_path / model_cfg["MJCF_PATH"]
+    xml_path = base_path / cfg.model.MJCF_PATH
 
-    stac = STAC(xml_path, stac_cfg, model_cfg, kp_names)
+    stac = STAC(xml_path, cfg, kp_names)
 
     # Run fit if not skipping
-    if stac_cfg.skip_fit != 1:
-        fit_data = kp_data[: stac_cfg.n_fit_frames]
+    if cfg.stac.skip_fit != 1:
+        fit_data = kp_data[: cfg.stac.n_fit_frames]
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
         fit_data = stac.fit(fit_data)
 
@@ -69,12 +72,12 @@ def run_stac(
         utils.save(fit_data, fit_path)
 
     # Stop here if skipping transform
-    if stac_cfg.skip_transform == 1:
+    if cfg.stac.skip_transform == 1:
         logging.info("skipping transform()")
         return fit_path, None
-    elif kp_data.shape[0] % model_cfg["N_FRAMES_PER_CLIP"] != 0:
+    elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
         raise ValueError(
-            f"N_FRAMES_PER_CLIP ({model_cfg['N_FRAMES_PER_CLIP']}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
+            f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
         )
 
     logging.info("Running transform()")

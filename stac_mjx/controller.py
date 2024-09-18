@@ -16,11 +16,10 @@ from stac_mjx import utils as utils
 from stac_mjx import compute_stac
 from stac_mjx import operations as op
 
-from omegaconf import DictConfig
-from typing import List, Union, Dict
+from omegaconf import OmegaConf, DictConfig
+from typing import List, Union
 from pathlib import Path
 from copy import deepcopy
-
 import imageio
 from tqdm import tqdm
 
@@ -60,19 +59,15 @@ def _align_joint_dims(types, ranges, names):
 class STAC:
     """Main class with key functionality for skeletal registration and rendering."""
 
-    def __init__(
-        self, xml_path: str, stac_cfg: DictConfig, model_cfg: Dict, kp_names: List[str]
-    ):
+    def __init__(self, xml_path: str, cfg: DictConfig, kp_names: List[str]):
         """Init STAC class, taking values from configs and creating values needed for stac.
 
         Args:
             xml_path (str): Path to model MJCF.
-            stac_cfg (DictConfig): Stac config file.
-            model_cfg (Dict): Model config file.
-            kp_names (List[str]): List of mocap keypoint names, ordered corresponding to mocap data (kp_data)
+            cfg (DictConfig): Configs for this run.
+            kp_names (List[str]): Ordered list of mocap keypoint names.
         """
-        self.stac_cfg = stac_cfg
-        self.model_cfg = model_cfg
+        self.cfg = cfg
         self._kp_names = kp_names
         self._root = mjcf.from_path(xml_path)
         (
@@ -95,26 +90,22 @@ class STAC:
         self._indiv_parts = self.part_opt_setup()
 
         self._trunk_kps = jp.array(
-            [n in self.model_cfg["TRUNK_OPTIMIZATION_KEYPOINTS"] for n in kp_names],
+            [n in self.cfg.model.TRUNK_OPTIMIZATION_KEYPOINTS for n in kp_names],
         )
 
         self._mj_model.opt.solver = {
             "cg": mujoco.mjtSolver.mjSOL_CG,
             "newton": mujoco.mjtSolver.mjSOL_NEWTON,
-        }[stac_cfg.mujoco.solver.lower()]
+        }[cfg.stac.mujoco.solver.lower()]
 
-        self._mj_model.opt.iterations = stac_cfg.mujoco.iterations
-        self._mj_model.opt.ls_iterations = stac_cfg.mujoco.ls_iterations
+        self._mj_model.opt.iterations = cfg.stac.mujoco.iterations
+        self._mj_model.opt.ls_iterations = cfg.stac.mujoco.ls_iterations
 
         # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
 
     def part_opt_setup(self):
-        """Set up the lists of indices for part optimization.
-
-        Args:
-            physics (dmcontrol.Physics): (See Mujoco dm_control docs)[https://github.com/google-deepmind/dm_control/blob/bdb1ab54c4c24cd89283fb18f06a6a54b6c0803b/dm_control/mjcf/physics.py#L434]
-        """
+        """Set up the lists of indices for part optimization."""
 
         def get_part_ids(parts: List) -> jp.ndarray:
             """Get the part ids for a given list of parts."""
@@ -122,13 +113,13 @@ class STAC:
                 [any(part in name for part in parts) for name in self._part_names]
             )
 
-        if self.model_cfg["INDIVIDUAL_PART_OPTIMIZATION"] is None:
+        if self.cfg.model.INDIVIDUAL_PART_OPTIMIZATION is None:
             indiv_parts = []
         else:
             indiv_parts = jp.array(
                 [
                     get_part_ids(parts)
-                    for parts in self.model_cfg["INDIVIDUAL_PART_OPTIMIZATION"].values()
+                    for parts in self.cfg.model.INDIVIDUAL_PART_OPTIMIZATION.values()
                 ]
             )
 
@@ -141,11 +132,12 @@ class STAC:
             root (mjcf.Element):
 
         Returns:
-            dmcontrol.Physics, mujoco.Model:
+            mujoco.Model, list of marker site indices, boolean mask for offset
+            regularization, lists for part names and body names.
         """
-        for key, v in self.model_cfg["KEYPOINT_MODEL_PAIRS"].items():
+        for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
             parent = root.find("body", v)
-            pos = self.model_cfg["KEYPOINT_INITIAL_OFFSETS"][key]
+            pos = self.cfg.model.KEYPOINT_INITIAL_OFFSETS[key]
             parent.add(
                 "site",
                 name=key,
@@ -158,21 +150,21 @@ class STAC:
 
         rescale.rescale_subtree(
             root,
-            self.model_cfg["SCALE_FACTOR"],
-            self.model_cfg["SCALE_FACTOR"],
+            self.cfg.model.SCALE_FACTOR,
+            self.cfg.model.SCALE_FACTOR,
         )
         physics = mjcf.Physics.from_mjcf_model(root)
 
         axis = physics.named.model.site_pos._axes[0]
         site_index_map = {
             key: int(axis.convert_key_item(key))
-            for key in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
+            for key in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
         }
 
         # Define which offsets to regularize
         is_regularized = []
         for k in site_index_map.keys():
-            if any(n == k for n in self.model_cfg.get("SITES_TO_REGULARIZE", [])):
+            if any(n == k for n in self.cfg.model.get("SITES_TO_REGULARIZE", [])):
                 is_regularized.append(jp.array([1.0, 1.0, 1.0]))
             else:
                 is_regularized.append(jp.array([0.0, 0.0, 0.0]))
@@ -187,7 +179,7 @@ class STAC:
 
     def _chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
-        n_frames = self.model_cfg["N_FRAMES_PER_CLIP"]
+        n_frames = self.cfg.model.N_FRAMES_PER_CLIP
         total_frames = kp_data.shape[0]
 
         n_chunks = int(total_frames / n_frames)
@@ -245,8 +237,8 @@ class STAC:
                 self._trunk_kps,
             )
 
-        for n_iter in range(self.model_cfg["N_ITERS"]):
-            print(f"Calibration iteration: {n_iter + 1}/{self.model_cfg['N_ITERS']}")
+        for n_iter in range(self.cfg.model.N_ITERS):
+            print(f"Calibration iteration: {n_iter + 1}/{self.cfg.model.N_ITERS}")
             mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
                 compute_stac.pose_optimization(
                     mjx_model,
@@ -264,7 +256,6 @@ class STAC:
 
             flattened_errors, mean, std = self._get_error_stats(frame_error)
             # Print the results
-            print(f"Flattened array shape: {flattened_errors.shape}")
             print(f"Mean: {mean}")
             print(f"Standard deviation: {std}")
 
@@ -275,10 +266,10 @@ class STAC:
                 kp_data,
                 self._offsets,
                 q,
-                self.model_cfg["N_SAMPLE_FRAMES"],
+                self.cfg.model.N_SAMPLE_FRAMES,
                 self._is_regularized,
                 self._body_site_idxs,
-                self.model_cfg["M_REG_COEF"],
+                self.cfg.model.M_REG_COEF,
             )
 
         # Optimize the pose for the whole sequence
@@ -300,7 +291,6 @@ class STAC:
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
-        print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
@@ -382,7 +372,6 @@ class STAC:
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
-        print(f"Flattened array shape: {flattened_errors.shape}")
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
 
@@ -408,7 +397,7 @@ class STAC:
 
         data = {}
 
-        for k, v in self.model_cfg.items():
+        for k, v in OmegaConf.to_container(self.cfg.model, resolve=True).items():
             data[k] = v
 
         data.update(
@@ -435,9 +424,9 @@ class STAC:
         keypoint_sites = []
         keypoint_site_names = []
         # set up keypoint rendering by adding the kp sites to the root body
-        for id, name in enumerate(self.model_cfg["KEYPOINT_MODEL_PAIRS"]):
+        for id, name in enumerate(self.cfg.model.KEYPOINT_MODEL_PAIRS):
             start = (np.random.rand(3) - 0.5) * 0.001
-            rgba = self.model_cfg["KEYPOINT_COLOR_PAIRS"][name]
+            rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[name]
             site_name = name + "_kp"
             keypoint_site_names.append(site_name)
             site = self._root.worldbody.add(
@@ -457,11 +446,11 @@ class STAC:
         # Combine the two lists of site names and create the index map
         site_index_map = {
             key: int(axis.convert_key_item(key))
-            for key in list(self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys())
+            for key in list(self.cfg.model.KEYPOINT_MODEL_PAIRS.keys())
             + keypoint_site_names
         }
         body_site_idxs = [
-            site_index_map[n] for n in self.model_cfg["KEYPOINT_MODEL_PAIRS"].keys()
+            site_index_map[n] for n in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
         ]
         keypoint_site_idxs = [site_index_map[n] for n in keypoint_site_names]
         self._body_site_idxs = body_site_idxs
@@ -548,7 +537,7 @@ class STAC:
 
         frames = []
         # render while stepping using mujoco
-        with imageio.get_writer(save_path, fps=self.model_cfg["RENDER_FPS"]) as video:
+        with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
             for qpos, kps in tqdm(zip(qposes, kp_data)):
                 # Set keypoints
                 render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
