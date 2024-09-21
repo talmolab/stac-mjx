@@ -1,0 +1,180 @@
+# MJCF_PATH: 'models/fruitfly/fruitfly_freeforce.xml'
+MJCF_PATH: 'models/fruitfly/fruitfly_force.xml'
+
+# Frames per clip for transform.
+N_FRAMES_PER_CLIP: 300
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 5.0e-03
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+KP_NAMES: 
+  - 'L1A'
+  - 'L1B'
+  - 'L1C'
+  - 'L1D'
+  - 'L1E'
+  - 'R1A'
+  - 'R1B'
+  - 'R1C'
+  - 'R1D'
+  - 'R1E'
+  - 'L2A'
+  - 'L2B'
+  - 'L2C'
+  - 'L2D'
+  - 'L2E'
+  - 'R2A'
+  - 'R2B'
+  - 'R2C'
+  - 'R2D'
+  - 'R2E'
+  - 'L3A'
+  - 'L3B'
+  - 'L3C'
+  - 'L3D'
+  - 'L3E'
+  - 'R3A'
+  - 'R3B'
+  - 'R3C'
+  - 'R3D'
+  - 'R3E'
+
+
+# The model sites used to register the keypoints.
+KEYPOINT_MODEL_PAIRS:
+  L1A: coxa_T1_left
+  L1B: femur_T1_left
+  L1C: tibia_T1_left
+  L1D: tarsus_T1_left
+  L1E: claw_T1_left
+  R1A: coxa_T1_right
+  R1B: femur_T1_right
+  R1C: tibia_T1_right
+  R1D: tarsus_T1_right
+  R1E: claw_T1_right
+  L2A: coxa_T2_left
+  L2B: femur_T2_left
+  L2C: tibia_T2_left
+  L2D: tarsus_T2_left
+  L2E: claw_T2_left
+  R2A: coxa_T2_right
+  R2B: femur_T2_right
+  R2C: tibia_T2_right
+  R2D: tarsus_T2_right
+  R2E: claw_T2_right
+  L3A: coxa_T3_left
+  L3B: femur_T3_left
+  L3C: tibia_T3_left
+  L3D: tarsus_T3_left
+  L3E: claw_T3_left
+  R3A: coxa_T3_right
+  R3B: femur_T3_right
+  R3C: tibia_T3_right
+  R3D: tarsus_T3_right
+  R3E: claw_T3_right
+
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  L1A: 0. 0. 0.
+  L1B: 0. 0. 0.
+  L1C: 0. 0. 0.
+  L1D: 0. 0. 0.
+  L1E: 0. 0. 0.
+  R1A: 0. 0. 0.
+  R1B: 0. 0. 0.
+  R1C: 0. 0. 0.
+  R1D: 0. 0. 0.
+  R1E: 0. 0. 0.
+  L2A: 0. 0. 0.
+  L2B: 0. 0. 0.
+  L2C: 0. 0. 0.
+  L2D: 0. 0. 0.
+  L2E: 0. 0. 0.
+  R2A: 0. 0. 0.
+  R2B: 0. 0. 0.
+  R2C: 0. 0. 0.
+  R2D: 0. 0. 0.
+  R2E: 0. 0. 0.
+  L3A: 0. 0. 0.
+  L3B: 0. 0. 0.
+  L3C: 0. 0. 0.
+  L3D: 0. 0. 0.
+  L3E: 0. 0. 0.
+  R3A: 0. 0. 0.
+  R3B: 0. 0. 0.
+  R3C: 0. 0. 0.
+  R3D: 0. 0. 0.
+  R3E: 0. 0. 0.
+
+TRUNK_OPTIMIZATION_KEYPOINTS: {}
+  
+INDIVIDUAL_PART_OPTIMIZATION: 
+  "T1L": ["coxa_T1_left", "femur_T1_left", "tibia_T1_left", "tarsus_T1_left", "claw_T1_left"]
+  "T1R": ["coxa_T1_right", "femur_T1_right", "tibia_T1_right", "tarsus_T1_right", "claw_T1_right"]
+  "T2L": ["coxa_T2_left", "femur_T2_left", "tibia_T2_left", "tarsus_T2_left", "claw_T2_left"]
+  "T2R": ["coxa_T2_right", "femur_T2_right", "tibia_T2_right", "tarsus_T2_right", "claw_T2_right"]
+  "T3L": ["coxa_T3_left", "femur_T3_left", "tibia_T3_left", "tarsus_T3_left", "claw_T3_left"]
+  "T3R": ["coxa_T3_right", "femur_T3_right", "tibia_T3_right", "tarsus_T3_right", "claw_T3_right"]
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  L1A: 0 0 .3 1
+  L1B: 0 0 .3 1
+  L1C: 0 0 .3 1
+  L1D: 0 0 .3 1
+  L1E: 0 0 .3 1
+  R1A: 0 0 .3 1
+  R1B: 0 0 .3 1
+  R1C: 0 0 .3 1
+  R1D: 0 0 .3 1
+  R1E: 0 0 .3 1
+  L2A: 0 0 .3 1
+  L2B: 0 0 .3 1
+  L2C: 0 0 .3 1
+  L2D: 0 0 .3 1
+  L2E: 0 0 .3 1
+  R2A: 0 0 .3 1
+  R2B: 0 0 .3 1
+  R2C: 0 0 .3 1
+  R2D: 0 0 .3 1
+  R2E: 0 0 .3 1
+  L3A: 0 0 .3 1
+  L3B: 0 0 .3 1
+  L3C: 0 0 .3 1
+  L3D: 0 0 .3 1
+  L3E: 0 0 .3 1
+  R3A: 0 0 .3 1
+  R3B: 0 0 .3 1
+  R3C: 0 0 .3 1
+  R3D: 0 0 .3 1
+  R3E: 0 0 .3 1
+  
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: 1 #.1
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using this with M_REG_COEF. 
+SITES_TO_REGULARIZE: {}
+
+RENDER_FPS: 50
+
+N_SAMPLE_FRAMES: 100
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
+
+TIME_BINS: 0.02
