@@ -402,13 +402,13 @@ class STAC:
 
         data.update(
             {
-                "qpos": q,
-                "xpos": x,
+                "qpos": np.array(q),
+                "xpos": np.array(x),
                 "walker_body_sites": walker_body_sites,
-                "offsets": offsets,
+                "offsets": np.array(offsets),
                 "names_qpos": self._part_names,
                 "names_xpos": self._body_names,
-                "kp_data": jp.copy(kp_data),
+                "kp_data": np.copy(kp_data),
                 "kp_names": self._kp_names,
             }
         )

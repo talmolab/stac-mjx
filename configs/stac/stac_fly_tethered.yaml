@@ -1,9 +1,10 @@
-fit_path: "fit_free.p"
-transform_path: "transform_free.p"
-data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
+fit_path: "Fruitfly_fit.p"
+transform_path: "transform_mocap_fly.h5"
+data_path: "tests/data/bout_dict.h5"
+gpu: '0'
 
-n_fit_frames: 1800
-skip_fit: False
+n_fit_frames: 601
+skip_fit: True
 skip_transform: False
 
 mujoco:
