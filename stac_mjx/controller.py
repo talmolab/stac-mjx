@@ -201,8 +201,7 @@ class STAC:
 
         return flattened_errors, mean, std
 
-    # TODO: pmap fit and transform if you want to use it with multiple gpus
-    def fit(self, kp_data):
+    def fit_offsets(self, kp_data):
         """Alternate between pose and offset optimization for a set number of iterations.
 
         Args:
@@ -295,7 +294,7 @@ class STAC:
         print(f"Standard deviation: {std}")
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
 
-    def transform(self, kp_data, offsets):
+    def transform_kps(self, kp_data, offsets):
         """Register skeleton to keypoint data.
 
             Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
