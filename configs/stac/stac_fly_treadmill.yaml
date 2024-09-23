@@ -1,11 +1,11 @@
-fit_path: "fit_free.p"
-transform_path: "transform_free.p"
-data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
+fit_path: "fly_treadmill_fit.p"
+transform_path: "transform_treadmill.p"
+data_path: "/data/users/eabe/biomech_model/Flybody/datasets/Tuthill_data/wt_berlin_linear_treadmill_dataset.csv"
 
 n_fit_frames: 1800
 skip_fit: False
 skip_transform: False
-
+gpu: '1'
 mujoco:
   solver: "newton"
   iterations: 1

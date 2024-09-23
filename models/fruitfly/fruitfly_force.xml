@@ -321,14 +321,14 @@
       <camera name="bottom" mode="track" pos="0.01 0 -0.516" xyaxes="0 1 0 0.991 0 0.136"/>
       <light name="left" mode="trackcom" pos="0 1 1" dir="0 -1 -1" diffuse="0.3 0.3 0.3"/>
       <light name="tracking" mode="trackcom" pos="0 0 1"/>
-      <site name="thorax"/>
+      <site name="thorax_site"/>
       <site name="hover_up_dir" pos="0.0262 0 0.0262" quat="0.915 0 0.403 0"/>
       <geom name="thorax" mass="0.00034" pos="-0.00791 0 -0.123" quat="0 0 0 -1" mesh="thorax"/>
       <geom name="thorax_collision" class="collision" type="ellipsoid" size="0.0437 0.0437 0.0551" pos="0.00168 0 -0.00262" quat="0 -0.479 0 -0.878"/>
       <geom name="thorax_collision2" class="collision" type="ellipsoid" size="0.0499 0.028 0.0114" pos="-0.00445 0 0.0219" quat="0 -0.199 0 -0.98"/>
       <geom name="thorax_black" material="black" mass="0" pos="-0.00791 0 -0.123" quat="0 0 0 -1" mesh="thorax_black"/>
       <body name="head" childclass="head" pos="0.0567 3.81e-07 -0.00305" quat="0.702 -0.087 0.087 -0.702">
-        <site name="head" pos="0 0.015 0" quat="0 0 0 1"/>
+        <site name="head_site" pos="0 0.015 0" quat="0 0 0 1"/>
         <!-- <joint name="head_abduct" axis="0 0 1" range="-0.2 0.2"/>
         <joint name="head_twist" axis="0 1 0" range="-3 3"/>
         <joint name="head" axis="1 0 0" range="-0.5 0.3"/> -->
