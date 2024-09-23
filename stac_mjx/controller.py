@@ -176,7 +176,7 @@ class STAC:
             jp.array(list(site_index_map.values())),
             is_regularized,
         )
-
+        
     def _chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
         n_frames = self.cfg.model.N_FRAMES_PER_CLIP
@@ -401,13 +401,13 @@ class STAC:
 
         data.update(
             {
-                "qpos": q,
-                "xpos": x,
+                "qpos": np.array(q),
+                "xpos": np.array(x),
                 "walker_body_sites": walker_body_sites,
-                "offsets": offsets,
+                "offsets": np.array(offsets),
                 "names_qpos": self._part_names,
                 "names_xpos": self._body_names,
-                "kp_data": jp.copy(kp_data),
+                "kp_data": np.copy(kp_data),
                 "kp_names": self._kp_names,
             }
         )

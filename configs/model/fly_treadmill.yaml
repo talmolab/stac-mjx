@@ -1,0 +1,105 @@
+
+MJCF_PATH: 'models/fruitfly/fruitfly_force_free.xml'
+
+# Frames per clip for transform.
+N_FRAMES_PER_CLIP: 581
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 5.0e-03
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+KP_NAMES: 
+  - 'head'
+  - 'thorax'
+  - 'abdomen'
+  - 'r1'
+  - 'r2'
+  - 'r3'
+  - 'l1'
+  - 'l2'
+  - 'l3'
+
+
+# The model sites used to register the keypoints.
+KEYPOINT_MODEL_PAIRS:
+  head: head
+  thorax: thorax
+  abdomen: abdomen_7
+  r1: claw_T1_right
+  r2: claw_T2_right
+  r3: claw_T3_right
+  l1: claw_T1_left
+  l2: claw_T2_left
+  l3: claw_T3_left
+
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  head: 0 0 0.015
+  thorax: 0 0 0.04
+  abdomen: 0 0 0
+  l1: 0. 0. 0.
+  r1: 0. 0. 0.
+  l2: 0. 0. 0.
+  r2: 0. 0. 0.
+  l3: 0. 0. 0.
+  r3: 0. 0. 0.
+
+TRUNK_OPTIMIZATION_KEYPOINTS: 
+  - 'head'
+  - 'thorax'
+  - 'abdomen'
+  
+INDIVIDUAL_PART_OPTIMIZATION: 
+  "T1R": ["thorax", "claw_T1_right"]
+  "T2R": ["thorax", "claw_T2_right"]
+  "T3R": ["thorax", "claw_T3_right"]
+  "T1L": ["thorax", "claw_T1_left"]
+  "T2L": ["thorax", "claw_T2_left"]
+  "T3L": ["thorax", "claw_T3_left"]
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  head: 0 .5 1 1
+  thorax: 1 0 .3 1
+  abdomen: 0 .5 .3 1
+  l1: 0 0 .3 1
+  r1: 0 0 .3 1
+  l2: 0 0 .3 1
+  r2: 0 0 .3 1
+  l3: 0 0 .3 1
+  r3: 0 0 .3 1
+  
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: .3
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using this with M_REG_COEF. 
+SITES_TO_REGULARIZE: 
+- l1
+- r1
+- l2
+- r2
+- l3
+- r3
+
+RENDER_FPS: 200
+
+N_SAMPLE_FRAMES: 100
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
+
+TIME_BINS: 0.02

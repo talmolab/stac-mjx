@@ -6,7 +6,7 @@ from pathlib import Path
 from stac_mjx.controller import STAC
 from omegaconf import DictConfig
 from typing import Union, Dict
-
+import stac_mjx.io_dict_to_hdf5 as ioh5
 
 def viz_stac(
     data_path: Union[Path, str],
@@ -41,12 +41,19 @@ def viz_stac(
     xml_path = base_path / cfg.model.MJCF_PATH
 
     # Load data
-    with open(data_path, "rb") as file:
-        d = pickle.load(file)
-        qposes = np.array(d["qpos"])
-        kp_data = np.array(d["kp_data"])
-        kp_names = d["kp_names"]
-        offsets = d["offsets"]
+    if data_path.suffix == ".h5":
+        data = ioh5.load(data_path)
+        qposes = np.array(data["qpos"])
+        kp_data = np.array(data["kp_data"])
+        kp_names = data["kp_names"]
+        offsets = data["offsets"]
+    else:
+        with open(data_path, "rb") as file:
+            d = pickle.load(file)
+            qposes = np.array(d["qpos"])
+            kp_data = np.array(d["kp_data"])
+            kp_names = d["kp_names"]
+            offsets = d["offsets"]
 
     # initialize STAC to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually

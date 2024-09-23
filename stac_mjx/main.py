@@ -75,14 +75,13 @@ def run_stac(
     if cfg.stac.skip_transform == 1:
         logging.info("skipping transform()")
         return fit_path, None
-    elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
-        raise ValueError(
-            f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
-        )
+    # elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
+    #     raise ValueError(
+    #         f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
+    #     )
 
     logging.info("Running transform()")
-    with open(fit_path, "rb") as file:
-        fit_data = pickle.load(file)
+    fit_data = utils.load_stac_tranform(fit_path)
 
     offsets = fit_data["offsets"]
 

@@ -1,4 +1,4 @@
 defaults:
-  - stac: demo
-  - model: rodent
+  - stac: stac_fly_tethered
+  - model: fly_tethered
   - _self_
