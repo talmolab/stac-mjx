@@ -1,5 +1,5 @@
 
-MJCF_PATH: 'models/fruitfly/fruitfly_freeforce.xml'
+MJCF_PATH: 'models/fruitfly/fruitfly_force_free.xml'
 
 # Frames per clip for transform.
 N_FRAMES_PER_CLIP: 581
