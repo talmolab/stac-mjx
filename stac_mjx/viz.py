@@ -18,6 +18,7 @@ def viz_stac(
     height: int = 1200,
     width: int = 1920,
     base_path=None,
+    show_marker_error=False,
 ):
     """Render forward kinematics from keypoint positions.
 
@@ -45,7 +46,7 @@ def viz_stac(
         d = pickle.load(file)
         qposes = np.array(d["qpos"])
         kp_data = np.array(d["kp_data"])
-        kp_names = d["kp_names"]
+        kp_names = d["KP_NAMES"]
         offsets = d["offsets"]
 
     # initialize STAC to create mj_model with scaling and marker body sites according to config
@@ -61,4 +62,5 @@ def viz_stac(
         camera,
         height,
         width,
+        show_marker_error,
     )

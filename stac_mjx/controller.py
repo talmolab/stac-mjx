@@ -143,7 +143,7 @@ class STAC:
                 name=key,
                 type="sphere",
                 size=[0.005],
-                rgba="0 0 0 1",
+                rgba="0 0 0 0.8",
                 pos=pos,
                 group=3,
             )
@@ -259,7 +259,7 @@ class STAC:
             print(f"Standard deviation: {std}")
 
             print("starting offset optimization")
-            mjx_model, mjx_data = compute_stac.offset_optimization(
+            mjx_model, mjx_data, self._offsets = compute_stac.offset_optimization(
                 mjx_model,
                 mjx_data,
                 kp_data,
@@ -390,7 +390,9 @@ class STAC:
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:
-            offsets = op.get_site_pos(mjx_model, self._body_site_idxs).copy()
+            offsets = (
+                self._offsets
+            )  # op.get_site_pos(mjx_model, self._body_site_idxs).copy()
 
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
@@ -468,6 +470,7 @@ class STAC:
         camera: Union[int, str] = 0,
         height: int = 1200,
         width: int = 1920,
+        show_marker_error: bool = False,
     ):
         """Creates rendering using the instantiated model, given the user's qposes and kp_data.
 
@@ -481,6 +484,7 @@ class STAC:
             camera (Union[int, str], optional): Mujoco camera name. Defaults to 0.
             height (int, optional): Height in pixels. Defaults to 1200.
             width (int, optional): Width in pixels. Defaults to 1920.
+            show_marker_error (bool, optional): Show distance between marker and keypoint. Defaults to False.
 
         Raises:
             ValueError: qposes and kp_data must have same length (shape[0])
@@ -506,28 +510,61 @@ class STAC:
         render_mj_model, body_site_idxs, keypoint_site_idxs = (
             self._create_keypoint_sites()
         )
-        render_mj_model.site_pos[body_site_idxs] = offsets
+
+        # Add body sites for new offset positions
+        for (key, v), pos in zip(
+            self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets.reshape((-1, 3))
+        ):
+            parent = self._root.find("body", v)
+            parent.add(
+                "site",
+                name=key + "_new",
+                type="sphere",
+                size=[0.005],
+                rgba="0 0 0 1",
+                pos=pos,
+                group=2,
+            )
+
+        # tendons from new marker sites to kp
+        if show_marker_error:
+            for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
+                # pos = utils.params["KEYPOINT_INITIAL_OFFSETS"][key]
+                rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[key]
+                tendon = self._root.tendon.add(
+                    "spatial",
+                    name=key + "-" + v,
+                    width="0.001",
+                    rgba="255 0 0 1",  # Red
+                    limited=False,
+                )
+                tendon.add("site", site=key + "_kp")
+                tendon.add("site", site=key + "_new")
+
+        physics = mjcf.Physics.from_mjcf_model(self._root)
+        render_mj_model = deepcopy(physics.model.ptr)
 
         scene_option = mujoco.MjvOption()
+        scene_option.geomgroup[1] = 0
         scene_option.geomgroup[2] = 1
+
         scene_option.sitegroup[2] = 1
 
-        scene_option.sitegroup[3] = 1
+        scene_option.sitegroup[3] = 0
         scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = False
+        scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = True
         scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = False
-        scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = False
-        scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = False
-        scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = False
-
+        scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = True
+        scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = True
+        scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = True
+        scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = True
         mj_data = mujoco.MjData(render_mj_model)
 
         mujoco.mj_kinematics(render_mj_model, mj_data)
 
         renderer = mujoco.Renderer(render_mj_model, height=height, width=width)
 
-        # slice kp_data to match qposes length
+        # Slice kp_data to match qposes length
         kp_data = kp_data[: qposes.shape[0]]
 
         # Slice arrays to be the range that is being rendered
@@ -538,10 +575,11 @@ class STAC:
         # render while stepping using mujoco
         with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
             for qpos, kps in tqdm(zip(qposes, kp_data)):
-                # Set keypoints
+                # Set keypoints--they're in cartesian space, but since they're attached to the worldbody it's the same
                 render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
                 mj_data.qpos = qpos
-                mujoco.mj_forward(render_mj_model, mj_data)
+
+                mujoco.mj_fwdPosition(render_mj_model, mj_data)
 
                 renderer.update_scene(mj_data, camera=camera, scene_option=scene_option)
                 pixels = renderer.render()
