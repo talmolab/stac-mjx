@@ -172,7 +172,7 @@ def offset_optimization(
 
     print(f"offset optimization finished in {time.time()-s}")
 
-    return mjx_model, mjx_data
+    return mjx_model, mjx_data, offset_opt_param
 
 
 def pose_optimization(
