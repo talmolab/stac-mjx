@@ -386,13 +386,11 @@ class STAC:
         if batched:
             # prepare batched data to be packaged
             get_batch_offsets = jax.vmap(op.get_site_pos, in_axes=(0, None))
-            offsets = get_batch_offsets(mjx_model, self._body_site_idxs).copy()[0]
+            offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:
-            offsets = (
-                self._offsets
-            )  # op.get_site_pos(mjx_model, self._body_site_idxs).copy()
+            offsets = self._offsets
 
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
@@ -511,7 +509,7 @@ class STAC:
             self._create_keypoint_sites()
         )
 
-        # Add body sites for new offset positions
+        # Add body sites for new offsets
         for (key, v), pos in zip(
             self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets.reshape((-1, 3))
         ):
@@ -526,11 +524,9 @@ class STAC:
                 group=2,
             )
 
-        # tendons from new marker sites to kp
+        # Tendons from new marker sites to kp
         if show_marker_error:
             for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
-                # pos = utils.params["KEYPOINT_INITIAL_OFFSETS"][key]
-                rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[key]
                 tendon = self._root.tendon.add(
                     "spatial",
                     name=key + "-" + v,
@@ -575,7 +571,7 @@ class STAC:
         # render while stepping using mujoco
         with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
             for qpos, kps in tqdm(zip(qposes, kp_data)):
-                # Set keypoints--they're in cartesian space, but since they're attached to the worldbody it's the same
+                # Set keypoints--they're in cartesian space, but since they're attached to the worldbody they're the same as offsets
                 render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
                 mj_data.qpos = qpos
 
