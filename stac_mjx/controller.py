@@ -300,7 +300,7 @@ class STAC:
             ik_only is a stand-alone inverse kinematics step to be used after the marker offsets
             have been determined by fit_offsets(). This is most useful when it is desired or necessary
             to run the fit on a different data set than was used during fit. (Otherwise, the output of fit_offsets()
-            will contain identical data.) 
+            will contain identical data.)
 
         Args:
             mj_model (mujoco.Model): Physics model.
