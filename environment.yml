@@ -1,4 +1,4 @@
-name: stac-mjx-env
+name: stac-mjx-env-2
 channels:
   - conda-forge
   - anaconda
