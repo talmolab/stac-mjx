@@ -1,5 +1,7 @@
 # stac-mjx :rat:
-Implementation of [STAC](https://ieeexplore.ieee.org/document/7030016) using [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html). This is part of the VNL project. 
+`stac-mjx` is an implementation of the [STAC](https://ieeexplore.ieee.org/document/7030016) algorithm for inverse kinematics on markerless motion capture data. It's written in [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html) for hardware acceleration . 
+
+This is part of the Virtual Neurosceince Lab (VNL) project.
 
 ## Installation
 stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment, using the provided `environment.yaml`:
@@ -30,7 +32,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    conda install ipykernel
    python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
    ```
-
+## High 
 
 ## Usage
 1. Update the .yaml files in `config/` with the proper information (details WIP).
@@ -54,7 +56,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    kp_data, sorted_kp_names = stac_mjx.load_data(cfg, base_path)
 
    # Run stac
-   fit_path, transform_path = stac_mjx.run_stac(
+   fit_path, ik_only_path = stac_mjx.run_stac(
     cfg,
     kp_data, 
     sorted_kp_names, 

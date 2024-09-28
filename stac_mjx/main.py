@@ -56,7 +56,7 @@ def run_stac(
 
     # Getting paths
     fit_path = base_path / cfg.stac.fit_path
-    transform_path = base_path / cfg.stac.transform_path
+    ik_only_path = base_path / cfg.stac.ik_only_path
 
     xml_path = base_path / cfg.model.MJCF_PATH
 
@@ -71,27 +71,27 @@ def run_stac(
         logging.info(f"saving data to {fit_path}")
         utils.save(fit_data, fit_path)
 
-    # Stop here if skipping transform
-    if cfg.stac.skip_transform == 1:
-        logging.info("skipping transform()")
+    # Stop here if not doing ik only phase
+    if cfg.stac.skip_ik_only == 1:
+        logging.info("skipping ik_only()")
         return fit_path, None
     elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
         raise ValueError(
             f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
         )
 
-    logging.info("Running transform()")
+    logging.info("Running ik_only()")
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"]
 
     logging.info(f"kp_data shape: {kp_data.shape}")
-    transform_data = stac.transform_kps(kp_data, offsets)
+    ik_only_data = stac.ik_only(kp_data, offsets)
 
     logging.info(
-        f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"
+        f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
-    utils.save(transform_data, transform_path)
+    utils.save(transform_data, ik_only_path)
 
-    return fit_path, transform_path
+    return fit_path, ik_only_path

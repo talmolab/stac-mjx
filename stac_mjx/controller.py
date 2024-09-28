@@ -294,10 +294,13 @@ class STAC:
         print(f"Standard deviation: {std}")
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
 
-    def transform_kps(self, kp_data, offsets):
-        """Register skeleton to keypoint data.
+    def ik_only(self, kp_data, offsets):
+        """Do only inverse kinematics (no fitting) on motion capture data.
 
-            Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
+            ik_only is a stand-alone inverse kinematics step to be used after the marker offsets
+            have been determined by fit_offsets(). This is most useful when it is desired or necessary
+            to run the fit on a different data set than was used during fit. (Otherwise, the output of fit_offsets()
+            will contain identical data.) 
 
         Args:
             mj_model (mujoco.Model): Physics model.
