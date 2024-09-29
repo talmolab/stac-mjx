@@ -1,4 +1,4 @@
-"""STAC class handling high level functionality of stac-mjx."""
+"""Stac class handling high level functionality of stac-mjx."""
 
 import jax
 from jax import numpy as jp
@@ -56,11 +56,11 @@ def _align_joint_dims(types, ranges, names):
     return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
 
 
-class STAC:
+class Stac:
     """Main class with key functionality for skeletal registration and rendering."""
 
     def __init__(self, xml_path: str, cfg: DictConfig, kp_names: List[str]):
-        """Init STAC class, taking values from configs and creating values needed for stac.
+        """Init stac class, taking values from configs and creating values needed for stac.
 
         Args:
             xml_path (str): Path to model MJCF.

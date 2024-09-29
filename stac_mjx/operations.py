@@ -1,4 +1,4 @@
-"""This module contains utility functions for STAC."""
+"""This module contains utility functions for Stac."""
 
 from jax import numpy as jp
 from jax import jit

@@ -8,7 +8,7 @@ import logging
 from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import utils
-from stac_mjx.controller import STAC
+from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
 import hydra
@@ -60,7 +60,7 @@ def run_stac(
 
     xml_path = base_path / cfg.model.MJCF_PATH
 
-    stac = STAC(xml_path, cfg, kp_names)
+    stac = Stac(xml_path, cfg, kp_names)
 
     # Run fit_offsets if not skipping
     if cfg.stac.skip_fit_offsets != 1:
