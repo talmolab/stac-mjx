@@ -6,7 +6,7 @@ import jax.numpy as jp
 from typing import Tuple, List
 import time
 
-from stac_mjx import stac_base
+from stac_mjx import stac_core
 from stac_mjx import operations as op
 
 
@@ -56,7 +56,7 @@ def root_optimization(
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
     j = time.time()
-    mjx_data, res = stac_base.q_opt(
+    mjx_data, res = stac_core.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -81,7 +81,7 @@ def root_optimization(
     # Trunk only optimization
     j = time.time()
     print("starting q_opt 2")
-    mjx_data, res = stac_base.q_opt(
+    mjx_data, res = stac_core.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -147,7 +147,7 @@ def offset_optimization(
     keypoints = jp.array(kp_data[time_indices, :])
     q = jp.take(q, time_indices, axis=0)
 
-    res = stac_base.m_opt(
+    res = stac_core.m_opt(
         offset0,
         mjx_model,
         mjx_data,
@@ -214,7 +214,7 @@ def pose_optimization(
         q0 = jp.copy(mjx_data.qpos[:])
 
         # While body opt, then part opt
-        mjx_data, res = stac_base.q_opt(
+        mjx_data, res = stac_core.q_opt(
             mjx_model,
             mjx_data,
             kp_data[n_frame, :],
@@ -231,7 +231,7 @@ def pose_optimization(
         for part in parts:
             q0 = jp.copy(mjx_data.qpos[:])
 
-            mjx_data, res = stac_base.q_opt(
+            mjx_data, res = stac_core.q_opt(
                 mjx_model,
                 mjx_data,
                 kp_data[n_frame, :],
