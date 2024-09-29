@@ -12,9 +12,9 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 
-from stac_mjx import utils as utils
+from stac_mjx import io as io
 from stac_mjx import compute_stac
-from stac_mjx import operations as op
+from stac_mjx import op_utils as op
 
 from omegaconf import OmegaConf, DictConfig
 from typing import List, Union

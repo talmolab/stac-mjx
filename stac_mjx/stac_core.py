@@ -10,8 +10,8 @@ from jaxopt import OptaxSolver
 
 import optax
 
-from stac_mjx import operations as op
-from stac_mjx import utils
+from stac_mjx import op_utils
+from stac_mjx import io
 
 
 def huber(x, delta=5.0, max=10, max_slope=0.1):
@@ -51,17 +51,17 @@ def q_loss(
         float: sum of squares scalar loss
     """
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    mjx_data = mjx_data.replace(qpos=op.make_qs(initial_q, qs_to_opt, q))
+    mjx_data = mjx_data.replace(qpos=op_utils.make_qs(initial_q, qs_to_opt, q))
 
     # Clip to bounds ourselves because of potential jaxopt bug
-    # mjx_data = mjx_data.replace(qpos=jp.clip(op.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
+    # mjx_data = mjx_data.replace(qpos=jp.clip(utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
 
     # Forward kinematics
-    mjx_data = op.kinematics(mjx_model, mjx_data)
-    mjx_data = op.com_pos(mjx_model, mjx_data)
+    mjx_data = op_utils.kinematics(mjx_model, mjx_data)
+    mjx_data = op_utils.com_pos(mjx_model, mjx_data)
 
     # Get marker site xpos
-    markers = op.get_site_xpos(mjx_data, site_idxs).flatten()
+    markers = op_utils.get_site_xpos(mjx_data, site_idxs).flatten()
     residual = kp_data - markers
 
     # Set irrelevant body sites to 0
@@ -101,7 +101,7 @@ def q_opt(
         print("Warning: optimization failed.", flush=True)
         print(ex, flush=True)
         mjx_data = mjx_data.replace(qpos=q0)
-        mjx_data = op.kinematics(mjx_model, mjx_data)
+        mjx_data = op_utils.kinematics(mjx_model, mjx_data)
 
     return mjx_data, None
 
@@ -147,12 +147,12 @@ def m_loss(
 
         # Set qpos and offsets
         mjx_data = mjx_data.replace(qpos=qpos)
-        mjx_model = op.set_site_pos(mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs)
+        mjx_model = op_utils.set_site_pos(mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs)
 
         # Forward kinematics
-        mjx_data = op.kinematics(mjx_model, mjx_data)
-        mjx_data = op.com_pos(mjx_model, mjx_data)
-        markers = op.get_site_xpos(mjx_data, site_idxs).flatten()
+        mjx_data = op_utils.kinematics(mjx_model, mjx_data)
+        mjx_data = op_utils.com_pos(mjx_model, mjx_data)
+        markers = op_utils.get_site_xpos(mjx_data, site_idxs).flatten()
 
         # Accumulate squared residual
         residual = residual + jp.square((kp - markers))

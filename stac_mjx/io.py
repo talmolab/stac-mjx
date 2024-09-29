@@ -12,17 +12,7 @@ from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
 from pathlib import Path
 from omegaconf import DictConfig
-from jax.lib import xla_bridge
 import os
-
-
-def enable_xla_flags():
-    """Enables XLA Flags for faster runtime on Nvidia GPUs."""
-    if xla_bridge.get_backend().platform == "gpu":
-        os.environ["XLA_FLAGS"] = (
-            "--xla_gpu_enable_triton_softmax_fusion=true "
-            "--xla_gpu_triton_gemm_any=True "
-        )
 
 
 def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):

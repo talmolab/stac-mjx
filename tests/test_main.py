@@ -1,6 +1,6 @@
 from omegaconf import DictConfig
 from stac_mjx import main
-from stac_mjx import utils
+from stac_mjx import io
 from pathlib import Path
 from typing import Dict
 import pytest
@@ -9,7 +9,7 @@ import pytest
 def test_load_configs(config):
     # Check that utils.params is not defined before loading
     with pytest.raises(AttributeError):
-        utils.params
+        io.params
 
     # Call the function
     cfg = main.load_configs(config)

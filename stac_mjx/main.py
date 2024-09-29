@@ -7,7 +7,8 @@ import time
 import logging
 from omegaconf import DictConfig, OmegaConf
 
-from stac_mjx import utils
+from stac_mjx import io
+from stac_mjx import op_utils
 from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
@@ -50,7 +51,7 @@ def run_stac(
     if base_path is None:
         base_path = Path.cwd()
 
-    utils.enable_xla_flags()
+    op_utils.enable_xla_flags()
 
     start_time = time.time()
 
@@ -69,7 +70,7 @@ def run_stac(
         fit_data = stac.fit_offsets(fit_data)
 
         logging.info(f"saving data to {fit_path}")
-        utils.save(fit_data, fit_path)
+        io.save(fit_data, fit_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
@@ -92,6 +93,6 @@ def run_stac(
     logging.info(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
-    utils.save(ik_only_data, ik_only_path)
+    io.save(ik_only_data, ik_only_path)
 
     return fit_path, ik_only_path
