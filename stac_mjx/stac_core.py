@@ -147,7 +147,9 @@ def m_loss(
 
         # Set qpos and offsets
         mjx_data = mjx_data.replace(qpos=qpos)
-        mjx_model = op_utils.set_site_pos(mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs)
+        mjx_model = op_utils.set_site_pos(
+            mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs
+        )
 
         # Forward kinematics
         mjx_data = op_utils.kinematics(mjx_model, mjx_data)

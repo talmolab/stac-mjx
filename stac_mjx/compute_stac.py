@@ -72,7 +72,9 @@ def root_optimization(
 
     r = time.time()
 
-    mjx_data = op_utils.replace_qs(mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params))
+    mjx_data = op_utils.replace_qs(
+        mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params)
+    )
     print(f"Replace 1 finished in {time.time()-r}")
 
     q0 = jp.copy(mjx_data.qpos[:])
@@ -96,7 +98,9 @@ def root_optimization(
     print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
-    mjx_data = op_utils.replace_qs(mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params))
+    mjx_data = op_utils.replace_qs(
+        mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params)
+    )
 
     print(f"Replace 2 finished in {time.time()-r}")
     print(f"Root optimization finished in {time.time()-s}")
