@@ -41,8 +41,6 @@ dev = [
     "ipykernel",
     "mujoco==3.2.2",
     "mujoco-mjx==3.2.2",
-    "mujoco==3.2.2",
-    "mujoco-mjx==3.2.2",
     "brax",
     "opencv-python",
     "wandb",
