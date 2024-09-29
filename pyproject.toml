@@ -50,7 +50,6 @@ dev = [
     "tqdm",
     "numba",
    "ndx_pose==0.1.1",
-#    "ndx_pose",
     "hydra-core",
     "imageio",
     "h5py",
