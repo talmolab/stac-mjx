@@ -49,7 +49,6 @@ dev = [
     "mediapy",
     "pynwb",
     "dm_control==1.0.22",
-    "dm_control==1.0.22",
     "tqdm",
     "numba",
     "ndx_pose==0.1.1",
