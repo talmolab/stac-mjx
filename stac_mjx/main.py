@@ -45,7 +45,7 @@ def run_stac(
         base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
 
     Returns:
-        tuple[str, str]: Paths to saved outputs (fit and transform).
+        tuple[str, str]: Paths to saved outputs (fit and ik_only).
     """
     if base_path is None:
         base_path = Path.cwd()
@@ -92,6 +92,6 @@ def run_stac(
     logging.info(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
-    utils.save(transform_data, ik_only_path)
+    utils.save(ik_only_data, ik_only_path)
 
     return fit_path, ik_only_path

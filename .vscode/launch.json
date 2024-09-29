@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/core/main.py",
             "console": "integratedTerminal",
             "args": [
-                "test.skip_transform=True"
+                "test.ik_only=True"
             ]
         }
     ]
