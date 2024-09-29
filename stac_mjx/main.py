@@ -45,7 +45,7 @@ def run_stac(
         base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
 
     Returns:
-        tuple[str, str]: Paths to saved outputs (fit and ik_only).
+        tuple[str, str]: Paths to saved outputs (fit_offsets and ik_only).
     """
     if base_path is None:
         base_path = Path.cwd()
@@ -62,8 +62,8 @@ def run_stac(
 
     stac = STAC(xml_path, cfg, kp_names)
 
-    # Run fit if not skipping
-    if cfg.stac.skip_fit != 1:
+    # Run fit_offsets if not skipping
+    if cfg.stac.skip_fit_offsets != 1:
         fit_data = kp_data[: cfg.stac.n_fit_frames]
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
         fit_data = stac.fit_offsets(fit_data)
