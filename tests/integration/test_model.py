@@ -1,8 +1,14 @@
+from pathlib import Path
 import pytest
 
 from dm_control import mjcf
-from mujoco import mjx
 from stac_mjx.operations import mjx_load
+
+from pathlib import Path
+
+# Define path roots
+TEST_DIR = Path(__file__).parent
+PROJECT_ROOT = TEST_DIR.parent.parent
 
 
 def load_model(path: str):
@@ -14,17 +20,14 @@ def load_model(path: str):
     assert mjx_model is not None
     assert mjx_data is not None
 
-
 # Fixtures
 @pytest.fixture
 def rodent_model():
-    return "models/rodent.xml"
+    return str(PROJECT_ROOT / "models" / "rodent.xml")
 
-
-@pytest.fixture()
+@pytest.fixture
 def mouse_model():
-    return "models/mouse_with_meshes.xml"
-
+    return str(PROJECT_ROOT / "models" / "mouse_with_meshes.xml")
 
 # Tests
 def test_rodent_load(rodent_model):
