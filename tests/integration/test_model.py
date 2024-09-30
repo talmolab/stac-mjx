@@ -1,12 +1,8 @@
-import os
-
 from pathlib import Path
 import pytest
 
 from dm_control import mjcf
 from stac_mjx.operations import mjx_load
-
-from pathlib import Path
 
 # Define path roots
 TEST_DIR = Path(__file__).parent
