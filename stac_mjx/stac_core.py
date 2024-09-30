@@ -54,7 +54,7 @@ def q_loss(
     mjx_data = mjx_data.replace(qpos=op_utils.make_qs(initial_q, qs_to_opt, q))
 
     # Clip to bounds ourselves because of potential jaxopt bug
-    # mjx_data = mjx_data.replace(qpos=jp.clip(utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
+    # mjx_data = mjx_data.replace(qpos=jp.clip(op_utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
 
     # Forward kinematics
     mjx_data = op_utils.kinematics(mjx_model, mjx_data)
