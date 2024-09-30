@@ -1,5 +1,7 @@
 """This module contains utility functions for Stac."""
 
+import os
+
 from jax import numpy as jp
 from jax import jit
 from jax.lib import xla_bridge

@@ -32,8 +32,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    conda install ipykernel
    python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
    ```
-## High 
-
+   
 ## Usage
 1. Update the .yaml files in `config/` with the proper information (details WIP).
 
