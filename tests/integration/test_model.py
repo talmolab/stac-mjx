@@ -12,6 +12,7 @@ from pathlib import Path
 TEST_DIR = Path(__file__).parent
 PROJECT_ROOT = TEST_DIR.parent.parent
 
+
 # Common model loading/testing code (Feel free to add more!)
 def load_model(path: str):
     root = mjcf.from_path(path)
