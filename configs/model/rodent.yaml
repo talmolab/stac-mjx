@@ -1,6 +1,6 @@
 MJCF_PATH: "models/rodent.xml"
 
-# Frames per clip for transform.
+# Frames per clip for ik_only.
 N_FRAMES_PER_CLIP: 250
 
 # Tolerance for the optimizations of the full model, limb, and root. 

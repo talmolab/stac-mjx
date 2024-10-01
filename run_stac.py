@@ -10,10 +10,10 @@ import stac_mjx
 def load_and_run_stac(cfg):
     kp_data, sorted_kp_names = stac_mjx.load_data(cfg)
 
-    fit_path, transform_path = stac_mjx.run_stac(cfg, kp_data, sorted_kp_names)
+    fit_path, ik_only_path = stac_mjx.run_stac(cfg, kp_data, sorted_kp_names)
 
     logging.info(
-        f"Run complete. \n fit path: {fit_path} \n transform path: {transform_path}"
+        f"Run complete. \n fit path: {fit_path} \n ik_only path: {ik_only_path}"
     )
 
 

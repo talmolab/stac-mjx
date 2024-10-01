@@ -1,4 +1,4 @@
-"""STAC class handling high level functionality of stac-mjx."""
+"""Stac class handling high level functionality of stac-mjx."""
 
 import jax
 from jax import numpy as jp
@@ -12,9 +12,9 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 
-from stac_mjx import utils as utils
+from stac_mjx import io as io
 from stac_mjx import compute_stac
-from stac_mjx import operations as op
+from stac_mjx import op_utils as op
 
 from omegaconf import OmegaConf, DictConfig
 from typing import List, Union
@@ -56,11 +56,11 @@ def _align_joint_dims(types, ranges, names):
     return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
 
 
-class STAC:
+class Stac:
     """Main class with key functionality for skeletal registration and rendering."""
 
     def __init__(self, xml_path: str, cfg: DictConfig, kp_names: List[str]):
-        """Init STAC class, taking values from configs and creating values needed for stac.
+        """Init stac class, taking values from configs and creating values needed for stac.
 
         Args:
             xml_path (str): Path to model MJCF.
@@ -294,10 +294,13 @@ class STAC:
         print(f"Standard deviation: {std}")
         return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
 
-    def transform_kps(self, kp_data, offsets):
-        """Register skeleton to keypoint data.
+    def ik_only(self, kp_data, offsets):
+        """Do only inverse kinematics (no fitting) on motion capture data.
 
-            Transform should be used after a skeletal model has been fit to keypoints using the fit() method.
+            ik_only is a stand-alone inverse kinematics step to be used after the marker offsets
+            have been determined by fit_offsets(). This is most useful when it is desired or necessary
+            to run the fit on a different data set than was used during fit. (Otherwise, the output of fit_offsets()
+            will contain identical data.)
 
         Args:
             mj_model (mujoco.Model): Physics model.

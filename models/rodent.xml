@@ -611,15 +611,5 @@
     <general name="wrist_R" forcerange="-0.05 0.05" joint="wrist_R" dyntype="filter" biastype="affine" dynprm="0.04" gainprm="0.1221730476396031" biasprm="0.08726646259971647 -0.1"/>
     <general name="finger_R" forcerange="-0.025 0.025" joint="finger_R" dyntype="filter" biastype="affine" dynprm="0.04" gainprm="0.03926990816987241" biasprm="0.03926990816987241 -0.05"/>
   </actuator>
-  <sensor>
-    <accelerometer name="accelerometer" site="head"/>
-    <velocimeter name="velocimeter" site="head"/>
-    <gyro name="gyro" site="head"/>
-    <touch name="palm_L" site="palm_L"/>
-    <touch name="palm_R" site="palm_R"/>
-    <touch name="sole_L" site="sole_L"/>
-    <touch name="sole_R" site="sole_R"/>
-    <subtreelinvel name="torso" body="torso"/>
-  </sensor>
   <compiler meshdir="./"/>
 </mujoco>
