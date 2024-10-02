@@ -211,8 +211,7 @@ class Stac:
             Dict: Output data packaged in a dictionary.
         """
         # Create mjx model and data
-        mjx_model = mjx.put_model(self._mj_model)
-        mjx_data = mjx.make_data(mjx_model)
+        mjx_model, mjx_data = op.mjx_load(self._mj_model)
 
         # Get and set the offsets of the markers
         self._offsets = jp.copy(op.get_site_pos(mjx_model, self._body_site_idxs))
@@ -312,8 +311,7 @@ class Stac:
         batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data
-        mjx_model = mjx.put_model(self._mj_model)
-        mjx_data = mjx.make_data(mjx_model)
+        mjx_model, mjx_data = op.mjx_load(self._mj_model)
 
         def mjx_setup(kp_data, mj_model):
             """Create mjxmodel and mjxdata and set offet.
@@ -325,8 +323,7 @@ class Stac:
                 _type_: _description_
             """
             # Create mjx model and data
-            mjx_model = mjx.put_model(mj_model)
-            mjx_data = mjx.make_data(mjx_model)
+            mjx_model, mjx_data = op.mjx_load(mj_model)
 
             # Set the offsets.
             mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)

@@ -20,6 +20,15 @@ def enable_xla_flags():
         )
 
 
+def mjx_load(mj_model):
+    """Load mujoco model into mjx."""
+    # Create mjx model and data
+    mjx_model = mjx.put_model(mj_model)
+    mjx_data = mjx.make_data(mjx_model)
+
+    return mjx_model, mjx_data
+
+
 @jit
 def kinematics(mjx_model: mjx.Model, mjx_data: mjx.Data):
     """Jit compiled forward kinematics.
