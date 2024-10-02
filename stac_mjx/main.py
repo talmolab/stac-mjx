@@ -7,8 +7,9 @@ import time
 import logging
 from omegaconf import DictConfig, OmegaConf
 
-from stac_mjx import utils
-from stac_mjx.controller import STAC
+from stac_mjx import io
+from stac_mjx import op_utils
+from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
 import hydra
@@ -45,53 +46,53 @@ def run_stac(
         base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
 
     Returns:
-        tuple[str, str]: Paths to saved outputs (fit and transform).
+        tuple[str, str]: Paths to saved outputs (fit_offsets and ik_only).
     """
     if base_path is None:
         base_path = Path.cwd()
 
-    utils.enable_xla_flags()
+    op_utils.enable_xla_flags()
 
     start_time = time.time()
 
     # Getting paths
     fit_path = base_path / cfg.stac.fit_path
-    transform_path = base_path / cfg.stac.transform_path
+    ik_only_path = base_path / cfg.stac.ik_only_path
 
     xml_path = base_path / cfg.model.MJCF_PATH
 
-    stac = STAC(xml_path, cfg, kp_names)
+    stac = Stac(xml_path, cfg, kp_names)
 
-    # Run fit if not skipping
-    if cfg.stac.skip_fit != 1:
+    # Run fit_offsets if not skipping
+    if cfg.stac.skip_fit_offsets != 1:
         fit_data = kp_data[: cfg.stac.n_fit_frames]
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
         fit_data = stac.fit_offsets(fit_data)
 
         logging.info(f"saving data to {fit_path}")
-        utils.save(fit_data, fit_path)
+        io.save(fit_data, fit_path)
 
-    # Stop here if skipping transform
-    if cfg.stac.skip_transform == 1:
-        logging.info("skipping transform()")
+    # Stop here if not doing ik only phase
+    if cfg.stac.skip_ik_only == 1:
+        logging.info("skipping ik_only()")
         return fit_path, None
     elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
         raise ValueError(
             f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
         )
 
-    logging.info("Running transform()")
+    logging.info("Running ik_only()")
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
 
     offsets = fit_data["offsets"]
 
     logging.info(f"kp_data shape: {kp_data.shape}")
-    transform_data = stac.transform_kps(kp_data, offsets)
+    ik_only_data = stac.ik_only(kp_data, offsets)
 
     logging.info(
-        f"Saving data to {transform_path}. Finished in {time.time() - start_time} seconds"
+        f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
-    utils.save(transform_data, transform_path)
+    io.save(ik_only_data, ik_only_path)
 
-    return fit_path, transform_path
+    return fit_path, ik_only_path

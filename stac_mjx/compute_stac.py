@@ -6,8 +6,8 @@ import jax.numpy as jp
 from typing import Tuple, List
 import time
 
-from stac_mjx import stac_base
-from stac_mjx import operations as op
+from stac_mjx import stac_core
+from stac_mjx import op_utils
 
 
 def root_optimization(
@@ -56,7 +56,7 @@ def root_optimization(
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
     j = time.time()
-    mjx_data, res = stac_base.q_opt(
+    mjx_data, res = stac_core.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -72,7 +72,9 @@ def root_optimization(
 
     r = time.time()
 
-    mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
+    mjx_data = op_utils.replace_qs(
+        mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params)
+    )
     print(f"Replace 1 finished in {time.time()-r}")
 
     q0 = jp.copy(mjx_data.qpos[:])
@@ -81,7 +83,7 @@ def root_optimization(
     # Trunk only optimization
     j = time.time()
     print("starting q_opt 2")
-    mjx_data, res = stac_base.q_opt(
+    mjx_data, res = stac_core.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -96,7 +98,9 @@ def root_optimization(
     print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
-    mjx_data = op.replace_qs(mjx_model, mjx_data, op.make_qs(q0, qs_to_opt, res.params))
+    mjx_data = op_utils.replace_qs(
+        mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params)
+    )
 
     print(f"Replace 2 finished in {time.time()-r}")
     print(f"Root optimization finished in {time.time()-s}")
@@ -142,12 +146,12 @@ def offset_optimization(
     print("Begining offset optimization:")
 
     # Define initial position of the optimization
-    offset0 = op.get_site_pos(mjx_model, site_idxs).flatten()
+    offset0 = op_utils.get_site_pos(mjx_model, site_idxs).flatten()
 
     keypoints = jp.array(kp_data[time_indices, :])
     q = jp.take(q, time_indices, axis=0)
 
-    res = stac_base.m_opt(
+    res = stac_core.m_opt(
         offset0,
         mjx_model,
         mjx_data,
@@ -163,12 +167,12 @@ def offset_optimization(
     print(f"Final error of {res.state.error}")
 
     # Set body sites according to optimized offsets
-    mjx_model = op.set_site_pos(
+    mjx_model = op_utils.set_site_pos(
         mjx_model, jp.reshape(offset_opt_param, (-1, 3)), site_idxs
     )
 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = op.kinematics(mjx_model, mjx_data)
+    mjx_data = op_utils.kinematics(mjx_model, mjx_data)
 
     print(f"offset optimization finished in {time.time()-s}")
 
@@ -214,7 +218,7 @@ def pose_optimization(
         q0 = jp.copy(mjx_data.qpos[:])
 
         # While body opt, then part opt
-        mjx_data, res = stac_base.q_opt(
+        mjx_data, res = stac_core.q_opt(
             mjx_model,
             mjx_data,
             kp_data[n_frame, :],
@@ -226,12 +230,12 @@ def pose_optimization(
             site_idxs,
         )
 
-        mjx_data = op.replace_qs(mjx_model, mjx_data, res.params)
+        mjx_data = op_utils.replace_qs(mjx_model, mjx_data, res.params)
 
         for part in parts:
             q0 = jp.copy(mjx_data.qpos[:])
 
-            mjx_data, res = stac_base.q_opt(
+            mjx_data, res = stac_core.q_opt(
                 mjx_model,
                 mjx_data,
                 kp_data[n_frame, :],
@@ -243,8 +247,8 @@ def pose_optimization(
                 site_idxs,
             )
 
-            mjx_data = op.replace_qs(
-                mjx_model, mjx_data, op.make_qs(q0, part, res.params)
+            mjx_data = op_utils.replace_qs(
+                mjx_model, mjx_data, op_utils.make_qs(q0, part, res.params)
             )
 
         return mjx_data, res.state.error
@@ -259,7 +263,7 @@ def pose_optimization(
 
         q.append(mjx_data.qpos[:])
         x.append(mjx_data.xpos[:])
-        walker_body_sites.append(op.get_site_xpos(mjx_data, site_idxs))
+        walker_body_sites.append(op_utils.get_site_xpos(mjx_data, site_idxs))
 
         frame_time.append(time.time() - loop_start)
         frame_error.append(error)

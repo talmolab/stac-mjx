@@ -3,7 +3,7 @@
 import pickle
 import numpy as np
 from pathlib import Path
-from stac_mjx.controller import STAC
+from stac_mjx.stac import Stac
 from omegaconf import DictConfig
 from typing import Union, Dict
 
@@ -49,10 +49,9 @@ def viz_stac(
         kp_names = d["kp_names"]
         offsets = d["offsets"]
 
-    # initialize STAC to create mj_model with scaling and marker body sites according to config
+    # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
-    stac = STAC(xml_path, cfg, kp_names)
-    print(stac._kp_names)
+    stac = Stac(xml_path, cfg, kp_names)
     return stac.render(
         qposes,
         kp_data,
