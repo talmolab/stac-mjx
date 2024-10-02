@@ -46,12 +46,13 @@ def viz_stac(
         d = pickle.load(file)
         qposes = np.array(d["qpos"])
         kp_data = np.array(d["kp_data"])
-        kp_names = d["KP_NAMES"]
+        kp_names = d["kp_names"]
         offsets = d["offsets"]
 
     # initialize STAC to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
     stac = STAC(xml_path, cfg, kp_names)
+    print(stac._kp_names)
     return stac.render(
         qposes,
         kp_data,
