@@ -85,7 +85,7 @@ def run_stac(
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
     # logging.info("Running transform()")
-    # fit_data = utils.load_stac_tranform(fit_path)
+    # fit_data = utils.load_stac_ik_only(fit_path)
 
     offsets = fit_data["offsets"]
 

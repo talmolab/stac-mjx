@@ -4,10 +4,10 @@ import h5py
 
 # import os
 
-
 def save(filename, dic):
-    """
-    saves a python dictionary or list, with items that are themselves either
+    """Saves python dict.
+
+    Saves a python dictionary or list, with items that are themselves either
     dictionaries or lists or (in the case of tree-leaves) numpy arrays
     or basic scalar types (int/float/str/bytes) in a recursive
     manner to an hdf5 file, with an intact hierarchy.
@@ -17,9 +17,7 @@ def save(filename, dic):
 
 
 def recursively_save_dict_contents_to_group(h5file, path, dic):
-    """
-    ....
-    """
+    """ Todo fill this out."""
     if isinstance(dic, dict):
         iterator = dic.items()
     elif isinstance(dic, list):
@@ -45,7 +43,8 @@ def recursively_save_dict_contents_to_group(h5file, path, dic):
 
 
 def load(filename, ASLIST=False):
-    """
+    """Loads a hdf5 file.
+
     Default: load a hdf5 file (saved with io_dict_to_hdf5.save function above) as a hierarchical
     python dictionary (as described in the doc_string of io_dict_to_hdf5.save).
     if ASLIST is True: then it loads as a list (on in the first layer) and gives error if key's are not convertible
@@ -63,9 +62,7 @@ def load(filename, ASLIST=False):
 
 
 def recursively_load_dict_contents_from_group(h5file, path):
-    """
-    ....
-    """
+    """Todo: fill this out."""
     ans = {}
     for key, item in h5file[path].items():
         if isinstance(item, h5py._hl.dataset.Dataset):

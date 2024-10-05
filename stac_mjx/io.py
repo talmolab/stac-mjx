@@ -189,14 +189,15 @@ def _load_params(param_path):
     return params
 
 
-def load_stac_tranform(save_path):
-    _, file_extension = os.path.splitext(save_path)
-    if file_extension == ".p":
-        with open(save_path, "rb") as file:
-            fit_data = pickle.load(file)
-    elif file_extension == ".h5":
-        fit_data = ioh5.load(save_path)
-    return fit_data
+# Fly model -- decide to keep or not!
+# def load_stac_ik_only(save_path):
+#     _, file_extension = os.path.splitext(save_path)
+#     if file_extension == ".p":
+#         with open(save_path, "rb") as file:
+#             fit_data = pickle.load(file)
+#     elif file_extension == ".h5":
+#         fit_data = ioh5.load(save_path)
+#     return fit_data
 
 
 def save(fit_data, save_path: Text):
