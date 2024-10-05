@@ -18,7 +18,7 @@ import stac_mjx.io_dict_to_hdf5 as ioh5
 
 
 def enable_xla_flags():
-    """Enables XLA Flags for faster runtime on Nvidia GPUs."""
+    """Enable XLA Flags for faster runtime on Nvidia GPUs."""
     if xla_bridge.get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = (
             "--xla_gpu_enable_triton_softmax_fusion=true "
@@ -27,7 +27,7 @@ def enable_xla_flags():
 
 
 def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
-    """Main mocap data file loader interface.
+    """Load mocap data based on file type.
 
     Loads mocap file based on filetype, and returns the data flattened
     for immediate consumption by stac_mjx algorithm.
@@ -97,7 +97,7 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
 
 
 def load_dannce(filename, names_filename=None):
-    """Loads mocap data from .mat file.
+    """Load mocap data from .mat file.
 
     .mat file is presumed to be constructed by dannce:
     (https://github.com/spoonsso/dannce). In particular this means it relies on
@@ -116,7 +116,7 @@ def load_dannce(filename, names_filename=None):
 
 
 def load_nwb(filename):
-    """Loads mocap data from .nwb file.
+    """Load mocap data from .nwb file.
 
     Data is presumed [num frames, num keypoints, xyz].
     """
@@ -154,7 +154,7 @@ def load_h5(filename):
 
 
 def _check_keys(dict):
-    """Checks if entries in dictionary are mat-objects.
+    """Check if entries in dictionary are mat-objects.
 
     Mat-objects are changed to nested dictionaries.
     """
