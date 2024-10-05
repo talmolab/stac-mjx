@@ -16,6 +16,7 @@ from jax.lib import xla_bridge
 import os
 import stac_mjx.io_dict_to_hdf5 as ioh5
 
+
 def enable_xla_flags():
     """Enables XLA Flags for faster runtime on Nvidia GPUs."""
     if xla_bridge.get_backend().platform == "gpu":
@@ -187,7 +188,8 @@ def _load_params(param_path):
             print(exc)
     return params
 
-def load_stac_tranform(save_path): 
+
+def load_stac_tranform(save_path):
     _, file_extension = os.path.splitext(save_path)
     if file_extension == ".p":
         with open(save_path, "rb") as file:
@@ -195,6 +197,7 @@ def load_stac_tranform(save_path):
     elif file_extension == ".h5":
         fit_data = ioh5.load(save_path)
     return fit_data
+
 
 def save(fit_data, save_path: Text):
     """Save data.

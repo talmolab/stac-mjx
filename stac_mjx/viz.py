@@ -8,6 +8,7 @@ from omegaconf import DictConfig
 from typing import Union, Dict
 import stac_mjx.io_dict_to_hdf5 as ioh5
 
+
 def viz_stac(
     data_path: Union[Path, str],
     cfg: DictConfig,

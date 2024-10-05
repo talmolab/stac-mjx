@@ -50,9 +50,9 @@ def root_optimization(
     # necessarily exactly so. The value of 3*18 is chosen for the
     # rodent.xml, corresponding to the index of 'SpineL' keypoint.
     # For the mouse model this should be 3*5, corresponding 'Trunk'
-    root_kp_idx = 3*28
+    root_kp_idx = 3 * 28
     # This if for fly model, keep around until this is saved in config
-    #root_kp_idx = 0
+    # root_kp_idx = 0
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
     # q0.at[:3].set(jp.zeros(3))
     qs_to_opt = jp.zeros_like(q0, dtype=bool)

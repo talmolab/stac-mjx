@@ -176,7 +176,7 @@ class Stac:
             jp.array(list(site_index_map.values())),
             is_regularized,
         )
-        
+
     def _chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
         n_frames = self.cfg.model.N_FRAMES_PER_CLIP
