@@ -4,6 +4,7 @@ import h5py
 
 # import os
 
+
 def save(filename, dic):
     """Saves python dict.
 
@@ -17,7 +18,7 @@ def save(filename, dic):
 
 
 def recursively_save_dict_contents_to_group(h5file, path, dic):
-    """ Todo fill this out."""
+    """Todo fill this out."""
     if isinstance(dic, dict):
         iterator = dic.items()
     elif isinstance(dic, list):
