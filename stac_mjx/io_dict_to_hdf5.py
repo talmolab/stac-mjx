@@ -1,3 +1,4 @@
+"""This module contains utility functions for fly model data files.."""
 # copied from https://codereview.stackexchange.com/a/121308 (and slightly modified for updated h5py, Elliott Abe)
 import numpy as np
 import h5py
