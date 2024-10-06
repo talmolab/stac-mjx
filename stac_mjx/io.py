@@ -12,7 +12,6 @@ from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
 from pathlib import Path
 from omegaconf import DictConfig
-from jax.lib import xla_bridge
 import stac_mjx.io_dict_to_hdf5 as ioh5
 
 

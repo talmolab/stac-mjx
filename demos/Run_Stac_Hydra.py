@@ -19,7 +19,7 @@ OmegaConf.register_new_resolver(
 @hydra.main(version_base=None, config_path="../configs", config_name="config")
 def parse_hydra_config(cfg: DictConfig):
 
-    os.environ["CUDA_VISIBLE_DEVICES"] = cfg.stac.gpu  # Use GPU 1
+    # os.environ["CUDA_VISIBLE_DEVICES"] = cfg.stac.gpu  # Use GPU 1
     # Choose parent directory as base path to make relative pathing easier
     stac_cfg = cfg.stac
     model_cfg = cfg.model
