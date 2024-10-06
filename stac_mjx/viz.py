@@ -42,19 +42,28 @@ def viz_stac(
     xml_path = base_path / cfg.model.MJCF_PATH
 
     # Load data
-    if data_path.suffix == ".h5":
-        data = ioh5.load(data_path)
-        qposes = np.array(data["qpos"])
-        kp_data = np.array(data["kp_data"])
-        kp_names = data["kp_names"]
-        offsets = data["offsets"]
-    else:
-        with open(data_path, "rb") as file:
-            d = pickle.load(file)
-            qposes = np.array(d["qpos"])
-            kp_data = np.array(d["kp_data"])
-            kp_names = d["kp_names"]
-            offsets = d["offsets"]
+    with open(data_path, "rb") as file:
+        d = pickle.load(file)
+        qposes = np.array(d["qpos"])
+        kp_data = np.array(d["kp_data"])
+        kp_names = d["kp_names"]
+        offsets = d["offsets"]
+
+
+    # FLY_MODEL:
+    # if data_path.suffix == ".h5":
+    #     data = ioh5.load(data_path)
+    #     qposes = np.array(data["qpos"])
+    #     kp_data = np.array(data["kp_data"])
+    #     kp_names = data["kp_names"]
+    #     offsets = data["offsets"]
+    # else:
+    #     with open(data_path, "rb") as file:
+    #         d = pickle.load(file)
+    #         qposes = np.array(d["qpos"])
+    #         kp_data = np.array(d["kp_data"])
+    #         kp_names = d["kp_names"]
+    #         offsets = d["offsets"]
 
     # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually

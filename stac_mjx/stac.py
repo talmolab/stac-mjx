@@ -401,16 +401,31 @@ class Stac:
 
         data.update(
             {
-                "qpos": np.array(q),
-                "xpos": np.array(x),
+                "qpos": q,
+                "xpos": x,
                 "walker_body_sites": walker_body_sites,
-                "offsets": np.array(offsets),
+                "offsets": offsets,
                 "names_qpos": self._part_names,
                 "names_xpos": self._body_names,
-                "kp_data": np.copy(kp_data),
+                "kp_data": jp.copy(kp_data),
                 "kp_names": self._kp_names,
             }
         )
+
+        ## FLY_MODEL - type errors in h5 file
+        # data.update(
+        #     {
+        #         "qpos": np.array(q),
+        #         "xpos": np.array(x),
+        #         "walker_body_sites": walker_body_sites,
+        #         "offsets": np.array(offsets),
+        #         "names_qpos": self._part_names,
+        #         "names_xpos": self._body_names,
+        #         "kp_data": np.copy(kp_data),
+        #         "kp_names": self._kp_names,
+        #     }
+        # )
+
 
         return data
 

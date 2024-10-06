@@ -85,9 +85,7 @@ def run_stac(
     logging.info("Running ik_only()")
     with open(fit_path, "rb") as file:
         fit_data = pickle.load(file)
-    # logging.info("Running ik_only()")
-    # fit_data = utils.load_stac_ik_only(fit_path)
-
+        
     offsets = fit_data["offsets"]
 
     logging.info(f"kp_data shape: {kp_data.shape}")
