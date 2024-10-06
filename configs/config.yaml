@@ -1,4 +1,10 @@
 defaults:
-  - stac: stac_fly_tethered
-  - model: fly_tethered
+  - stac: demo
+  - model: rodent
   - _self_
+
+  #FLY_MODEL
+  # defaults:
+  # - stac: demo
+  # - model: rodent
+  # - _self_

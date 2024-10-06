@@ -13,17 +13,7 @@ import h5py
 from pathlib import Path
 from omegaconf import DictConfig
 from jax.lib import xla_bridge
-import os
 import stac_mjx.io_dict_to_hdf5 as ioh5
-
-
-def enable_xla_flags():
-    """Enable XLA Flags for faster runtime on Nvidia GPUs."""
-    if xla_bridge.get_backend().platform == "gpu":
-        os.environ["XLA_FLAGS"] = (
-            "--xla_gpu_enable_triton_softmax_fusion=true "
-            "--xla_gpu_triton_gemm_any=True "
-        )
 
 
 def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
@@ -189,7 +179,7 @@ def _load_params(param_path):
     return params
 
 
-# Fly model -- decide to keep or not!
+# FLY_MODEL: decide to keep or not!
 # def load_stac_ik_only(save_path):
 #     _, file_extension = os.path.splitext(save_path)
 #     if file_extension == ".p":
