@@ -1,6 +1,11 @@
-fit_path: "fit_tethered.p"
-transform_path: "transform_tethered.p"
+fit_path: "fit.p"
+ik_only_path: "ik_only.p"
 data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
+
+## FLY_MODEL
+# fit_path: "fit_tethered.p"
+# transform_path: "transform_tethered.p"
+# data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
 
 n_fit_frames: 601
 skip_fit: False
