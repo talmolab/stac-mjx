@@ -18,6 +18,7 @@ def viz_stac(
     height: int = 1200,
     width: int = 1920,
     base_path=None,
+    show_marker_error=False,
 ):
     """Render forward kinematics from keypoint positions.
 
@@ -61,4 +62,5 @@ def viz_stac(
         camera,
         height,
         width,
+        show_marker_error,
     )
