@@ -412,7 +412,7 @@ class Stac:
             }
         )
 
-        ## FLY_MODEL - type errors in h5 file
+        ##FLY_MODEL - type errors in h5 file
         # data.update(
         #     {
         #         "qpos": np.array(q),

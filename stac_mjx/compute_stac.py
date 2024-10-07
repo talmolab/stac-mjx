@@ -51,7 +51,7 @@ def root_optimization(
     # rodent.xml, corresponding to the index of 'SpineL' keypoint.
     # For the mouse model this should be 3*5, corresponding 'Trunk'
     root_kp_idx = 3 * 18
-    # FLY_MODEL: 
+    #FLY_MODEL: 
     # root_kp_idx = 0
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
     # q0.at[:3].set(jp.zeros(3))

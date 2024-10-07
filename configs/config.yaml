@@ -3,7 +3,7 @@ defaults:
   - model: rodent
   - _self_
 
-# #FLY_MODEL
+##FLY_MODEL
 # defaults:
 # - stac: stac_fly_tethered
 # - model: fly_tethered

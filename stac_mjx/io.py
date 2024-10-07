@@ -178,7 +178,7 @@ def _load_params(param_path):
     return params
 
 
-# FLY_MODEL: decide to keep or not!
+#FLY_MODEL: decide to keep or not!
 # def load_stac_ik_only(save_path):
 #     _, file_extension = os.path.splitext(save_path)
 #     if file_extension == ".p":
@@ -192,7 +192,7 @@ def _load_params(param_path):
 def save(fit_data, save_path: Text):
     """Save data.
 
-    Save data as .p or h5 file.
+    Save data as .p or .h5 file.
 
     Args:
         fit_data (numpy array): Data to write out.
