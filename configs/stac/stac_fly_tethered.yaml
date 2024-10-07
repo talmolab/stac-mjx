@@ -1,0 +1,18 @@
+fit_path: "Fruitfly_fit.p"
+transform_path: "transform_mocap_fly.h5"
+# This data is unpublished, need to speak to Elliot Abe about how to obtain it.
+# A possible source is https://datadryad.org/stash/dataset/doi:10.5061/dryad.nzs7h44s4
+# See the discussion here for more info: 
+# https://github.com/talmolab/stac-mjx/pull/70#discussion_r1789355185
+
+data_path: "tests/data/bout_dict.h5"
+gpu: '0'
+
+n_fit_frames: 601
+skip_fit: True
+skip_transform: False
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

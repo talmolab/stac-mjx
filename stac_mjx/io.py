@@ -12,11 +12,11 @@ from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
 from pathlib import Path
 from omegaconf import DictConfig
-import os
+import stac_mjx.io_dict_to_hdf5 as ioh5
 
 
 def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
-    """Main mocap data file loader interface.
+    """Load mocap data based on file type.
 
     Loads mocap file based on filetype, and returns the data flattened
     for immediate consumption by stac_mjx algorithm.
@@ -86,7 +86,7 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
 
 
 def load_dannce(filename, names_filename=None):
-    """Loads mocap data from .mat file.
+    """Load mocap data from .mat file.
 
     .mat file is presumed to be constructed by dannce:
     (https://github.com/spoonsso/dannce). In particular this means it relies on
@@ -105,7 +105,7 @@ def load_dannce(filename, names_filename=None):
 
 
 def load_nwb(filename):
-    """Loads mocap data from .nwb file.
+    """Load mocap data from .nwb file.
 
     Data is presumed [num frames, num keypoints, xyz].
     """
@@ -143,7 +143,7 @@ def load_h5(filename):
 
 
 def _check_keys(dict):
-    """Checks if entries in dictionary are mat-objects.
+    """Check if entries in dictionary are mat-objects.
 
     Mat-objects are changed to nested dictionaries.
     """
@@ -178,10 +178,21 @@ def _load_params(param_path):
     return params
 
 
+# FLY_MODEL: decide to keep or not!
+# def load_stac_ik_only(save_path):
+#     _, file_extension = os.path.splitext(save_path)
+#     if file_extension == ".p":
+#         with open(save_path, "rb") as file:
+#             fit_data = pickle.load(file)
+#     elif file_extension == ".h5":
+#         fit_data = ioh5.load(save_path)
+#     return fit_data
+
+
 def save(fit_data, save_path: Text):
     """Save data.
 
-    Save data as .p
+    Save data as .p or .h5 file.
 
     Args:
         fit_data (numpy array): Data to write out.
@@ -193,6 +204,8 @@ def save(fit_data, save_path: Text):
     if file_extension == ".p":
         with open(save_path, "wb") as output_file:
             pickle.dump(fit_data, output_file, protocol=2)
+    elif file_extension == ".h5":
+        ioh5.save(save_path, fit_data)
     else:
         with open(save_path + ".p", "wb") as output_file:
             pickle.dump(fit_data, output_file, protocol=2)

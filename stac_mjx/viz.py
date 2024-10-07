@@ -7,6 +7,9 @@ from stac_mjx.stac import Stac
 from omegaconf import DictConfig
 from typing import Union, Dict
 
+# FLY_MODEL
+# import stac_mjx.io_dict_to_hdf5 as ioh5
+
 
 def viz_stac(
     data_path: Union[Path, str],
@@ -48,6 +51,21 @@ def viz_stac(
         kp_data = np.array(d["kp_data"])
         kp_names = d["kp_names"]
         offsets = d["offsets"]
+
+    # FLY_MODEL
+    # if data_path.suffix == ".h5":
+    #     data = ioh5.load(data_path)
+    #     qposes = np.array(data["qpos"])
+    #     kp_data = np.array(data["kp_data"])
+    #     kp_names = data["kp_names"]
+    #     offsets = data["offsets"]
+    # else:
+    #     with open(data_path, "rb") as file:
+    #         d = pickle.load(file)
+    #         qposes = np.array(d["qpos"])
+    #         kp_data = np.array(d["kp_data"])
+    #         kp_names = d["kp_names"]
+    #         offsets = d["offsets"]
 
     # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
