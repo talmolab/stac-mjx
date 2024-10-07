@@ -54,7 +54,6 @@ def root_optimization(
     # FLY_MODEL:
     # root_kp_idx = 0
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
-    # q0.at[:3].set(jp.zeros(3))
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
