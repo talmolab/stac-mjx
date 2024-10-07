@@ -1,4 +1,4 @@
-#FLY_MODEL: so far used only by the fly, awaiting explanation from Elliot
+# FLY_MODEL: so far used only by the fly, awaiting explanation from Elliot
 
 import os
 

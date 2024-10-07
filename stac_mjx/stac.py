@@ -426,7 +426,6 @@ class Stac:
         #     }
         # )
 
-
         return data
 
     def _create_keypoint_sites(self):

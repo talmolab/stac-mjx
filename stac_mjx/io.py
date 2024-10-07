@@ -178,7 +178,7 @@ def _load_params(param_path):
     return params
 
 
-#FLY_MODEL: decide to keep or not!
+# FLY_MODEL: decide to keep or not!
 # def load_stac_ik_only(save_path):
 #     _, file_extension = os.path.splitext(save_path)
 #     if file_extension == ".p":

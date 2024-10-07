@@ -6,7 +6,8 @@ import h5py
 
 # import os
 
-#FLY_MODEL - consider if this file needs to be kept or not.
+
+# FLY_MODEL - consider if this file needs to be kept or not.
 def save(filename, dic):
     """Saves python dict.
 

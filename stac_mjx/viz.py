@@ -6,8 +6,9 @@ from pathlib import Path
 from stac_mjx.stac import Stac
 from omegaconf import DictConfig
 from typing import Union, Dict
-#FLY_MODEL
-#import stac_mjx.io_dict_to_hdf5 as ioh5
+
+# FLY_MODEL
+# import stac_mjx.io_dict_to_hdf5 as ioh5
 
 
 def viz_stac(
@@ -50,8 +51,7 @@ def viz_stac(
         kp_names = d["kp_names"]
         offsets = d["offsets"]
 
-
-    #FLY_MODEL
+    # FLY_MODEL
     # if data_path.suffix == ".h5":
     #     data = ioh5.load(data_path)
     #     qposes = np.array(data["qpos"])
