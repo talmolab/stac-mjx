@@ -77,10 +77,10 @@ def run_stac(
         logging.info("skipping ik_only()")
         return fit_path, None
     # FLY_MODEL: The elif below must be commented out for fly_model.
-    elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
-        raise ValueError(
-            f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
-        )
+    # elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
+    #     raise ValueError(
+    #         f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
+    #     )
 
     logging.info("Running ik_only()")
     with open(fit_path, "rb") as file:
