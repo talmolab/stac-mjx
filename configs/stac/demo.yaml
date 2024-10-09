@@ -4,7 +4,7 @@ data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
 
 n_fit_frames: 1
 skip_fit_offsets: False
-ik_only: True
+skip_ik_only: False
 
 mujoco:
   solver: "newton"
