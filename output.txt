@@ -1,0 +1,242 @@
+nohup: ignoring input
+[2024-10-09 14:12:38,762][root][INFO] - cfg: stac:
+  fit_path: demo_fit.p
+  ik_only_path: demo_ik_only.p
+  data_path: tests/data/test_rodent_mocap_1000_frames.mat
+  n_fit_frames: 1
+  skip_fit_offsets: false
+  skip_ik_only: false
+  mujoco:
+    solver: newton
+    iterations: 1
+    ls_iterations: 4
+model:
+  MJCF_PATH: models/rodent.xml
+  N_FRAMES_PER_CLIP: 1
+  FTOL: 0.005
+  ROOT_FTOL: 1.0e-05
+  LIMB_FTOL: 1.0e-06
+  N_ITERS: 1
+  KP_NAMES:
+  - Snout
+  - EarL
+  - EarR
+  - SpineF
+  - SpineM
+  - SpineL
+  - TailBase
+  - ShoulderL
+  - ElbowL
+  - WristL
+  - HandL
+  - ShoulderR
+  - ElbowR
+  - WristR
+  - HandR
+  - HipL
+  - KneeL
+  - AnkleL
+  - FootL
+  - HipR
+  - KneeR
+  - AnkleR
+  - FootR
+  KEYPOINT_MODEL_PAIRS:
+    AnkleL: lower_leg_L
+    AnkleR: lower_leg_R
+    EarL: skull
+    EarR: skull
+    ElbowL: upper_arm_L
+    ElbowR: upper_arm_R
+    FootL: foot_L
+    FootR: foot_R
+    HandL: hand_L
+    HandR: hand_R
+    HipL: pelvis
+    HipR: pelvis
+    KneeL: upper_leg_L
+    KneeR: upper_leg_R
+    ShoulderL: scapula_L
+    ShoulderR: scapula_R
+    Snout: skull
+    SpineF: vertebra_cervical_5
+    SpineL: pelvis
+    SpineM: vertebra_1
+    TailBase: pelvis
+    WristL: lower_arm_L
+    WristR: lower_arm_R
+  KEYPOINT_INITIAL_OFFSETS:
+    AnkleL: -0.03230154033783406 -0.004727054683585472 -0.02205958852339887
+    AnkleR: -0.03230154033783406 0.004727054683585472 -0.02205958852339887
+    EarL: 0. 0. 0.
+    EarR: 0. 0. 0.
+    ElbowL: -0.01593120836133218 0.01035528543486592 -0.02230369170586505
+    ElbowR: -0.01593120836133218 -0.01035528543486592 -0.02230369170586505
+    FootL: 0.02109994311367263 0.007614327297542731 -0.002752166493087734
+    FootR: 0.02109994311367263 -0.007614327297542731 -0.002752166493087734
+    HandL: 0.003031746915839468 0.001515873457919734 -0.008337304018558537
+    HandR: 0.003031746915839468 -0.001515873457919734 -0.008337304018558537
+    HipL: -0.015 0.015 0.
+    HipR: -0.015 -0.015 0.
+    KneeL: 0.01542264534586861 0.01747899805865108 -0.02570440890978101
+    KneeR: 0.01542264534586861 -0.01747899805865108 -0.02570440890978101
+    ShoulderL: 0.0287 0.00984 -0.02542
+    ShoulderR: 0.0287 -0.00984 -0.02542
+    Snout: 0. 0. 0.
+    SpineF: -0.015 0. 0.0
+    SpineL: 0. 0. 0.0
+    SpineM: 0. 0. 0.0
+    TailBase: 0. 0. 0.
+    WristL: 0. 0. 0.0
+    WristR: 0. 0. 0.0
+  TRUNK_OPTIMIZATION_KEYPOINTS:
+  - SpineF
+  - SpineL
+  - SpineM
+  - HipL
+  - HipR
+  - ShoulderL
+  - ShoulderR
+  - TailBase
+  INDIVIDUAL_PART_OPTIMIZATION:
+    r_leg:
+    - vertebra_1
+    - vertebra_2
+    - vertebra_3
+    - vertebra_4
+    - vertebra_5
+    - vertebra_6
+    - hip_R
+    - knee_R
+    - ankle_R
+    - foot_R
+    l_leg:
+    - vertebra_1
+    - vertebra_2
+    - vertebra_3
+    - vertebra_4
+    - vertebra_5
+    - vertebra_6
+    - hip_L
+    - knee_L
+    - ankle_L
+    - foot_L
+    r_arm:
+    - scapula_R
+    - shoulder_R
+    - elbow_R
+    - hand_R
+    - finger_R
+    l_arm:
+    - scapula_L
+    - shoulder_L
+    - elbow_L
+    - hand_L
+    - finger_L
+    head:
+    - atlas
+    - cervical
+    - atlant_extend
+  KEYPOINT_COLOR_PAIRS:
+    AnkleL: 0 0 .3 1
+    AnkleR: .3 0 0 1
+    EarL: 0 0 .8 1
+    EarR: .8 0 0 1
+    ElbowL: 0 0 .8 1
+    ElbowR: .8 0 0 1
+    FootL: 0 0 .3 1
+    FootR: .3 0 0 1
+    HandL: 0 0 .8 1
+    HandR: .8 0 0 1
+    HipL: 0 0 .3 1
+    HipR: .3 0 0 1
+    KneeL: 0 0 .3 1
+    KneeR: .3 0 0 1
+    ShoulderL: 0 0 .8 1
+    ShoulderR: .8 0 0 1
+    Snout: .8 .8 .8 1
+    SpineF: .8 .8 .8 1
+    SpineL: .8 .8 .8 1
+    SpineM: .8 .8 .8 1
+    TailBase: .8 .8 .8 1
+    WristL: 0 0 .8 1
+    WristR: .8 0 0 1
+  SCALE_FACTOR: 0.9
+  MOCAP_SCALE_FACTOR: 0.001
+  SITES_TO_REGULARIZE:
+  - HandL
+  - HandR
+  - SpineF
+  - SpineL
+  - SpineM
+  RENDER_FPS: 50
+  N_SAMPLE_FRAMES: 1
+  M_REG_COEF: 1
+
+[2024-10-09 14:12:39,137][root][INFO] - Running fit. Mocap data shape: (1, 69)
+/home/talmolab/miniconda3/envs/stac-mjx-env/lib/python3.11/site-packages/jaxopt/_src/optax_wrapper.py:120: DeprecationWarning: jax.tree_map is deprecated: use jax.tree.map (jax v0.4.25 or newer) or jax.tree_util.tree_map (any JAX version).
+  return jax.tree_map(update_fun, params, updates)
+Root Optimization:
+q_opt 1 finished in 78.56002998352051 with an error of 0.0007052402361296117
+Replace 1 finished in 11.590774774551392
+starting q_opt 2
+q_opt 2 finished in 0.0202178955078125 with an error of 0.0002560686261858791
+Replace 2 finished in 0.0022459030151367188
+Root optimization finished in 90.33078241348267
+Calibration iteration: 1/1
+Pose Optimization:
+Pose Optimization done in 0.7878398895263672
+Frame 1 done in 0.7609457969665527 with a final error of 0.0002281730412505567
+Mean: 0.0002281730412505567
+Standard deviation: 0.0
+starting offset optimization
+Begining offset optimization:
+Final error of 0.0009990008547902107
+offset optimization finished in 31.25155758857727
+Final pose optimization
+Pose Optimization:
+Pose Optimization done in 0.5810093879699707
+Frame 1 done in 0.5803053379058838 with a final error of 5.823266474180855e-05
+Mean: 5.823266474180855e-05
+Standard deviation: 0.0
+[2024-10-09 14:14:53,869][root][INFO] - saving data to /home/talmolab/code/stac-mjx-main/demo_fit.p
+[2024-10-09 14:14:53,870][root][INFO] - Running ik_only()
+[2024-10-09 14:14:53,871][root][INFO] - kp_data shape: (1000, 69)
+Error executing job with overrides: []
+Traceback (most recent call last):
+  File "/home/talmolab/code/stac-mjx-main/run_stac.py", line 26, in hydra_entry
+    load_and_run_stac(cfg)
+  File "/home/talmolab/code/stac-mjx-main/run_stac.py", line 13, in load_and_run_stac
+    fit_path, ik_only_path = stac_mjx.run_stac(cfg, kp_data, sorted_kp_names)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/code/stac-mjx-main/stac_mjx/main.py", line 91, in run_stac
+    ik_only_data = stac.ik_only(kp_data, offsets)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/code/stac-mjx-main/stac_mjx/stac.py", line 337, in ik_only
+    mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/code/stac-mjx-main/stac_mjx/stac.py", line 329, in mjx_setup
+    mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/code/stac-mjx-main/stac_mjx/op_utils.py", line 96, in set_site_pos
+    new_site_pos = mjx_model.site_pos.at[site_idxs].set(offsets)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/miniconda3/envs/stac-mjx-env/lib/python3.11/site-packages/jax/_src/numpy/array_methods.py", line 500, in set
+    return scatter._scatter_update(self.array, self.index, values, lax.scatter,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/miniconda3/envs/stac-mjx-env/lib/python3.11/site-packages/jax/_src/ops/scatter.py", line 76, in _scatter_update
+    return _scatter_impl(x, y, scatter_op, treedef, static_idx, dynamic_idx,
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/miniconda3/envs/stac-mjx-env/lib/python3.11/site-packages/jax/_src/ops/scatter.py", line 111, in _scatter_impl
+    y = jnp.broadcast_to(y, tuple(indexer.slice_shape))
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/miniconda3/envs/stac-mjx-env/lib/python3.11/site-packages/jax/_src/numpy/lax_numpy.py", line 2252, in broadcast_to
+    return util._broadcast_to(array, shape)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/talmolab/miniconda3/envs/stac-mjx-env/lib/python3.11/site-packages/jax/_src/numpy/util.py", line 429, in _broadcast_to
+    raise ValueError(msg.format(arr_shape, shape))
+ValueError: Incompatible shapes for broadcasting: (69,) and requested shape (23, 3)
+--------------------
+For simplicity, JAX has removed its internal frames from the traceback of the following exception. Set JAX_TRACEBACK_FILTERING=off to include these.
+
+Set the environment variable HYDRA_FULL_ERROR=1 for a complete stack trace.
