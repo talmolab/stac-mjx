@@ -1,10 +1,10 @@
-# defaults:
-#   - stac: demo
-#   - model: rodent
-#   - _self_
+defaults:
+- stac: demo
+- model: rodent
+- _self_
 
 #FLY_MODEL
-defaults:
-- stac: stac_fly_treadmill
-- model: fly_tethered
-- _self_
+#defaults:
+#- stac: stac_fly_treadmill
+#- model: fly_treadmill
+#- _self_

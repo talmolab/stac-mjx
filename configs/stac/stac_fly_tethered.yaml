@@ -9,8 +9,8 @@ data_path: "tests/data/bout_dict.h5"
 gpu: '0'
 
 n_fit_frames: 601
-skip_fit: True
-skip_transform: False
+skip_fit_offsets: True
+skip_ik_only: False
 
 mujoco:
   solver: "newton"

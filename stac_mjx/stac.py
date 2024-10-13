@@ -326,6 +326,7 @@ class Stac:
             mjx_model, mjx_data = op.mjx_load(mj_model)
 
             # Set the offsets.
+            print("offsets shape ", offsets.shape)
             mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)
 
             # forward is used to calculate xpos and such
@@ -390,8 +391,10 @@ class Stac:
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:
-            offsets = self._offsets
+            offsets = self._offsets.reshape((-1,3))
+            print("offsets new shape ", offsets.shape)
 
+        print("_package_data offsets", offsets.shape)
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
         data = {}

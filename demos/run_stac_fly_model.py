@@ -31,9 +31,12 @@ def parse_hydra_config(cfg: DictConfig):
     kp_names = ["head", "thorax", "abdomen", "r1", "r2", "r3", "l1", "l2", "l3"]
     coords = ["_x", "_y", "_z"]
     df_names = [kp + coord for kp in kp_names for coord in coords]
+    print("df_names", df_names)
+    print("treadmill data", tredmill_data)
     kp_data_all = tredmill_data[df_names].values
     sorted_kp_names = kp_names
     kp_data = model_cfg["MOCAP_SCALE_FACTOR"] * kp_data_all.copy()
+    print("kp_data size ", kp_data.shape)
 
     # import stac_mjx.io_dict_to_hdf5 as ioh5
     # data_path = base_path / stac_cfg.data_path
@@ -47,12 +50,12 @@ def parse_hydra_config(cfg: DictConfig):
     # kp_data = jp.concatenate(xpos_all, axis=0)
     # kp_data = kp_data * model_cfg['MOCAP_SCALE_FACTOR']
 
-    fit_path, transform_path = stac_mjx.run_stac(
+    fit_path, ik_only_path = stac_mjx.run_stac(
         cfg, kp_data, sorted_kp_names, base_path=base_path
     )
 
     # set args
-    data_path = base_path / cfg.stac["transform_path"]
+    data_path = base_path / cfg.stac["ik_only_path"]
     n_frames = 601
     save_path = base_path / "videos/direct_render_tether.mp4"
 

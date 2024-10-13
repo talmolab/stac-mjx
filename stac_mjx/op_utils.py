@@ -93,6 +93,7 @@ def set_site_pos(mjx_model: mjx.Model, offsets, site_idxs: jp.ndarray):
     Returns:
         mjx_model: Resulting mjx.Model
     """
+    print("site_idxs shape", site_idxs.shape)
     new_site_pos = mjx_model.site_pos.at[site_idxs].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
