@@ -390,7 +390,7 @@ class Stac:
             x = x.reshape(-1, x.shape[-1])
             q = q.reshape(-1, q.shape[-1])
         else:
-            offsets = self._offsets
+            offsets = self._offsets.reshape((-1,3))
 
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
