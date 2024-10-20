@@ -56,7 +56,7 @@ def run_stac(
     start_time = time.time()
 
     # Getting paths
-    fit_path = base_path / cfg.stac.fit_path
+    fit_offsets_path = base_path / cfg.stac.fit_offsets_path
     ik_only_path = base_path / cfg.stac.ik_only_path
 
     xml_path = base_path / cfg.model.MJCF_PATH
@@ -69,13 +69,13 @@ def run_stac(
         logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
         fit_data = stac.fit_offsets(fit_data)
 
-        logging.info(f"saving data to {fit_path}")
-        io.save(fit_data, fit_path)
+        logging.info(f"saving data to {fit_offsets_path}")
+        io.save(fit_data, fit_offsets_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
         logging.info("skipping ik_only()")
-        return fit_path, None
+        return fit_offsets_path, None
     # FLY_MODEL: The elif below must be commented out for fly_model.
     elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
         raise ValueError(
@@ -83,7 +83,7 @@ def run_stac(
         )
 
     logging.info("Running ik_only()")
-    with open(fit_path, "rb") as file:
+    with open(fit_offsets_path, "rb") as file:
         fit_data = pickle.load(file)
     offsets = fit_data["offsets"]
 
@@ -95,4 +95,4 @@ def run_stac(
     )
     io.save(ik_only_data, ik_only_path)
 
-    return fit_path, ik_only_path
+    return fit_offsets_path, ik_only_path
