@@ -102,6 +102,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
       
       # Test probably delete this
-      - name: Test run
+      - name: Smoke Test
         shell: bash -l {0}
         run: python run_stac.py
