@@ -100,3 +100,6 @@ jobs:
           fail_ci_if_error: true
           verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
+  
+  # Run stac-mjx
+  python run-stac.py
