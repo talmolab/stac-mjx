@@ -1,0 +1,58 @@
+
+MJCF_PATH: 'models/synth_model.xml'
+
+# Frames per clip for transform.
+N_FRAMES_PER_CLIP: 1
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 5.0e-03
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 1
+
+KP_NAMES: 
+  - 'part_0'
+
+# The model sites used to register the keypoints.
+KEYPOINT_MODEL_PAIRS:
+  part_0: base
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  part_0: 0 0 0.01
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+  -part_0
+  
+INDIVIDUAL_PART_OPTIMIZATION: 
+  "T1R": ["base", "base"]
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  base: 0 .5 1 1
+  
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: 1
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using this with M_REG_COEF. 
+SITES_TO_REGULARIZE: 
+  - part_0
+
+RENDER_FPS: 200
+
+N_SAMPLE_FRAMES: 1
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
+
+TIME_BINS: 0.02
