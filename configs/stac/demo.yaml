@@ -7,7 +7,7 @@ data_path: "tests/data/save_data_AVG_2.nwb"
 
 n_fit_frames: 1
 skip_fit_offsets: False
-skip_ik_only: True
+ik_only: False
 
 mujoco:
   solver: "newton"
