@@ -1,10 +1,10 @@
-fit_path: "synth_fit.p"
+fit_offsets_path: "synth_fit.p"
 ik_only_path: "synth_ik_only.p"
 data_path: "tests/data/save_data_AVG_2.nwb"
 
 n_fit_frames: 1
 skip_fit_offsets: False
-ik_only: False
+skip_ik_only: False
 
 mujoco:
   solver: "newton"
