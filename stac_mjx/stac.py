@@ -113,7 +113,7 @@ class Stac:
                 [any(part in name for part in parts) for name in self._part_names]
             )
 
-        if self.cfg.model.INDIVIDUAL_PART_OPTIMIZATION is None:
+        if "INDIVIDUAL_PART_OPTIMIZATION" not in self.cfg.model:
             indiv_parts = []
         else:
             indiv_parts = jp.array(

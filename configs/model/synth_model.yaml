@@ -14,7 +14,7 @@ LIMB_FTOL: 1.0e-06
 N_ITERS: 1
 
 KP_NAMES: 
-  - 'part_0'
+  - part_0
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
@@ -27,8 +27,8 @@ KEYPOINT_INITIAL_OFFSETS:
 TRUNK_OPTIMIZATION_KEYPOINTS:
   -part_0
   
-INDIVIDUAL_PART_OPTIMIZATION: 
-  "T1R": ["base", "base"]
+INDIVIDUAL_PART_OPTIMIZATION:
+  model_base: [base]
 
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
