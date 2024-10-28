@@ -25,7 +25,7 @@ KEYPOINT_INITIAL_OFFSETS:
   part_0: 0 0 0.01
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
-  -part_0
+  - part_0
   
 INDIVIDUAL_PART_OPTIMIZATION:
   model_base: [base]
