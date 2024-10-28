@@ -54,5 +54,3 @@ N_SAMPLE_FRAMES: 1
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
 M_REG_COEF: 1
-
-TIME_BINS: 0.02
