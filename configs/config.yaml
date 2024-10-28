@@ -1,6 +1,6 @@
 defaults:
   - stac: demo
-  - model: synth
+  - model: synth_model
   - _self_
 
 ##FLY_MODEL
