@@ -16,6 +16,6 @@ skip_ik_only: True
 #skip_ik_only: False
 
 mujoco:
-  solver: "newton"
+  solver: newton
   iterations: 1
   ls_iterations: 4
