@@ -50,6 +50,8 @@ KEYPOINT_INITIAL_OFFSETS:
   l3: 0. 0. 0.
   r3: 0. 0. 0.
 
+ROOT_OPTIMIZATION_KEYPOINT: head
+
 TRUNK_OPTIMIZATION_KEYPOINTS: 
   - 'head'
   - 'thorax'

@@ -1,12 +1,12 @@
-fit_offsets_path: "synth_fit.p"
-ik_only_path: "synth_ik_only.p"
-data_path: "tests/data/save_data_AVG_2.nwb"
+fit_offsets_path: "demo_fit.p"
+ik_only_path: "demo_ik_only.p"
+data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
 
 n_fit_frames: 1
 skip_fit_offsets: False
-skip_ik_only: False
+skip_ik_only: True
 
 mujoco:
-  solver: newton
+  solver: "newton"
   iterations: 1
   ls_iterations: 4

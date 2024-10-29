@@ -34,7 +34,7 @@ INDIVIDUAL_PART_OPTIMIZATION:
 
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
-  base: 0 .5 1 1
+  part_0: 0 .5 1 1
   
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: 1
