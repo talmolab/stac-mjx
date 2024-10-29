@@ -16,6 +16,8 @@ N_ITERS: 1
 KP_NAMES: 
   - part_0
 
+ROOT_OPTIMIZATION_KEYPOINT: part_0
+
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
   part_0: base
