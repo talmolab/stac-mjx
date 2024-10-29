@@ -82,7 +82,9 @@ class Stac:
 
         if "ROOT_OPTIMIZATION_KEYPOINT" in self.cfg.model:
             print("fouind root opt key")
-            self._root_kp_idx = self._kp_names.index(self.cfg.model.ROOT_OPTIMIZATION_KEYPOINT)
+            self._root_kp_idx = self._kp_names.index(
+                self.cfg.model.ROOT_OPTIMIZATION_KEYPOINT
+            )
         else:
             print("NOOOO ROOT KP")
             self._root_kp_idx = -1
@@ -98,7 +100,7 @@ class Stac:
 
         self._indiv_parts = self.part_opt_setup()
 
-        # Generate boolean flags for keypoints included in trunk optimization. 
+        # Generate boolean flags for keypoints included in trunk optimization.
         self._trunk_kps = jp.array(
             [n in self.cfg.model.TRUNK_OPTIMIZATION_KEYPOINTS for n in kp_names],
         )
@@ -235,8 +237,10 @@ class Stac:
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
         if self._root_kp_idx == -1:
-            print("Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()")
-        elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE: 
+            print(
+                "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
+            )
+        elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
             mjx_data = compute_stac.root_optimization(
                 mjx_model,
                 mjx_data,
@@ -353,22 +357,24 @@ class Stac:
 
         # q_phase - root
         if self._root_kp_idx == -1:
-            print("Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()")
+            print(
+                "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
+            )
         elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
-                vmap_root_opt = jax.vmap(
-                    compute_stac.root_optimization,
-                    in_axes=(0, 0, 0, None, None, None, None, None),
-                )
-                mjx_data = vmap_root_opt(
-                    mjx_model,
-                    mjx_data,
-                    batched_kp_data,
-                    self._root_kp_idx,
-                    self._lb,
-                    self._ub,
-                    self._body_site_idxs,
-                    self._trunk_kps,
-                )
+            vmap_root_opt = jax.vmap(
+                compute_stac.root_optimization,
+                in_axes=(0, 0, 0, None, None, None, None, None),
+            )
+            mjx_data = vmap_root_opt(
+                mjx_model,
+                mjx_data,
+                batched_kp_data,
+                self._root_kp_idx,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                self._trunk_kps,
+            )
 
         # q_phase - pose
         vmap_pose_opt = jax.vmap(

@@ -14,6 +14,7 @@ def root_optimization(
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
+    root_kp_idx: int,
     lb: jp.ndarray,
     ub: jp.ndarray,
     site_idxs: jp.ndarray,
@@ -50,7 +51,7 @@ def root_optimization(
     # necessarily exactly so. The value of 3*18 is chosen for the
     # rodent.xml, corresponding to the index of 'SpineL' keypoint.
     # For the mouse model this should be 3*5, corresponding 'Trunk'
-    root_kp_idx = 3 * 18
+    # root_kp_idx = 3 * 18
     # FLY_MODEL:
     # root_kp_idx = 0
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
