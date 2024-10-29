@@ -104,4 +104,4 @@ jobs:
       # Test probably delete this
       - name: Smoke Test
         shell: bash -l {0}
-        run: python run_stac.py
+        run: python run_stac.py --config-name config_synth_data.yaml
