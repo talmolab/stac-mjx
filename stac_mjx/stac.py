@@ -233,7 +233,7 @@ class Stac:
         # Skip root optimization if model is fixed (no free joint at root)
         if self._root_kp_idx == -1:
             print(
-                "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
+                "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
             )
         elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
             mjx_data = compute_stac.root_optimization(

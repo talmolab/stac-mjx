@@ -101,7 +101,7 @@ jobs:
           verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
       
-      # Test probably delete this
+      # Smoke test. Shows end to end run with out crashing.
       - name: Smoke Test
         shell: bash -l {0}
         run: python run_stac.py --config-name config_synth_data.yaml
