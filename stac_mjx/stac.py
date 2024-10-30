@@ -87,9 +87,6 @@ class Stac:
         else:
             self._root_kp_idx = -1
 
-        print(self.cfg.model.keys())
-        print("Using root_kp_idx = ", self._root_kp_idx)
-
         # Set up bounds and part_names based on joint ranges, taking into account the dimensionality of parameters
         joint_names = [self._mj_model.joint(i).name for i in range(self._mj_model.njnt)]
         self._lb, self._ub, self._part_names = _align_joint_dims(
