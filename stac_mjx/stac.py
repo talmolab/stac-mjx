@@ -81,12 +81,10 @@ class Stac:
         ]
 
         if "ROOT_OPTIMIZATION_KEYPOINT" in self.cfg.model:
-            print("fouind root opt key")
             self._root_kp_idx = self._kp_names.index(
                 self.cfg.model.ROOT_OPTIMIZATION_KEYPOINT
             )
         else:
-            print("NOOOO ROOT KP")
             self._root_kp_idx = -1
 
         print(self.cfg.model.keys())

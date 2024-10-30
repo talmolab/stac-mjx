@@ -67,7 +67,6 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
             f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
         )
 
-    print("kpnames ", kp_names)
     model_inds = [
         kp_names.index(src) for src, dst in cfg.model.KEYPOINT_MODEL_PAIRS.items()
     ]

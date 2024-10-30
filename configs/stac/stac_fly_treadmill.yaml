@@ -3,7 +3,7 @@ ik_only_path: "transform_treadmill.p"
 # File is too large to commit
 # DL from: https://datadryad.org/stash/dataset/doi:10.5061/dryad.mpg4f4r73
 # Actual file: https://datadryad.org/stash/downloads/file_stream/3361804
-data_path: "/tests/data/wt_berlin_linear_treadmill_dataset.csv"
+data_path: "../tests/data/wt_berlin_linear_treadmill_dataset.csv"
 
 n_fit_frames: 1800
 skip_fit: False
