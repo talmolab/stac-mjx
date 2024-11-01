@@ -1,5 +1,0 @@
-defaults:
-  - stac: stac_synth_data
-  - model: synth_data
-  - _self_
-

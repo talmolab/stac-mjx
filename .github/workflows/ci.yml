@@ -104,4 +104,4 @@ jobs:
       # Smoke test. Shows end to end run with out crashing.
       - name: Smoke Test
         shell: bash -l {0}
-        run: python run_stac.py --config-name config_synth_data.yaml
+        run: python run_stac.py stac=stac_synth_data model=synth_data
