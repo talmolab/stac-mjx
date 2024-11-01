@@ -8,7 +8,6 @@ N_FRAMES_PER_CLIP: 360
 # presumed to be derived from label3d:
 KP_NAMES_LABEL3D_PATH: "tests/data/rat23.mat"
 
-
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
   AnkleL: lower_leg_L
@@ -60,6 +59,8 @@ KEYPOINT_INITIAL_OFFSETS:
   TailBase: 0. 0. 0.
   WristL: 0. 0. 0.0
   WristR: 0. 0. 0.0
+
+ROOT_OPTIMIZATION_KEYPOINT: SpineL
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
   - "Spine"

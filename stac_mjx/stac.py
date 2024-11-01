@@ -80,15 +80,22 @@ class Stac:
             self._mj_model.body(i).name for i in range(self._mj_model.nbody)
         ]
 
-        joint_names = [self._mj_model.joint(i).name for i in range(self._mj_model.njnt)]
+        if "ROOT_OPTIMIZATION_KEYPOINT" in self.cfg.model:
+            self._root_kp_idx = self._kp_names.index(
+                self.cfg.model.ROOT_OPTIMIZATION_KEYPOINT
+            )
+        else:
+            self._root_kp_idx = -1
 
         # Set up bounds and part_names based on joint ranges, taking into account the dimensionality of parameters
+        joint_names = [self._mj_model.joint(i).name for i in range(self._mj_model.njnt)]
         self._lb, self._ub, self._part_names = _align_joint_dims(
             self._mj_model.jnt_type, self._mj_model.jnt_range, joint_names
         )
 
         self._indiv_parts = self.part_opt_setup()
 
+        # Generate boolean flags for keypoints included in trunk optimization.
         self._trunk_kps = jp.array(
             [n in self.cfg.model.TRUNK_OPTIMIZATION_KEYPOINTS for n in kp_names],
         )
@@ -113,7 +120,7 @@ class Stac:
                 [any(part in name for part in parts) for name in self._part_names]
             )
 
-        if self.cfg.model.INDIVIDUAL_PART_OPTIMIZATION is None:
+        if "INDIVIDUAL_PART_OPTIMIZATION" not in self.cfg.model:
             indiv_parts = []
         else:
             indiv_parts = jp.array(
@@ -224,11 +231,16 @@ class Stac:
 
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
-        if self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+        if self._root_kp_idx == -1:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
+            )
+        elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
             mjx_data = compute_stac.root_optimization(
                 mjx_model,
                 mjx_data,
                 kp_data,
+                self._root_kp_idx,
                 self._lb,
                 self._ub,
                 self._body_site_idxs,
@@ -339,15 +351,20 @@ class Stac:
         )
 
         # q_phase - root
-        if self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+        if self._root_kp_idx == -1:
+            print(
+                "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
+            )
+        elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
             vmap_root_opt = jax.vmap(
                 compute_stac.root_optimization,
-                in_axes=(0, 0, 0, None, None, None, None),
+                in_axes=(0, 0, 0, None, None, None, None, None),
             )
             mjx_data = vmap_root_opt(
                 mjx_model,
                 mjx_data,
                 batched_kp_data,
+                self._root_kp_idx,
                 self._lb,
                 self._ub,
                 self._body_site_idxs,

@@ -1,0 +1,12 @@
+fit_offsets_path: "synth_fit.p"
+ik_only_path: "synth_ik_only.p"
+data_path: "tests/data/test_synth_1_frames.nwb"
+
+n_fit_frames: 1
+skip_fit_offsets: False
+skip_ik_only: False
+
+mujoco:
+  solver: newton
+  iterations: 1
+  ls_iterations: 4
