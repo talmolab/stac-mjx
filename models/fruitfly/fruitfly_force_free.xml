@@ -1,9 +1,14 @@
 <mujoco model="fruitfly">
   <compiler autolimits="true" angle="radian"/>
 
-  <option gravity="0 0 -981" density="0.00128" viscosity="0.000185" cone="elliptic" noslip_iterations="3"/>
+  <!-- <option gravity="0 0 0" density="0.00128" viscosity="0.000185" cone="elliptic" noslip_iterations="3"/> -->
 
   <size njmax="300" nconmax="100" nkey="1"/>
+   <asset>
+    <!-- <skin name="skin" file="rodent_walker_skin.skn"/> -->
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+  </asset>
 
   <default>
     <mesh scale="0.1 0.1 0.1"/>
@@ -306,6 +311,8 @@
   </asset>
 
   <worldbody>
+    <geom name="floor" type="plane" size="5 5 .1" material="grid" pos="0 0 -1.437" solref="0.0002 1"/>
+    <!-- <replicate count="2" euler="0 0 180" sep="-"> -->
     <body name="thorax" childclass="body">
       <freejoint name="free"/>
       <light name="right" mode="trackcom" pos="0 -1 1" dir="0 1 -1" diffuse="0.3 0.3 0.3"/>
