@@ -27,7 +27,7 @@ def load_configs(config_dir: Union[Path, str]) -> DictConfig:
     # Initialize Hydra and set the config path
     with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name
-        cfg = hydra.compose(config_name="config")
+        cfg = hydra.compose(config_name="config_fly")
     return cfg
 
 

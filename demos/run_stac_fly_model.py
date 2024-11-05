@@ -2,7 +2,7 @@
 
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"  # Use GPU 1
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"  # Use GPU 1
 import stac_mjx
 from pathlib import Path
 from jax import numpy as jp
@@ -47,13 +47,13 @@ def parse_hydra_config(cfg: DictConfig):
     # kp_data = jp.concatenate(xpos_all, axis=0)
     # kp_data = kp_data * model_cfg['MOCAP_SCALE_FACTOR']
 
-    fit_path, transform_path = stac_mjx.run_stac(
+    fit_path, ik_only_path = stac_mjx.run_stac(
         cfg, kp_data, sorted_kp_names, base_path=base_path
     )
 
     # set args
-    data_path = base_path / cfg.stac["transform_path"]
-    n_frames = 601
+    data_path = base_path / cfg.stac["ik_only_path"]
+    n_frames = 999
     save_path = base_path / "videos/direct_render_tether.mp4"
 
     # Call mujoco_viz
@@ -68,7 +68,7 @@ def parse_hydra_config(cfg: DictConfig):
     )
 
     # Show the video in the notebook (it is also saved to the save_path)
-    media.show_video(frames, fps=model_cfg["RENDER_FPS"])
+    #media.show_video(frames, fps=model_cfg["RENDER_FPS"])
 
     print("Done!")
 

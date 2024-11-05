@@ -5,6 +5,6 @@ defaults:
 
 ##FLY_MODEL
 # defaults:
-# - stac: stac_fly_tethered
-# - model: fly_tethered
+# - stac: stac_fly_treadmill
+# - model: fly_treadmill
 # - _self_
