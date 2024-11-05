@@ -88,3 +88,9 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
    ```
    
 4. If the rendering is poor, it's likely that some hyperparameter tuning is necessary. (details WIP)
+
+# Run with Config:
+
+Configuration files can be mixed and matched via Hydra. For example, the fly model can be run with:
+
+python run_stac_fly_model.py --config-dir ../configs --config-name config_fly
