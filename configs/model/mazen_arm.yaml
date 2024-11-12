@@ -1,0 +1,70 @@
+MJCF_PATH: "models/mouse_arm.xml"
+
+# Frames per clip for ik_only.
+N_FRAMES_PER_CLIP: 250
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 5.0e-03
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+KP_NAMES: 
+  - 'ShoulderR' 
+  - 'ElbowR' 
+  - 'WristR' 
+
+# The model sites used to register the keypoints.
+KEYPOINT_MODEL_PAIRS:
+  ElbowR: upper_arm_R
+  WristR: wrist_R
+  ShoulderR: scapula_R
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  ElbowR: 0. 0. 0.0
+  ShoulderR: 0. 0. 0.0
+  WristR: 0. 0. 0.0
+
+ROOT_OPTIMIZATION_KEYPOINT: SpineL
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+  - "ShoulderR"
+  
+INDIVIDUAL_PART_OPTIMIZATION:
+  "r_arm": [
+    "shoulder_R",
+    "elbow_R",
+    "wrist_R"
+    ]
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  ElbowR: .8 0 0 1
+  ShoulderR: .8 0 0 1
+  WristR: .8 0 0 1
+
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: .9
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: .001
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using this with M_REG_COEF. 
+SITES_TO_REGULARIZE:
+- ElbowR
+- WristR
+
+RENDER_FPS: 50
+
+N_SAMPLE_FRAMES: 100
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 1
