@@ -79,7 +79,7 @@ def run_stac(
     # Run fit_offsets if not skipping
     if cfg.stac.skip_fit_offsets != 1:
         kps = kp_data[: cfg.stac.n_fit_frames]
-        logging.info(f"Running fit. Mocap data shape: {kps.shape}")
+        print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
         # Vmap this if multiple clips (only do this in ik_only?)
         # if cfg.stac.infer_qvels:
@@ -87,12 +87,12 @@ def run_stac(
         #         qpos_trajectory=fit_offsets_data["qpos"].reshape((1, -1))
         #     )
         #     fit_offsets_data["qvel"] = qvels
-        logging.info(f"saving data to {fit_offsets_path}")
+        print(f"saving data to {fit_offsets_path}")
         io.save(fit_offsets_data, fit_offsets_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
-        logging.info("skipping ik_only()")
+        print("skipping ik_only()")
         return fit_offsets_path, None
     # FLY_MODEL: The elif below must be commented out for fly_model.
     elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
@@ -100,7 +100,7 @@ def run_stac(
             f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
         )
 
-    logging.info("Running ik_only()")
+    print("Running ik_only()")
     with open(fit_offsets_path, "rb") as file:
         fit_offsets_data = pickle.load(file)
     offsets = fit_offsets_data["offsets"]
@@ -118,7 +118,7 @@ def run_stac(
         ik_only_data["qvel"] = qvels
         print(f"Finished compute velocity in {time.time() - t_vel}")
 
-    logging.info(
+    print(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
     io.save(ik_only_data, ik_only_path)
