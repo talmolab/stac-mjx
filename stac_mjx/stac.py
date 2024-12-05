@@ -12,9 +12,8 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 
-from stac_mjx import io as io
+from stac_mjx import utils
 from stac_mjx import compute_stac
-from stac_mjx import op_utils as op
 
 from omegaconf import OmegaConf, DictConfig
 from typing import List, Union
@@ -110,6 +109,7 @@ class Stac:
 
         # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
+        self._freejoint = bool(self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE)
 
     def part_opt_setup(self):
         """Set up the lists of indices for part optimization."""
@@ -218,12 +218,12 @@ class Stac:
             Dict: Output data packaged in a dictionary.
         """
         # Create mjx model and data
-        mjx_model, mjx_data = op.mjx_load(self._mj_model)
+        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
 
         # Get and set the offsets of the markers
-        self._offsets = jp.copy(op.get_site_pos(mjx_model, self._body_site_idxs))
+        self._offsets = jp.copy(utils.get_site_pos(mjx_model, self._body_site_idxs))
 
-        mjx_model = op.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
+        mjx_model = utils.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
 
         # Calculate initial xpos and such
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
@@ -235,7 +235,7 @@ class Stac:
             print(
                 "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
             )
-        elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+        elif self._freejoint:
             mjx_data = compute_stac.root_optimization(
                 mjx_model,
                 mjx_data,
@@ -249,7 +249,7 @@ class Stac:
 
         for n_iter in range(self.cfg.model.N_ITERS):
             print(f"Calibration iteration: {n_iter + 1}/{self.cfg.model.N_ITERS}")
-            mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+            mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
                 compute_stac.pose_optimization(
                     mjx_model,
                     mjx_data,
@@ -275,7 +275,7 @@ class Stac:
                 mjx_data,
                 kp_data,
                 self._offsets,
-                q,
+                qposes,
                 self.cfg.model.N_SAMPLE_FRAMES,
                 self._is_regularized,
                 self._body_site_idxs,
@@ -284,7 +284,7 @@ class Stac:
 
         # Optimize the pose for the whole sequence
         print("Final pose optimization")
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = (
+        mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
             compute_stac.pose_optimization(
                 mjx_model,
                 mjx_data,
@@ -303,7 +303,9 @@ class Stac:
         # Print the results
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
-        return self._package_data(mjx_model, q, x, walker_body_sites, kp_data)
+        return self._package_data(
+            mjx_model, qposes, xposes, xquats, marker_sites, kp_data
+        )
 
     def ik_only(self, kp_data, offsets):
         """Do only inverse kinematics (no fitting) on motion capture data.
@@ -323,7 +325,7 @@ class Stac:
         batched_kp_data = self._chunk_kp_data(kp_data)
 
         # Create mjx model and data
-        mjx_model, mjx_data = op.mjx_load(self._mj_model)
+        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
 
         def mjx_setup(kp_data, mj_model):
             """Create mjxmodel and mjxdata and set offet.
@@ -335,10 +337,10 @@ class Stac:
                 _type_: _description_
             """
             # Create mjx model and data
-            mjx_model, mjx_data = op.mjx_load(mj_model)
+            mjx_model, mjx_data = utils.mjx_load(mj_model)
 
             # Set the offsets.
-            mjx_model = op.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+            mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
 
             # forward is used to calculate xpos and such
             mjx_data = mjx.kinematics(mjx_model, mjx_data)
@@ -376,14 +378,16 @@ class Stac:
             compute_stac.pose_optimization,
             in_axes=(0, 0, 0, None, None, None, None),
         )
-        mjx_data, q, walker_body_sites, x, frame_time, frame_error = vmap_pose_opt(
-            mjx_model,
-            mjx_data,
-            batched_kp_data,
-            self._lb,
-            self._ub,
-            self._body_site_idxs,
-            self._indiv_parts,
+        mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
+            vmap_pose_opt(
+                mjx_model,
+                mjx_data,
+                batched_kp_data,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                self._indiv_parts,
+            )
         )
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
@@ -392,20 +396,29 @@ class Stac:
         print(f"Standard deviation: {std}")
 
         return self._package_data(
-            mjx_model, q, x, walker_body_sites, batched_kp_data, batched=True
+            mjx_model,
+            qposes,
+            xposes,
+            xquats,
+            marker_sites,
+            batched_kp_data,
+            batched=True,
         )
 
-    def _package_data(self, mjx_model, q, x, walker_body_sites, kp_data, batched=False):
-        """Extract pose, offsets, data, and all parameters.
+    def _package_data(
+        self, mjx_model, qposes, xposes, xquats, marker_sites, kp_data, batched=False
+    ):
+        """Extract pose, offsets, data, and all parameters. Infer qvel
 
-        walker_body_sites is the marker positions for each frame--the rodent model's kp_data equivalent
+        marker_sites is the marker positions for each frame--the rodent model's kp_data equivalent
         """
         if batched:
             # prepare batched data to be packaged
-            get_batch_offsets = jax.vmap(op.get_site_pos, in_axes=(0, None))
+            get_batch_offsets = jax.vmap(utils.get_site_pos, in_axes=(0, None))
             offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
-            x = x.reshape(-1, x.shape[-1])
-            q = q.reshape(-1, q.shape[-1])
+            qposes = qposes.reshape(-1, qposes.shape[-1])
+            xposes = xposes.reshape(-1, xposes.shape[-1])
+            xquats = xquats.reshape(-1, xquats.shape[-1])
         else:
             offsets = self._offsets.reshape((-1, 3))
 
@@ -418,30 +431,17 @@ class Stac:
 
         data.update(
             {
-                "qpos": q,
-                "xpos": x,
-                "walker_body_sites": walker_body_sites,
-                "offsets": offsets,
+                "qpos": qposes,
+                "xpos": xposes,
+                "xquat": xquats,
+                "marker_sites": marker_sites,
+                "offsets": np.array(offsets),
                 "names_qpos": self._part_names,
                 "names_xpos": self._body_names,
-                "kp_data": jp.copy(kp_data),
+                "kp_data": np.copy(kp_data),
                 "kp_names": self._kp_names,
             }
         )
-
-        ##FLY_MODEL - type errors in h5 file
-        # data.update(
-        #     {
-        #         "qpos": np.array(q),
-        #         "xpos": np.array(x),
-        #         "walker_body_sites": walker_body_sites,
-        #         "offsets": np.array(offsets),
-        #         "names_qpos": self._part_names,
-        #         "names_xpos": self._body_names,
-        #         "kp_data": np.copy(kp_data),
-        #         "kp_names": self._kp_names,
-        #     }
-        # )
 
         return data
 

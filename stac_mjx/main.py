@@ -1,5 +1,6 @@
 """User-level API to run stac."""
 
+import jax
 from jax import numpy as jp
 
 import pickle
@@ -8,11 +9,12 @@ import logging
 from omegaconf import DictConfig, OmegaConf
 
 from stac_mjx import io
-from stac_mjx import op_utils
+from stac_mjx import utils
 from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
 import hydra
+from functools import partial
 
 
 def load_configs(config_dir: Union[Path, str]) -> DictConfig:
@@ -51,7 +53,7 @@ def run_stac(
     if base_path is None:
         base_path = Path.cwd()
 
-    op_utils.enable_xla_flags()
+    utils.enable_xla_flags()
 
     start_time = time.time()
 
@@ -63,14 +65,28 @@ def run_stac(
 
     stac = Stac(xml_path, cfg, kp_names)
 
+    # Initialize function to infer velocity from kinematics
+    vmap_compute_velocity = jax.vmap(
+        partial(
+            utils.compute_velocity_from_kinematics,
+            dt=stac._mj_model.opt.timestep,
+            freejoint=stac._freejoint,
+        )
+    )
+
     # Run fit_offsets if not skipping
     if cfg.stac.skip_fit_offsets != 1:
-        fit_data = kp_data[: cfg.stac.n_fit_frames]
-        logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
-        fit_data = stac.fit_offsets(fit_data)
-
+        kps = kp_data[: cfg.stac.n_fit_frames]
+        logging.info(f"Running fit. Mocap data shape: {kps.shape}")
+        fit_offsets_data = stac.fit_offsets(kps)
+        # Vmap this if multiple clips (only do this in ik_only?)
+        # if cfg.stac.infer_qvels:
+        #     qvels = vmap_compute_velocity(
+        #         qpos_trajectory=fit_offsets_data["qpos"].reshape((1, -1))
+        #     )
+        #     fit_offsets_data["qvel"] = qvels
         logging.info(f"saving data to {fit_offsets_path}")
-        io.save(fit_data, fit_offsets_path)
+        io.save(fit_offsets_data, fit_offsets_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
@@ -84,11 +100,17 @@ def run_stac(
 
     logging.info("Running ik_only()")
     with open(fit_offsets_path, "rb") as file:
-        fit_data = pickle.load(file)
-    offsets = fit_data["offsets"]
+        fit_offsets_data = pickle.load(file)
+    offsets = fit_offsets_data["offsets"]
 
     logging.info(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
+    # Vmap this if multiple clips
+    if cfg.stac.infer_qvels:
+        qvels = vmap_compute_velocity(
+            qpos_trajectory=ik_only_data["qpos"].reshape((cfg.stac.num_clips, -1))
+        )
+        ik_only_data["qvel"] = qvels
 
     logging.info(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
