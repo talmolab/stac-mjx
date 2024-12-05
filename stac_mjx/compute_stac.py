@@ -276,10 +276,10 @@ def pose_optimization(
     print(f"Pose Optimization done in {time.time()-s}")
     return (
         mjx_data,
-        np.array(qposes),
-        np.array(xposes),
-        np.array(xquats),
-        np.array(marker_sites),
-        np.array(frame_time),
-        np.array(frame_error),
+        jp.array(qposes),
+        xposes,
+        xquats,
+        marker_sites,
+        frame_time,
+        frame_error,
     )

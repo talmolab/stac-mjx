@@ -282,11 +282,10 @@ def compute_velocity_from_kinematics(
     Returns:
         jp.ndarray: Trajectory of velocities.
     """
-    qvel_translation = jp.array([])
-    qvel_gyro = jp.array([])
     qvel_joints = (qpos_trajectory[1:, 7:] - qpos_trajectory[:-1, 7:]) / dt
-
-    if freejoint:
+    if not freejoint:
+        return qvel_joints
+    else:
         qvel_translation = (qpos_trajectory[1:, :3] - qpos_trajectory[:-1, :3]) / dt
         qvel_gyro = []
         for t in range(qpos_trajectory.shape[0] - 1):
@@ -297,4 +296,5 @@ def compute_velocity_from_kinematics(
             angle = quat_to_axisangle(normed_diff)
             qvel_gyro.append(angle / dt)
         qvel_gyro = jp.stack(qvel_gyro)
-    return jp.concatenate([qvel_translation, qvel_gyro, qvel_joints], axis=1)
+
+        return jp.concatenate([qvel_translation, qvel_gyro, qvel_joints], axis=1)

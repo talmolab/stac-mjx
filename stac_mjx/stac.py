@@ -198,13 +198,13 @@ class Stac:
 
         return kp_data
 
-    def _get_error_stats(self, errors: jp.ndarray):
+    def _get_error_stats(self, errors: list):
         """Compute error stats."""
-        flattened_errors = errors.reshape(-1)
+        flattened_errors = np.array(errors).reshape(-1)
 
         # Calculate mean and standard deviation
-        mean = jp.mean(flattened_errors)
-        std = jp.std(flattened_errors)
+        mean = np.mean(flattened_errors)
+        std = np.std(flattened_errors)
 
         return flattened_errors, mean, std
 
@@ -304,7 +304,12 @@ class Stac:
         print(f"Mean: {mean}")
         print(f"Standard deviation: {std}")
         return self._package_data(
-            mjx_model, qposes, xposes, xquats, marker_sites, kp_data
+            mjx_model,
+            np.array(qposes),
+            np.array(xposes),
+            np.array(xquats),
+            np.array(marker_sites),
+            np.array(kp_data),
         )
 
     def ik_only(self, kp_data, offsets):
@@ -397,11 +402,11 @@ class Stac:
 
         return self._package_data(
             mjx_model,
-            qposes,
-            xposes,
-            xquats,
-            marker_sites,
-            batched_kp_data,
+            np.array(qposes),
+            np.array(xposes),
+            np.array(xquats),
+            np.array(marker_sites),
+            np.array(batched_kp_data),
             batched=True,
         )
 

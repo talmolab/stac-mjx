@@ -17,7 +17,9 @@ import hydra
 from functools import partial
 
 
-def load_configs(config_dir: Union[Path, str]) -> DictConfig:
+def load_configs(
+    config_dir: Union[Path, str], config_name: str = "config"
+) -> DictConfig:
     """Initializes configs with hydra.
 
     Args:
@@ -29,7 +31,7 @@ def load_configs(config_dir: Union[Path, str]) -> DictConfig:
     # Initialize Hydra and set the config path
     with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name
-        cfg = hydra.compose(config_name="config")
+        cfg = hydra.compose(config_name=config_name)
     return cfg
 
 
@@ -103,14 +105,18 @@ def run_stac(
         fit_offsets_data = pickle.load(file)
     offsets = fit_offsets_data["offsets"]
 
-    logging.info(f"kp_data shape: {kp_data.shape}")
+    print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
+    batched_qpos = ik_only_data["qpos"].reshape(
+        (cfg.stac.num_clips, kp_data.shape[0] // cfg.stac.num_clips, -1)
+    )
+    print(batched_qpos.shape, batched_qpos)
     # Vmap this if multiple clips
     if cfg.stac.infer_qvels:
-        qvels = vmap_compute_velocity(
-            qpos_trajectory=ik_only_data["qpos"].reshape((cfg.stac.num_clips, -1))
-        )
+        t_vel = time.time()
+        qvels = vmap_compute_velocity(qpos_trajectory=batched_qpos)
         ik_only_data["qvel"] = qvels
+        print(f"Finished compute velocity in {time.time() - t_vel}")
 
     logging.info(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
