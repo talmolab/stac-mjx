@@ -67,26 +67,32 @@ def run_stac(
 
     stac = Stac(xml_path, cfg, kp_names)
 
-    # Initialize function to infer velocity from kinematics
-    vmap_compute_velocity = jax.vmap(
-        partial(
-            utils.compute_velocity_from_kinematics,
-            dt=stac._mj_model.opt.timestep,
-            freejoint=stac._freejoint,
-        )
+    compute_velocity_fn = partial(
+        utils.compute_velocity_from_kinematics,
+        dt=stac._mj_model.opt.timestep,
+        freejoint=stac._freejoint,
     )
+    # Initialize function to infer velocity from kinematics
+    vmap_compute_velocity_fn = jax.vmap(compute_velocity_fn)
 
     # Run fit_offsets if not skipping
     if cfg.stac.skip_fit_offsets != 1:
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
-        # Vmap this if multiple clips (only do this in ik_only?)
-        # if cfg.stac.infer_qvels:
-        #     qvels = vmap_compute_velocity(
-        #         qpos_trajectory=fit_offsets_data["qpos"].reshape((1, -1))
-        #     )
-        #     fit_offsets_data["qvel"] = qvels
+        # Vmap this if multiple clips
+        if cfg.stac.infer_qvels:
+            t_vel = time.time()
+            batched_qpos = fit_offsets_data["qpos"].reshape(
+                (
+                    kp_data.shape[0] // cfg.model.N_FRAMES_PER_CLIP,
+                    cfg.model.N_FRAMES_PER_CLIP,
+                    -1,
+                )
+            )
+            qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
+            fit_offsets_data["qvel"] = qvels
+            print(f"Finished compute velocity in {time.time() - t_vel}")
         print(f"saving data to {fit_offsets_path}")
         io.save(fit_offsets_data, fit_offsets_path)
 
@@ -114,7 +120,7 @@ def run_stac(
     # Vmap this if multiple clips
     if cfg.stac.infer_qvels:
         t_vel = time.time()
-        qvels = vmap_compute_velocity(qpos_trajectory=batched_qpos)
+        qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         ik_only_data["qvel"] = qvels
         print(f"Finished compute velocity in {time.time() - t_vel}")
 

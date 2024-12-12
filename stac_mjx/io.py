@@ -207,5 +207,6 @@ def save(fit_data, save_path: Text):
     elif file_extension == ".h5":
         ioh5.save(save_path, fit_data)
     else:
-        with open(save_path + ".p", "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
+        raise ValueError(
+            f"{file_extension} not a valid file extension. Must be .p or .h5"
+        )
