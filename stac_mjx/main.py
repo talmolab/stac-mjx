@@ -7,7 +7,7 @@ import pickle
 import time
 import logging
 from omegaconf import DictConfig, OmegaConf
-
+from stac_mjx import io_dict_to_hdf5 as ioh5
 from stac_mjx import io
 from stac_mjx import utils
 from stac_mjx.stac import Stac
@@ -108,7 +108,11 @@ def run_stac(
 
     print("Running ik_only()")
     with open(fit_offsets_path, "rb") as file:
-        fit_offsets_data = pickle.load(file)
+        try:
+            fit_offsets_data = pickle.load(file)
+        except:
+            fit_offsets_data = ioh5.load(file)
+
     offsets = fit_offsets_data["offsets"]
 
     print(f"kp_data shape: {kp_data.shape}")
