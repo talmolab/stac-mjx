@@ -85,7 +85,7 @@ def run_stac(
             t_vel = time.time()
             batched_qpos = fit_offsets_data["qpos"].reshape(
                 (
-                    kp_data.shape[0] // cfg.model.N_FRAMES_PER_CLIP,
+                    kps.shape[0] // cfg.model.N_FRAMES_PER_CLIP,
                     cfg.model.N_FRAMES_PER_CLIP,
                     -1,
                 )
