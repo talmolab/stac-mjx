@@ -3,6 +3,8 @@ ik_only_path: "synth_ik_only.p"
 data_path: "tests/data/test_synth_1_frames.nwb"
 
 n_fit_frames: 1
+n_frames_per_clip: 1
+
 skip_fit_offsets: False
 skip_ik_only: False
 

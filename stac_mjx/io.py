@@ -189,7 +189,7 @@ def _load_params(param_path):
 #     return fit_data
 
 
-def save(fit_data, save_path: Text):
+def save(data, save_path: Text):
     """Save data.
 
     Save data as .p or .h5 file.
@@ -203,9 +203,9 @@ def save(fit_data, save_path: Text):
     _, file_extension = os.path.splitext(save_path)
     if file_extension == ".p":
         with open(save_path, "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
+            pickle.dump(data, output_file, protocol=2)
     elif file_extension == ".h5":
-        ioh5.save(save_path, fit_data)
+        ioh5.save(save_path, data)
     else:
         raise ValueError(
             f"{file_extension} not a valid file extension. Must be .p or .h5"

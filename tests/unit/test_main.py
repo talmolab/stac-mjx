@@ -19,4 +19,4 @@ def test_load_configs(config):
 
     # Assert that the resulting configs contain the expected data
     assert cfg.stac.fit_offsets_path == "fit.p"
-    assert cfg.model.N_FRAMES_PER_CLIP == 360
+    assert cfg.stac.n_frames_per_clip == 360

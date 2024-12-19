@@ -186,7 +186,7 @@ class Stac:
 
     def _chunk_kp_data(self, kp_data):
         """Reshape data for parallel processing."""
-        n_frames = self.cfg.model.N_FRAMES_PER_CLIP
+        n_frames = self.cfg.stac.n_frames_per_clip
         total_frames = kp_data.shape[0]
 
         n_chunks = int(total_frames / n_frames)
@@ -422,7 +422,7 @@ class Stac:
             get_batch_offsets = jax.vmap(utils.get_site_pos, in_axes=(0, None))
             offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
             qposes = qposes.reshape(-1, qposes.shape[-1])
-            xposes = xposes.reshape(-1, xposes.shape[-1])
+            xposes = xposes.reshape(-1, *xposes.shape[2:])
             xquats = xquats.reshape(-1, xquats.shape[-1])
         else:
             offsets = self._offsets.reshape((-1, 3))
@@ -431,7 +431,7 @@ class Stac:
 
         data = {}
 
-        for k, v in OmegaConf.to_container(self.cfg.model, resolve=True).items():
+        for k, v in OmegaConf.to_container(self.cfg, resolve=True).items():
             data[k] = v
 
         data.update(

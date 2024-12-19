@@ -1,5 +1,5 @@
-fit_offsets_path: "demo_fit_offsets.p"
-ik_only_path: "demo_ik_only.p"
+fit_offsets_path: "demo_fit_offsets.h5"
+ik_only_path: "demo_ik_only.h5"
 data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
 
 num_clips: 1
@@ -7,6 +7,10 @@ n_fit_frames: 10
 skip_fit_offsets: False
 skip_ik_only: False
 infer_qvels: True
+
+# Frames per clip for ik_only.
+n_frames_per_clip: 1000
+
 mujoco:
   solver: "newton"
   iterations: 1

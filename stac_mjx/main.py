@@ -2,7 +2,7 @@
 
 import jax
 from jax import numpy as jp
-
+import numpy as np
 import pickle
 import time
 import logging
@@ -80,19 +80,19 @@ def run_stac(
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
-        # Vmap this if multiple clips
-        if cfg.stac.infer_qvels:
-            t_vel = time.time()
-            batched_qpos = fit_offsets_data["qpos"].reshape(
-                (
-                    kps.shape[0] // cfg.model.N_FRAMES_PER_CLIP,
-                    cfg.model.N_FRAMES_PER_CLIP,
-                    -1,
-                )
-            )
-            qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
-            fit_offsets_data["qvel"] = qvels
-            print(f"Finished compute velocity in {time.time() - t_vel}")
+        # # Vmap this if multiple clips
+        # if cfg.stac.infer_qvels:
+        #     t_vel = time.time()
+        #     batched_qpos = fit_offsets_data["qpos"].reshape(
+        #         (
+        #             kps.shape[0] // cfg.stac.n_frames_per_clip,
+        #             cfg.stac.n_frames_per_clip,
+        #             -1,
+        #         )
+        #     )
+        #     qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
+        #     fit_offsets_data["qvel"] = qvels
+        #     print(f"Finished compute velocity in {time.time() - t_vel}")
         print(f"saving data to {fit_offsets_path}")
         io.save(fit_offsets_data, fit_offsets_path)
 
@@ -101,9 +101,9 @@ def run_stac(
         print("skipping ik_only()")
         return fit_offsets_path, None
     # FLY_MODEL: The elif below must be commented out for fly_model.
-    elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
+    elif kp_data.shape[0] % cfg.stac.n_frames_per_clip != 0:
         raise ValueError(
-            f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
+            f"n_frames_per_clip ({cfg.stac.n_frames_per_clip}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
         )
 
     print("Running ik_only()")
@@ -120,12 +120,12 @@ def run_stac(
     batched_qpos = ik_only_data["qpos"].reshape(
         (cfg.stac.num_clips, kp_data.shape[0] // cfg.stac.num_clips, -1)
     )
-    print(batched_qpos.shape, batched_qpos)
     # Vmap this if multiple clips
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
-        ik_only_data["qvel"] = qvels
+        # set dict key after reshaping and casting to numpy
+        ik_only_data["qvel"] = np.array(qvels).reshape(-1, *qvels.shape[2:])
         print(f"Finished compute velocity in {time.time() - t_vel}")
 
     print(
