@@ -12,8 +12,7 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 
-from stac_mjx import utils
-from stac_mjx import compute_stac
+from stac_mjx import utils, compute_stac, io
 
 from omegaconf import OmegaConf, DictConfig
 from typing import List, Union
@@ -423,32 +422,25 @@ class Stac:
             offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
             qposes = qposes.reshape(-1, qposes.shape[-1])
             xposes = xposes.reshape(-1, *xposes.shape[2:])
-            xquats = xquats.reshape(-1, xquats.shape[-1])
+            xquats = xquats.reshape(-1, *xquats.shape[2:])
+            marker_sites = marker_sites.reshape(-1, *marker_sites.shape[2:])
         else:
             offsets = self._offsets.reshape((-1, 3))
 
+        offsets = np.array(offsets)
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
-        data = {}
-
-        for k, v in OmegaConf.to_container(self.cfg, resolve=True).items():
-            data[k] = v
-
-        data.update(
-            {
-                "qpos": qposes,
-                "xpos": xposes,
-                "xquat": xquats,
-                "marker_sites": marker_sites,
-                "offsets": np.array(offsets),
-                "names_qpos": self._part_names,
-                "names_xpos": self._body_names,
-                "kp_data": np.copy(kp_data),
-                "kp_names": self._kp_names,
-            }
+        return io.StacData(
+            qpos=qposes,
+            xpos=xposes,
+            xquat=xquats,
+            marker_sites=marker_sites,
+            offsets=offsets,
+            names_qpos=self._part_names,
+            names_xpos=self._body_names,
+            kp_data=kp_data,
+            kp_names=self._kp_names,
         )
-
-        return data
 
     def _create_keypoint_sites(self):
         """Create sites for keypoints (used for rendering only).

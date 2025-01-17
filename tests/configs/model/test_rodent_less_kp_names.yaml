@@ -1,8 +1,5 @@
 MJCF_PATH: "models/rodent.xml"
 
-# Frames per clip for ik_only.
-N_FRAMES_PER_CLIP: 360
-
 # KP_NAMES do not match number of keypoints
 KP_NAMES: 
   - 'Snout' 

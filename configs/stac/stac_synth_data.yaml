@@ -1,12 +1,13 @@
-fit_offsets_path: "synth_fit.p"
-ik_only_path: "synth_ik_only.p"
+fit_offsets_path: "synth_fit.h5"
+ik_only_path: "synth_ik_only.h5"
 data_path: "tests/data/test_synth_1_frames.nwb"
 
 n_fit_frames: 1
-n_frames_per_clip: 1
-
 skip_fit_offsets: False
-skip_ik_only: False
+skip_ik_only: True
+infer_qvels: False # Infer qvels from stac output
+
+n_frames_per_clip: 1
 
 mujoco:
   solver: newton

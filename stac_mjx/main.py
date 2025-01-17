@@ -7,9 +7,7 @@ import pickle
 import time
 import logging
 from omegaconf import DictConfig, OmegaConf
-from stac_mjx import io_dict_to_hdf5 as ioh5
-from stac_mjx import io
-from stac_mjx import utils
+from stac_mjx import io, utils
 from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
@@ -32,7 +30,11 @@ def load_configs(
     with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name
         cfg = hydra.compose(config_name=config_name)
-    return cfg
+        # Convert to structured config
+        structured_config = OmegaConf.structured(io.Config)
+        OmegaConf.merge(structured_config, cfg)
+        print("Config loaded and validated.")
+        return cfg
 
 
 def run_stac(
@@ -80,21 +82,11 @@ def run_stac(
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
-        # # Vmap this if multiple clips
-        # if cfg.stac.infer_qvels:
-        #     t_vel = time.time()
-        #     batched_qpos = fit_offsets_data["qpos"].reshape(
-        #         (
-        #             kps.shape[0] // cfg.stac.n_frames_per_clip,
-        #             cfg.stac.n_frames_per_clip,
-        #             -1,
-        #         )
-        #     )
-        #     qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
-        #     fit_offsets_data["qvel"] = qvels
-        #     print(f"Finished compute velocity in {time.time() - t_vel}")
         print(f"saving data to {fit_offsets_path}")
-        io.save(fit_offsets_data, fit_offsets_path)
+        io.save_data_to_h5(
+            config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
+        )
+        (fit_offsets_data, fit_offsets_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
@@ -118,19 +110,17 @@ def run_stac(
     print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
     batched_qpos = ik_only_data["qpos"].reshape(
-        (cfg.stac.num_clips, kp_data.shape[0] // cfg.stac.num_clips, -1)
+        (-1, cfg.stac.n_frames_per_clip, ik_only_data["qpos"].shape[-1])
     )
-    # Vmap this if multiple clips
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         # set dict key after reshaping and casting to numpy
-        ik_only_data["qvel"] = np.array(qvels).reshape(-1, *qvels.shape[2:])
+        ik_only_data.update(qvel=np.array(qvels).reshape(-1, *qvels.shape[2:]))
         print(f"Finished compute velocity in {time.time() - t_vel}")
 
     print(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
-    io.save(ik_only_data, ik_only_path)
-
+    io.save_data_to_h5(config=cfg, file_path=ik_only_path, **ik_only_data.as_dict())
     return fit_offsets_path, ik_only_path

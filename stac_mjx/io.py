@@ -12,10 +12,84 @@ from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
 from pathlib import Path
 from omegaconf import DictConfig
-import stac_mjx.io_dict_to_hdf5 as ioh5
+from omegaconf import OmegaConf
+from dataclasses import dataclass, asdict, field
+from typing import List, Dict
 
 
-def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
+# Dataclasses for config files and stac-mjx outputs
+
+
+@dataclass
+class ModelConfig:
+    MJCF_PATH: str
+    FTOL: float
+    ROOT_FTOL: float
+    LIMB_FTOL: float
+    N_ITERS: int
+    KP_NAMES: List[str]
+    KEYPOINT_MODEL_PAIRS: Dict[str, str]
+    KEYPOINT_INITIAL_OFFSETS: Dict[str, str]
+    ROOT_OPTIMIZATION_KEYPOINT: str
+    TRUNK_OPTIMIZATION_KEYPOINTS: List[str]
+    INDIVIDUAL_PART_OPTIMIZATION: Dict[str, List[str]]
+    KEYPOINT_COLOR_PAIRS: Dict[str, str]
+    SCALE_FACTOR: float
+    MOCAP_SCALE_FACTOR: float
+    SITES_TO_REGULARIZE: List[str]
+    RENDER_FPS: int
+    N_SAMPLE_FRAMES: int
+    M_REG_COEF: int
+
+
+@dataclass
+class MujocoConfig:
+    solver: str
+    iterations: int
+    ls_iterations: int
+
+
+@dataclass
+class StacConfig:
+    fit_offsets_path: str
+    ik_only_path: str
+    data_path: str
+    num_clips: int
+    n_fit_frames: int
+    skip_fit_offsets: bool
+    skip_ik_only: bool
+    infer_qvels: bool
+    n_frames_per_clip: int
+    mujoco: MujocoConfig
+
+
+@dataclass
+class Config:
+    model: ModelConfig
+    stac: StacConfig
+
+
+@dataclass
+class StacData:
+    qpos: np.ndarray
+    xpos: np.ndarray
+    xquat: np.ndarray
+    marker_sites: np.ndarray
+    offsets: np.ndarray
+    kp_data: np.ndarray
+    names_qpos: List[str]
+    names_xpos: List[str]
+    kp_names: List[str]
+
+    # Optional
+    qvel: np.ndarray = field(default_factory=lambda: np.array([]))
+
+    def as_dict(self) -> dict:
+        """Convert the dataclass instance to a dictionary."""
+        return asdict(self)
+
+
+def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
     """Load mocap data based on file type.
 
     Loads mocap file based on filetype, and returns the data flattened
@@ -178,35 +252,77 @@ def _load_params(param_path):
     return params
 
 
-# FLY_MODEL: decide to keep or not!
-# def load_stac_ik_only(save_path):
-#     _, file_extension = os.path.splitext(save_path)
-#     if file_extension == ".p":
-#         with open(save_path, "rb") as file:
-#             fit_data = pickle.load(file)
-#     elif file_extension == ".h5":
-#         fit_data = ioh5.load(save_path)
-#     return fit_data
+def save_dict_to_hdf5(group, dictionary):
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            subgroup = group.create_group(key)
+            save_dict_to_hdf5(subgroup, value)
+        else:
+            group.attrs[key] = value
 
 
-def save(data, save_path: Text):
-    """Save data.
+def save_data_to_h5(
+    config: Config,
+    kp_names: list,
+    names_qpos: list,
+    names_xpos: list,
+    kp_data: np.ndarray,
+    marker_sites: np.ndarray,
+    offsets: np.ndarray,
+    qpos: np.ndarray,
+    xpos: np.ndarray,
+    xquat: np.ndarray,
+    qvel: np.ndarray,
+    file_path: str,
+):
+    with h5py.File(file_path, "w") as f:
+        # Save config as a YAML string
+        config_yaml = OmegaConf.to_yaml(OmegaConf.structured(config))
+        f.create_dataset("config", data=np.string_(config_yaml))
 
-    Save data as .p or .h5 file.
+        # Save stac output data
+        f.create_dataset("kp_names", data=np.array(kp_names, dtype="S"))
+        f.create_dataset("names_qpos", data=np.array(names_qpos, dtype="S"))
+        f.create_dataset("names_xpos", data=np.array(names_xpos, dtype="S"))
+        f.create_dataset("kp_data", data=kp_data, compression="gzip")
+        f.create_dataset("marker_sites", data=marker_sites, compression="gzip")
+        f.create_dataset("offsets", data=offsets, compression="gzip")
+        f.create_dataset("qpos", data=qpos, compression="gzip")
+        f.create_dataset("qvel", data=qvel, compression="gzip")
+        f.create_dataset("xpos", data=xpos, compression="gzip")
+        f.create_dataset("xquat", data=xquat, compression="gzip")
 
-    Args:
-        fit_data (numpy array): Data to write out.
-        save_path (Text): Path to save data. Defaults to None.
-    """
-    if os.path.dirname(save_path) != "":
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    _, file_extension = os.path.splitext(save_path)
-    if file_extension == ".p":
-        with open(save_path, "wb") as output_file:
-            pickle.dump(data, output_file, protocol=2)
-    elif file_extension == ".h5":
-        ioh5.save(save_path, data)
-    else:
-        raise ValueError(
-            f"{file_extension} not a valid file extension. Must be .p or .h5"
+
+def load_stac_data(file_path) -> tuple[Config, StacData]:
+    with h5py.File(file_path, "r") as f:
+        # Load config from YAML string
+        config_yaml = f["config"][()].decode("utf-8")
+        config = OmegaConf.create(config_yaml)
+        config = OmegaConf.structured(Config(**config))
+
+        # Load additional values
+        kp_names = [name.decode("utf-8") for name in f["kp_names"]]
+        names_qpos = [name.decode("utf-8") for name in f["names_qpos"]]
+        names_xpos = [name.decode("utf-8") for name in f["names_xpos"]]
+        kp_data = np.array(f["kp_data"])
+        marker_sites = np.array(f["marker_sites"])
+        offsets = np.array(f["offsets"])
+        qpos = np.array(f["qpos"])
+        qvel = np.array(f["qvel"])
+        xpos = np.array(f["xpos"])
+        xquat = np.array(f["xquat"])
+
+        stac_data = StacData(
+            kp_names=kp_names,
+            names_qpos=names_qpos,
+            names_xpos=names_xpos,
+            kp_data=kp_data,
+            marker_sites=marker_sites,
+            offsets=offsets,
+            qpos=qpos,
+            qvel=qvel,
+            xpos=xpos,
+            xquat=xquat,
         )
+
+    return config, stac_data

@@ -19,4 +19,5 @@ def test_load_configs(config):
 
     # Assert that the resulting configs contain the expected data
     assert cfg.stac.fit_offsets_path == "fit.p"
-    assert cfg.stac.n_frames_per_clip == 360
+    assert cfg.stac.n_fit_frames == 42
+    assert cfg.model.MJCF_PATH == "models/rodent.xml"
