@@ -22,6 +22,7 @@ def viz_stac(
     show_marker_error=False,
 ):
     """Render forward kinematics from keypoint positions.
+
     Args:
         data_path (Union[Path, str]): Path to stac output pickle file
         cfg (DictConfig): configs
@@ -36,7 +37,6 @@ def viz_stac(
     Returns:
         (List): List of frames
     """
-
     cfg, d = io.load_stac_data(data_path)
     qposes = d.qpos
     kp_data = d.kp_data

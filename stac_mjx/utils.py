@@ -182,6 +182,7 @@ def quat_mul(quat1, quat2):
 
 def _clip_within_precision(number, low, high, precision=_TOL):
     """Clips input to provided range, checking precision.
+
     Args:
       number: (float) number to be clipped.
       low: (float) lower bound.
@@ -194,7 +195,6 @@ def _clip_within_precision(number, low, high, precision=_TOL):
     Raises:
       ValueError: If number is outside given range by more than given precision.
     """
-
     # This is raising an error when jitted
     # def _raise_if_not_in_precision():
     #     if (number < low - precision).any() or (number > high + precision).any():
