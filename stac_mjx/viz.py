@@ -22,7 +22,6 @@ def viz_stac(
     show_marker_error=False,
 ):
     """Render forward kinematics from keypoint positions.
-
     Args:
         data_path (Union[Path, str]): Path to stac output pickle file
         cfg (DictConfig): configs

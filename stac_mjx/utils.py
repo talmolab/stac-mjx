@@ -182,7 +182,6 @@ def quat_mul(quat1, quat2):
 
 def _clip_within_precision(number, low, high, precision=_TOL):
     """Clips input to provided range, checking precision.
-
     Args:
       number: (float) number to be clipped.
       low: (float) lower bound.

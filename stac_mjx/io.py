@@ -22,6 +22,8 @@ from typing import List, Dict
 
 @dataclass
 class ModelConfig:
+    """Configuration for body model."""
+
     MJCF_PATH: str
     FTOL: float
     ROOT_FTOL: float
@@ -44,6 +46,8 @@ class ModelConfig:
 
 @dataclass
 class MujocoConfig:
+    """Configuration for Mujoco."""
+
     solver: str
     iterations: int
     ls_iterations: int
@@ -51,6 +55,8 @@ class MujocoConfig:
 
 @dataclass
 class StacConfig:
+    """Configuration for STAC."""
+
     fit_offsets_path: str
     ik_only_path: str
     data_path: str
@@ -65,12 +71,16 @@ class StacConfig:
 
 @dataclass
 class Config:
+    """Combined configuration for the model and STAC."""
+
     model: ModelConfig
     stac: StacConfig
 
 
 @dataclass
 class StacData:
+    """Data structure for STAC output."""
+
     qpos: np.ndarray
     xpos: np.ndarray
     xquat: np.ndarray
@@ -253,6 +263,12 @@ def _load_params(param_path):
 
 
 def save_dict_to_hdf5(group, dictionary):
+    """Save a dictionary to an HDF5 group.
+
+    Args:
+        group (h5py.Group): HDF5 group to save the dictionary to.
+        dictionary (dict): Dictionary to save.
+    """
     for key, value in dictionary.items():
         if isinstance(value, dict):
             subgroup = group.create_group(key)
@@ -275,6 +291,22 @@ def save_data_to_h5(
     qvel: np.ndarray,
     file_path: str,
 ):
+    """Save configuration and STAC data to an HDF5 file.
+
+    Args:
+        config (Config): Configuration dataclass.
+        kp_names (list): List of keypoint names.
+        names_qpos (list): List of qpos names.
+        names_xpos (list): List of xpos names.
+        kp_data (np.ndarray): Keypoint data array.
+        marker_sites (np.ndarray): Marker sites array.
+        offsets (np.ndarray): Offsets array.
+        qpos (np.ndarray): Qpos array.
+        xpos (np.ndarray): Xpos array.
+        xquat (np.ndarray): Xquat array.
+        qvel (np.ndarray): Qvel array.
+        file_path (str): Path to the HDF5 file.
+    """
     with h5py.File(file_path, "w") as f:
         # Save config as a YAML string
         config_yaml = OmegaConf.to_yaml(OmegaConf.structured(config))
@@ -294,6 +326,14 @@ def save_data_to_h5(
 
 
 def load_stac_data(file_path) -> tuple[Config, StacData]:
+    """Load configuration and STAC data from an HDF5 file.
+
+    Args:
+        file_path (str): Path to the HDF5 file.
+
+    Returns:
+        tuple: A tuple containing the Config and StacData dataclasses.
+    """
     with h5py.File(file_path, "r") as f:
         # Load config from YAML string
         config_yaml = f["config"][()].decode("utf-8")

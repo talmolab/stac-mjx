@@ -412,7 +412,7 @@ class Stac:
     def _package_data(
         self, mjx_model, qposes, xposes, xquats, marker_sites, kp_data, batched=False
     ):
-        """Extract pose, offsets, data, and all parameters. Infer qvel
+        """Extract pose, offsets, data, and all parameters.
 
         marker_sites is the marker positions for each frame--the rodent model's kp_data equivalent
         """
