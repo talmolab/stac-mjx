@@ -6,7 +6,6 @@ n_fit_frames: 10
 skip_fit_offsets: False
 skip_ik_only: True
 infer_qvels: True # Infer qvels from stac output
-
 n_frames_per_clip: 250 # 1 if mocap is one session
 
 mujoco:

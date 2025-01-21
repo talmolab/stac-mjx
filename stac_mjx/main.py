@@ -92,7 +92,6 @@ def run_stac(
     if cfg.stac.skip_ik_only == 1:
         print("skipping ik_only()")
         return fit_offsets_path, None
-    # FLY_MODEL: The elif below must be commented out for fly_model.
     elif kp_data.shape[0] % cfg.stac.n_frames_per_clip != 0:
         raise ValueError(
             f"n_frames_per_clip ({cfg.stac.n_frames_per_clip}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
@@ -112,7 +111,7 @@ def run_stac(
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         # set dict key after reshaping and casting to numpy
-        ik_only_data.qvel=np.array(qvels).reshape(-1, *qvels.shape[2:])
+        ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
         print(f"Finished compute velocity in {time.time() - t_vel}")
 
     print(

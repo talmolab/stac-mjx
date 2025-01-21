@@ -196,20 +196,21 @@ def m_opt(
     reg_coef,
     site_idxs,
 ):
-    """Compute phase optimization.
+    """Compute offset optimization.
 
     Args:
-        offset0 (_type_): _description_
-        mjx_model (_type_): _description_
-        mjx_data (_type_): _description_
-        keypoints (_type_): _description_
-        q (_type_): _description_
-        initial_offsets (_type_): _description_
-        is_regularized (bool): _description_
-        reg_coef (_type_): _description_
+        offset0 (jp.ndarray): Proposed offset values
+        mjx_model (_type_): mjx.Model
+        mjx_data (_type_): mjx.Data
+        keypoints (jp.ndarray): Keypoints for each frame
+        q (jp.ndarray): Joint angles for each frame
+        initial_offsets (jp.ndarray): Initial offset values (from config)
+        is_regularized (jp.ndarray): Boolean mask for regularized sites
+        reg_coef (jp.ndarray): Regularization coefficient
+        site_idxs (jp.ndarray): Site indices in mjx_model.site_xpos
 
     Returns:
-        _type_: _description_
+        _type_: result of optimization
     """
     res = m_solver.run(
         offset0,

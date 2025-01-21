@@ -6,7 +6,6 @@ n_fit_frames: 1
 skip_fit_offsets: False
 skip_ik_only: True
 infer_qvels: False # Infer qvels from stac output
-
 n_frames_per_clip: 1
 
 mujoco:
