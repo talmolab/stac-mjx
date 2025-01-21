@@ -99,24 +99,20 @@ def run_stac(
         )
 
     print("Running ik_only()")
-    with open(fit_offsets_path, "rb") as file:
-        try:
-            fit_offsets_data = pickle.load(file)
-        except:
-            fit_offsets_data = ioh5.load(file)
+    cfg, fit_offsets_data = io.load_stac_data(fit_offsets_path)
 
-    offsets = fit_offsets_data["offsets"]
+    offsets = fit_offsets_data.offsets
 
     print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
-    batched_qpos = ik_only_data["qpos"].reshape(
-        (-1, cfg.stac.n_frames_per_clip, ik_only_data["qpos"].shape[-1])
+    batched_qpos = ik_only_data.qpos.reshape(
+        (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
     )
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         # set dict key after reshaping and casting to numpy
-        ik_only_data.update(qvel=np.array(qvels).reshape(-1, *qvels.shape[2:]))
+        ik_only_data.qvel=np.array(qvels).reshape(-1, *qvels.shape[2:])
         print(f"Finished compute velocity in {time.time() - t_vel}")
 
     print(
