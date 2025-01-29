@@ -1,6 +1,6 @@
 defaults:
   - stac: demo
-  - model: rodent
+  - model: mouse_arm
   - _self_
 
 ##FLY_MODEL

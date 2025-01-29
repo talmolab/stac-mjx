@@ -1,0 +1,12 @@
+fit_offsets_path: "fit_mouse_arm.p"
+ik_only_path: "ik_only_mouse_arm.p"
+data_path: "/root/vast/eric/CVAT_mouse_reach/triangulate_optimize/joshua_data/points3d_keewui_params_clipped.h5"
+
+n_fit_frames: 250
+skip_fit_offsets: False
+skip_ik_only: True
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4
