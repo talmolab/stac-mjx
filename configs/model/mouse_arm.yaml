@@ -1,0 +1,125 @@
+MJCF_PATH: "models/mazen_torque.xml"
+# MJCF_PATH: "models/arm_model_v3.xml"
+
+# Frames per clip for ik_only.
+N_FRAMES_PER_CLIP: 360 # 1000 environments
+
+# Tolerance for the optimizations of the full model, limb, and root.
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+KP_NAMES:
+  - Shoulder
+  - Elbow
+  - Wrist
+
+# Ambiguity, are keypoints joints or bones? (Nose is not a joint, but MTP is a joint.)
+KEYPOINT_MODEL_PAIRS:
+  Shoulder: scapula
+  Elbow: humerus
+  # Wrist: lower_arm
+
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  Shoulder: 0.0 0.0 0.0
+  Elbow: 0.0 0.0 0.0
+  Wrist: 0.0 0.0 0.0
+
+
+ROOT_OPTIMIZATION_KEYPOINT: Shoulder
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+ - "Shoulder"
+#  - "HipL"
+#  - "HipR"
+#  - "ShoulderL"
+#  - "ShoulderR"
+
+# INDIVIDUAL_PART_OPTIMIZATION:
+#   "r_leg": [
+#     "mouse__Thoracic1",
+#     "mouse__Lumbar1",
+#     "mouse__Lumbar2",
+#     "mouse__Lumbar3",
+#     "mouse__Lumbar4",
+#     "mouse__Lumbar5",
+#     "mouse__RFemur",
+#     "mouse__RTibia",
+#     "mouse__RTarsus",
+#     "mouse__RBPhalange3",
+#     "mouse__RMetatarsus1",
+#     "mouse__RTarsus_interim_0"
+#   ]
+#   "l_leg": [
+#     "mouse__Thoracic1",
+#     "mouse__Lumbar1",
+#     "mouse__Lumbar2",
+#     "mouse__Lumbar3",
+#     "mouse__Lumbar4",
+#     "mouse__Lumbar5",
+#     "mouse__LFemur",
+#     "mouse__LTibia",
+#     "mouse__LTarsus",
+#     "mouse__RBPhalange3",
+#     "mouse__LMetatarsus1",
+#     "mouse__RTarsus_interim_0"
+#   ]
+#   "r_arm": [
+#     "mouse__RScapula",
+#     "mouse__RHumerus",
+#     "mouse__RRadius",
+#     "mouse__RCarpus",
+#     "mouse__RMetaCarpus1"
+#   ]
+#   "l_arm": [
+#     "mouse__LScapula",
+#     "mouse__LHumerus",
+#     "mouse__LRadius",
+#     "mouse__LCarpus",
+#     "mouse__LMetaCarpus1"
+#   ]
+#   "head": [
+#     "mouse__Cervical1",
+#     "mouse__Cervical2",
+#     "mouse__Cervical3",
+#     "mouse__Cervical4",
+#     "mouse__Cervical5",
+#     "mouse__Cervical6"
+#   ]
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  Shoulder: 1 0 0 1  # Red
+  Elbow: 0 1 0 1  # Green
+  Wrist: 0 0 1 1  # Blue
+  
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1.0
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: .001
+
+SITES_TO_REGULARIZE:
+   - Shoulder
+  #  - ShoulderR
+#   - SpineF
+#   - SpineL
+#   - SpineM
+#   - WristL
+#   - WristR
+
+RENDER_FPS: 30
+
+N_SAMPLE_FRAMES: 50
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 0.0
