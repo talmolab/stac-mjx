@@ -5,6 +5,8 @@ data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
 n_fit_frames: 42
 skip_fit_offsets: False
 skip_ik_only: False
+infer_qvels: False 
+n_frames_per_clip: 1
 
 mujoco:
   solver: "newton"

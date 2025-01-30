@@ -1,9 +1,6 @@
 
 MJCF_PATH: 'models/synth_model.xml'
 
-# Frames per clip for transform.
-N_FRAMES_PER_CLIP: 1
-
 # Tolerance for the optimizations of the full model, limb, and root. 
 # TODO: Re-implement optimizer loops to use these tolerances
 FTOL: 5.0e-03

@@ -1,21 +1,23 @@
 """User-level API to run stac."""
 
+import jax
 from jax import numpy as jp
-
+import numpy as np
 import pickle
 import time
 import logging
 from omegaconf import DictConfig, OmegaConf
-
-from stac_mjx import io
-from stac_mjx import op_utils
+from stac_mjx import io, utils
 from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
 import hydra
+from functools import partial
 
 
-def load_configs(config_dir: Union[Path, str]) -> DictConfig:
+def load_configs(
+    config_dir: Union[Path, str], config_name: str = "config"
+) -> DictConfig:
     """Initializes configs with hydra.
 
     Args:
@@ -27,8 +29,12 @@ def load_configs(config_dir: Union[Path, str]) -> DictConfig:
     # Initialize Hydra and set the config path
     with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name
-        cfg = hydra.compose(config_name="config")
-    return cfg
+        cfg = hydra.compose(config_name=config_name)
+        # Convert to structured config
+        structured_config = OmegaConf.structured(io.Config)
+        OmegaConf.merge(structured_config, cfg)
+        print("Config loaded and validated.")
+        return cfg
 
 
 def run_stac(
@@ -51,7 +57,7 @@ def run_stac(
     if base_path is None:
         base_path = Path.cwd()
 
-    op_utils.enable_xla_flags()
+    utils.enable_xla_flags()
 
     start_time = time.time()
 
@@ -63,36 +69,53 @@ def run_stac(
 
     stac = Stac(xml_path, cfg, kp_names)
 
+    compute_velocity_fn = partial(
+        utils.compute_velocity_from_kinematics,
+        dt=stac._mj_model.opt.timestep,
+        freejoint=stac._freejoint,
+    )
+    # Initialize function to infer velocity from kinematics
+    vmap_compute_velocity_fn = jax.vmap(compute_velocity_fn)
+
     # Run fit_offsets if not skipping
     if cfg.stac.skip_fit_offsets != 1:
-        fit_data = kp_data[: cfg.stac.n_fit_frames]
-        logging.info(f"Running fit. Mocap data shape: {fit_data.shape}")
-        fit_data = stac.fit_offsets(fit_data)
-
-        logging.info(f"saving data to {fit_offsets_path}")
-        io.save(fit_data, fit_offsets_path)
+        kps = kp_data[: cfg.stac.n_fit_frames]
+        print(f"Running fit. Mocap data shape: {kps.shape}")
+        fit_offsets_data = stac.fit_offsets(kps)
+        print(f"saving data to {fit_offsets_path}")
+        io.save_data_to_h5(
+            config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
+        )
+        (fit_offsets_data, fit_offsets_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
-        logging.info("skipping ik_only()")
+        print("skipping ik_only()")
         return fit_offsets_path, None
-    # FLY_MODEL: The elif below must be commented out for fly_model.
-    elif kp_data.shape[0] % cfg.model.N_FRAMES_PER_CLIP != 0:
+    elif kp_data.shape[0] % cfg.stac.n_frames_per_clip != 0:
         raise ValueError(
-            f"N_FRAMES_PER_CLIP ({cfg.model.N_FRAMES_PER_CLIP}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
+            f"n_frames_per_clip ({cfg.stac.n_frames_per_clip}) must divide evenly with the total number of mocap frames({kp_data.shape[0]})"
         )
 
-    logging.info("Running ik_only()")
-    with open(fit_offsets_path, "rb") as file:
-        fit_data = pickle.load(file)
-    offsets = fit_data["offsets"]
+    print("Running ik_only()")
+    cfg, fit_offsets_data = io.load_stac_data(fit_offsets_path)
 
-    logging.info(f"kp_data shape: {kp_data.shape}")
+    offsets = fit_offsets_data.offsets
+
+    print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
+    batched_qpos = ik_only_data.qpos.reshape(
+        (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
+    )
+    if cfg.stac.infer_qvels:
+        t_vel = time.time()
+        qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
+        # set dict key after reshaping and casting to numpy
+        ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
+        print(f"Finished compute velocity in {time.time() - t_vel}")
 
-    logging.info(
+    print(
         f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
     )
-    io.save(ik_only_data, ik_only_path)
-
+    io.save_data_to_h5(config=cfg, file_path=ik_only_path, **ik_only_data.as_dict())
     return fit_offsets_path, ik_only_path

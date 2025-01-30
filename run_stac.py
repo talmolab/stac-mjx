@@ -8,7 +8,7 @@ import stac_mjx
 
 
 def load_and_run_stac(cfg):
-    kp_data, sorted_kp_names = stac_mjx.load_data(cfg)
+    kp_data, sorted_kp_names = stac_mjx.load_mocap(cfg)
 
     fit_path, ik_only_path = stac_mjx.run_stac(cfg, kp_data, sorted_kp_names)
 

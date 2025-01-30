@@ -4,16 +4,14 @@ import pickle
 import numpy as np
 from pathlib import Path
 from stac_mjx.stac import Stac
+from stac_mjx import io
 from omegaconf import DictConfig
 from typing import Union, Dict
-
-# FLY_MODEL
-# import stac_mjx.io_dict_to_hdf5 as ioh5
 
 
 def viz_stac(
     data_path: Union[Path, str],
-    cfg: DictConfig,
+    # cfg: DictConfig,
     n_frames: int,
     save_path: Union[Path, str],
     start_frame: int = 0,
@@ -39,38 +37,21 @@ def viz_stac(
     Returns:
         (List): List of frames
     """
+    cfg, d = io.load_stac_data(data_path)
+    qposes = d.qpos
+    kp_data = d.kp_data
+    kp_names = d.kp_names
+    offsets = d.offsets
+
     if base_path is None:
         base_path = Path.cwd()
 
     xml_path = base_path / cfg.model.MJCF_PATH
 
-    # Load data
-    with open(data_path, "rb") as file:
-        d = pickle.load(file)
-        qposes = np.array(d["qpos"])
-        kp_data = np.array(d["kp_data"])
-        kp_names = d["kp_names"]
-        offsets = d["offsets"]
-
-    # FLY_MODEL
-    # if data_path.suffix == ".h5":
-    #     data = ioh5.load(data_path)
-    #     qposes = np.array(data["qpos"])
-    #     kp_data = np.array(data["kp_data"])
-    #     kp_names = data["kp_names"]
-    #     offsets = data["offsets"]
-    # else:
-    #     with open(data_path, "rb") as file:
-    #         d = pickle.load(file)
-    #         qposes = np.array(d["qpos"])
-    #         kp_data = np.array(d["kp_data"])
-    #         kp_names = d["kp_names"]
-    #         offsets = d["offsets"]
-
     # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
     stac = Stac(xml_path, cfg, kp_names)
-    return stac.render(
+    return cfg, stac.render(
         qposes,
         kp_data,
         offsets,

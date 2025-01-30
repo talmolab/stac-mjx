@@ -2,9 +2,3 @@ defaults:
   - stac: stac_mouse_arm
   - model: mouse_arm
   - _self_
-
-##FLY_MODEL
-# defaults:
-# - stac: stac_fly_tethered
-# - model: fly_tethered
-# - _self_

@@ -6,6 +6,8 @@ ik_only_path: "transform_treadmill.p"
 data_path: "../tests/data/wt_berlin_linear_treadmill_dataset.csv"
 
 n_fit_frames: 1800
+n_frames_per_clip: 581
+
 skip_fit: False
 skip_transform: False
 gpu: '1'
