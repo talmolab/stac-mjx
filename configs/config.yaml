@@ -2,3 +2,8 @@ defaults:
   - stac: stac_mouse_arm
   - model: mouse_arm
   - _self_
+
+# defaults:
+#   - stac: demo
+#   - model: rodent
+#   - _self_

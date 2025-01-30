@@ -1,8 +1,5 @@
-MJCF_PATH: "models/mazen_torque.xml"
-# MJCF_PATH: "models/arm_model_v3.xml"
-
-# Frames per clip for ik_only.
-N_FRAMES_PER_CLIP: 360 # 1000 environments
+# MJCF_PATH: "models/mazen_torque.xml"
+MJCF_PATH: "models/arm_model_v3.xml"
 
 # Tolerance for the optimizations of the full model, limb, and root.
 # TODO: Re-implement optimizer loops to use these tolerances
@@ -22,14 +19,14 @@ KP_NAMES:
 KEYPOINT_MODEL_PAIRS:
   Shoulder: scapula
   Elbow: humerus
-  # Wrist: lower_arm
+  Wrist: hand
 
 
 # The initial offsets for each keypoint in meters.
 KEYPOINT_INITIAL_OFFSETS:
-  Shoulder: 0.0 0.0 0.0
-  Elbow: 0.0 0.0 0.0
-  Wrist: 0.0 0.0 0.0
+  Shoulder: 0. 0. 0.
+  Elbow: 0. 0. 0.
+  Wrist: 0. 0. 0.
 
 
 ROOT_OPTIMIZATION_KEYPOINT: Shoulder
@@ -122,4 +119,4 @@ N_SAMPLE_FRAMES: 50
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 
-M_REG_COEF: 0.0
+M_REG_COEF: 0
