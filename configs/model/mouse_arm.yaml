@@ -1,5 +1,5 @@
-# MJCF_PATH: "models/mazen_torque.xml"
-MJCF_PATH: "models/arm_model_v3.xml"
+MJCF_PATH: "models/mazen_torque.xml"
+# MJCF_PATH: "models/arm_model_v3.xml"
 
 # Tolerance for the optimizations of the full model, limb, and root.
 # TODO: Re-implement optimizer loops to use these tolerances

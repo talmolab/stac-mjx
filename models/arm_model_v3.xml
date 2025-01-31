@@ -20,12 +20,12 @@
 		<texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="0.6 0.8 1" width="256" height="1536"/>
 		<texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
 		<material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
-		<mesh file="GeomJan01242023/Bone_Scapula_right_v3.stl"/>
-		<mesh file="GeomJan01242023/Bone_Humerus_right_v3.stl"/>
-		<mesh file="GeomJan01242023/Bone_Clavicle_right_v3.stl"/>
-		<mesh file="GeomJan01242023/Bone_Ulna_right_v3.stl"/>
-		<mesh file="GeomJan01242023/Bone_Radius_right_v3.stl"/>
-		<mesh file="GeomJan01242023/Bone_Segments_Hand.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Scapula_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Humerus_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Clavicle_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Ulna_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Radius_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Segments_Hand.stl"/>
 
 	</asset>
 	<!--This stuff can all be left alone-->

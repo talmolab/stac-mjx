@@ -3,6 +3,8 @@
 	<compiler angle="radian">
 		<lengthrange mode="muscle"/>
 	</compiler>
+
+
 	<default>
 	<geom contype="0" conaffinity="0"/>
 	<joint limited="true" damping="0.5" armature=".1" stiffness="0"></joint>
@@ -12,18 +14,20 @@
 	<size njmax="1000" nconmax="400" nkey="1" nuser_jnt="1"/>
 	<visual>
 		<scale framelength="0.5" framewidth="0.01"/>
+		<global offwidth="1920"/>
+		<global offheight="1200"/>
 	</visual>
 	<asset>
 		<material name="target" rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 0.29999999999999999"/>
 		<texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="0.6 0.8 1" width="256" height="1536"/>
 		<texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
 		<material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
-		<mesh file="/root/vast/eric/stac-mjx/meshes/stl/Bone_Scapula_right_v3.stl"/>
-		<mesh file="/root/vast/eric/stac-mjx/meshes/stl/Bone_Humerus_right_v3.stl"/>
-		<mesh file="/root/vast/eric/stac-mjx/meshes/stl/Bone_Clavicle_right_v3.stl"/>
-		<mesh file="/root/vast/eric/stac-mjx/meshes/stl/Bone_Ulna_right_v3.stl"/>
-		<mesh file="/root/vast/eric/stac-mjx/meshes/stl/Bone_Radius_right_v3.stl"/>
-		<mesh file="/root/vast/eric/stac-mjx/meshes/stl/Bone_Segments_Hand.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Scapula_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Humerus_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Clavicle_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Ulna_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Radius_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Segments_Hand.stl"/>
 	</asset>
 	<!--This stuff can all be left alone-->
 	<worldbody>
