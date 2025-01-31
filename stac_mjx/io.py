@@ -31,7 +31,7 @@ class ModelConfig:
     N_ITERS: int  # Number of iterations for STAC algorithm
     KP_NAMES: List[str]  # Ordered list of keypoint names
     KEYPOINT_MODEL_PAIRS: Dict[str, str]  # Mapping from keypoint names to model bodies
-    KEYPOINT_INITIAL_OFFSETS: Dict[str, List[float]]  # Initial offsets for keypoints
+    KEYPOINT_INITIAL_OFFSETS: Dict[str, str]  # Initial offsets for keypoints
     ROOT_OPTIMIZATION_KEYPOINT: str  # Root optimization keypoint name
     TRUNK_OPTIMIZATION_KEYPOINTS: List[str]  # Trunk optimization keypoint names
     INDIVIDUAL_PART_OPTIMIZATION: Dict[
