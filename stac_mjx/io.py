@@ -24,75 +24,79 @@ from typing import List, Dict
 class ModelConfig:
     """Configuration for body model."""
 
-    MJCF_PATH: str
-    FTOL: float
-    ROOT_FTOL: float
-    LIMB_FTOL: float
-    N_ITERS: int
-    KP_NAMES: List[str]
-    KEYPOINT_MODEL_PAIRS: Dict[str, str]
-    KEYPOINT_INITIAL_OFFSETS: Dict[str, str]
-    ROOT_OPTIMIZATION_KEYPOINT: str
-    TRUNK_OPTIMIZATION_KEYPOINTS: List[str]
-    INDIVIDUAL_PART_OPTIMIZATION: Dict[str, List[str]]
-    KEYPOINT_COLOR_PAIRS: Dict[str, str]
-    SCALE_FACTOR: float
-    MOCAP_SCALE_FACTOR: float
-    SITES_TO_REGULARIZE: List[str]
-    RENDER_FPS: int
-    N_SAMPLE_FRAMES: int
-    M_REG_COEF: int
+    MJCF_PATH: str  # Path to model xml
+    FTOL: float  # Tolerance for optimization TODO: currently unused
+    ROOT_FTOL: float  # Tolerance for root optimization TODO: currently unused
+    LIMB_FTOL: float  # Tolerance for limb optimization TODO: currently unused
+    N_ITERS: int  # Number of iterations for STAC algorithm
+    KP_NAMES: List[str]  # Ordered list of keypoint names
+    KEYPOINT_MODEL_PAIRS: Dict[str, str]  # Mapping from keypoint names to model bodies
+    KEYPOINT_INITIAL_OFFSETS: Dict[str, List[float]]  # Initial offsets for keypoints
+    ROOT_OPTIMIZATION_KEYPOINT: str  # Root optimization keypoint name
+    TRUNK_OPTIMIZATION_KEYPOINTS: List[str]  # Trunk optimization keypoint names
+    INDIVIDUAL_PART_OPTIMIZATION: Dict[
+        str, List[str]
+    ]  # Part optimization keypoint groups
+    KEYPOINT_COLOR_PAIRS: Dict[str, str]  # RGBA color values for keypoints
+    SCALE_FACTOR: float  # Scale factor for model
+    MOCAP_SCALE_FACTOR: float  # Scale factor for mocap data (to convert to meters)
+    SITES_TO_REGULARIZE: List[str]  # Sites to regularize during offset optimization
+    RENDER_FPS: int  # FPS for rendering
+    N_SAMPLE_FRAMES: int  # Number of frames to sample when computing offset residual
+    M_REG_COEF: int  # Coefficient for regularization term in offset optimization
 
 
 @dataclass
 class MujocoConfig:
     """Configuration for Mujoco."""
 
-    solver: str
-    iterations: int
-    ls_iterations: int
+    solver: str  # Solver to use ('cg' or 'newton')
+    iterations: int  # Number of solver iterations
+    ls_iterations: int  # Number of line search iterations
 
 
 @dataclass
 class StacConfig:
     """Configuration for STAC."""
 
-    fit_offsets_path: str
-    ik_only_path: str
-    data_path: str
-    num_clips: int
-    n_fit_frames: int
-    skip_fit_offsets: bool
-    skip_ik_only: bool
-    infer_qvels: bool
-    n_frames_per_clip: int
-    mujoco: MujocoConfig
+    fit_offsets_path: str  # Save path for fit_offsets() output
+    ik_only_path: str  # Save path for ik_only() output
+    data_path: str  # Path to mocap data
+    num_clips: int  # Number of clips in mocap data
+    n_fit_frames: int  # Number of frames to fit offsets to
+    skip_fit_offsets: bool  # Skip fit_offsets() step if True
+    skip_ik_only: bool  # Skip ik_only() step if True
+    infer_qvels: bool  # Infer qvels if True
+    n_frames_per_clip: int  # Number of frames per clip
+    mujoco: MujocoConfig  # Configuration for Mujoco
 
 
 @dataclass
 class Config:
     """Combined configuration for the model and STAC."""
 
-    model: ModelConfig
-    stac: StacConfig
+    model: ModelConfig  # Configuration for STAC
+    stac: StacConfig  # Configuration for the model
 
 
 @dataclass
 class StacData:
     """Data structure for STAC output."""
 
-    qpos: np.ndarray
-    xpos: np.ndarray
-    xquat: np.ndarray
-    marker_sites: np.ndarray
-    offsets: np.ndarray
-    kp_data: np.ndarray
-    names_qpos: List[str]
-    names_xpos: List[str]
-    kp_names: List[str]
+    qpos: np.ndarray  # Root position and quaternion, and joint angles
+    xpos: np.ndarray  # Body positions
+    xquat: np.ndarray  # Body quaternions
+    marker_sites: np.ndarray  # Marker site positions
+    offsets: np.ndarray  # Marker site offsets
+    kp_data: np.ndarray  # Keypoint data
+    names_qpos: List[str]  # Names of qpos
+    names_xpos: List[str]  # Names of xpos
+    kp_names: List[str]  # Names of keypoints
 
     # Optional
-    qvel: np.ndarray = field(default_factory=lambda: np.array([]))
+    qvel: np.ndarray = field(
+        default_factory=lambda: np.array([])
+    )  # Inferred joint velocities
 
     def as_dict(self) -> dict:
         """Convert the dataclass instance to a dictionary."""
@@ -344,13 +348,13 @@ def load_stac_data(file_path) -> tuple[Config, StacData]:
         kp_names = [name.decode("utf-8") for name in f["kp_names"]]
         names_qpos = [name.decode("utf-8") for name in f["names_qpos"]]
         names_xpos = [name.decode("utf-8") for name in f["names_xpos"]]
-        kp_data = np.array(f["kp_data"])
-        marker_sites = np.array(f["marker_sites"])
-        offsets = np.array(f["offsets"])
-        qpos = np.array(f["qpos"])
-        qvel = np.array(f["qvel"])
-        xpos = np.array(f["xpos"])
-        xquat = np.array(f["xquat"])
+        kp_data = f["kp_data"][()]
+        marker_sites = f["marker_sites"][()]
+        offsets = f["offsets"][()]
+        qpos = f["qpos"][()]
+        qvel = f["qvel"][()]
+        xpos = f["xpos"][()]
+        xquat = f["xquat"][()]
 
         stac_data = StacData(
             kp_names=kp_names,

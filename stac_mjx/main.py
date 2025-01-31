@@ -87,10 +87,16 @@ def run_stac(
             config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
         )
         (fit_offsets_data, fit_offsets_path)
+    else:
+        print(
+            "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to 0."
+        )
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:
-        print("skipping ik_only()")
+        print(
+            "Skipping IK-only phase. To change this behavior, set cfg.stac.skip_ik_only to 0."
+        )
         return fit_offsets_path, None
     elif kp_data.shape[0] % cfg.stac.n_frames_per_clip != 0:
         raise ValueError(
@@ -109,7 +115,9 @@ def run_stac(
     )
     if cfg.stac.infer_qvels:
         t_vel = time.time()
-        qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
+        qvels = vmap_compute_velocity_fn(
+            qpos_trajectory=batched_qpos, freejoint=stac._freejoint
+        )
         # set dict key after reshaping and casting to numpy
         ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
         print(f"Finished compute velocity in {time.time() - t_vel}")
