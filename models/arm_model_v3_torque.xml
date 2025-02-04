@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="mouse">
+	<option timestep="0.001" gravity="0 0 0"/>
+	<size njmax="1000" nconmax="400" nkey="1" nuser_jnt="1"/>
+
+	<visual>
+		<scale framelength="0.5" framewidth="0.01"/>
+	</visual>
+
+
+	<asset>
+		<material name="target" rgba="0.59999999999999998 0.29999999999999999 0.29999999999999999 0.29999999999999999"/>
+		<texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="0.6 0.8 1" width="256" height="1536"/>
+		<texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+		<material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Scapula_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Humerus_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Clavicle_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Ulna_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Radius_right_v3.stl"/>
+		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Segments_Hand.stl"/>
+
+	</asset>
+	<!--This stuff can all be left alone-->
+	<worldbody>
+		<light directional="true"/>
+		<body name="ground" euler="0 0 0">
+			<camera name="my_camera" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+			<camera name="my_camera1" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+			<geom name="target" type="sphere" size="0.001" material="target" pos="0.002 0.012 0.0" contype="0" conaffinity="0"/>
+
+			<!--SOB Clavicle-->
+			<body name="clavicle" pos="0 0 0" euler="0 0 0">
+				<!--Mesh Geom-->
+				<geom type="mesh" mesh="Bone_Clavicle_right_v3" pos="0 0 0.0005"/>
+				
+				<!--Muscle Attachment-->
+				<!--Pec Clavicular Head-->
+				<site name="Pec_C_Origin" pos="-0.002 0 0.0005" rgba=".1 .2 .6 .5" size="0.0002"/>				
+				<!--Anterior Deltoid-->
+				<site name="AD_Origin" pos="-0.000 0.0013 0.0007" rgba=".1 .2 .6 .5" size="0.0002"/>
+				
+				
+				<!--SOB Scapula-->
+				<body name="scapula" pos="-0.0001 -0.0001 0.0005" euler="-30 -15 0">
+					<!--Mesh Geom-->
+					<geom type="mesh" mesh="Bone_Scapula_right_v3" pos="0.0 0.0 0.0"/>
+					
+					<!--Muscle Attachement-->
+					<!--Latissimus Dorsi-->
+					<site name="Lat_Origin" pos="-0.0005 -0.004 -0.0035" rgba=".1 .2 .6 .5" size="0.0002"/>
+					<!--Posterior Deltoid-->
+					<site name="PD_Origin" pos="0.0004 -0.0007 0.0006" rgba=".1 .2 .6 .5" size="0.0002"/>
+					<!--Middle Deltoid-->
+					<site name="MD_Origin" pos="0.0007 0.0005 0.0005" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+					<!--Triceps Lateral Head-->
+					<site name="Triceps_Long_Origin" pos="0 -0.0003 -0.0005" rgba=".1 .2 .6 .5" size="0.0002"/>
+					<!--Biceps Long Head-->
+					<site name="Biceps_Long_Origin" pos=".0001 0.0003 0.0007" rgba=".1 .2 .6 .5" size="0.0002"/>
+					
+					<!--SOB Humerus-->
+					<body name="humerus" pos="0 0.0007 -0.0002" euler="-15 0 0">						
+						<!-- Glenohumeral (aka shoulder) Joint-->					
+						<site name="shoulder_joint_viz_large" pos="0 0 0" rgba="1 .2 .6 .2" size="0.0010"/>
+						<inertial pos="-0.0005 0.0003 -0.004" mass="0.0001258" diaginertia="3e-8 3e-8 3e-8"/>
+						<site name="interial_center_humerus" pos="-0.0005 0.0003 -0.004" rgba=".6 .6 .6 .6" size="0.0005"/>	
+												<!--Mesh Geom-->
+						<geom type="mesh" mesh="Bone_Humerus_right_v3" pos="0.0 0.0 0.0"/>
+
+						<joint name="sh_elv" type="hinge" pos="0 0 0" axis="0 1 0" damping="0.001" range="-70 0" limited="true"/>
+						<!-- Extension Joint: Yaw around Z-axis -->
+						<joint name="sh_extension" type="hinge" pos="0 0 0" axis="0 0 1" damping="0.001" range="-70 40" limited="true"/>
+						<!-- Rotation Joint: Roll around X-axis -->
+						<joint name="sh_rotation" type="hinge" pos="0 0 0" axis="1 0 0" damping="0.001" range="-25 89" limited="true"/>
+
+						<!--Attachement-->
+						<!--Pec Clavicular Head-->
+						<site name="Pec_C_P2" pos="-0.0005 0.0009 -0.0003" rgba=".1 .2 .6 .5" size="0.0002"/>
+						<site name="Pec_C_Insertion" pos="-0.000 0.001 -0.0005" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+						<!--Latissimus Dorsi-->
+						<site name="Lat_P2" pos="-0.001 0.000 -0.0006" rgba=".1 .2 .6 .5" size="0.0002"/>
+						<site name="Lat_Insertion" pos="-0.0004 0.0008 -0.0006" rgba=".1 .2 .6 .5" size="0.0002"/>
+											
+						<!--Anterior Deltoid-->
+						<site name="AD_P2" pos="0.0003 0.0012 -0.0003" rgba=".1 .2 .6 .5" size="0.0002"/>
+						<site name="AD_Insertion" pos="0.0003 0.0012 -0.0021" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+						<!--Posterior Deltoid-->
+						<site name="PD_P2" pos="0.0003 -0.0003 -0.0006" rgba=".1 .2 .6 .5" size="0.0002"/>
+						<site name="PD_Insertion" pos="0.0003 0.001 -0.001" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+						<!--Middle Deltoid-->
+						<site name="MD_P2" pos="0.0008 0.0003 -0.0003" rgba=".1 .2 .6 .5" size="0.0002"/>
+						<site name="MD_Insertion" pos="0.0003 0.001 -0.0016" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+						<!--Triceps Lateral Head-->
+						<site name="Triceps_Lateral_Origin" pos="0.000 -0.000 -0.0018" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+						<!--Brachialis-->
+						<site name="Brachialis_Origin" pos="-0.0005 0.0005 -0.0045" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+						<!--Biceps Long Head-->
+						<site name="Biceps_Long_P2" pos="-0.0002 0.0009 0.0005" rgba=".1 .2 .6 .5" size="0.0002"/>
+						<site name="Biceps_Long_P3" pos="-0.0002 0.0012 -0.0005" rgba=".1 .2 .6 .5" size="0.0002"/>
+						
+						<!--SOB Ulna-->
+						<body name="ulna" pos="-0.0005 0.0003 -0.0068" euler="-15 0 0">
+							<!--Mesh Geom-->
+							<geom type="mesh" mesh="Bone_Ulna_right_v3" pos="0.0 0.0 0.0"/>
+							
+							<!-- Elbow Joint -->
+							<joint name="elbow" pos="0 0 0" axis="1 0 0" stiffness="0.000001" damping="0.00001" range="-80 90" limited="true"/>
+							<inertial pos="-0.0009 0.004 0.0005" mass="0.0001258" diaginertia="3e-8 3e-8 3e-8"/>
+							<site name="elbow_joint_viz_large" pos="0 0 0" rgba="1 .2 .6 .2" size="0.0005"/>
+							<site name="interial_center_ulna" pos="-0.0009 0.004 0.0005" rgba=".6 .6 .6 .6" size="0.0005"/>
+
+							<geom name="elbow_marker" type="sphere" size="0.0003" pos="0 0 0" contype="0" conaffinity="0" rgba="0.3 0.8 0.3 0.8" />
+
+							<!--Attachement-->
+							<!--Triceps Lateral Head-->
+							<site name="Triceps_Long_Insertion" pos="0.0002 -0.0008 0.0002" rgba=".1 .2 .6 .5" size="0.0002"/>
+							
+							<!--Triceps Lateral Head-->
+							<site name="Triceps_Lateral_Insertion" pos="0.0002 -0.0008 0.0002" rgba=".1 .2 .6 .5" size="0.0002"/>
+							
+							<!--Brachialis-->
+							<site name="Brachialis_Insertion" pos="-0.0002 0.001 0.0001" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+							<!--SOB Radius-->
+							<body name="radius" pos="0.00035 0.0002 0.0002" euler="0 0 0">
+								<!--Mesh Geom-->
+								<geom type="mesh" mesh="Bone_Radius_right_v3" pos="0.0 0.0 0.0"/>
+
+								<!--Attachement-->
+								<!--Biceps Long Head-->
+								<site name="Biceps_Long_Insertion" pos="-0.0002 0.001 0.0001" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+								<body name="hand" pos=".003 0.0005 -.009 " euler="-15 -15 -45">
+									<geom type="mesh" mesh="Bone_Segments_Hand" pos="0 0 0"/>		
+									<geom name="finger_tip" type="sphere" size="0.001" material="target" pos="-0.0071999999999999998 0.0019 0.012999999999999999" contype="0" conaffinity="0"/>					
+									<inertial pos="-0.0048 0.0019 0.012" mass=" 0.00071" diaginertia="7e-08 7e-08 7e-08"/>
+									<site name="interial_center_hand" pos="-0.0048 0.0019 0.012" rgba=".6 .6 .6 .1" size="0.0008"/>
+								</body>
+							</body>
+						</body>
+					</body>
+				</body>
+				<!--EOB Ground-->
+			</body>
+		</body>
+	</worldbody>
+	<actuator>
+		<motor name="sh_elv_act" joint="sh_elv" ctrllimited="true" ctrlrange="-1 1" forcerange="-.001 .001"/>
+		<motor name="sh_extension_act" joint="sh_extension" ctrllimited="true" ctrlrange="-1 1" forcerange="-.001 .001"/>
+		<motor name="sh_rotation_act" joint="sh_rotation" ctrllimited="true" ctrlrange="-1 1" forcerange="-.001 .001"/>
+		<motor name="elbow_act" joint="elbow" ctrllimited="true" ctrlrange="-1 1" forcerange="-.0001 .0001"/>
+	</actuator>
+</mujoco>
