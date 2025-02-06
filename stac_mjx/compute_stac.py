@@ -2,12 +2,12 @@
 
 import jax
 import jax.numpy as jp
-
+import numpy as np
 from typing import Tuple, List
 import time
 
 from stac_mjx import stac_core
-from stac_mjx import op_utils
+from stac_mjx import utils
 
 
 def root_optimization(
@@ -46,14 +46,6 @@ def root_optimization(
     s = time.time()
     q0 = jp.copy(mjx_data.qpos[:])
 
-    # Set the root_kp_index below according to a keypoint in the
-    # KEYPOINT_MODEL_PAIRS that is near the center of the model, not
-    # necessarily exactly so. The value of 3*18 is chosen for the
-    # rodent.xml, corresponding to the index of 'SpineL' keypoint.
-    # For the mouse model this should be 3*5, corresponding 'Trunk'
-    # root_kp_idx = 3 * 18
-    # FLY_MODEL:
-    # root_kp_idx = 0
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
@@ -75,8 +67,8 @@ def root_optimization(
 
     r = time.time()
 
-    mjx_data = op_utils.replace_qs(
-        mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params)
+    mjx_data = utils.replace_qs(
+        mjx_model, mjx_data, utils.make_qs(q0, qs_to_opt, res.params)
     )
     print(f"Replace 1 finished in {time.time()-r}")
 
@@ -101,8 +93,8 @@ def root_optimization(
     print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
     r = time.time()
 
-    mjx_data = op_utils.replace_qs(
-        mjx_model, mjx_data, op_utils.make_qs(q0, qs_to_opt, res.params)
+    mjx_data = utils.replace_qs(
+        mjx_model, mjx_data, utils.make_qs(q0, qs_to_opt, res.params)
     )
 
     print(f"Replace 2 finished in {time.time()-r}")
@@ -149,7 +141,7 @@ def offset_optimization(
     print("Begining offset optimization:")
 
     # Define initial position of the optimization
-    offset0 = op_utils.get_site_pos(mjx_model, site_idxs).flatten()
+    offset0 = utils.get_site_pos(mjx_model, site_idxs).flatten()
 
     keypoints = jp.array(kp_data[time_indices, :])
     q = jp.take(q, time_indices, axis=0)
@@ -170,12 +162,12 @@ def offset_optimization(
     print(f"Final error of {res.state.error}")
 
     # Set body sites according to optimized offsets
-    mjx_model = op_utils.set_site_pos(
+    mjx_model = utils.set_site_pos(
         mjx_model, jp.reshape(offset_opt_param, (-1, 3)), site_idxs
     )
 
     # Forward kinematics, and save the results to the walker sites as well
-    mjx_data = op_utils.kinematics(mjx_model, mjx_data)
+    mjx_data = utils.kinematics(mjx_model, mjx_data)
 
     print(f"offset optimization finished in {time.time()-s}")
 
@@ -206,9 +198,10 @@ def pose_optimization(
         Tuple: Updated mjx.Data, optimized qpos, offset site xpos, mjx.Data.xpos for each frame, and info for logging (optimization time and errors)
     """
     s = time.time()
-    q = []
-    x = []
-    walker_body_sites = []
+    qposes = []
+    xposes = []
+    xquats = []
+    marker_sites = []
 
     # Iterate through all of the frames
     frames = jp.arange(kp_data.shape[0])
@@ -233,7 +226,7 @@ def pose_optimization(
             site_idxs,
         )
 
-        mjx_data = op_utils.replace_qs(mjx_model, mjx_data, res.params)
+        mjx_data = utils.replace_qs(mjx_model, mjx_data, res.params)
 
         for part in parts:
             q0 = jp.copy(mjx_data.qpos[:])
@@ -250,8 +243,8 @@ def pose_optimization(
                 site_idxs,
             )
 
-            mjx_data = op_utils.replace_qs(
-                mjx_model, mjx_data, op_utils.make_qs(q0, part, res.params)
+            mjx_data = utils.replace_qs(
+                mjx_model, mjx_data, utils.make_qs(q0, part, res.params)
             )
 
         return mjx_data, res.state.error
@@ -264,9 +257,10 @@ def pose_optimization(
 
         mjx_data, error = f(mjx_data, kp_data, n_frame, indiv_parts)
 
-        q.append(mjx_data.qpos[:])
-        x.append(mjx_data.xpos[:])
-        walker_body_sites.append(op_utils.get_site_xpos(mjx_data, site_idxs))
+        qposes.append(mjx_data.qpos[:])
+        xposes.append(mjx_data.xpos[:])
+        xquats.append(mjx_data.xquat[:])
+        marker_sites.append(utils.get_site_xpos(mjx_data, site_idxs))
 
         frame_time.append(time.time() - loop_start)
         frame_error.append(error)
@@ -274,9 +268,10 @@ def pose_optimization(
     print(f"Pose Optimization done in {time.time()-s}")
     return (
         mjx_data,
-        jp.array(q),
-        jp.array(walker_body_sites),
-        jp.array(x),
-        jp.array(frame_time),
-        jp.array(frame_error),
+        jp.array(qposes),
+        xposes,
+        xquats,
+        marker_sites,
+        frame_time,
+        frame_error,
     )

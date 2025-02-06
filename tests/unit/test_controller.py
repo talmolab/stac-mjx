@@ -11,7 +11,7 @@ _BASE_PATH = Path.cwd()
 def test_init_stac(mocap_nwb, config):
     cfg = main.load_configs(config)
     xml_path = _BASE_PATH / cfg.model.MJCF_PATH
-    kp_data, sorted_kp_names = io.load_data(cfg)
+    kp_data, sorted_kp_names = io.load_mocap(cfg)
 
     stac = Stac(xml_path, cfg, sorted_kp_names)
 

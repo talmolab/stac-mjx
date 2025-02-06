@@ -12,10 +12,98 @@ from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
 from pathlib import Path
 from omegaconf import DictConfig
-import stac_mjx.io_dict_to_hdf5 as ioh5
+from omegaconf import OmegaConf
+from dataclasses import dataclass, asdict, field
+from typing import List, Dict
 
 
-def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
+# Dataclasses for config files and stac-mjx outputs
+
+
+@dataclass
+class ModelConfig:
+    """Configuration for body model."""
+
+    MJCF_PATH: str  # Path to model xml
+    FTOL: float  # Tolerance for optimization TODO: currently unused
+    ROOT_FTOL: float  # Tolerance for root optimization TODO: currently unused
+    LIMB_FTOL: float  # Tolerance for limb optimization TODO: currently unused
+    N_ITERS: int  # Number of iterations for STAC algorithm
+    KP_NAMES: List[str]  # Ordered list of keypoint names
+    KEYPOINT_MODEL_PAIRS: Dict[str, str]  # Mapping from keypoint names to model bodies
+    KEYPOINT_INITIAL_OFFSETS: Dict[str, str]  # Initial offsets for keypoints
+    ROOT_OPTIMIZATION_KEYPOINT: str  # Root optimization keypoint name
+    TRUNK_OPTIMIZATION_KEYPOINTS: List[str]  # Trunk optimization keypoint names
+    INDIVIDUAL_PART_OPTIMIZATION: Dict[
+        str, List[str]
+    ]  # Part optimization keypoint groups
+    KEYPOINT_COLOR_PAIRS: Dict[str, str]  # RGBA color values for keypoints
+    SCALE_FACTOR: float  # Scale factor for model
+    MOCAP_SCALE_FACTOR: float  # Scale factor for mocap data (to convert to meters)
+    SITES_TO_REGULARIZE: List[str]  # Sites to regularize during offset optimization
+    RENDER_FPS: int  # FPS for rendering
+    N_SAMPLE_FRAMES: int  # Number of frames to sample when computing offset residual
+    M_REG_COEF: int  # Coefficient for regularization term in offset optimization
+
+
+@dataclass
+class MujocoConfig:
+    """Configuration for Mujoco."""
+
+    solver: str  # Solver to use ('cg' or 'newton')
+    iterations: int  # Number of solver iterations
+    ls_iterations: int  # Number of line search iterations
+
+
+@dataclass
+class StacConfig:
+    """Configuration for STAC."""
+
+    fit_offsets_path: str  # Save path for fit_offsets() output
+    ik_only_path: str  # Save path for ik_only() output
+    data_path: str  # Path to mocap data
+    num_clips: int  # Number of clips in mocap data
+    n_fit_frames: int  # Number of frames to fit offsets to
+    skip_fit_offsets: bool  # Skip fit_offsets() step if True
+    skip_ik_only: bool  # Skip ik_only() step if True
+    infer_qvels: bool  # Infer qvels if True
+    n_frames_per_clip: int  # Number of frames per clip
+    mujoco: MujocoConfig  # Configuration for Mujoco
+
+
+@dataclass
+class Config:
+    """Combined configuration for the model and STAC."""
+
+    model: ModelConfig  # Configuration for STAC
+    stac: StacConfig  # Configuration for the model
+
+
+@dataclass
+class StacData:
+    """Data structure for STAC output."""
+
+    qpos: np.ndarray  # Root position and quaternion, and joint angles
+    xpos: np.ndarray  # Body positions
+    xquat: np.ndarray  # Body quaternions
+    marker_sites: np.ndarray  # Marker site positions
+    offsets: np.ndarray  # Marker site offsets
+    kp_data: np.ndarray  # Keypoint data
+    names_qpos: List[str]  # Names of qpos
+    names_xpos: List[str]  # Names of xpos
+    kp_names: List[str]  # Names of keypoints
+
+    # Optional
+    qvel: np.ndarray = field(
+        default_factory=lambda: np.array([])
+    )  # Inferred joint velocities
+
+    def as_dict(self) -> dict:
+        """Convert the dataclass instance to a dictionary."""
+        return asdict(self)
+
+
+def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
     """Load mocap data based on file type.
 
     Loads mocap file based on filetype, and returns the data flattened
@@ -178,34 +266,107 @@ def _load_params(param_path):
     return params
 
 
-# FLY_MODEL: decide to keep or not!
-# def load_stac_ik_only(save_path):
-#     _, file_extension = os.path.splitext(save_path)
-#     if file_extension == ".p":
-#         with open(save_path, "rb") as file:
-#             fit_data = pickle.load(file)
-#     elif file_extension == ".h5":
-#         fit_data = ioh5.load(save_path)
-#     return fit_data
-
-
-def save(fit_data, save_path: Text):
-    """Save data.
-
-    Save data as .p or .h5 file.
+def save_dict_to_hdf5(group, dictionary):
+    """Save a dictionary to an HDF5 group.
 
     Args:
-        fit_data (numpy array): Data to write out.
-        save_path (Text): Path to save data. Defaults to None.
+        group (h5py.Group): HDF5 group to save the dictionary to.
+        dictionary (dict): Dictionary to save.
     """
-    if os.path.dirname(save_path) != "":
-        os.makedirs(os.path.dirname(save_path), exist_ok=True)
-    _, file_extension = os.path.splitext(save_path)
-    if file_extension == ".p":
-        with open(save_path, "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
-    elif file_extension == ".h5":
-        ioh5.save(save_path, fit_data)
-    else:
-        with open(save_path + ".p", "wb") as output_file:
-            pickle.dump(fit_data, output_file, protocol=2)
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            subgroup = group.create_group(key)
+            save_dict_to_hdf5(subgroup, value)
+        else:
+            group.attrs[key] = value
+
+
+def save_data_to_h5(
+    config: Config,
+    kp_names: list,
+    names_qpos: list,
+    names_xpos: list,
+    kp_data: np.ndarray,
+    marker_sites: np.ndarray,
+    offsets: np.ndarray,
+    qpos: np.ndarray,
+    xpos: np.ndarray,
+    xquat: np.ndarray,
+    qvel: np.ndarray,
+    file_path: str,
+):
+    """Save configuration and STAC data to an HDF5 file.
+
+    Args:
+        config (Config): Configuration dataclass.
+        kp_names (list): List of keypoint names.
+        names_qpos (list): List of qpos names.
+        names_xpos (list): List of xpos names.
+        kp_data (np.ndarray): Keypoint data array.
+        marker_sites (np.ndarray): Marker sites array.
+        offsets (np.ndarray): Offsets array.
+        qpos (np.ndarray): Qpos array.
+        xpos (np.ndarray): Xpos array.
+        xquat (np.ndarray): Xquat array.
+        qvel (np.ndarray): Qvel array.
+        file_path (str): Path to the HDF5 file.
+    """
+    with h5py.File(file_path, "w") as f:
+        # Save config as a YAML string
+        config_yaml = OmegaConf.to_yaml(OmegaConf.structured(config))
+        f.create_dataset("config", data=np.string_(config_yaml))
+
+        # Save stac output data
+        f.create_dataset("kp_names", data=np.array(kp_names, dtype="S"))
+        f.create_dataset("names_qpos", data=np.array(names_qpos, dtype="S"))
+        f.create_dataset("names_xpos", data=np.array(names_xpos, dtype="S"))
+        f.create_dataset("kp_data", data=kp_data, compression="gzip")
+        f.create_dataset("marker_sites", data=marker_sites, compression="gzip")
+        f.create_dataset("offsets", data=offsets, compression="gzip")
+        f.create_dataset("qpos", data=qpos, compression="gzip")
+        f.create_dataset("qvel", data=qvel, compression="gzip")
+        f.create_dataset("xpos", data=xpos, compression="gzip")
+        f.create_dataset("xquat", data=xquat, compression="gzip")
+
+
+def load_stac_data(file_path) -> tuple[Config, StacData]:
+    """Load configuration and STAC data from an HDF5 file.
+
+    Args:
+        file_path (str): Path to the HDF5 file.
+
+    Returns:
+        tuple: A tuple containing the Config and StacData dataclasses.
+    """
+    with h5py.File(file_path, "r") as f:
+        # Load config from YAML string
+        config_yaml = f["config"][()].decode("utf-8")
+        config = OmegaConf.create(config_yaml)
+        config = OmegaConf.structured(Config(**config))
+
+        # Load additional values
+        kp_names = [name.decode("utf-8") for name in f["kp_names"]]
+        names_qpos = [name.decode("utf-8") for name in f["names_qpos"]]
+        names_xpos = [name.decode("utf-8") for name in f["names_xpos"]]
+        kp_data = f["kp_data"][()]
+        marker_sites = f["marker_sites"][()]
+        offsets = f["offsets"][()]
+        qpos = f["qpos"][()]
+        qvel = f["qvel"][()]
+        xpos = f["xpos"][()]
+        xquat = f["xquat"][()]
+
+        stac_data = StacData(
+            kp_names=kp_names,
+            names_qpos=names_qpos,
+            names_xpos=names_xpos,
+            kp_data=kp_data,
+            marker_sites=marker_sites,
+            offsets=offsets,
+            qpos=qpos,
+            qvel=qvel,
+            xpos=xpos,
+            xquat=xquat,
+        )
+
+    return config, stac_data

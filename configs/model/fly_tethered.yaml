@@ -1,9 +1,6 @@
 # MJCF_PATH: 'models/fruitfly/fruitfly_freeforce.xml'
 MJCF_PATH: 'models/fruitfly/fruitfly_force_free.xml'
 
-# Frames per clip for transform.
-N_FRAMES_PER_CLIP: 300
-
 # Tolerance for the optimizations of the full model, limb, and root. 
 # TODO: Re-implement optimizer loops to use these tolerances
 FTOL: 5.0e-03
