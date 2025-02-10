@@ -51,6 +51,7 @@ def viz_stac(
     # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
     stac = Stac(xml_path, cfg, kp_names)
+
     return cfg, stac.render(
         qposes,
         kp_data,

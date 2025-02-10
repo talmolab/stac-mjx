@@ -175,11 +175,10 @@ class Stac:
             else:
                 is_regularized.append(jp.array([0.0, 0.0, 0.0]))
         is_regularized = jp.stack(is_regularized).flatten()
-
+        body_site_idxs = jp.array(list(site_index_map.values()))
         return (
-            # physics,
             physics.model.ptr,
-            jp.array(list(site_index_map.values())),
+            body_site_idxs,
             is_regularized,
         )
 
@@ -421,8 +420,8 @@ class Stac:
             get_batch_offsets = jax.vmap(utils.get_site_pos, in_axes=(0, None))
             offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
             qposes = qposes.reshape(-1, qposes.shape[-1])
-            xposes = xposes.reshape(-1, *xposes.shape[2:])
-            xquats = xquats.reshape(-1, *xquats.shape[2:])
+            xposes = xposes.reshape(-1, *xposes.shape[2:], order="F")
+            xquats = xquats.reshape(-1, *xquats.shape[2:], order="F")
             marker_sites = marker_sites.reshape(-1, *marker_sites.shape[2:])
         else:
             offsets = self._offsets.reshape((-1, 3))
@@ -442,7 +441,7 @@ class Stac:
             kp_names=self._kp_names,
         )
 
-    def _create_keypoint_sites(self):
+    def _create_render_sites(self):
         """Create sites for keypoints (used for rendering only).
 
         Returns:
@@ -480,10 +479,10 @@ class Stac:
             site_index_map[n] for n in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
         ]
         keypoint_site_idxs = [site_index_map[n] for n in keypoint_site_names]
+
         self._body_site_idxs = body_site_idxs
         self._keypoint_site_idxs = keypoint_site_idxs
-
-        return deepcopy(physics.model.ptr), body_site_idxs, keypoint_site_idxs
+        return (deepcopy(physics.model.ptr), body_site_idxs, keypoint_site_idxs)
 
     def render(
         self,
@@ -534,7 +533,7 @@ class Stac:
             )
 
         render_mj_model, body_site_idxs, keypoint_site_idxs = (
-            self._create_keypoint_sites()
+            self._create_render_sites()
         )
 
         # Add body sites for new offsets
@@ -596,7 +595,7 @@ class Stac:
         qposes = qposes[start_frame : start_frame + n_frames]
 
         frames = []
-        # render while stepping using mujoco
+        # Render while stepping using mujoco
         with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
             for qpos, kps in tqdm(zip(qposes, kp_data)):
                 # Set keypoints--they're in cartesian space, but since they're attached to the worldbody they're the same as offsets

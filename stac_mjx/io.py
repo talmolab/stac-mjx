@@ -218,7 +218,7 @@ def load_h5(filename):
     Returns:
         dict: Dictionary containing the data from the .h5 file.
     """
-    # TODO add track information
+    # TODO tracks is a hardcoded dataset name
     data = {}
     with h5py.File(filename, "r") as f:
         for key in f.keys():
@@ -251,34 +251,6 @@ def _todict(matobj):
         else:
             dict[strg] = elem
     return dict
-
-
-def _load_params(param_path):
-    """Load parameters for the animal.
-
-    :param param_path: Path to .yaml file specifying animal parameters.
-    """
-    with open(param_path, "r") as infile:
-        try:
-            params = yaml.safe_load(infile)
-        except yaml.YAMLError as exc:
-            print(exc)
-    return params
-
-
-def save_dict_to_hdf5(group, dictionary):
-    """Save a dictionary to an HDF5 group.
-
-    Args:
-        group (h5py.Group): HDF5 group to save the dictionary to.
-        dictionary (dict): Dictionary to save.
-    """
-    for key, value in dictionary.items():
-        if isinstance(value, dict):
-            subgroup = group.create_group(key)
-            save_dict_to_hdf5(subgroup, value)
-        else:
-            group.attrs[key] = value
 
 
 def save_data_to_h5(
