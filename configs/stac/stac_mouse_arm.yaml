@@ -1,0 +1,15 @@
+fit_offsets_path: "mouse_arm_fit_new.h5"
+ik_only_path: "mouse_arm_ik_only_new.h5"
+data_path: "/root/vast/eric/stac-mjx/mujoco_aligned_tracking.h5"
+# data_path: "tests/data/test_mouse_mocap_3600_frames.h5"
+
+n_fit_frames: 1000
+skip_fit_offsets: False
+skip_ik_only: False
+n_frames_per_clip: 1 # 1 if mocap is one session
+infer_qvels: False
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

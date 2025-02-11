@@ -1,0 +1,58 @@
+# MJCF_PATH: "models/mazen_torque.xml"
+MJCF_PATH: "/root/vast/eric/stac-mjx/models/arm_model_v3_torque.xml"
+
+# Tolerance for the optimizations of the full model, limb, and root.
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 6
+
+KP_NAMES:
+  - Shoulder
+  - Elbow
+  - Wrist
+
+# Ambiguity, are keypoints joints or bones? (Nose is not a joint, but MTP is a joint.)
+KEYPOINT_MODEL_PAIRS:
+  Shoulder: scapula
+  Elbow: elbow
+  Wrist: wrist_body
+
+# The initial offsets for each keypoint in meters.
+KEYPOINT_INITIAL_OFFSETS:
+  Shoulder: 0. 0. 0.
+  Elbow: 0. 0. 0.
+  Wrist: 0. 0. 0.
+
+ROOT_OPTIMIZATION_KEYPOINT: Wrist
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+ - "Wrist"
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  Shoulder: 1 0 0 1  # Red
+  Elbow: 0 1 0 1  # Green
+  Wrist: 0 0 1 1  # Blue
+  
+# What is the size of the animal you'd like to register, relative to the model?
+SCALE_FACTOR: 1.0
+
+# Multiplier to put the mocap data into the same scale as the data. Eg, if the
+# mocap data is known to be in millimeters and the model is in meters, this is
+# .001
+MOCAP_SCALE_FACTOR: 1.0
+
+SITES_TO_REGULARIZE:
+   - Wrist
+
+RENDER_FPS: 30
+
+N_SAMPLE_FRAMES: 50
+
+# If you have reason to believe that the initial offsets are correct for particular keypoints, 
+# you can regularize those sites using _SITES_TO_REGULARIZE. 
+M_REG_COEF: 0
