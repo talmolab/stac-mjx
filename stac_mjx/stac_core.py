@@ -230,5 +230,7 @@ def m_opt(
 # TODO: put these values in config, move to just optax by implementing solver loop
 opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
-q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250)
+q_solver = ProjectedGradient(
+    fun=q_loss, projection=projection_box, maxiter=250, tol=1e-10
+)
 m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)
