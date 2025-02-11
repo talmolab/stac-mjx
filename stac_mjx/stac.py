@@ -142,13 +142,13 @@ class Stac:
             regularization, lists for part names and body names.
         """
         for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
-            parent = root.find("body", v)
+            parent = root.worldbody.find("body", v)
             pos = self.cfg.model.KEYPOINT_INITIAL_OFFSETS[key]
             parent.add(
                 "site",
                 name=key,
                 type="sphere",
-                size=[0.005],
+                size=[0.001],
                 rgba="0 0 0 0.8",
                 pos=pos,
                 group=3,
@@ -460,7 +460,7 @@ class Stac:
                 "site",
                 name=site_name,
                 type="sphere",
-                size=[0.005],
+                size=[0.001],
                 rgba=rgba,
                 pos=start,
                 group=2,
@@ -546,7 +546,7 @@ class Stac:
                 "site",
                 name=key + "_new",
                 type="sphere",
-                size=[0.005],
+                size=[0.001],
                 rgba="0 0 0 1",
                 pos=pos,
                 group=2,
