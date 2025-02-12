@@ -115,9 +115,7 @@ def run_stac(
     )
     if cfg.stac.infer_qvels:
         t_vel = time.time()
-        qvels = vmap_compute_velocity_fn(
-            qpos_trajectory=batched_qpos, freejoint=stac._freejoint
-        )
+        qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         # set dict key after reshaping and casting to numpy
         ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
         print(f"Finished compute velocity in {time.time() - t_vel}")
