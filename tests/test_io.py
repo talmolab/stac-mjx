@@ -28,8 +28,6 @@ def test_load_nwb(config, mocap_nwb):
     """
     Test loading data from .nwb file.
     """
-    # params = utils._load_params(_BASE_PATH / rodent_config)
-    # assert params is not None
     cfg = load_config_with_overrides(config, stac_data_path_override=mocap_nwb)
     data, sorted_kp_names = io.load_mocap(cfg)
     assert data.shape == (1000, 69)
