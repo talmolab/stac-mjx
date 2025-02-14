@@ -289,10 +289,12 @@ def compute_velocity_from_kinematics(
         [qpos_trajectory, qpos_trajectory[-1, jp.newaxis, :]], axis=0
     )
 
-    qvel_joints = (qpos_trajectory[1:, 7:] - qpos_trajectory[:-1, 7:]) / dt
+    # If there's no freejoint, qpos only has the joint angles so no need for indexing.
     if not freejoint:
+        qvel_joints = (qpos_trajectory[1:, :] - qpos_trajectory[:-1, :]) / dt
         return jp.clip(qvel_joints, -max_qvel, max_qvel)
     else:
+        qvel_joints = (qpos_trajectory[1:, 7:] - qpos_trajectory[:-1, 7:]) / dt
         qvel_translation = (qpos_trajectory[1:, :3] - qpos_trajectory[:-1, :3]) / dt
         qvel_gyro = []
         for t in range(qpos_trajectory.shape[0] - 1):
