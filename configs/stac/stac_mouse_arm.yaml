@@ -4,7 +4,7 @@ data_path: "tests/data/points3d_transformed_shorten.h5"
 # data_path: "tests/data/test_mouse_mocap_3600_frames.h5"
 
 n_fit_frames: 1
-skip_fit_offsets: False
+skip_fit_offsets: True
 skip_ik_only: False
 n_frames_per_clip: 1 # 1 if mocap is one session
 infer_qvels: False

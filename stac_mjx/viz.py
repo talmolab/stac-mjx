@@ -37,6 +37,7 @@ def viz_stac(
     Returns:
         (List): List of frames
     """
+    # print(data_path)
     cfg, d = io.load_stac_data(data_path)
     qposes = d.qpos
     kp_data = d.kp_data
@@ -48,10 +49,12 @@ def viz_stac(
 
     xml_path = base_path / cfg.model.MJCF_PATH
 
+    # print(xml_path)
+
     # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
     stac = Stac(xml_path, cfg, kp_names)
-    return cfg, stac.render(
+    stac.render(
         qposes,
         kp_data,
         offsets,
@@ -63,3 +66,5 @@ def viz_stac(
         width,
         show_marker_error,
     )
+
+    return stac

@@ -21,7 +21,11 @@ from copy import deepcopy
 import imageio
 from tqdm import tqdm
 
-# Root = position (3) + quaternion (4)
+import sys
+
+
+# """Stac class handling high level functionality of stac-mjx."""
+
 _ROOT_QPOS_LB = jp.concatenate([-jp.inf * jp.ones(3), -1.0 * jp.ones(4)])
 _ROOT_QPOS_UB = jp.concatenate([jp.inf * jp.ones(3), 1.0 * jp.ones(4)])
 
@@ -67,7 +71,9 @@ class Stac:
         """
         self.cfg = cfg
         self._kp_names = kp_names
+        self.path = xml_path
         self._root = mjcf.from_path(xml_path)
+
         (
             self._mj_model,
             self._body_site_idxs,
@@ -144,15 +150,19 @@ class Stac:
         for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
             parent = root.find("body", v)
             pos = self.cfg.model.KEYPOINT_INITIAL_OFFSETS[key]
-            parent.add(
-                "site",
-                name=key,
-                type="sphere",
-                size=[0.005],
-                rgba="0 0 0 0.8",
-                pos=pos,
-                group=3,
-            )
+            try:
+                parent.add(
+                    "site",
+                    name=key,
+                    type="sphere",
+                    size=[0.001],
+                    rgba="0 0 0 0.8",
+                    pos=pos,
+                    group=3,
+                )
+            except AttributeError:
+                print(f"none type error {v, parent}")
+                sys.exit()
 
         rescale.rescale_subtree(
             root,
@@ -453,6 +463,7 @@ class Stac:
         # set up keypoint rendering by adding the kp sites to the root body
         for id, name in enumerate(self.cfg.model.KEYPOINT_MODEL_PAIRS):
             start = (np.random.rand(3) - 0.5) * 0.001
+            print(start)
             rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[name]
             site_name = name + "_kp"
             keypoint_site_names.append(site_name)
@@ -460,9 +471,10 @@ class Stac:
                 "site",
                 name=site_name,
                 type="sphere",
-                size=[0.005],
+                size=[0.001],
                 rgba=rgba,
                 pos=start,
+                # pos = [0, 0, 0],
                 group=2,
             )
             keypoint_sites.append(site)
@@ -546,7 +558,7 @@ class Stac:
                 "site",
                 name=key + "_new",
                 type="sphere",
-                size=[0.005],
+                size=[0.001],
                 rgba="0 0 0 1",
                 pos=pos,
                 group=2,
@@ -568,20 +580,20 @@ class Stac:
         physics = mjcf.Physics.from_mjcf_model(self._root)
         render_mj_model = deepcopy(physics.model.ptr)
 
-        scene_option = mujoco.MjvOption()
-        scene_option.geomgroup[1] = 0
-        scene_option.geomgroup[2] = 1
+        # scene_option = mujoco.MjvOption()
+        # scene_option.geomgroup[1] = 0
+        # scene_option.geomgroup[2] = 1
 
-        scene_option.sitegroup[2] = 1
+        # scene_option.sitegroup[2] = 1
 
-        scene_option.sitegroup[3] = 0
-        scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = True
+        # scene_option.sitegroup[3] = 0
+        # scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
+        # scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = True
+        # scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
+        # scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = True
+        # scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = True
+        # scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = True
+        # scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = True
         mj_data = mujoco.MjData(render_mj_model)
 
         mujoco.mj_kinematics(render_mj_model, mj_data)
@@ -596,16 +608,26 @@ class Stac:
         qposes = qposes[start_frame : start_frame + n_frames]
 
         frames = []
+
+        # get the index of keypoints
+        parts = self.cfg.model.KEYPOINT_MODEL_PAIRS.values()
+        kp_idx = [physics.model.name2id(part, 'body') for part in parts]
+
+        self.kp_positions = []
+
         # render while stepping using mujoco
         with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
             for qpos, kps in tqdm(zip(qposes, kp_data)):
                 # Set keypoints--they're in cartesian space, but since they're attached to the worldbody they're the same as offsets
-                render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
+                # render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
                 mj_data.qpos = qpos
 
                 mujoco.mj_fwdPosition(render_mj_model, mj_data)
 
-                renderer.update_scene(mj_data, camera=camera, scene_option=scene_option)
+                self.kp_positions.append(mj_data.xpos[kp_idx])
+
+                # renderer.update_scene(mj_data, camera=camera, scene_option=scene_option)
+                renderer.update_scene(mj_data, camera=camera)
                 pixels = renderer.render()
                 video.append_data(pixels)
                 frames.append(pixels)

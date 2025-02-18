@@ -86,7 +86,7 @@ def run_stac(
         io.save_data_to_h5(
             config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
         )
-        (fit_offsets_data, fit_offsets_path)
+        # (fit_offsets_data, fit_offsets_path)
 
     # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only == 1:

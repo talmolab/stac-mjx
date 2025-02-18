@@ -16,6 +16,7 @@ from omegaconf import OmegaConf
 from dataclasses import dataclass, asdict, field
 from typing import List, Dict
 
+from datetime import datetime
 
 # Dataclasses for config files and stac-mjx outputs
 
@@ -323,6 +324,7 @@ def save_data_to_h5(
         f.create_dataset("qvel", data=qvel, compression="gzip")
         f.create_dataset("xpos", data=xpos, compression="gzip")
         f.create_dataset("xquat", data=xquat, compression="gzip")
+        f.create_dataset("time", data=datetime.now(), compression="gzip")
 
 
 def load_stac_data(file_path) -> tuple[Config, StacData]:

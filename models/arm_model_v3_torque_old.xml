@@ -12,14 +12,14 @@
 		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Ulna_right_v3.stl"/>
 		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Radius_right_v3.stl"/>
 		<mesh file="/root/vast/joshua/stac-mjx/meshes/stl/Bone_Segments_Hand.stl"/>
-
 	</asset>
 
 	<visual>
   		<global offwidth="1920"/>
 		<global offheight="1200"/>
 	</visual>
-	
+
+	<!--This stuff can all be left alone-->
 	<worldbody>
 		<light directional="true"/>
 		<body name="ground" euler="0 0 0">
@@ -55,7 +55,7 @@
 							<geom type="mesh" mesh="Bone_Ulna_right_v3" pos="0.0 0.0 0.0"/>
 							
 							<!-- Elbow Joint -->
-							<joint name="elbow_joint" pos="0 0 0" axis="1 0 0" stiffness="0.000001" damping="0.00001" range="-80 90" limited="true"/>
+							<joint name="elbow" pos="0 0 0" axis="1 0 0" stiffness="0.000001" damping="0.00001" range="-80 90" limited="true"/>
 							<inertial pos="-0.0009 0.004 0.0005" mass="0.0001258" diaginertia="3e-8 3e-8 3e-8"/>
 
 							<body name="elbow" pos="0.0 0.0 0.0" euler="0 0 0">
@@ -65,13 +65,11 @@
 								<body name="radius" pos="0.00035 0.0002 0.0002" euler="0 0 0">
 									<!--Mesh Geom-->
 									<geom type="mesh" mesh="Bone_Radius_right_v3" pos="0.0 0.0 0.0"/>
-									<body name="wrist_body" pos="-0.002 0.0065 0.0005" euler="0 0 0">
-										<geom name="wrist_marker" type="sphere" size="0.0003" pos="0 0 0" contype="0" conaffinity="0" rgba="0.3 0.8 0.3 0.8" />
-										<!-- <body name="hand" pos=".005 -.006 -0.009" euler="-15 -15 -45">
-											<geom type="mesh" mesh="Bone_Segments_Hand" pos="0 0 0"/>					
-											<inertial pos="-0.0048 0.0019 0.012" mass=" 0.00071" diaginertia="7e-08 7e-08 7e-08"/>
-										</body> -->
-									</body>	
+
+									<body name="hand" pos=".003 0.0005 -.009 " euler="-15 -15 -45">
+										<geom type="mesh" mesh="Bone_Segments_Hand" pos="0 0 0"/>					
+										<inertial pos="-0.0048 0.0019 0.012" mass=" 0.00071" diaginertia="7e-08 7e-08 7e-08"/>
+									</body>
 								</body>
 							</body>
 						</body>
@@ -85,6 +83,6 @@
 		<motor name="sh_elv_act" joint="sh_elv" ctrllimited="true" ctrlrange="-1 1" forcerange="-.001 .001"/>
 		<motor name="sh_extension_act" joint="sh_extension" ctrllimited="true" ctrlrange="-1 1" forcerange="-.001 .001"/>
 		<motor name="sh_rotation_act" joint="sh_rotation" ctrllimited="true" ctrlrange="-1 1" forcerange="-.001 .001"/>
-		<motor name="elbow_act" joint="elbow_joint" ctrllimited="true" ctrlrange="-1 1" forcerange="-.0001 .0001"/>
+		<motor name="elbow_act" joint="elbow" ctrllimited="true" ctrlrange="-1 1" forcerange="-.0001 .0001"/>
 	</actuator>
 </mujoco>
