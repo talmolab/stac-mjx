@@ -240,7 +240,7 @@ class Stac:
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Create Stac_Core object
-        self.stac_core_obj = stac_core.Stac_Core(self.cfg.model.FTOL)
+        self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
 
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
@@ -351,7 +351,7 @@ class Stac:
 
         # Create stac_core_obj if it hasn't been instaniated yet
         if not self.stac_core_obj:
-            self.stac_core_obj = stac_core.Stac_Core(self.cfg.model.FTOL)
+            self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
 
         def mjx_setup(kp_data, mj_model):
             """Create mjxmodel and mjxdata and set offet.

@@ -65,18 +65,92 @@ def q_loss(
 
         return residual
 
+
+def m_loss(
+        offsets: jp.ndarray,
+        mjx_model,
+        mjx_data,
+        kp_data: jp.ndarray,
+        q: jp.ndarray,
+        initial_offsets: jp.ndarray,
+        site_idxs: jp.ndarray,
+        is_regularized: bool = None,
+        reg_coef: float = 0.0,
+    ) -> jp.array:
+        # fmt: off
+        """Compute the marker residual for optimization.
+
+        Args:
+            offsets (jp.ndarray): vector of offsets to inferred mocap sites
+            mjx_model (_type_): MJX Model
+            mjx_data (_type_):  MJX Data
+            kp_data (jp.ndarray):  Mocap data in global coordinates
+            q (jp.ndarray): proposed qpos values
+            initial_offsets (jp.ndarray): Initial offset values for offset regularization
+            is_regularized (bool, optional): binary vector of offsets to regularize.. Defaults to None.
+            reg_coef (float, optional):  L1 regularization coefficient during marker loss.. Defaults to 0.0.
+
+        Returns:
+            _type_: _description_
+        """
+        # fmt: on
+        def f(carry, input):
+            # Unpack arguments
+            qpos, kp = input
+            mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized = carry
+
+            # Get the offset relative to the initial position, only for markers you wish to regularize
+            reg_term = (
+                reg_term + (jp.square(offsets - initial_offsets.flatten())) * is_regularized
+            )
+
+            # Set qpos and offsets
+            mjx_data = mjx_data.replace(qpos=qpos)
+            mjx_model = utils.set_site_pos(
+                mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs
+            )
+
+            # Forward kinematics
+            mjx_data = utils.kinematics(mjx_model, mjx_data)
+            mjx_data = utils.com_pos(mjx_model, mjx_data)
+            markers = utils.get_site_xpos(mjx_data, site_idxs).flatten()
+
+            # Accumulate squared residual
+            residual = residual + jp.square((kp - markers))
+            return (
+                mjx_model,
+                mjx_data,
+                reg_term,
+                residual,
+                initial_offsets,
+                is_regularized,
+            ), None
+
+        (mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized), _ = (
+            jax.lax.scan(
+                f,
+                (
+                    mjx_model,
+                    mjx_data,
+                    jp.zeros(kp_data.shape[1]),
+                    jp.zeros(kp_data.shape[1]),
+                    initial_offsets,
+                    is_regularized,
+                ),
+                (q, kp_data),
+            )
+        )
+        return jp.sum(residual) + reg_coef * jp.sum(reg_term)
+
+
 def squared_error(x):
     """Compute the squared error + sum."""
     return jp.sum(jp.square(x))
 
 
-
-    
-# @jit
-# @jax.jit(static_argnames='stac_core_obj')
-@partial(jit, static_argnames=['stac_core_obj'])
-def q_opt(
-    stac_core_obj,
+@partial(jit, static_argnames=['q_solver'])
+def _q_opt(
+    q_solver,
     mjx_model,
     mjx_data,
     marker_ref_arr: jp.ndarray,
@@ -89,7 +163,7 @@ def q_opt(
 ):
     """Update q_pose using estimated marker parameters."""
     try:
-        return mjx_data, stac_core_obj.q_solver.run(
+        return mjx_data, q_solver.run(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
             mjx_model=mjx_model,
@@ -110,89 +184,9 @@ def q_opt(
     return mjx_data, None
 
 
-# @jit
-@partial(jit, static_argnames=['stac_core_obj'])
-def m_loss(
-    stac_core_obj,
-    offsets: jp.ndarray,
-    mjx_model,
-    mjx_data,
-    kp_data: jp.ndarray,
-    q: jp.ndarray,
-    initial_offsets: jp.ndarray,
-    site_idxs: jp.ndarray,
-    is_regularized: bool = None,
-    reg_coef: float = 0.0,
-) -> jp.array:
-    # fmt: off
-    """Compute the marker residual for optimization.
-
-    Args:
-        offsets (jp.ndarray): vector of offsets to inferred mocap sites
-        mjx_model (_type_): MJX Model
-        mjx_data (_type_):  MJX Data
-        kp_data (jp.ndarray):  Mocap data in global coordinates
-        q (jp.ndarray): proposed qpos values
-        initial_offsets (jp.ndarray): Initial offset values for offset regularization
-        is_regularized (bool, optional): binary vector of offsets to regularize.. Defaults to None.
-        reg_coef (float, optional):  L1 regularization coefficient during marker loss.. Defaults to 0.0.
-
-    Returns:
-        _type_: _description_
-    """
-    # fmt: on
-    def f(carry, input):
-        # Unpack arguments
-        qpos, kp = input
-        mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized = carry
-
-        # Get the offset relative to the initial position, only for markers you wish to regularize
-        reg_term = (
-            reg_term + (jp.square(offsets - initial_offsets.flatten())) * is_regularized
-        )
-
-        # Set qpos and offsets
-        mjx_data = mjx_data.replace(qpos=qpos)
-        mjx_model = utils.set_site_pos(
-            mjx_model, jp.reshape(offsets, (-1, 3)), site_idxs
-        )
-
-        # Forward kinematics
-        mjx_data = utils.kinematics(mjx_model, mjx_data)
-        mjx_data = utils.com_pos(mjx_model, mjx_data)
-        markers = utils.get_site_xpos(mjx_data, site_idxs).flatten()
-
-        # Accumulate squared residual
-        residual = residual + jp.square((kp - markers))
-        return (
-            mjx_model,
-            mjx_data,
-            reg_term,
-            residual,
-            initial_offsets,
-            is_regularized,
-        ), None
-
-    (mjx_model, mjx_data, reg_term, residual, initial_offsets, is_regularized), _ = (
-        jax.lax.scan(
-            f,
-            (
-                mjx_model,
-                mjx_data,
-                jp.zeros(kp_data.shape[1]),
-                jp.zeros(kp_data.shape[1]),
-                initial_offsets,
-                is_regularized,
-            ),
-            (q, kp_data),
-        )
-    )
-    return jp.sum(residual) + reg_coef * jp.sum(reg_term)
-
-
-@partial(jit, static_argnames=['stac_core_obj'])
-def m_opt(
-    stac_core_obj,
+@partial(jit, static_argnames=['m_solver'])
+def _m_opt(
+    m_solver,
     offset0,
     mjx_model,
     mjx_data,
@@ -219,7 +213,7 @@ def m_opt(
     Returns:
         _type_: result of optimization
     """
-    res = stac_core_obj.m_solver.run(
+    res = m_solver.run(
         offset0,
         mjx_model=mjx_model,
         mjx_data=mjx_data,
@@ -233,12 +227,93 @@ def m_opt(
 
     return res
 
-class Stac_Core:
+
+class StacCore:
+
+    """
+    StacCore object that contains the q_solver and m_solver attributes that are used to
+    compute q_pose and compute offset optimization.
+
+    Args:
+        tol: tolerance for the q_solver (ProjectedGradient)
+    
+    """
 
     def __init__(self, tol=1e-5):
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
         self.q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250, tol=tol)
         self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+    
+    def q_opt(
+        self,
+        mjx_model,
+        mjx_data,
+        marker_ref_arr: jp.ndarray,
+        qs_to_opt: jp.ndarray,
+        kps_to_opt: jp.ndarray,
+        q0: jp.ndarray,
+        lb,
+        ub,
+        site_idxs,
+    ):
+        """
+        Wrapper for _q_opt()
+        Updates q_pose using estimated marker parameters
 
+        """
+        return _q_opt(
+            self.q_solver,
+            mjx_model,
+            mjx_data,
+            marker_ref_arr,
+            qs_to_opt,
+            kps_to_opt,
+            q0,
+            lb,
+            ub,
+            site_idxs
+        )
+    
+    def m_opt(
+        self,
+        offset0,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        initial_offsets,
+        is_regularized,
+        reg_coef,
+        site_idxs,
+    ):
+        """
+        Wrapper for _m_opt()
+        Compute offset optimization.
 
+        Args:
+            offset0 (jp.ndarray): Proposed offset values
+            mjx_model (_type_): mjx.Model
+            mjx_data (_type_): mjx.Data
+            keypoints (jp.ndarray): Keypoints for each frame
+            q (jp.ndarray): Joint angles for each frame
+            initial_offsets (jp.ndarray): Initial offset values (from config)
+            is_regularized (jp.ndarray): Boolean mask for regularized sites
+            reg_coef (jp.ndarray): Regularization coefficient
+            site_idxs (jp.ndarray): Site indices in mjx_model.site_xpos
+
+        Returns:
+            _type_: result of optimization
+        """
+        return _m_opt(
+            self.m_solver,
+            offset0,
+            mjx_model,
+            mjx_data,
+            keypoints,
+            q,
+            initial_offsets,
+            is_regularized,
+            reg_coef,
+            site_idxs,
+        )

@@ -324,7 +324,7 @@ def save_data_to_h5(
         f.create_dataset("qvel", data=qvel, compression="gzip")
         f.create_dataset("xpos", data=xpos, compression="gzip")
         f.create_dataset("xquat", data=xquat, compression="gzip")
-        f.create_dataset("time", data=datetime.now(), compression="gzip")
+        f.create_dataset('time', data=str(np.datetime64('now')))
 
 
 def load_stac_data(file_path) -> tuple[Config, StacData]:

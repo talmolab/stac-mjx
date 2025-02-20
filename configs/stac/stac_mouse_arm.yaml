@@ -1,10 +1,10 @@
 fit_offsets_path: "mouse_arm_fit.h5"
 ik_only_path: "mouse_arm_ik_only.h5"
-data_path: "tests/data/mujoco_aligned_tracking_shorten.h5"
+data_path: "tests/data/mujoco_aligned_tracking.h5"
 # data_path: "tests/data/test_mouse_mocap_3600_frames.h5"
 
 n_fit_frames: 1
-skip_fit_offsets: True
+skip_fit_offsets: False
 skip_ik_only: False
 n_frames_per_clip: 1 # 1 if mocap is one session
 infer_qvels: False
