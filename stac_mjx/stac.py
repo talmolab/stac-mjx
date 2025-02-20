@@ -625,7 +625,7 @@ class Stac:
 
         # get the index of keypoints
         parts = self.cfg.model.KEYPOINT_MODEL_PAIRS.values()
-        kp_idx = [physics.model.name2id(part, 'body') for part in parts]
+        kp_idx = [physics.model.name2id(part, "body") for part in parts]
 
         self.kp_positions = []
 
