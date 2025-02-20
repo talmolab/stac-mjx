@@ -30,62 +30,6 @@ ROOT_OPTIMIZATION_KEYPOINT: Wrist
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
  - "Wrist"
-#  - "HipL"
-#  - "HipR"
-#  - "ShoulderL"
-#  - "ShoulderR"
-
-# INDIVIDUAL_PART_OPTIMIZATION:
-#   "r_leg": [
-#     "mouse__Thoracic1",
-#     "mouse__Lumbar1",
-#     "mouse__Lumbar2",
-#     "mouse__Lumbar3",
-#     "mouse__Lumbar4",
-#     "mouse__Lumbar5",
-#     "mouse__RFemur",
-#     "mouse__RTibia",
-#     "mouse__RTarsus",
-#     "mouse__RBPhalange3",
-#     "mouse__RMetatarsus1",
-#     "mouse__RTarsus_interim_0"
-#   ]
-#   "l_leg": [
-#     "mouse__Thoracic1",
-#     "mouse__Lumbar1",
-#     "mouse__Lumbar2",
-#     "mouse__Lumbar3",
-#     "mouse__Lumbar4",
-#     "mouse__Lumbar5",
-#     "mouse__LFemur",
-#     "mouse__LTibia",
-#     "mouse__LTarsus",
-#     "mouse__RBPhalange3",
-#     "mouse__LMetatarsus1",
-#     "mouse__RTarsus_interim_0"
-#   ]
-#   "r_arm": [
-#     "mouse__RScapula",
-#     "mouse__RHumerus",
-#     "mouse__RRadius",
-#     "mouse__RCarpus",
-#     "mouse__RMetaCarpus1"
-#   ]
-#   "l_arm": [
-#     "mouse__LScapula",
-#     "mouse__LHumerus",
-#     "mouse__LRadius",
-#     "mouse__LCarpus",
-#     "mouse__LMetaCarpus1"
-#   ]
-#   "head": [
-#     "mouse__Cervical1",
-#     "mouse__Cervical2",
-#     "mouse__Cervical3",
-#     "mouse__Cervical4",
-#     "mouse__Cervical5",
-#     "mouse__Cervical6"
-#   ]
 
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
@@ -103,13 +47,7 @@ MOCAP_SCALE_FACTOR: 1
 
 SITES_TO_REGULARIZE:
    - Shoulder
-  #  - ShoulderR
-#   - SpineF
-#   - SpineL
-#   - SpineM
-#   - WristL
-#   - WristR
-
+   
 RENDER_FPS: 30
 
 N_SAMPLE_FRAMES: 50
