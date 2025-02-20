@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jp
 from jax import jit
 
+from functools import partial
 from jaxopt import ProjectedGradient
 from jaxopt.projection import projection_box
 from jaxopt import OptaxSolver
@@ -20,59 +21,62 @@ def huber(x, delta=5.0, max=10, max_slope=0.1):
     x = jp.where(x > max, (x - max) * max_slope + max, x)
     return jp.sum(x)
 
+def q_loss(
+        q: jp.ndarray,
+        mjx_model,
+        mjx_data,
+        kp_data: jp.ndarray,
+        qs_to_opt: jp.ndarray,
+        kps_to_opt: jp.ndarray,
+        initial_q: jp.ndarray,
+        site_idxs: jp.ndarray,
+    ) -> float:
+        """Compute the marker loss for q_phase optimization.
+
+        Args:
+            q (jp.ndarray): Proposed qs
+            mjx_model (mjx.Model): Model object (stays constant)
+            mjx_data (mjx.Data): Data object (modified to calculate new xpos)
+            kp_data (jp.ndarray): Ground truth keypoint positions
+            qs_to_opt (jp.ndarray): Boolean array; for each index in qpos, True = q and False = initial_q when calculating residual
+            kps_to_opt (jp.ndarray): Boolean array; only return residuals for the True positions
+            initial_q (jp.ndarray): Starting qs for reference
+
+        Returns:
+            float: sum of squares scalar loss
+        """
+        # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
+        mjx_data = mjx_data.replace(qpos=utils.make_qs(initial_q, qs_to_opt, q))
+
+        # Clip to bounds ourselves because of potential jaxopt bug
+        # mjx_data = mjx_data.replace(qpos=jp.clip(op_utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
+
+        # Forward kinematics
+        mjx_data = utils.kinematics(mjx_model, mjx_data)
+        mjx_data = utils.com_pos(mjx_model, mjx_data)
+
+        # Get marker site xpos
+        markers = utils.get_site_xpos(mjx_data, site_idxs).flatten()
+        residual = kp_data - markers
+
+        # Set irrelevant body sites to 0
+        residual = residual * kps_to_opt
+        residual = squared_error(residual)
+
+        return residual
 
 def squared_error(x):
     """Compute the squared error + sum."""
     return jp.sum(jp.square(x))
 
 
-def q_loss(
-    q: jp.ndarray,
-    mjx_model,
-    mjx_data,
-    kp_data: jp.ndarray,
-    qs_to_opt: jp.ndarray,
-    kps_to_opt: jp.ndarray,
-    initial_q: jp.ndarray,
-    site_idxs: jp.ndarray,
-) -> float:
-    """Compute the marker loss for q_phase optimization.
 
-    Args:
-        q (jp.ndarray): Proposed qs
-        mjx_model (mjx.Model): Model object (stays constant)
-        mjx_data (mjx.Data): Data object (modified to calculate new xpos)
-        kp_data (jp.ndarray): Ground truth keypoint positions
-        qs_to_opt (jp.ndarray): Boolean array; for each index in qpos, True = q and False = initial_q when calculating residual
-        kps_to_opt (jp.ndarray): Boolean array; only return residuals for the True positions
-        initial_q (jp.ndarray): Starting qs for reference
-
-    Returns:
-        float: sum of squares scalar loss
-    """
-    # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
-    mjx_data = mjx_data.replace(qpos=utils.make_qs(initial_q, qs_to_opt, q))
-
-    # Clip to bounds ourselves because of potential jaxopt bug
-    # mjx_data = mjx_data.replace(qpos=jp.clip(op_utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
-
-    # Forward kinematics
-    mjx_data = utils.kinematics(mjx_model, mjx_data)
-    mjx_data = utils.com_pos(mjx_model, mjx_data)
-
-    # Get marker site xpos
-    markers = utils.get_site_xpos(mjx_data, site_idxs).flatten()
-    residual = kp_data - markers
-
-    # Set irrelevant body sites to 0
-    residual = residual * kps_to_opt
-    residual = squared_error(residual)
-
-    return residual
-
-
-@jit
+    
+# @jit
+# @jax.jit(static_argnames='stac_core_obj')
+@partial(jit, static_argnames=['stac_core_obj'])
 def q_opt(
+    stac_core_obj,
     mjx_model,
     mjx_data,
     marker_ref_arr: jp.ndarray,
@@ -85,7 +89,7 @@ def q_opt(
 ):
     """Update q_pose using estimated marker parameters."""
     try:
-        return mjx_data, q_solver.run(
+        return mjx_data, stac_core_obj.q_solver.run(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
             mjx_model=mjx_model,
@@ -106,8 +110,10 @@ def q_opt(
     return mjx_data, None
 
 
-@jit
+# @jit
+@partial(jit, static_argnames=['stac_core_obj'])
 def m_loss(
+    stac_core_obj,
     offsets: jp.ndarray,
     mjx_model,
     mjx_data,
@@ -184,8 +190,9 @@ def m_loss(
     return jp.sum(residual) + reg_coef * jp.sum(reg_term)
 
 
-@jit
+@partial(jit, static_argnames=['stac_core_obj'])
 def m_opt(
+    stac_core_obj,
     offset0,
     mjx_model,
     mjx_data,
@@ -212,7 +219,7 @@ def m_opt(
     Returns:
         _type_: result of optimization
     """
-    res = m_solver.run(
+    res = stac_core_obj.m_solver.run(
         offset0,
         mjx_model=mjx_model,
         mjx_data=mjx_data,
@@ -226,9 +233,12 @@ def m_opt(
 
     return res
 
+class Stac_Core:
 
-# TODO: put these values in config, move to just optax by implementing solver loop
-opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
+    def __init__(self, tol=1e-5):
+        self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
-q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250, tol=1e-10)
-m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)
+        self.q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250, tol=tol)
+        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+
+

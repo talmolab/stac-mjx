@@ -12,7 +12,7 @@ from dm_control import mjcf
 from dm_control.locomotion.walkers import rescale
 from dm_control.mujoco.wrapper.mjbindings import enums
 
-from stac_mjx import utils, compute_stac, io
+from stac_mjx import utils, compute_stac, io, stac_core
 
 from omegaconf import OmegaConf, DictConfig
 from typing import List, Union
@@ -73,6 +73,7 @@ class Stac:
         self._kp_names = kp_names
         self.path = xml_path
         self._root = mjcf.from_path(xml_path)
+        self.stac_core_obj = None
 
         (
             self._mj_model,
@@ -238,6 +239,9 @@ class Stac:
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
+        # Create Stac_Core object
+        self.stac_core_obj = stac_core.Stac_Core(self.cfg.model.FTOL)
+
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
         if self._root_kp_idx == -1:
@@ -246,6 +250,7 @@ class Stac:
             )
         elif self._freejoint:
             mjx_data = compute_stac.root_optimization(
+                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 kp_data,
@@ -260,6 +265,7 @@ class Stac:
             print(f"Calibration iteration: {n_iter + 1}/{self.cfg.model.N_ITERS}")
             mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
                 compute_stac.pose_optimization(
+                    self.stac_core_obj,
                     mjx_model,
                     mjx_data,
                     kp_data,
@@ -280,6 +286,7 @@ class Stac:
 
             print("starting offset optimization")
             mjx_model, mjx_data, self._offsets = compute_stac.offset_optimization(
+                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 kp_data,
@@ -295,6 +302,7 @@ class Stac:
         print("Final pose optimization")
         mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
             compute_stac.pose_optimization(
+                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 kp_data,
@@ -341,6 +349,10 @@ class Stac:
         # Create mjx model and data
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)
 
+        # Create stac_core_obj if it hasn't been instaniated yet
+        if not self.stac_core_obj:
+            self.stac_core_obj = stac_core.Stac_Core(self.cfg.model.FTOL)
+
         def mjx_setup(kp_data, mj_model):
             """Create mjxmodel and mjxdata and set offet.
 
@@ -374,9 +386,10 @@ class Stac:
         elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
             vmap_root_opt = jax.vmap(
                 compute_stac.root_optimization,
-                in_axes=(0, 0, 0, None, None, None, None, None),
+                in_axes=(None, 0, 0, 0, None, None, None, None, None),
             )
             mjx_data = vmap_root_opt(
+                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 batched_kp_data,
@@ -390,10 +403,11 @@ class Stac:
         # q_phase - pose
         vmap_pose_opt = jax.vmap(
             compute_stac.pose_optimization,
-            in_axes=(0, 0, 0, None, None, None, None),
+            in_axes=(None, 0, 0, 0, None, None, None, None),
         )
         mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
             vmap_pose_opt(
+                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 batched_kp_data,
