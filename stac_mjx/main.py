@@ -26,8 +26,6 @@ def load_configs(
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-    # print(f"we are in {config_dir}")
-    # return
     # Initialize Hydra and set the config path
     with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name

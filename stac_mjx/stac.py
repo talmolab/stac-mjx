@@ -68,7 +68,6 @@ class Stac:
         """
         self.cfg = cfg
         self._kp_names = kp_names
-        self.path = xml_path
         self._root = mjcf.from_path(xml_path)
         self.stac_core_obj = None
 
@@ -152,7 +151,7 @@ class Stac:
                 "site",
                 name=key,
                 type="sphere",
-                size=[0.001],
+                size=[0.005],
                 rgba="0 0 0 0.8",
                 pos=pos,
                 group=3,
@@ -476,7 +475,7 @@ class Stac:
                 "site",
                 name=site_name,
                 type="sphere",
-                size=[0.001],
+                size=[0.005],
                 rgba=rgba,
                 pos=start,
                 group=2,
@@ -562,7 +561,7 @@ class Stac:
                 "site",
                 name=key + "_new",
                 type="sphere",
-                size=[0.001],
+                size=[0.005],
                 rgba="0 0 0 1",
                 pos=pos,
                 group=2,
