@@ -11,6 +11,7 @@ from stac_mjx import utils
 
 
 def root_optimization(
+    stac_core_obj: stac_core.StacCore,
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
@@ -51,7 +52,7 @@ def root_optimization(
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
     j = time.time()
-    mjx_data, res = stac_core.q_opt(
+    mjx_data, res = stac_core_obj.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -78,7 +79,7 @@ def root_optimization(
     # Trunk only optimization
     j = time.time()
     print("starting q_opt 2")
-    mjx_data, res = stac_core.q_opt(
+    mjx_data, res = stac_core_obj.q_opt(
         mjx_model,
         mjx_data,
         kp_data[frame, :],
@@ -104,6 +105,7 @@ def root_optimization(
 
 
 def offset_optimization(
+    stac_core_obj: stac_core.StacCore,
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
@@ -146,7 +148,7 @@ def offset_optimization(
     keypoints = jp.array(kp_data[time_indices, :])
     q = jp.take(q, time_indices, axis=0)
 
-    res = stac_core.m_opt(
+    res = stac_core_obj.m_opt(
         offset0,
         mjx_model,
         mjx_data,
@@ -175,6 +177,7 @@ def offset_optimization(
 
 
 def pose_optimization(
+    stac_core_obj: stac_core.StacCore,
     mjx_model,
     mjx_data,
     kp_data: jp.ndarray,
@@ -214,7 +217,7 @@ def pose_optimization(
         q0 = jp.copy(mjx_data.qpos[:])
 
         # While body opt, then part opt
-        mjx_data, res = stac_core.q_opt(
+        mjx_data, res = stac_core_obj.q_opt(
             mjx_model,
             mjx_data,
             kp_data[n_frame, :],
@@ -231,7 +234,7 @@ def pose_optimization(
         for part in parts:
             q0 = jp.copy(mjx_data.qpos[:])
 
-            mjx_data, res = stac_core.q_opt(
+            mjx_data, res = stac_core_obj.q_opt(
                 mjx_model,
                 mjx_data,
                 kp_data[n_frame, :],
