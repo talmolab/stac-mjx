@@ -24,35 +24,32 @@ def base_path():
 def config(base_path):
     return stac_mjx.load_configs(base_path / "configs")
 
+
 def test_stac_obj(arm_model, base_path, config):
 
     # get cfg, kp_data, and sorted_kp_names:
-    cfg = stac_mjx.load_configs(base_path / "configs")
-    kp_data, sorted_kp_names = stac_mjx.load_mocap(cfg, base_path)
-    stac = stac_mjx.stac.Stac(arm_model, cfg, sorted_kp_names)
+    kp_data, sorted_kp_names = stac_mjx.load_mocap(config, base_path)
+    stac = stac_mjx.stac.Stac(arm_model, config, sorted_kp_names)
 
     assert sorted_kp_names == ['Shoulder', 'Elbow', 'Wrist']
-    assert stac.stac_core_obj is None
     assert isinstance(stac._root, dm_control.mjcf.element.RootElement)
     assert isinstance(stac._mj_model, mujoco._structs.MjModel)
 
 def test_stac_core_compilations(base_path, config):
     stac_mjx.enable_xla_flags()
 
+    assert stac_mjx.stac_core._m_opt._cache_size() == 0
+    assert stac_mjx.stac_core._q_opt._cache_size() == 0
+    assert stac_mjx.stac_core.m_loss._cache_size() == 0
+
     kp_data, sorted_kp_names = stac_mjx.load_mocap(config, base_path)
-    stac, _, _ = stac_mjx.run_stac(
+    _, _ = stac_mjx.run_stac(
         config,
         kp_data, 
         sorted_kp_names, 
         base_path=base_path
         )
 
-    assert stac.
-
-
-
-
-    # root = mjcf.from_path(arm_model)
-    # model = mjcf.Physics.from_mjcf_model(root).model.ptr
-
-    # mjx_model, mjx_data = mjx_load(model)
+    assert stac_mjx.stac_core._m_opt._cache_size() == 2
+    assert stac_mjx.stac_core._q_opt._cache_size() == 2
+    assert stac_mjx.stac_core.m_loss._cache_size() == 0
