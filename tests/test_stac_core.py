@@ -8,32 +8,26 @@ from stac_mjx.utils import mjx_load
 import stac_mjx
 import optax
 import jaxopt
-# import jax
+
+_BASE_PATH = Path.cwd().parent
+TEST_DIR = Path(__file__).parent
 
 
-# TEST_DIR = Path(__file__).parent
-# PROJECT_ROOT = TEST_DIR.parent.parent
+def test_stac_core_obj(config, mouse_config):
 
-
-@pytest.fixture
-def base_path():
-    return Path("/root/vast/joshua/stac-mjx")
-
-@pytest.fixture
-def config(base_path):
-    return stac_mjx.load_configs(base_path / "configs")
-
-
-def test_stac_core_obj(config):
-
+    config = stac_mjx.load_configs(TEST_DIR / "configs")
     stac_core_obj = stac_mjx.stac_core.StacCore(1e-10)
 
     # ensure that object type is what it is
     assert isinstance(stac_core_obj, stac_mjx.stac_core.StacCore)
 
     # assert the object instance variables
-    assert isinstance(stac_core_obj.opt, optax._src.base.GradientTransformationExtraArgs)
-    assert isinstance(stac_core_obj.q_solver, jaxopt._src.projected_gradient.ProjectedGradient)
+    assert isinstance(
+        stac_core_obj.opt, optax._src.base.GradientTransformationExtraArgs
+    )
+    assert isinstance(
+        stac_core_obj.q_solver, jaxopt._src.projected_gradient.ProjectedGradient
+    )
     assert isinstance(stac_core_obj.m_solver, jaxopt._src.optax_wrapper.OptaxSolver)
 
     # assert the tolerance values are correct
@@ -42,21 +36,18 @@ def test_stac_core_obj(config):
     assert stac_core_obj.q_solver.tol == 1e-10
 
 
-def test_stac_core_compilations(base_path, config):
+def test_stac_core_compilations():
+    config = stac_mjx.load_configs(TEST_DIR / "configs")
     stac_mjx.enable_xla_flags()
 
-    kp_data, sorted_kp_names = stac_mjx.load_mocap(config, base_path)
-    
-    assert stac_mjx.stac_core.m_opt._cache_size() == 0
-    assert stac_mjx.stac_core.q_opt._cache_size() == 0
-
-    _, _ = stac_mjx.run_stac(
-        config,
-        kp_data, 
-        sorted_kp_names, 
-        base_path=base_path
-        )
+    kp_data, sorted_kp_names = stac_mjx.load_mocap(config, _BASE_PATH)
 
     assert stac_mjx.stac_core.m_loss._cache_size() == 0
-    assert stac_mjx.stac_core.q_opt._cache_size() == 2
-    assert stac_mjx.stac_core.m_opt._cache_size() == 2
+    assert stac_mjx.stac_core._m_opt._cache_size() == 0
+    assert stac_mjx.stac_core._q_opt._cache_size() == 0
+
+    _, _ = stac_mjx.run_stac(config, kp_data, sorted_kp_names, base_path=_BASE_PATH)
+
+    assert stac_mjx.stac_core.m_loss._cache_size() == 0
+    assert stac_mjx.stac_core._q_opt._cache_size() == 2
+    assert stac_mjx.stac_core._m_opt._cache_size() == 2

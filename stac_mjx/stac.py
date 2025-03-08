@@ -156,7 +156,7 @@ class Stac:
                 pos=pos,
                 group=3,
             )
-            
+
         rescale.rescale_subtree(
             root,
             self.cfg.model.SCALE_FACTOR,
