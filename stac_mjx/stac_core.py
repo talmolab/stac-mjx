@@ -232,7 +232,7 @@ def _m_opt(
 
 class StacCore:
     """StacCore computes offset optimization.
-    
+
     This class contains the 'q_solver' and 'm_solver' attributes that are used to
     compute 'q_pose' and perform offset optimization.
 
@@ -268,7 +268,7 @@ class StacCore:
     ):
         """Updates q_pose using estimated marker parameters.
 
-        This function is a wrapper for `_q_opt()` and updates `q_pose` 
+        This function is a wrapper for `_q_opt()` and updates `q_pose`
         based on estimated marker parameters.
         """
         return _q_opt(
@@ -296,9 +296,9 @@ class StacCore:
         reg_coef,
         site_idxs,
     ):
-        """Optimize offsets using `_m_opt()`.  
+        """Optimize offsets using `_m_opt()`.
 
-        This function serves as a wrapper for `_m_opt()` and computes offset optimization 
+        This function serves as a wrapper for `_m_opt()` and computes offset optimization
         based on the given parameters.
 
         Args:
@@ -311,7 +311,7 @@ class StacCore:
             is_regularized (jp.ndarray): Boolean mask for regularized sites
             reg_coef (jp.ndarray): Regularization coefficient
             site_idxs (jp.ndarray): Site indices in mjx_model.site_xpos
-            
+
         Returns:
             _type_: result of optimization
         """
