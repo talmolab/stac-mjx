@@ -242,7 +242,6 @@ class StacCore:
 
     def __init__(self, tol=1e-5):
         """Initialze StacCore with 'q_solver' and 'm_solver'.
-
         Args:
             tol (float): Tolerance value for ProjectedGradient 'q_solver'.
         """
@@ -296,7 +295,7 @@ class StacCore:
         reg_coef,
         site_idxs,
     ):
-        """Optimize offsets using `_m_opt()`.
+        """Compute offset optimization.
 
         This function serves as a wrapper for `_m_opt()` and computes offset optimization
         based on the given parameters.
