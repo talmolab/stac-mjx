@@ -125,31 +125,19 @@
 							<inertial pos="-0.0009 0.004 0.0005" mass="0.0001258" diaginertia="3e-8 3e-8 3e-8"/>
 							<site name="elbow_joint_viz_large" pos="0 0 0" rgba="1 .2 .6 .2" size="0.0005"/>
 							<site name="interial_center_ulna" pos="-0.0009 0.004 0.0005" rgba=".6 .6 .6 .6" size="0.0005"/>
-
-							<!--Attachement-->
-							<!--Triceps Lateral Head-->
-							<site name="Triceps_Long_Insertion" pos="0.0002 -0.0008 0.0002" rgba=".1 .2 .6 .5" size="0.0002"/>
-							
-							<!--Triceps Lateral Head-->
-							<site name="Triceps_Lateral_Insertion" pos="0.0002 -0.0008 0.0002" rgba=".1 .2 .6 .5" size="0.0002"/>
-							
-							<!--Brachialis-->
-							<site name="Brachialis_Insertion" pos="-0.0002 0.001 0.0001" rgba=".1 .2 .6 .5" size="0.0002"/>
-
-							<!--SOB Radius-->
-							<body name="radius" pos="0.00035 0.0002 0.0002" euler="0 0 0">
-								<!--Mesh Geom-->
-								<geom type="mesh" mesh="Bone_Radius_right_v3" pos="0.0 0.0 0.0"/>
-
-								<!--Attachement-->
-								<!--Biceps Long Head-->
-								<site name="Biceps_Long_Insertion" pos="-0.0002 0.001 0.0001" rgba=".1 .2 .6 .5" size="0.0002"/>
-
-								<body name="hand" pos=".003 0.0005 -.009 " euler="-15 -15 -45">
-									<geom type="mesh" mesh="Bone_Segments_Hand" pos="0 0 0"/>		
-									<geom name="finger_tip" type="sphere" size="0.001" material="target" pos="-0.0071999999999999998 0.0019 0.012999999999999999" contype="0" conaffinity="0"/>					
-									<inertial pos="-0.0048 0.0019 0.012" mass=" 0.00071" diaginertia="7e-08 7e-08 7e-08"/>
-									<site name="interial_center_hand" pos="-0.0048 0.0019 0.012" rgba=".6 .6 .6 .1" size="0.0008"/>
+							<body name="elbow" pos="0.0 0.0 0.0" euler="0 0 0">
+								<geom name="elbow_marker" type="sphere" size="0.0003" pos="0 0 0" contype="0" conaffinity="0" rgba="0.3 0.8 0.3 0.8" />
+								<!--SOB Radius-->
+								<body name="radius" pos="0.00035 0.0002 0.0002" euler="0 0 0">
+									<!--Mesh Geom-->
+									<geom type="mesh" mesh="Bone_Radius_right_v3" pos="0.0 0.0 0.0"  contype="0" conaffinity="0"/>
+								</body>
+								<body name="wrist_body" pos="-0.0015 0.007 0.001" euler="0 0 0">
+										<!-- <site name="hand_viz_large" pos="0.0 0.0 0.0" rgba=".1 1 .6 .2" size="0.001"/>	 -->
+										<geom type="mesh" mesh="Bone_Segments_Hand" pos=".009 -.006 -0.0055" euler="-20 -50 -75"  contype="0" conaffinity="0"/>		
+										<geom name="finger_tip" type="sphere" size="0.001" material="target" pos="0.0 0.0 0.0" contype="0" conaffinity="0"/>					
+										<inertial pos="-0.0002 0.002 0.0001" mass=" 0.00071" diaginertia="7e-08 7e-08 7e-08"/>
+										<site name="interial_center_hand" pos="-0.0002 0.002 0.0001" rgba=".6 .6 .6 .1" size="0.0008"/>
 								</body>
 							</body>
 						</body>
