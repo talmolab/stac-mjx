@@ -9,8 +9,8 @@ import stac_mjx
 import optax
 import jaxopt
 
-_BASE_PATH = Path.cwd().parent
 TEST_DIR = Path(__file__).parent
+PROJECT_DIR = TEST_DIR.parent
 
 
 def test_stac_core_obj(config, mouse_config):
@@ -40,13 +40,13 @@ def test_stac_core_compilations():
     config = stac_mjx.load_configs(TEST_DIR / "configs")
     stac_mjx.enable_xla_flags()
 
-    kp_data, sorted_kp_names = stac_mjx.load_mocap(config, _BASE_PATH)
+    kp_data, sorted_kp_names = stac_mjx.load_mocap(config, base_path=PROJECT_DIR)
 
     assert stac_mjx.stac_core.m_loss._cache_size() == 0
     assert stac_mjx.stac_core._m_opt._cache_size() == 0
     assert stac_mjx.stac_core._q_opt._cache_size() == 0
 
-    _, _ = stac_mjx.run_stac(config, kp_data, sorted_kp_names, base_path=_BASE_PATH)
+    _, _ = stac_mjx.run_stac(config, kp_data, sorted_kp_names, base_path=PROJECT_DIR)
 
     assert stac_mjx.stac_core.m_loss._cache_size() == 0
     assert stac_mjx.stac_core._q_opt._cache_size() == 2

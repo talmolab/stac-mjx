@@ -231,16 +231,22 @@ def _m_opt(
 
 
 class StacCore:
-    """
-    StacCore object that contains the q_solver and m_solver attributes that are used to
-    compute q_pose and compute offset optimization.
+    """StacCore computes offset optimization.
+    
+    This class contains the 'q_solver' and 'm_solver' attributes that are used to
+    compute 'q_pose' and perform offset optimization.
 
     Args:
-        tol: tolerance for the q_solver (ProjectedGradient)
-
+        tol (float): Tolerance for the 'q_solver' (ProjectedGradient).
     """
 
     def __init__(self, tol=1e-5):
+        """Initialze StacCore with 'q_solver' and 'm_solver'.
+
+        Args:
+            tol (float): Tolerance value for ProjectedGradient 'q_solver'.
+        """
+
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
         self.q_solver = ProjectedGradient(
@@ -260,10 +266,10 @@ class StacCore:
         ub,
         site_idxs,
     ):
-        """
-        Wrapper for _q_opt()
-        Updates q_pose using estimated marker parameters
+        """Updates q_pose using estimated marker parameters.
 
+        This function is a wrapper for `_q_opt()` and updates `q_pose` 
+        based on estimated marker parameters.
         """
         return _q_opt(
             self.q_solver,
@@ -290,9 +296,10 @@ class StacCore:
         reg_coef,
         site_idxs,
     ):
-        """
-        Wrapper for _m_opt()
-        Compute offset optimization.
+        """Optimize offsets using `_m_opt()`.  
+
+        This function serves as a wrapper for `_m_opt()` and computes offset optimization 
+        based on the given parameters.
 
         Args:
             offset0 (jp.ndarray): Proposed offset values
@@ -304,7 +311,7 @@ class StacCore:
             is_regularized (jp.ndarray): Boolean mask for regularized sites
             reg_coef (jp.ndarray): Regularization coefficient
             site_idxs (jp.ndarray): Site indices in mjx_model.site_xpos
-
+            
         Returns:
             _type_: result of optimization
         """
