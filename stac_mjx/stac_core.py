@@ -242,10 +242,10 @@ class StacCore:
 
     def __init__(self, tol=1e-5):
         """Initialze StacCore with 'q_solver' and 'm_solver'.
+        
         Args:
             tol (float): Tolerance value for ProjectedGradient 'q_solver'.
         """
-
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
         self.q_solver = ProjectedGradient(
