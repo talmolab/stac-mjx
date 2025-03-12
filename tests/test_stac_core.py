@@ -9,11 +9,18 @@ import stac_mjx
 import optax
 import jaxopt
 
-TEST_DIR = Path(__file__).parent
-PROJECT_DIR = TEST_DIR.parent
+
+@pytest.fixture
+def TEST_DIR():
+    return Path(__file__).parent
 
 
-def test_stac_core_obj(config, mouse_config):
+@pytest.fixture
+def PROJECT_DIR():
+    return Path(__file__).parent.parent
+
+
+def test_stac_core_obj(TEST_DIR):
 
     config = stac_mjx.load_configs(TEST_DIR / "configs")
     stac_core_obj = stac_mjx.stac_core.StacCore(1e-10)
@@ -36,7 +43,7 @@ def test_stac_core_obj(config, mouse_config):
     assert stac_core_obj.q_solver.tol == 1e-10
 
 
-def test_stac_core_compilations():
+def test_stac_core_compilations(TEST_DIR, PROJECT_DIR):
     # tests cache sizes of jit compiled functions
     # run time is long without gpu so commented out
     # tests after run_stac
