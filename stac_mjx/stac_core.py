@@ -150,9 +150,9 @@ def squared_error(x):
     return jp.sum(jp.square(x))
 
 
-@partial(jit, static_argnames=["q_solver"])
+@partial(jit, static_argnames=["q_tol"])
 def _q_opt(
-    q_solver,
+    q_tol,
     mjx_model,
     mjx_data,
     marker_ref_arr: jp.ndarray,
@@ -165,7 +165,7 @@ def _q_opt(
 ):
     """Update q_pose using estimated marker parameters."""
     try:
-        return mjx_data, q_solver.run(
+        return mjx_data, q_tol.run(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
             mjx_model=mjx_model,
@@ -233,22 +233,22 @@ def _m_opt(
 class StacCore:
     """StacCore computes offset optimization.
 
-    This class contains the 'q_solver' and 'm_solver' attributes that are used to
+    This class contains the 'q_tol' and 'm_solver' attributes that are used to
     compute 'q_pose' and perform offset optimization.
 
     Args:
-        tol (float): Tolerance for the 'q_solver' (ProjectedGradient).
+        tol (float): Tolerance for the 'q_tol' (ProjectedGradient).
     """
 
     def __init__(self, tol=1e-5):
-        """Initialze StacCore with 'q_solver' and 'm_solver'.
+        """Initialze StacCore with 'q_tol' and 'm_solver'.
 
         Args:
-            tol (float): Tolerance value for ProjectedGradient 'q_solver'.
+            tol (float): Tolerance value for ProjectedGradient 'q_tol'.
         """
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
-        self.q_solver = ProjectedGradient(
+        self.q_tol = ProjectedGradient(
             fun=q_loss, projection=projection_box, maxiter=250, tol=tol
         )
         self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
@@ -271,7 +271,7 @@ class StacCore:
         based on estimated marker parameters.
         """
         return _q_opt(
-            self.q_solver,
+            self.q_tol,
             mjx_model,
             mjx_data,
             marker_ref_arr,
