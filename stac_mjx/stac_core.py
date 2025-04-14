@@ -4,6 +4,7 @@ import jax
 import jax.numpy as jp
 from jax import jit
 
+from functools import partial
 from jaxopt import ProjectedGradient
 from jaxopt.projection import projection_box
 from jaxopt import OptaxSolver
@@ -19,11 +20,6 @@ def huber(x, delta=5.0, max=10, max_slope=0.1):
     x = jp.where(jp.abs(x) < delta, 0.5 * x**2, delta * (jp.abs(x) - 0.5 * delta))
     x = jp.where(x > max, (x - max) * max_slope + max, x)
     return jp.sum(x)
-
-
-def squared_error(x):
-    """Compute the squared error + sum."""
-    return jp.sum(jp.square(x))
 
 
 def q_loss(
@@ -69,41 +65,6 @@ def q_loss(
     residual = squared_error(residual)
 
     return residual
-
-
-@jit
-def q_opt(
-    mjx_model,
-    mjx_data,
-    marker_ref_arr: jp.ndarray,
-    qs_to_opt: jp.ndarray,
-    kps_to_opt: jp.ndarray,
-    q0: jp.ndarray,
-    lb,
-    ub,
-    site_idxs,
-):
-    """Update q_pose using estimated marker parameters."""
-    try:
-        return mjx_data, q_solver.run(
-            q0,
-            hyperparams_proj=jp.array((lb, ub)),
-            mjx_model=mjx_model,
-            mjx_data=mjx_data,
-            kp_data=marker_ref_arr.T,
-            qs_to_opt=qs_to_opt,
-            kps_to_opt=kps_to_opt,
-            initial_q=q0,
-            site_idxs=site_idxs,
-        )
-
-    except ValueError as ex:
-        print("Warning: optimization failed.", flush=True)
-        print(ex, flush=True)
-        mjx_data = mjx_data.replace(qpos=q0)
-        mjx_data = utils.kinematics(mjx_model, mjx_data)
-
-    return mjx_data, None
 
 
 @jit
@@ -184,8 +145,50 @@ def m_loss(
     return jp.sum(residual) + reg_coef * jp.sum(reg_term)
 
 
-@jit
-def m_opt(
+def squared_error(x):
+    """Compute the squared error + sum."""
+    return jp.sum(jp.square(x))
+
+
+@partial(jit, static_argnames=["q_tol"])
+def _q_opt(
+    q_tol,
+    mjx_model,
+    mjx_data,
+    marker_ref_arr: jp.ndarray,
+    qs_to_opt: jp.ndarray,
+    kps_to_opt: jp.ndarray,
+    q0: jp.ndarray,
+    lb,
+    ub,
+    site_idxs,
+):
+    """Update q_pose using estimated marker parameters."""
+    try:
+        return mjx_data, q_tol.run(
+            q0,
+            hyperparams_proj=jp.array((lb, ub)),
+            mjx_model=mjx_model,
+            mjx_data=mjx_data,
+            kp_data=marker_ref_arr.T,
+            qs_to_opt=qs_to_opt,
+            kps_to_opt=kps_to_opt,
+            initial_q=q0,
+            site_idxs=site_idxs,
+        )
+
+    except ValueError as ex:
+        print("Warning: optimization failed.", flush=True)
+        print(ex, flush=True)
+        mjx_data = mjx_data.replace(qpos=q0)
+        mjx_data = utils.kinematics(mjx_model, mjx_data)
+
+    return mjx_data, None
+
+
+@partial(jit, static_argnames=["m_solver"])
+def _m_opt(
+    m_solver,
     offset0,
     mjx_model,
     mjx_data,
@@ -227,8 +230,99 @@ def m_opt(
     return res
 
 
-# TODO: put these values in config, move to just optax by implementing solver loop
-opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
+class StacCore:
+    """StacCore computes offset optimization.
 
-q_solver = ProjectedGradient(fun=q_loss, projection=projection_box, maxiter=250)
-m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)
+    This class contains the 'q_tol' and 'm_solver' attributes that are used to
+    compute 'q_pose' and perform offset optimization.
+
+    Args:
+        tol (float): Tolerance for the 'q_tol' (ProjectedGradient).
+    """
+
+    def __init__(self, tol=1e-5):
+        """Initialze StacCore with 'q_tol' and 'm_solver'.
+
+        Args:
+            tol (float): Tolerance value for ProjectedGradient 'q_tol'.
+        """
+        self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
+
+        self.q_tol = ProjectedGradient(
+            fun=q_loss, projection=projection_box, maxiter=250, tol=tol
+        )
+        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+
+    def q_opt(
+        self,
+        mjx_model,
+        mjx_data,
+        marker_ref_arr: jp.ndarray,
+        qs_to_opt: jp.ndarray,
+        kps_to_opt: jp.ndarray,
+        q0: jp.ndarray,
+        lb,
+        ub,
+        site_idxs,
+    ):
+        """Updates q_pose using estimated marker parameters.
+
+        This function is a wrapper for `_q_opt()` and updates `q_pose`
+        based on estimated marker parameters.
+        """
+        return _q_opt(
+            self.q_tol,
+            mjx_model,
+            mjx_data,
+            marker_ref_arr,
+            qs_to_opt,
+            kps_to_opt,
+            q0,
+            lb,
+            ub,
+            site_idxs,
+        )
+
+    def m_opt(
+        self,
+        offset0,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        initial_offsets,
+        is_regularized,
+        reg_coef,
+        site_idxs,
+    ):
+        """Compute offset optimization.
+
+        This function serves as a wrapper for `_m_opt()` and computes offset optimization
+        based on the given parameters.
+
+        Args:
+            offset0 (jp.ndarray): Proposed offset values
+            mjx_model (_type_): mjx.Model
+            mjx_data (_type_): mjx.Data
+            keypoints (jp.ndarray): Keypoints for each frame
+            q (jp.ndarray): Joint angles for each frame
+            initial_offsets (jp.ndarray): Initial offset values (from config)
+            is_regularized (jp.ndarray): Boolean mask for regularized sites
+            reg_coef (jp.ndarray): Regularization coefficient
+            site_idxs (jp.ndarray): Site indices in mjx_model.site_xpos
+
+        Returns:
+            _type_: result of optimization
+        """
+        return _m_opt(
+            self.m_solver,
+            offset0,
+            mjx_model,
+            mjx_data,
+            keypoints,
+            q,
+            initial_offsets,
+            is_regularized,
+            reg_coef,
+            site_idxs,
+        )
