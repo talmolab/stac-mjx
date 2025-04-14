@@ -33,14 +33,14 @@ def test_stac_core_obj(TEST_DIR):
         stac_core_obj.opt, optax._src.base.GradientTransformationExtraArgs
     )
     assert isinstance(
-        stac_core_obj.q_solver, jaxopt._src.projected_gradient.ProjectedGradient
+        stac_core_obj.q_tol, jaxopt._src.projected_gradient.ProjectedGradient
     )
     assert isinstance(stac_core_obj.m_solver, jaxopt._src.optax_wrapper.OptaxSolver)
 
     # assert the tolerance values are correct
     staccore1 = stac_mjx.stac_core.StacCore(tol=config.model.FTOL)
-    assert staccore1.q_solver.tol == config.model.FTOL
-    assert stac_core_obj.q_solver.tol == 1e-10
+    assert staccore1.q_tol.tol == config.model.FTOL
+    assert stac_core_obj.q_tol.tol == 1e-10
 
 
 def test_stac_core_compilations(TEST_DIR, PROJECT_DIR):
