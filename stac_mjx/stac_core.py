@@ -5,9 +5,10 @@ import jax.numpy as jp
 from jax import jit
 
 from functools import partial
-from jaxopt import ProjectedGradient
-from jaxopt.projection import projection_box
-from jaxopt import OptaxSolver
+
+# from jaxopt import ProjectedGradient
+# from jaxopt.projection import projection_box
+# from jaxopt import OptaxSolver
 
 import optax
 
@@ -150,9 +151,9 @@ def squared_error(x):
     return jp.sum(jp.square(x))
 
 
-@partial(jit, static_argnames=["q_tol"])
+@partial(jit, static_argnames=["q_solver"])
 def _q_opt(
-    q_tol,
+    q_solver,
     mjx_model,
     mjx_data,
     marker_ref_arr: jp.ndarray,
@@ -165,7 +166,7 @@ def _q_opt(
 ):
     """Update q_pose using estimated marker parameters."""
     try:
-        return mjx_data, q_tol.run(
+        return mjx_data, q_solver.run(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
             mjx_model=mjx_model,
@@ -233,7 +234,7 @@ def _m_opt(
 class StacCore:
     """StacCore computes offset optimization.
 
-    This class contains the 'q_tol' and 'm_solver' attributes that are used to
+    This class contains the 'q_solver' and 'm_solver' attributes that are used to
     compute 'q_pose' and perform offset optimization.
 
     Args:
@@ -248,7 +249,7 @@ class StacCore:
         """
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
-        self.q_tol = ProjectedGradient(
+        self.q_solver = ProjectedGradient(
             fun=q_loss, projection=projection_box, maxiter=250, tol=tol
         )
         self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
@@ -271,7 +272,7 @@ class StacCore:
         based on estimated marker parameters.
         """
         return _q_opt(
-            self.q_tol,
+            self.q_solver,
             mjx_model,
             mjx_data,
             marker_ref_arr,
