@@ -69,7 +69,6 @@ class Stac:
         self.cfg = cfg
         self._kp_names = kp_names
         self._root = mjcf.from_path(xml_path)
-        self.stac_core_obj = None
 
         (
             self._mj_model,
@@ -94,6 +93,13 @@ class Stac:
             self._mj_model.jnt_type, self._mj_model.jnt_range, joint_names
         )
 
+        self.stac_core_obj = stac_core.StacCore(
+            q_lb=self._lb,
+            q_ub=self._ub,
+            q_tol=self.cfg.model.FTOL,
+            m_tol=self.cfg.model.FTOL,  # TODO add separate tol configs
+        )
+
         self._indiv_parts = self.part_opt_setup()
 
         # Generate boolean flags for keypoints included in trunk optimization.
@@ -108,9 +114,8 @@ class Stac:
 
         self._mj_model.opt.iterations = cfg.stac.mujoco.iterations
         self._mj_model.opt.ls_iterations = cfg.stac.mujoco.ls_iterations
-
-        # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
+
         self._freejoint = bool(self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE)
 
     def part_opt_setup(self):
@@ -231,7 +236,7 @@ class Stac:
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
         # Create Stac_Core object
-        self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
+        # self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
 
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)

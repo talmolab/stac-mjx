@@ -8,9 +8,10 @@ from functools import partial
 
 # from jaxopt import ProjectedGradient
 # from jaxopt.projection import projection_box
-# from jaxopt import OptaxSolver
+from jaxopt import OptaxSolver
 
 import optax
+from optax import projections
 
 from stac_mjx import utils
 from stac_mjx import io
@@ -32,6 +33,8 @@ def q_loss(
     kps_to_opt: jp.ndarray,
     initial_q: jp.ndarray,
     site_idxs: jp.ndarray,
+    lb: jp.ndarray,
+    ub: jp.ndarray,
 ) -> float:
     """Compute the marker loss for q_phase optimization.
 
@@ -51,7 +54,9 @@ def q_loss(
     mjx_data = mjx_data.replace(qpos=utils.make_qs(initial_q, qs_to_opt, q))
 
     # Clip to bounds ourselves because of potential jaxopt bug
-    # mjx_data = mjx_data.replace(qpos=jp.clip(op_utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
+    mjx_data = mjx_data.replace(
+        qpos=jp.clip(utils.make_qs(initial_q, qs_to_opt, q), lb, ub)
+    )
 
     # Forward kinematics
     mjx_data = utils.kinematics(mjx_model, mjx_data)
@@ -168,7 +173,7 @@ def _q_opt(
     try:
         return mjx_data, q_solver.run(
             q0,
-            hyperparams_proj=jp.array((lb, ub)),
+            # hyperparams_proj=jp.array((lb, ub)),
             mjx_model=mjx_model,
             mjx_data=mjx_data,
             kp_data=marker_ref_arr.T,
@@ -241,18 +246,25 @@ class StacCore:
         tol (float): Tolerance for the 'q_tol' (ProjectedGradient).
     """
 
-    def __init__(self, tol=1e-5):
+    def __init__(self, q_lb, q_ub, q_tol=1e-5, m_tol=1e-5):
         """Initialze StacCore with 'q_tol' and 'm_solver'.
 
         Args:
             tol (float): Tolerance value for ProjectedGradient 'q_tol'.
         """
-        self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
-
-        self.q_solver = ProjectedGradient(
-            fun=q_loss, projection=projection_box, maxiter=250, tol=tol
+        self.q_sgd = optax.sgd(learning_rate=1e-3, momentum=0.9, nesterov=False)
+        self.m_sgd = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
+        # self.q_solver = ProjectedGradient(
+        #     fun=q_loss, projection=projection_box, maxiter=250, tol=tol
+        # )
+        # self.q_projection = partial(projections.projection_box, low=q_lb, high=q_ub)
+        self.q_solver = OptaxSolver(
+            opt=self._sgd,
+            fun=partial(q_loss, lb=q_lb, ub=q_ub),
+            maxiter=2000,
+            tol=q_tol,
         )
-        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+        self.m_solver = OptaxSolver(opt=self.m_sgd, fun=m_loss, maxiter=2000, tol=m_tol)
 
     def q_opt(
         self,
