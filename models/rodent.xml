@@ -3,7 +3,7 @@
   <option timestep="0.002" solver="CG" iterations="6" ls_iterations="6"></option>
   <visual>
         <quality shadowsize="2048"/>
-        <global offwidth="1920" offheight="1200" elevation="-20" azimuth="120"/>
+        <global offwidth="3840" offheight="2160" elevation="-20" azimuth="120"/>
       </visual>
   <default>
     <joint limited="true" solreflimit="0.01 1" solimplimit="0.9 0.99 0.003" armature="6e-07" damping="0.001"/>
@@ -154,11 +154,14 @@
   <statistic meansize="0.003"/>
   <asset>
     <!-- <skin name="skin" file="rodent_walker_skin.skn"/> -->
-    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <!-- <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/> -->
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1="1 1 1" rgb2="1 1 1"/>
     <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+    <texture name="skybox" type="skybox" builtin="flat" rgb1="1 1 1" rgb2="1 1 1"
+               width="800" height="800" mark="random" markrgb="1 1 1"/>
   </asset>
   <worldbody>
-    <geom name="floor" class="collision_floor" pos="0 0 -0.005" size="10 10 0.005" type="plane" material="grid"/>
+    <!-- <geom name="floor" class="collision_floor" pos="0 0 -0.005" size="10 10 0.005" type="plane" material="grid"/> -->
     <body name="walker">
     <freejoint name="root"/>
     <body name="torso" pos="0.03099526054578288 2.058524937651458e-07 0.06508957263119967">

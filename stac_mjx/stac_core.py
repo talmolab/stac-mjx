@@ -1,26 +1,33 @@
 """Implementation of stac for animal motion capture in dm_control suite."""
 
+from typing import NamedTuple
+
 import jax
 import jax.numpy as jp
 from jax import jit
 
 from functools import partial
-from jaxopt import ProjectedGradient
-from jaxopt.projection import projection_box
-from jaxopt import OptaxSolver
 
 import optax
+import optax.tree_utils as otu
 
 from stac_mjx import utils
-from stac_mjx import io
 
-
+class OptResult(NamedTuple):
+    """Named tuple containing optimization result."""
+    params: jp.ndarray
+    loss: float
+    state: optax.OptState
+  
 def huber(x, delta=5.0, max=10, max_slope=0.1):
     """Compute the Huber loss + sum."""
     x = jp.where(jp.abs(x) < delta, 0.5 * x**2, delta * (jp.abs(x) - 0.5 * delta))
     x = jp.where(x > max, (x - max) * max_slope + max, x)
     return jp.sum(x)
 
+def squared_error(x):
+    """Compute the squared error + sum."""
+    return jp.sum(jp.square(x))
 
 def q_loss(
     q: jp.ndarray,
@@ -31,6 +38,8 @@ def q_loss(
     kps_to_opt: jp.ndarray,
     initial_q: jp.ndarray,
     site_idxs: jp.ndarray,
+    lb: jp.ndarray,
+    ub: jp.ndarray,
 ) -> float:
     """Compute the marker loss for q_phase optimization.
 
@@ -49,9 +58,6 @@ def q_loss(
     # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
     mjx_data = mjx_data.replace(qpos=utils.make_qs(initial_q, qs_to_opt, q))
 
-    # Clip to bounds ourselves because of potential jaxopt bug
-    # mjx_data = mjx_data.replace(qpos=jp.clip(op_utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
-
     # Forward kinematics
     mjx_data = utils.kinematics(mjx_model, mjx_data)
     mjx_data = utils.com_pos(mjx_model, mjx_data)
@@ -64,6 +70,13 @@ def q_loss(
     residual = residual * kps_to_opt
     residual = squared_error(residual)
 
+    # Compute joint limit violations
+    residual_upper = jp.maximum(0.0, q - ub)
+    residual_lower = jp.maximum(0.0, lb - q)
+    # TODO: Make the weight parameter
+    joint_limit_cost = squared_error(residual_upper + residual_lower) * 100.0
+    
+    residual = residual + joint_limit_cost
     return residual
 
 
@@ -145,11 +158,6 @@ def m_loss(
     return jp.sum(residual) + reg_coef * jp.sum(reg_term)
 
 
-def squared_error(x):
-    """Compute the squared error + sum."""
-    return jp.sum(jp.square(x))
-
-
 @partial(jit, static_argnames=["q_solver"])
 def _q_opt(
     q_solver,
@@ -165,7 +173,7 @@ def _q_opt(
 ):
     """Update q_pose using estimated marker parameters."""
     try:
-        return mjx_data, q_solver.run(
+        return mjx_data, q_solver(
             q0,
             hyperparams_proj=jp.array((lb, ub)),
             mjx_model=mjx_model,
@@ -215,7 +223,7 @@ def _m_opt(
     Returns:
         _type_: result of optimization
     """
-    res = m_solver.run(
+    res = m_solver(
         offset0,
         mjx_model=mjx_model,
         mjx_data=mjx_data,
@@ -229,6 +237,34 @@ def _m_opt(
 
     return res
 
+def run_opt(init_params, fun, opt, max_iter, tol, *args, **kwargs): 
+    value_and_grad_fun = optax.value_and_grad_from_state(partial(fun, *args, **kwargs))
+
+    def step(carry):
+        params, state = carry
+        value, grad = value_and_grad_fun(params, state=state)
+        updates, state = opt.update(
+            grad, state, params, value=value, grad=grad, value_fn=fun
+        )
+        params = optax.apply_updates(params, updates)
+        return params, value, state
+
+    def continuing_criterion(carry):
+        _, _, state = carry
+        iter_num = otu.tree_get(state, 'count')
+        grad = otu.tree_get(state, 'grad')
+        
+        # TODO: Use otu.tree_norm once optax is updated
+        err = otu.tree_l2_norm(grad)
+        return (iter_num == 0) | ((iter_num < max_iter) & (err >= tol))
+
+    init_carry = (init_params, opt.init(init_params))
+    final_params, final_value, final_state = jax.lax.while_loop(
+        continuing_criterion, step, init_carry
+    )
+    
+    return OptResult(params=final_params, loss=final_value, state=final_state)
+
 
 class StacCore:
     """StacCore computes offset optimization.
@@ -240,18 +276,25 @@ class StacCore:
         tol (float): Tolerance for the q_solver.
     """
 
+    # TODO: Use q_tol and m_tol
     def __init__(self, tol=1e-5):
         """Initialze StacCore with 'q_solver' and 'm_solver'.
 
         Args:
             tol (float): Tolerance value for ProjectedGradient 'q_solver'.
         """
-        self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
+        # self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
-        self.q_solver = ProjectedGradient(
-            fun=q_loss, projection=projection_box, maxiter=250, tol=tol
-        )
-        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+        # self.q_solver = ProjectedGradient(
+        #     fun=q_loss, projection=projection_box, maxiter=250, tol=tol
+        # )
+        # self.q_solver = OptaxSolver(opt=self.opt, fun=q_loss, maxiter=2000)
+        # self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+        
+        self.opt = optax.lbfgs()
+        self.q_solver = partial(run_opt, fun=q_loss, opt=self.opt, max_iter=2000, tol=tol)
+        self.m_solver = partial(run_opt, fun=m_loss, opt=self.opt, max_iter=2000, tol=tol)
+
 
     def q_opt(
         self,

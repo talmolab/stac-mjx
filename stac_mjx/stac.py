@@ -154,7 +154,7 @@ class Stac:
                 size=[0.005],
                 rgba="0 0 0 0.8",
                 pos=pos,
-                group=3,
+                group=4,
             )
 
         rescale.rescale_subtree(
@@ -478,7 +478,7 @@ class Stac:
                 size=[0.005],
                 rgba=rgba,
                 pos=start,
-                group=2,
+                group=3,
             )
             keypoint_sites.append(site)
 
@@ -584,12 +584,24 @@ class Stac:
         render_mj_model = deepcopy(physics.model.ptr)
 
         scene_option = mujoco.MjvOption()
+        scene_option.geomgroup[0] = 0
         scene_option.geomgroup[1] = 0
         scene_option.geomgroup[2] = 1
+        
+        scene_option.jointgroup[0] = 0
+        scene_option.jointgroup[1] = 0
+        scene_option.jointgroup[2] = 0
+        
+        scene_option.actuatorgroup[0] = 0
+        scene_option.actuatorgroup[1] = 0
+        scene_option.actuatorgroup[2] = 0
+        
+        scene_option.sitegroup[0] = 0
+        scene_option.sitegroup[1] = 0
+        scene_option.sitegroup[2] = 0
+        scene_option.sitegroup[3] = 1
+        scene_option.sitegroup[4] = 0
 
-        scene_option.sitegroup[2] = 1
-
-        scene_option.sitegroup[3] = 0
         scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = True
         scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True

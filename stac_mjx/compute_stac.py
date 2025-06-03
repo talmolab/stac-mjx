@@ -64,7 +64,7 @@ def root_optimization(
         site_idxs,
     )
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
+    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.loss}")
 
     r = time.time()
 
@@ -91,7 +91,7 @@ def root_optimization(
         site_idxs,
     )
 
-    print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
+    print(f"q_opt 2 finished in {time.time()-j} with an error of {res.loss}")
     r = time.time()
 
     mjx_data = utils.replace_qs(
@@ -161,7 +161,7 @@ def offset_optimization(
     )
 
     offset_opt_param = res.params
-    print(f"Final error of {res.state.error}")
+    print(f"Final error of {res.loss}")
 
     # Set body sites according to optimized offsets
     mjx_model = utils.set_site_pos(
@@ -250,7 +250,7 @@ def pose_optimization(
                 mjx_model, mjx_data, utils.make_qs(q0, part, res.params)
             )
 
-        return mjx_data, res.state.error
+        return mjx_data, res.loss
 
     # Optimize over each frame, storing all the results
     frame_time = []
