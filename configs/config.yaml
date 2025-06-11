@@ -1,4 +1,4 @@
 defaults:
-  - stac: demo
+  - stac: olveczky_stac
   - model: rodent
   - _self_

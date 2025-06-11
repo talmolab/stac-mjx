@@ -172,24 +172,26 @@ def _q_opt(
     site_idxs,
 ):
     """Update q_pose using estimated marker parameters."""
-    try:
-        return mjx_data, q_solver(
-            q0,
-            hyperparams_proj=jp.array((lb, ub)),
-            mjx_model=mjx_model,
-            mjx_data=mjx_data,
-            kp_data=marker_ref_arr.T,
-            qs_to_opt=qs_to_opt,
-            kps_to_opt=kps_to_opt,
-            initial_q=q0,
-            site_idxs=site_idxs,
-        )
+    # try:
+    return mjx_data, q_solver(
+        q0,
+        # hyperparams_proj=jp.array((lb, ub)),
+        mjx_model=mjx_model,
+        mjx_data=mjx_data,
+        kp_data=marker_ref_arr.T,
+        qs_to_opt=qs_to_opt,
+        kps_to_opt=kps_to_opt,
+        initial_q=q0,
+        site_idxs=site_idxs,
+        lb=lb,
+        ub=ub,
+    )
 
-    except ValueError as ex:
-        print("Warning: optimization failed.", flush=True)
-        print(ex, flush=True)
-        mjx_data = mjx_data.replace(qpos=q0)
-        mjx_data = utils.kinematics(mjx_model, mjx_data)
+    # except ValueError as ex:
+    #     print("Warning: optimization failed.", flush=True)
+    #     print(ex, flush=True)
+    #     mjx_data = mjx_data.replace(qpos=q0)
+    #     mjx_data = utils.kinematics(mjx_model, mjx_data)
 
     return mjx_data, None
 
@@ -237,12 +239,12 @@ def _m_opt(
 
     return res
 
-def run_opt(init_params, fun, opt, max_iter, tol, *args, **kwargs): 
-    value_and_grad_fun = optax.value_and_grad_from_state(partial(fun, *args, **kwargs))
+def run_opt(init_params, fun, opt, max_iter, tol, **kwargs): 
+    value_and_grad_fun = optax.value_and_grad_from_state(fun)
 
     def step(carry):
-        params, state = carry
-        value, grad = value_and_grad_fun(params, state=state)
+        params, _, state = carry
+        value, grad = value_and_grad_fun(params, state=state, **kwargs)
         updates, state = opt.update(
             grad, state, params, value=value, grad=grad, value_fn=fun
         )
@@ -258,7 +260,7 @@ def run_opt(init_params, fun, opt, max_iter, tol, *args, **kwargs):
         err = otu.tree_l2_norm(grad)
         return (iter_num == 0) | ((iter_num < max_iter) & (err >= tol))
 
-    init_carry = (init_params, opt.init(init_params))
+    init_carry = (init_params, 0.0, opt.init(init_params))
     final_params, final_value, final_state = jax.lax.while_loop(
         continuing_criterion, step, init_carry
     )
@@ -277,7 +279,7 @@ class StacCore:
     """
 
     # TODO: Use q_tol and m_tol
-    def __init__(self, tol=1e-5):
+    def __init__(self, lb, ub, site_idxs, tol=1e-5):
         """Initialze StacCore with 'q_solver' and 'm_solver'.
 
         Args:
@@ -290,9 +292,9 @@ class StacCore:
         # )
         # self.q_solver = OptaxSolver(opt=self.opt, fun=q_loss, maxiter=2000)
         # self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
-        
+        self._q_loss = partial(q_loss, lb=lb, ub=ub, site_idxs=site_idxs)
         self.opt = optax.lbfgs()
-        self.q_solver = partial(run_opt, fun=q_loss, opt=self.opt, max_iter=2000, tol=tol)
+        self.q_solver = partial(run_opt, fun=self._q_loss, opt=self.opt, max_iter=2000, tol=tol)
         self.m_solver = partial(run_opt, fun=m_loss, opt=self.opt, max_iter=2000, tol=tol)
 
 
@@ -304,27 +306,41 @@ class StacCore:
         qs_to_opt: jp.ndarray,
         kps_to_opt: jp.ndarray,
         q0: jp.ndarray,
-        lb,
-        ub,
-        site_idxs,
+        # lb,
+        # ub,
+        # site_idxs,
     ):
         """Updates q_pose using estimated marker parameters.
 
         This function is a wrapper for `_q_opt()` and updates `q_pose`
         based on estimated marker parameters.
         """
-        return _q_opt(
-            self.q_solver,
-            mjx_model,
-            mjx_data,
-            marker_ref_arr,
-            qs_to_opt,
-            kps_to_opt,
+        return mjx_data, self.q_solver(
             q0,
-            lb,
-            ub,
-            site_idxs,
+            # hyperparams_proj=jp.array((lb, ub)),
+            mjx_model=mjx_model,
+            mjx_data=mjx_data,
+            kp_data=marker_ref_arr.T,
+            qs_to_opt=qs_to_opt,
+            kps_to_opt=kps_to_opt,
+            initial_q=q0,
+            # site_idxs=site_idxs,
+            # lb=lb,
+            # ub=ub,
         )
+        
+        # return _q_opt(
+        #     self.q_solver,
+        #     mjx_model,
+        #     mjx_data,
+        #     marker_ref_arr,
+        #     qs_to_opt,
+        #     kps_to_opt,
+        #     q0,
+        #     lb,
+        #     ub,
+        #     site_idxs,
+        # )
 
     def m_opt(
         self,

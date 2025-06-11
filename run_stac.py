@@ -5,6 +5,10 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 import stac_mjx
+import os
+
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 
 def load_and_run_stac(cfg):

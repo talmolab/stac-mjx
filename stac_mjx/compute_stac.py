@@ -59,9 +59,9 @@ def root_optimization(
         qs_to_opt,
         kps_to_opt,
         q0,
-        lb,
-        ub,
-        site_idxs,
+        # lb,
+        # ub,
+        # site_idxs,
     )
 
     print(f"q_opt 1 finished in {time.time()-j} with an error of {res.loss}")
@@ -86,9 +86,9 @@ def root_optimization(
         qs_to_opt,
         kps_to_opt,
         q0,
-        lb,
-        ub,
-        site_idxs,
+        # lb,
+        # ub,
+        # site_idxs,
     )
 
     print(f"q_opt 2 finished in {time.time()-j} with an error of {res.loss}")
@@ -224,9 +224,9 @@ def pose_optimization(
             qs_to_opt,
             kps_to_opt,
             q0,
-            lb,
-            ub,
-            site_idxs,
+            # lb,
+            # ub,
+            # site_idxs,
         )
 
         mjx_data = utils.replace_qs(mjx_model, mjx_data, res.params)
@@ -241,9 +241,9 @@ def pose_optimization(
                 part,
                 kps_to_opt,
                 q0,
-                lb,
-                ub,
-                site_idxs,
+                # lb,
+                # ub,
+                # site_idxs,
             )
 
             mjx_data = utils.replace_qs(
