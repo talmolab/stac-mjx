@@ -29,7 +29,10 @@ def load_configs(
     # Initialize Hydra and set the config path
     with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
         # Compose the configuration by specifying the config name
-        cfg = hydra.compose(config_name=config_name)
+        cfg = hydra.compose(
+            config_name=config_name,
+            overrides=["hydra/job_logging=disabled", "hydra/hydra_logging=disabled"],
+        )
         # Convert to structured config
         structured_config = OmegaConf.structured(io.Config)
         OmegaConf.merge(structured_config, cfg)
