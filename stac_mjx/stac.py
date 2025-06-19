@@ -112,6 +112,8 @@ class Stac:
         # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
         self._freejoint = bool(self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE)
+        
+        self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
 
     def part_opt_setup(self):
         """Set up the lists of indices for part optimization."""
@@ -229,9 +231,7 @@ class Stac:
         # Calculate initial xpos and such
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
-
-        # Create Stac_Core object
-        self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
+        
 
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
@@ -267,8 +267,8 @@ class Stac:
                 )
             )
 
-            for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-                print(f"Frame {i+1} done in {t} with a final error of {e}")
+            # for i, (t, e) in enumerate(zip(frame_time, frame_error)):
+            #     print(f"Frame {i+1} done in {t} with a final error of {e}")
 
             flattened_errors, mean, std = self._get_error_stats(frame_error)
             # Print the results
@@ -304,8 +304,8 @@ class Stac:
             )
         )
 
-        for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-            print(f"Frame {i+1} done in {t} with a final error of {e}")
+        # for i, (t, e) in enumerate(zip(frame_time, frame_error)):
+        #     print(f"Frame {i+1} done in {t} with a final error of {e}")
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
@@ -339,10 +339,6 @@ class Stac:
 
         # Create mjx model and data
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)
-
-        # Create stac_core_obj if it hasn't been instaniated yet
-        if not self.stac_core_obj:
-            self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
 
         def mjx_setup(kp_data, mj_model):
             """Create mjxmodel and mjxdata and set offet.
