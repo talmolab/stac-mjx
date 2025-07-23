@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mujoco model="swimmer">
+  <compiler angle="degree" coordinate="local" inertiafromgeom="true"/>
+  <option density="1.2" integrator="RK4" timestep="0.01" viscosity="0.1" cone="elliptic"/>
+  <default>
+    <geom conaffinity="1" condim="1" contype="1" material="geom" rgba="0.8 0.6 .4 1"/>
+    <joint armature="0.1"/>
+    <site type="sphere" size="0.01"/>
+    <muscle ctrllimited="true" ctrlrange="0 1"/>
+  </default>
+  <asset>
+    <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox" width="100"/>
+    <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom" random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+    <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8" type="2d" width="100"/>
+    <material name="MatPlane" reflectance="0.5" shininess="1" specular="1" texrepeat="30 30" texture="texplane"/>
+    <material name="geom" texture="texgeom" texuniform="true"/>
+    <mesh name="ellipsoid1" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.001.stl" refpos="1.25 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid2" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.002.stl" refpos="1.1574074074074074 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid3" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.003.stl" refpos="1.0567632850241546 0 0" refquat="0.9393937941349282 0.3428400494994482 0 0"/>
+    <mesh name="ellipsoid4" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.004.stl" refpos="0.9561191626409018 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid5" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.005.stl" refpos="0.855475040257649 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid6" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.006.stl" refpos="0.7548309178743962 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid7" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.007.stl" refpos="0.6541867954911433 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid8" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.008.stl" refpos="0.5535426731078905 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid9" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.009.stl" refpos="0.45289855072463775 0 0" refquat="0.984807753012208 0.17364817766693033 0 0"/>
+    <mesh name="ellipsoid10" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.010.stl" refpos="0.35225442834138493 0 0" refquat="0.9271838545667874 0.374606593415912 0 0"/>
+    <mesh name="ellipsoid11" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.011.stl" refpos="0.25161030595813205 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid12" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.012.stl" refpos="0.15096618357487912 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid13" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.013.stl" refpos="0.05032206119162645 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid14" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.014.stl" refpos="-0.05032206119162645 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid15" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.015.stl" refpos="-0.15096618357487912 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid16" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.016.stl" refpos="-0.25161030595813205 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid17" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.017.stl" refpos="-0.35225442834138493 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid18" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.018.stl" refpos="-0.45289855072463764 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid19" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.019.stl" refpos="-0.5535426731078905 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid20" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.020.stl" refpos="-0.6541867954911432 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid21" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.021.stl" refpos="-0.7548309178743962 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid22" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.022.stl" refpos="-0.855475040257649 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid23" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.023.stl" refpos="-0.9561191626409019 0 0" refquat="0.9222009716704518 0.3867109616368206 0 0"/>
+    <mesh name="ellipsoid24" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.024.stl" refpos="-1.0567632850241548 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid25" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.025.stl" refpos="-1.1574074074074072 0 0" refquat="1.0 0.0 0 0"/>
+  </asset>
+  <worldbody>
+    <camera name="fixedcam" mode="fixed" pos="0 0 50" xyaxes="1 0 0 0 1 0"/>
+    <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1" pos="0 0 1.3" specular=".1 .1 .1"/>
+    <geom conaffinity="1" condim="3" material="MatPlane" name="floor" pos="0 0 0" rgba="0.8 0.9 0.8 1" size="40 40 0.1" type="plane"/>
+  </worldbody>
+  <actuator>
+    <muscle name="muscle_dbwml1" tendon="tendon_dbwml1" lengthrange="0.05 0.13"/>
+    <muscle name="muscle_dbwml2" tendon="tendon_dbwml2" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwml3" tendon="tendon_dbwml3" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwml4" tendon="tendon_dbwml4" lengthrange="0.03 0.39"/>
+    <muscle name="muscle_dbwml5" tendon="tendon_dbwml5" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwml6" tendon="tendon_dbwml6" lengthrange="0.03 0.46"/>
+    <muscle name="muscle_dbwml7" tendon="tendon_dbwml7" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml8" tendon="tendon_dbwml8" lengthrange="0.04 0.50"/>
+    <muscle name="muscle_dbwml9" tendon="tendon_dbwml9" lengthrange="0.06 0.15"/>
+    <muscle name="muscle_dbwml10" tendon="tendon_dbwml10" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml11" tendon="tendon_dbwml11" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml12" tendon="tendon_dbwml12" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml13" tendon="tendon_dbwml13" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml14" tendon="tendon_dbwml14" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml15" tendon="tendon_dbwml15" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml16" tendon="tendon_dbwml16" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml17" tendon="tendon_dbwml17" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwml18" tendon="tendon_dbwml18" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml19" tendon="tendon_dbwml19" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_dbwml20" tendon="tendon_dbwml20" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_dbwml21" tendon="tendon_dbwml21" lengthrange="0.03 0.16"/>
+    <muscle name="muscle_dbwml22" tendon="tendon_dbwml22" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwml23" tendon="tendon_dbwml23" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwml24" tendon="tendon_dbwml24" lengthrange="0.05 0.13"/>
+    <muscle name="muscle_dbwmr1" tendon="tendon_dbwmr1" lengthrange="0.06 0.13"/>
+    <muscle name="muscle_dbwmr2" tendon="tendon_dbwmr2" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwmr3" tendon="tendon_dbwmr3" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwmr4" tendon="tendon_dbwmr4" lengthrange="0.03 0.39"/>
+    <muscle name="muscle_dbwmr5" tendon="tendon_dbwmr5" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwmr6" tendon="tendon_dbwmr6" lengthrange="0.03 0.46"/>
+    <muscle name="muscle_dbwmr7" tendon="tendon_dbwmr7" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr8" tendon="tendon_dbwmr8" lengthrange="0.04 0.50"/>
+    <muscle name="muscle_dbwmr9" tendon="tendon_dbwmr9" lengthrange="0.06 0.15"/>
+    <muscle name="muscle_dbwmr10" tendon="tendon_dbwmr10" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr11" tendon="tendon_dbwmr11" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr12" tendon="tendon_dbwmr12" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr13" tendon="tendon_dbwmr13" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr14" tendon="tendon_dbwmr14" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr15" tendon="tendon_dbwmr15" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr16" tendon="tendon_dbwmr16" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr17" tendon="tendon_dbwmr17" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwmr18" tendon="tendon_dbwmr18" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_dbwmr19" tendon="tendon_dbwmr19" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_dbwmr20" tendon="tendon_dbwmr20" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_dbwmr21" tendon="tendon_dbwmr21" lengthrange="0.03 0.16"/>
+    <muscle name="muscle_dbwmr22" tendon="tendon_dbwmr22" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwmr23" tendon="tendon_dbwmr23" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_dbwmr24" tendon="tendon_dbwmr24" lengthrange="0.05 0.13"/>
+    <muscle name="muscle_vbwml1" tendon="tendon_vbwml1" lengthrange="0.05 0.13"/>
+    <muscle name="muscle_vbwml2" tendon="tendon_vbwml2" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_vbwml3" tendon="tendon_vbwml3" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_vbwml4" tendon="tendon_vbwml4" lengthrange="0.03 0.38"/>
+    <muscle name="muscle_vbwml5" tendon="tendon_vbwml5" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_vbwml6" tendon="tendon_vbwml6" lengthrange="0.04 0.45"/>
+    <muscle name="muscle_vbwml7" tendon="tendon_vbwml7" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml8" tendon="tendon_vbwml8" lengthrange="0.04 0.50"/>
+    <muscle name="muscle_vbwml9" tendon="tendon_vbwml9" lengthrange="0.05 0.14"/>
+    <muscle name="muscle_vbwml10" tendon="tendon_vbwml10" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml11" tendon="tendon_vbwml11" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml12" tendon="tendon_vbwml12" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml13" tendon="tendon_vbwml13" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml14" tendon="tendon_vbwml14" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml15" tendon="tendon_vbwml15" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml16" tendon="tendon_vbwml16" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml17" tendon="tendon_vbwml17" lengthrange="0.05 0.16"/>
+    <muscle name="muscle_vbwml18" tendon="tendon_vbwml18" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwml19" tendon="tendon_vbwml19" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_vbwml20" tendon="tendon_vbwml20" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_vbwml21" tendon="tendon_vbwml21" lengthrange="0.03 0.16"/>
+    <muscle name="muscle_vbwml22" tendon="tendon_vbwml22" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_vbwml23" tendon="tendon_vbwml23" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr1" tendon="tendon_vbwmr1" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_vbwmr2" tendon="tendon_vbwmr2" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_vbwmr3" tendon="tendon_vbwmr3" lengthrange="0.03 0.38"/>
+    <muscle name="muscle_vbwmr4" tendon="tendon_vbwmr4" lengthrange="0.04 0.15"/>
+    <muscle name="muscle_vbwmr5" tendon="tendon_vbwmr5" lengthrange="0.04 0.45"/>
+    <muscle name="muscle_vbwmr6" tendon="tendon_vbwmr6" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr7" tendon="tendon_vbwmr7" lengthrange="0.04 0.50"/>
+    <muscle name="muscle_vbwmr8" tendon="tendon_vbwmr8" lengthrange="0.05 0.14"/>
+    <muscle name="muscle_vbwmr9" tendon="tendon_vbwmr9" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr10" tendon="tendon_vbwmr10" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr11" tendon="tendon_vbwmr11" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr12" tendon="tendon_vbwmr12" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr13" tendon="tendon_vbwmr13" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr14" tendon="tendon_vbwmr14" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr15" tendon="tendon_vbwmr15" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr16" tendon="tendon_vbwmr16" lengthrange="0.05 0.16"/>
+    <muscle name="muscle_vbwmr17" tendon="tendon_vbwmr17" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr18" tendon="tendon_vbwmr18" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_vbwmr19" tendon="tendon_vbwmr19" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_vbwmr20" tendon="tendon_vbwmr20" lengthrange="0.03 0.16"/>
+    <muscle name="muscle_vbwmr21" tendon="tendon_vbwmr21" lengthrange="0.04 0.16"/>
+    <muscle name="muscle_vbwmr22" tendon="tendon_vbwmr22" lengthrange="0.05 0.15"/>
+    <muscle name="muscle_vbwmr23" tendon="tendon_vbwmr23" lengthrange="0.07 0.13"/>
+    <muscle name="muscle_vbwmr24" tendon="tendon_vbwmr24" lengthrange="0.07 0.13"/>
+  </actuator>
+</mujoco> 
