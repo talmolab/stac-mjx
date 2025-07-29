@@ -1,0 +1,229 @@
+MJCF_PATH: "/Users/rusham/Documents/TalmoLab/GitRepos/stac-keypoints-ui/stac_keypoints_ui/data/sungaya_inexpectata_box.xml"
+
+# Tolerance for the optimizations of the full model, limb, and root. 
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 1.0e-07
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds. 
+N_ITERS: 30
+
+KEYPOINT_INITIAL_OFFSETS:
+  a2_a3: 0.0 0.0 0.0
+  a4_a5: 0.0 0.0 0.0
+  a6_a7: 0.0 0.0 0.0
+  a8_end: 0.0 0.0 0.0
+  f_l_claws: 0.0 0.0 0.0
+  f_l_coxa: 0.0 0.0 0.0
+  f_l_femur: 0.0 0.0 0.0
+  f_l_tarsus: 0.0 0.0 0.0
+  f_l_tibia: 0.0 0.0 0.0
+  f_l_trochanter: 0.0 0.0 0.0
+  f_r_claws: 0.0 0.0 0.0
+  f_r_coxa: 0.0 0.0 0.0
+  f_r_femur: 0.0 0.0 0.0
+  f_r_tarsus: 0.0 0.0 0.0
+  f_r_tibia: 0.0 0.0 0.0
+  f_r_trochanter: 0.0 0.0 0.0
+  h_l_claws: 0.0 0.0 0.0
+  h_l_coxa: 0.0 0.0 0.0
+  h_l_femur: 0.0 0.0 0.0
+  h_l_tarsus: 0.0 0.0 0.0
+  h_l_tibia: 0.0 0.0 0.0
+  h_l_trochanter: 0.0 0.0 0.0
+  h_r_claws: 0.0 0.0 0.0
+  h_r_coxa: 0.0 0.0 0.0
+  h_r_femur: 0.0 0.0 0.0
+  h_r_tarsus: 0.0 0.0 0.0
+  h_r_tibia: 0.0 0.0 0.0
+  h_r_trochanter: 0.0 0.0 0.0
+  head: 0.0 0.0 0.0
+  head_t1: 0.0 0.0 0.0
+  l_antenna_base: 0.0 0.0 0.0
+  l_antenna_tip: 0.0 0.0 0.0
+  m_l_claws: 0.0 0.0 0.0
+  m_l_coxa: 0.0 0.0 0.0
+  m_l_femur: 0.0 0.0 0.0
+  m_l_tarsus: 0.0 0.0 0.0
+  m_l_tibia: 0.0 0.0 0.0
+  m_l_trochanter: 0.0 0.0 0.0
+  m_r_claws: 0.0 0.0 0.0
+  m_r_coxa: 0.0 0.0 0.0
+  m_r_femur: 0.0 0.0 0.0
+  m_r_tarsus: 0.0 0.0 0.0
+  m_r_tibia: 0.0 0.0 0.0
+  m_r_trochanter: 0.0 0.0 0.0
+  mouth: 0.0 0.0 0.0
+  r_antenna_base: 0.0 0.0 0.0
+  r_antenna_tip: 0.0 0.0 0.0
+  t1_t2: 0.0 0.0 0.0
+  t2_t3: 0.0 0.0 0.0
+  t3_a1: 0.0 0.0 0.0
+
+
+
+KEYPOINT_MODEL_PAIRS:
+  a2_a3: 08-a3-l
+  a4_a5: 10-a5-l
+  a6_a7: 12-a7-l
+  a8_end: 14-a9-l
+  f_l_claws: 20-f-l-claws-l
+  f_l_coxa: 16-f-l-coxa-l
+  f_l_femur: 17-f-l-femur-l
+  f_l_tarsus: 19-f-l-tarsus-l
+  f_l_tibia: 18-f-l-tibia-l
+  f_r_claws: 36-f-r-claws-l
+  f_r_coxa: 31-f-r-coxa-l
+  f_r_femur: 32-f-r-femur-l
+  f_r_tarsus: 35-f-r-tarsus-l
+  f_r_tibia: 33-f-r-tibia-l
+  h_l_claws: 30-h-l-claws-l
+  h_l_coxa: 26-h-l-coxa-l
+  h_l_femur: 27-h-l-femur-l
+  h_l_tarsus: 29-h-l-tarsus-l
+  h_l_tibia: 28-h-l-tibia-l
+  h_r_claws: 46-h-r-claws-l
+  h_r_coxa: 42-h-r-coxa-l
+  h_r_femur: 43-h-r-femur-l
+  h_r_tarsus: 45-h-r-tarsus-l
+  h_r_tibia: 44-h-r-tibia-l
+  head_t1: 04-t1-l
+  m_l_claws: 25-m-l-claws-l
+  m_l_coxa: 21-m-l-coxa-l
+  m_l_femur: 22-m-l-femur-l
+  m_l_tarsus: 24-m-l-tarsus-l
+  m_l_tibia: 23-m-l-tibia-l
+  m_r_claws: 41-m-r-claws-l
+  m_r_coxa: 37-m-r-coxa-l
+  m_r_femur: 38-m-r-femur-l
+  m_r_tarsus: 40-m-r-tarsus-l
+  m_r_tibia: 39-m-r-tibia-l
+  t1_t2: 05-t2-l
+  t2_t3: 06-t3-l
+  t3_a1: 07-a2-l
+
+KP_NAMES:
+  - a2_a3
+  - a4_a5
+  - a6_a7
+  - a8_end
+  - f_l_claws
+  - f_l_coxa
+  - f_l_femur
+  - f_l_tarsus
+  - f_l_tibia
+  - f_l_trochanter
+  - f_r_claws
+  - f_r_coxa
+  - f_r_femur
+  - f_r_tarsus
+  - f_r_tibia
+  - f_r_trochanter
+  - h_l_claws
+  - h_l_coxa
+  - h_l_femur
+  - h_l_tarsus
+  - h_l_tibia
+  - h_l_trochanter
+  - h_r_claws
+  - h_r_coxa
+  - h_r_femur
+  - h_r_tarsus
+  - h_r_tibia
+  - h_r_trochanter
+  - head_t1
+  - head
+  - l_antenna_base
+  - l_antenna_tip
+  - m_l_claws
+  - m_l_coxa
+  - m_l_femur
+  - m_l_tarsus
+  - m_l_tibia
+  - m_l_trochanter
+  - m_r_claws
+  - m_r_coxa
+  - m_r_femur
+  - m_r_tarsus
+  - m_r_tibia
+  - m_r_trochanter
+  - mouth
+  - r_antenna_base
+  - r_antenna_tip
+  - t1_t2
+  - t2_t3
+  - t3_a1
+
+SCALE_FACTOR: 0.945491373538971
+
+MOCAP_SCALE_FACTOR: 0.001
+
+RENDER_FPS: 10
+
+N_SAMPLE_FRAMES: 100
+
+M_REG_COEF: 1
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+  - t1_t2
+  - t2_t3
+  - t3_a1
+  - a2_a3
+  - a4_a5
+  - a6_a7
+
+ROOT_OPTIMIZATION_KEYPOINT: "head_t1"
+
+
+KEYPOINT_COLOR_PAIRS:
+  a2_a3: .3 0 0 1
+  a4_a5: .3 0 0 1
+  a6_a7: .3 0 0 1
+  a8_end: .3 0 0 1
+  f_l_claws: 0 0 .3 1
+  f_l_coxa: 0 0 .3 1
+  f_l_femur: 0 0 .3 1
+  f_l_tarsus: 0 0 .3 1
+  f_l_tibia: 0 0 .3 1
+  f_l_trochanter: 0 0 .3 1
+  f_r_claws: 0 0 .3 1
+  f_r_coxa: 0 0 .3 1
+  f_r_femur: 0 0 .3 1
+  f_r_tarsus: 0 0 .3 1
+  f_r_tibia: 0 0 .3 1
+  f_r_trochanter: 0 0 .3 1
+  h_l_claws: 0 0 .3 1
+  h_l_coxa: 0 0 .3 1
+  h_l_femur: 0 0 .3 1
+  h_l_tarsus: 0 0 .3 1
+  h_l_tibia: 0 0 .3 1
+  h_l_trochanter: 0 0 .3 1
+  h_r_claws: 0 0 .3 1
+  h_r_coxa: 0 0 .3 1
+  h_r_femur: 0 0 .3 1
+  h_r_tarsus: 0 0 .3 1
+  h_r_tibia: 0 0 .3 1
+  h_r_trochanter: 0 0 .3 1
+  head: .3 0 0 1
+  head_t1: .3 0 0 1
+  l_antenna_base: .3 0 0 1
+  l_antenna_tip: .3 0 0 1
+  m_l_claws: 0 0 .3 1
+  m_l_coxa: 0 0 .3 1
+  m_l_femur: 0 0 .3 1
+  m_l_tarsus: 0 0 .3 1
+  m_l_tibia: 0 0 .3 1
+  m_l_trochanter: 0 0 .3 1
+  m_r_claws: 0 0 .3 1
+  m_r_coxa: 0 0 .3 1
+  m_r_femur: 0 0 .3 1
+  m_r_tarsus: 0 0 .3 1
+  m_r_tibia: 0 0 .3 1
+  m_r_trochanter: 0 0 .3 1
+  mouth: .3 0 0 1
+  r_antenna_base: .3 0 0 1
+  r_antenna_tip: .3 0 0 1
+  t1_t2: .3 0 0 1
+  t2_t3: .3 0 0 1
+  t3_a1: .3 0 0 1

@@ -1,4 +1,4 @@
 defaults:
-  - stac: demo
-  - model: rodent
+  - stac: stick
+  - model: correspondences
   - _self_
