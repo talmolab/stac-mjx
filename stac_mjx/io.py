@@ -2,7 +2,6 @@
 
 import os
 import numpy as np
-import pandas as pd
 from jax import numpy as jnp
 import yaml
 import scipy.io as spio
@@ -102,52 +101,6 @@ class StacData:
     def as_dict(self) -> dict:
         """Convert the dataclass instance to a dictionary."""
         return asdict(self)
-     
-def recursive_load_from_h5py(file, group_path="/"):
-    group = file[group_path]
-    if isinstance(group, h5py.Dataset):
-        return group[()]  # Read dataset value
-    elif isinstance(group, h5py.Group):
-        if all(k.isdigit() for k in group.keys()):  # Likely a list
-            return [
-                recursive_load_from_h5py(file, f"{group_path}/{k}")
-                for k in sorted(group.keys(), key=int)
-            ]
-        else:  # Dictionary-like group
-            return {
-                k: recursive_load_from_h5py(file, f"{group_path}/{k}")
-                for k in group.keys()
-            }
-    else:
-        raise TypeError(f"Unsupported group type: {type(group)}")
-
-def load_from_h5py(file_path: str | Path, group_path="/"):
-    """
-    Load a pytree structure from an HDF5 file.
-
-    Args:
-        file (h5py.File): An open HDF5 file object.
-        group_path (str): The HDF5 group path to read data from.
-
-    Returns:
-        The reconstructed data structure.
-    """
-    with h5py.File(file_path, "r") as file:
-        return recursive_load_from_h5py(file, group_path)
-
-def get_h5_data(file):
-    data = load_from_h5py(file)
-    kp_data = np.array(data['kp_data'][0], dtype=np.float32)
-
-    placeholder = np.array(data['kp_names'], dtype=np.str_)
-
-    true = []
-
-    for each in placeholder:
-        true.append(each)
-
- 
-    return data['kp_data'], true
 
 
 def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
@@ -183,9 +136,7 @@ def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
     elif file_path.suffix == ".nwb":
         data, kp_names = load_nwb(file_path)
     elif file_path.suffix == ".h5":
-        data, kp_names = get_h5_data(file_path)
-    elif file_path.suffix == ".csv":
-        data, kp_names = get_csv_data(file_path)
+        data, kp_names = load_h5(file_path)
     else:
         raise ValueError(
             "Unsupported file extension. Please provide a .nwb or .mat file."
@@ -277,57 +228,6 @@ def load_h5(filename):
     data = np.squeeze(data, axis=1)
     data = np.transpose(data, (0, 2, 1))
     return data, None
-
-from typing import Union, Tuple, List
-from pathlib import Path
-import pandas as pd
-import numpy as np
-import re
-
-def get_csv_data(file_path: Union[Path, str]) -> Tuple[np.ndarray, List[str]]:
-    """
-    Loads mocap data from a CSV file.
-    Assumes CSV columns are named like 'keypointName_x', 'keypointName_y', 'keypointName_z'.
-
-    Args:
-        file_path (Union[Path, str]): Path to the CSV file.
-
-    Returns:
-        Tuple[np.ndarray, List[str]]:
-            - Mocap data as a NumPy array of shape [num_frames, num_keypoints, 3], scaled.
-            - List of ordered keypoint names.
-    """
-    df = pd.read_csv(file_path)
-
-    # --- Extract coordinate columns (ending in _x/_y/_z) ---
-    kp_coord_cols = df.filter(regex='_[xyz]$', axis=1).columns.tolist()
-
-    # --- Parse keypoint base names ---
-    kp_base_names = [re.sub(r'_[xyz]$', '', col) for col in kp_coord_cols]
-    kp_names_ordered = []
-    seen = set()
-    for name in kp_base_names:
-        if name not in seen:
-            kp_names_ordered.append(name)
-            seen.add(name)
-
-    # --- Build ordered list of coord columns: [kp1_x, kp1_y, kp1_z, kp2_x, ...] ---
-    sorted_kp_coord_cols = []
-    for name in kp_names_ordered:
-        sorted_kp_coord_cols.extend([f"{name}_x", f"{name}_y", f"{name}_z"])
-
-    # --- Extract and reshape data ---
-    actual_kp_df = df[sorted_kp_coord_cols]
-    flat_kp_data = actual_kp_df.values.astype(np.float32)
-    num_frames = flat_kp_data.shape[0]
-    num_keypoints = len(kp_names_ordered)
-
-    assert actual_kp_df.shape[1] == num_keypoints * 3, \
-        f"Expected {num_keypoints * 3} cols, got {actual_kp_df.shape[1]}"
-
-    kp_data_reshaped = flat_kp_data.reshape(num_frames, 3, num_keypoints)
-
-    return kp_data_reshaped, kp_names_ordered
 
 
 def _check_keys(dict):
