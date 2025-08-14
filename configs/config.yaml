@@ -1,4 +1,4 @@
 defaults:
-  - stac: stick
-  - model: correspondences
+  - stac: stac_sungaya_inexpectata
+  - model: sungaya_inexpectata
   - _self_

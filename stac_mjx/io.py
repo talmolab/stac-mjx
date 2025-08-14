@@ -150,7 +150,7 @@ def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
             corresponding to the keypoint data order."
         )
 
-    if len(kp_names) != data.shape[2]:
+    if len(kp_names) != data.shape[1]:
         raise ValueError(
             f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
         )
@@ -164,10 +164,10 @@ def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
     # Scale mocap data to match model
     data = data * cfg.model.MOCAP_SCALE_FACTOR
     # Sort in kp_names order
-    data = jnp.array(data[:, :, model_inds])
+    data = jnp.array(data[:, model_inds, :])
     # Flatten data from [#num frames, #keypoints, xyz]
     # into [#num frames, #keypointsXYZ]
-    data = jnp.transpose(data, (0, 2, 1))
+    #data = jnp.transpose(data, (0, 2, 1))
     data = jnp.reshape(data, (data.shape[0], -1))
 
     return data, sorted_kp_names
@@ -225,7 +225,7 @@ def load_h5(filename):
             data[key] = f[key][()]
 
     data = np.array(data["tracks"])
-    data = np.squeeze(data, axis=1)
+    #data = np.squeeze(data, axis=1)
     data = np.transpose(data, (0, 2, 1))
     return data, None
 

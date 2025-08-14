@@ -4,7 +4,7 @@ import os
 
 import jax
 from jax import numpy as jp
-from jax.lib import xla_bridge
+from jax.extend import backend
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
@@ -13,7 +13,7 @@ from stac_mjx import io
 
 def enable_xla_flags():
     """Enables XLA Flags for faster runtime on Nvidia GPUs."""
-    if xla_bridge.get_backend().platform == "gpu":
+    if backend.get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
 

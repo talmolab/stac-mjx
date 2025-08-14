@@ -1,0 +1,14 @@
+fit_offsets_path: "1500f_stick_fit_offsets.h5"
+ik_only_path: "stick_ik_only.h5"
+data_path: "/root/vast/rusham/GitRepos/stac-mjx/models/sungaya_inexpectata/scaled_down_stick_bug.h5"
+
+n_fit_frames: 1500
+skip_fit_offsets: False
+skip_ik_only: True
+infer_qvels: True # Infer qvels from stac output
+n_frames_per_clip: 1 # 1 if mocap is one session
+
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

@@ -1,0 +1,312 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mujoco model="sungaya">
+      <option integrator="RK4"/>
+      <visual>
+        <quality shadowsize="2048"/>
+        <global offwidth="1920" offheight="1200" elevation="-20" azimuth="120"/>
+      </visual>
+      <compiler angle="radian" autolimits="true"/>
+        <custom>
+        <numeric data="0 0 0.05 0.7 0 0 0.7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0" name="qpos0"/> 
+        <numeric data="0.01" name="dt"/>
+        <numeric data="15" name="substeps"/>
+        <numeric data="0.1" name="baumgarte_erp"/>
+        </custom>
+
+    <worldbody>
+        <light diffuse=".75 .75 .75" pos="0 0 10" dir="0 0 -1"/>
+         
+        <geom type="plane" size="0.1 0.1 0.01" rgba=".7 .7 .6 1" pos="0 0 -0.01"/>
+        <body name="reference_base" pos="0 0 0">
+            <joint armature="0" damping="0" limited="false" margin="0.01" name="root" pos="0 0 0" type="free"/>
+            <camera name="close_profile" mode="trackcom" pos=".03125 -.03125 0.03125" xyaxes="1 1 0 -1 1 2"/>
+            <camera name="back" mode="trackcom" pos="-0.0625 0 0.03125" xyaxes="0 -1 0 1 0 2"/>
+            <camera name="side" mode="trackcom" pos="0 -0.0625 0.03125" xyaxes="1 0 0 0 1 2"/>
+            <camera name="side_alt" mode="trackcom" pos="0.03125 -0.0350625 0.0124375" xyaxes="0.766 0.643 0.000 -0.162 0.192 0.968"/>
+            <camera name="top" mode="trackcom" fovy="100.0" pos="0 0 1" zaxis="0 -0.2 1"/>
+        <geom name="03-caput" size="0.00149427" pos="-5.24869e-05 0.000941675 -0.000344469" rgba="0.4 0.33 0.26 1.0" /> 
+        <geom name="04-t1" size="0.000713237 0.000717915 0.000842712" pos="2.17649e-06 -0.00070639 -0.000159406" type="box" rgba="0.4 0.33 0.26 1.0" /> 
+        <body name="04-t1-l" pos="4.21295e-05 -0.00142995 -0.000246174">
+            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+            <!--<joint type="hinge" name="04-t1-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" /> -->
+            <geom name="05-t2" size="0.000865397 0.00215931 0.00100157" pos="-1.27246e-05 -0.00215714 -3.96312e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+            <body name="05-t2-l" pos="-1.4549e-06 -0.00430799 -3.55078e-05">
+                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                <!--<joint type="hinge" name="05-t2-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" /> -->
+                <geom name="06-t3" size="0.000960231 0.000641229 0.000922256" pos="2.73852e-06 -0.000634313 1.76948e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                <body name="06-t3-l" pos="-1.60261e-05 -0.00127103 2.06451e-06">
+                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                    <!--<joint type="hinge" name="06-t3-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" /> -->
+                    <geom name="07-a2" size="0.000965959 0.000459281 0.000912372" pos="2.09951e-05 -0.000455685 5.58723e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                    <body name="07-a2-l" pos="2.54216e-05 -0.000909254 0.000100916">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="07-a2-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                        <geom name="08-a3" size="0.000887816 0.00065527 0.000887237" pos="3.22609e-06 -0.000649549 2.07727e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="08-a3-l" pos="8.07024e-06 -0.00129344 5.3167e-05">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="08-a3-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                            <geom name="09-a4" size="0.000834476 0.000681203 0.000865493" pos="3.04102e-06 -0.000670744 -8.44479e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="09-a4-l" pos="8.11249e-06 -0.00134962 4.00092e-05">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="09-a4-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                                <geom name="10-a5" size="0.000704729 0.000658293 0.000667025" pos="1.64041e-06 -0.000656146 -4.87305e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                <body name="10-a5-l" pos="8.62755e-06 -0.00131172 -2.10435e-05">
+                                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                    <joint type="hinge" name="10-a5-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                                    <geom name="11-a6" size="0.000720344 0.000635323 0.000676071" pos="4.33737e-06 -0.000632805 1.85342e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                    <body name="11-a6-l" pos="8.04149e-06 -0.00126429 5.28563e-05">
+                                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                        <joint type="hinge" name="11-a6-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                                        <geom name="12-a7" size="0.000683332 0.000704938 0.00059961" pos="5.06168e-06 -0.000701 2.06256e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                        <body name="12-a7-l" pos="2.35532e-05 -0.00140457 -1.60789e-05">
+                                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                            <joint type="hinge" name="12-a7-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                                            <geom name="13-a8" size="0.000650966 0.000568766 0.000532876" pos="-1.01606e-05 -0.000567316 5.14981e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                            <body name="13-a8-l" pos="-7.70643e-06 -0.00113178 0.000132728">
+                                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                                <joint type="hinge" name="13-a8-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                                                <geom name="14-a9" size="0.000611923 0.000548143 0.000441068" pos="1.51173e-06 -0.000544691 -6.99077e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                                <body name="14-a9-l" pos="6.80901e-06 -0.00109024 -9.04712e-05">
+                                                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                                    <joint type="hinge" name="14-a9-l" pos="0 0 0" axis="1 0 0" range="-3.14 3.14" />
+                                                    <geom name="15-a10" size="0.00063153 0.000910222 0.000634835" pos="1.05717e-05 -0.000907943 0.000163787" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                                </body>
+                                            </body>
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    <body name="26-h-l-coxa-l" pos="-0.000817213 -0.000356208 -0.000466443">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="26-h-l-coxa-l" pos="0 0 0" axis="0 0 -1" range="-3.14 3.14" />
+                        <geom name="26-h-l-coxa" size="0.000322026 0.000270653 0.00045107" pos="-0.00019179 2.18258e-05 -7.38225e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="27-h-l-femur-l" pos="-0.000423852 4.56937e-05 -0.000307395" quat="0.987992 1.55568e-12 0.154502 2.07607e-08">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="27-h-l-femur-l" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" />
+                            <geom name="27-h-l-femur" size="0.00232176 0.000271339 0.000391676" pos="-0.00227579 -3.74297e-05 -0.000605274" quat="0.986874 -1.58607e-12 -0.161491 -2.16968e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="28-h-l-tibia-l" pos="-0.00447627 -1.95907e-05 -0.0015365" quat="1 0 1.49e-08 0">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="28-h-l-tibia-l" pos="0 0 0" axis="0 -1 0.0" range="-3.14 3.14" />
+                                <geom name="28-h-l-tibia" size="0.002278 0.000222 0.000335031" pos="-0.00222862 -2.94404e-05 -0.000689297" quat="0.98557 1.65593e-12 -0.16927 -2.27405e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                <body name="29-h-l-tarsus-l" pos="-0.00449652 -3.2062e-05 -0.0014177" quat="1 0 1.49e-08 0">
+                                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                    <joint type="hinge" name="29-h-l-tarsus-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" /> 
+                                    <geom name="29-h-l-tarsus" size="0.000477453 0.000113415 0.000224862" pos="-0.000467184 4.72285e-06 -0.000160826" quat="0.988233 2.40259e-12 -0.152958 -2.05495e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                    <body name="30-h-l-claws-l" pos="-0.000915603 7.69482e-06 -0.000296998" quat="1 0 1.49e-08 0">
+                                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                        <joint type="hinge" name="30-h-l-claws-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" />
+                                        <geom name="30-h-l-claws" size="0.000901551 0.000259963 8.37348e-05" pos="-0.000866338 -2.77746e-05 -0.000312802" quat="0.985773 1.78305e-12 -0.168084 -2.25828e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                    <body name="42-h-r-coxa-l" pos="0.000861746 -0.000345635 -0.000465158">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="42-h-r-coxa-l" pos="0 0 0" axis="0 0 1" range="-3.14 3.14" />
+                        <geom name="42-h-r-coxa" size="0.000320097 0.00026969 0.000450966" pos="0.000191144 2.39373e-05 -7.35639e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="43-h-r-femur-l" pos="0.000423712 5.10311e-05 -0.000306747" quat="0.988071 0 -0.154001 -2.06938e-08">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="43-h-r-femur-l" pos="0 0 0" axis="0 -1 0" range="-3.14 3.14" />
+                            <geom name="43-h-r-femur" size="0.00232224 0.000280654 0.0003915" pos="0.00222649 8.62393e-06 -0.000758239" quat="0.988071 0 0.154001 2.06938e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="44-h-r-tibia-l" pos="0.0044785 3.67995e-05 -0.00152965">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="44-h-r-tibia-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" />
+                                <geom name="44-h-r-tibia" size="0.00227813 0.000222 0.000335" pos="0.00222988 -1.40283e-05 -0.000685865" quat="0.988071 3.30456e-09 0.154001 2.01787e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                <body name="45-h-r-tarsus-l" pos="0.00449872 2.45837e-05 -0.00141082" quat="1 0 1.49e-08 0">
+                                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                    <joint type="hinge" name="45-h-r-tarsus-l" pos="0 0 0" axis="0 -1 0.0" range="-3.14 3.14" />
+                                    <geom name="45-h-r-tarsus" size="0.000477326 0.000113396 0.000224184" pos="0.000466772 4.7597e-06 -0.000160136" quat="0.988071 3.30456e-09 0.154001 2.01787e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                    <body name="46-h-r-claws-l" pos="0.000915888 1.92288e-05 -0.000295598" quat="1 0 1.49e-08 0">
+                                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                        <joint type="hinge" name="46-h-r-claws-l" pos="0 0 0" axis="0 -1 0.0" range="-3.14 3.14" />
+                                        <geom name="46-h-r-claws" size="0.000901932 0.000259661 8.35e-05" pos="0.000867407 -6.23643e-06 -0.000311472" quat="0.988071 3.30456e-09 0.154001 2.01787e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+                <body name="21-m-l-coxa-l" pos="-0.000712497 0.000737672 -0.000452174">
+                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                    <joint type="hinge" name="21-m-l-coxa-l" pos="0 0 0" axis="0 0 -1" range="-3.14 3.14" />
+                    <geom name="21-m-l-coxa" size="0.000421454 0.000313806 0.000393854" pos="-0.000232919 -2.39988e-05 -9.91887e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                    <body name="22-m-l-femur-l" pos="-0.000630804 -3.51798e-05 -0.000315487" quat="0.98995 0 0.141415 1.90021e-08">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="22-m-l-femur-l" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" />
+                        <geom name="22-m-l-femur" size="0.0018953 0.00025126 0.0003915" pos="-0.00187516 2.74403e-05 -0.000585178" quat="0.98995 1.40893e-12 -0.141415 7.90547e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="23-m-l-tibia-l" pos="-0.00373081 8.10779e-05 -0.00116357">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="23-m-l-tibia-l" pos="0 0 0" axis="0 -1 0.0" range="-3.14 3.14" />
+                            <geom name="23-m-l-tibia" size="0.00176462 0.000195388 0.000335" pos="-0.00172269 -2.62468e-05 -0.000497057" quat="0.98995 1.40893e-12 -0.141415 7.90547e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="24-m-l-tarsus-l" pos="-0.00345332 -7.4762e-07 -0.00104215">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="24-m-l-tarsus-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" />
+                                <geom name="24-m-l-tarsus" size="0.000442816 0.00012258 0.000225" pos="-0.000414602 -6.9477e-07 -0.000128837" quat="0.98995 1.40894e-12 -0.141415 7.90547e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                <body name="25-m-l-claws-l" pos="-0.000831341 2.90463e-05 -0.000251224">
+                                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                    <joint type="hinge" name="25-m-l-claws-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" />
+                                    <geom name="25-m-l-claws" size="0.000596539 0.000211304 8.35e-05" pos="-0.000562719 -9.41032e-05 -0.00024871" quat="0.98995 1.40894e-12 -0.141415 7.90547e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+                <body name="37-m-r-coxa-l" pos="0.000695185 0.000746537 -0.000451098">
+                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                    <joint type="hinge" name="37-m-r-coxa-l" pos="0 0 0" axis="0 0 1" range="-3.14 3.14" />
+                    <geom name="37-m-r-coxa" size="0.000423258 0.000313125 0.000393504" pos="0.000234251 -2.20893e-05 -9.85875e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                    <body name="38-m-r-femur-l" pos="0.000631678 -2.72279e-05 -0.000314522" quat="0.989456 -2.22389e-12 -0.144837 -1.94622e-08">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="38-m-r-femur-l" pos="0 0 0" axis="0 -1 0" range="-3.14 3.14" />
+                        <geom name="38-m-r-femur" size="0.00189654 0.000273892 0.0003915" pos="0.0018735 5.03578e-05 -0.000582443" quat="0.989456 2.91172e-09 0.144837 1.90357e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="39-m-r-tibia-l" pos="0.00373127 0.000128067 -0.00115786">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="39-m-r-tibia-l" pos="0 0 0" axis="0 1.0 0.0" range="-3.14 3.14" />
+                            <geom name="39-m-r-tibia" size="0.00176668 0.000195701 0.000335" pos="0.00172319 -2.60931e-05 -0.000494435" quat="0.989456 2.91172e-09 0.144837 1.90357e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="40-m-r-tarsus-l" pos="0.00345464 4.27538e-05 -0.00103686">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="40-m-r-tarsus-l" pos="0 0 0" axis="0 -1.0 0.0" range="-3.14 3.14" />
+                                <geom name="40-m-r-tarsus" size="0.000442301 0.000122559 0.000335" pos="0.000414367 -7.7812e-07 -0.000128199" quat="0.989456 2.91172e-09 0.144837 1.90357e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                <body name="41-m-r-claws-l" pos="0.000831292 3.95158e-05 -0.000249951">
+                                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                    <joint type="hinge" name="41-m-r-claws-l" pos="0 0 0" axis="0 -1.0 0.0" range="-3.14 3.14" />
+                                    <geom name="41-m-r-claws" size="0.00059705 0.000211357 8.35e-05" pos="0.000563421 -7.98677e-05 -0.000247802" quat="0.989456 2.91172e-09 0.144837 1.90357e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+            <body name="16-f-l-coxa-l" pos="-0.000584662 0.000865526 -0.000268343">
+                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                <joint type="hinge" name="16-f-l-coxa-l" pos="0 0 0" axis="0 0 -1" range="-3.14 3.14" />
+                <geom name="16-f-l-coxa" size="0.000397624 0.000299789 0.000348915" pos="-0.000244701 -1.63685e-05 -1.1691e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                <body name="17-f-l-femur-l" pos="-0.00062063 -3.04091e-05 -0.000205417" quat="0.995466 2.13088e-12 0.0951175 1.27783e-08">
+                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                    <joint type="hinge" name="17-f-l-femur-l" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" />
+                    <geom name="17-f-l-femur" size="0.00213422 0.00025951 0.0003915" pos="-0.00211681 -5.39212e-05 -0.000482417" quat="0.9943 -2.71124e-09 -0.106618 -2.61238e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                    <body name="18-f-l-tibia-l" pos="-0.00421775 -8.42218e-05 -0.000994403" quat="1 0 7.45e-09 0">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="18-f-l-tibia-l" pos="0 0 0" axis="0 -1 0.0" range="-3.14 3.14" />
+                        <geom name="18-f-l-tibia" size="0.0018741 0.000174657 0.000335" pos="-0.00183924 -2.13366e-05 -0.000390169" quat="0.994552 -2.65285e-09 -0.104239 -2.53454e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="19-f-l-tarsus-l" pos="-0.00369065 2.67476e-06 -0.000807307" quat="1 0 7.45e-09 0">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="19-f-l-tarsus-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" />
+                            <geom name="19-f-l-tarsus" size="0.000528083 0.00011624 0.000225" pos="-0.000499104 -5.57117e-06 -0.000141514" quat="0.995387 -2.44367e-09 -0.0959459 -2.35547e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="20-f-l-claws-l" pos="-0.00100061 -2.04411e-05 -0.000281606" quat="1 0 7.45e-09 0">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="20-f-l-claws-l" pos="0 0 0" axis="0 1 0.0" range="-3.14 3.14" />
+                                <geom name="20-f-l-claws" size="0.00070677 0.000226513 8.35e-05" pos="-0.000678042 5.03608e-05 -0.000109415" quat="0.995466 -2.05844e-12 -0.0951176 2.36534e-10" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+            <body name="31-f-r-coxa-l" pos="0.000508251 0.000872408 -0.000267507">
+                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                <joint type="hinge" name="31-f-r-coxa-l" pos="0 0 0" axis="0 0 1" range="-3.14 3.14" />
+                <geom name="31-f-r-coxa" size="0.00039681 0.000296867 0.000348577" pos="0.000243399 -1.4788e-05 -1.10955e-05" type="box" rgba="0.4 0.33 0.26 1.0" />
+                <body name="32-f-r-femur-l" pos="0.000621275 -2.25869e-05 -0.000204468" quat="0.996539 -1.2752e-12 -0.0831212 -1.11678e-08">
+                    <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                    <joint type="hinge" name="32-f-r-femur-l" pos="0 0 0" axis="0 -1.0 0" range="-3.14 3.14" />
+                    <geom name="32-f-r-femur" size="0.00213397 0.00023355 0.0003915" pos="0.00211918 -2.77292e-05 -0.000479202" quat="0.996539 9.40455e-10 0.0831212 1.10893e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                    <body name="33-f-r-tibia-l" pos="0.00421999 -3.10876e-05 -0.00098795">
+                        <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                        <joint type="hinge" name="33-f-r-tibia-l" pos="0 0 0" axis="0 1 0" range="-3.14 3.14" />
+                        <geom name="33-f-r-tibia" size="0.00187435 0.000182726 0.000335" pos="0.00183977 -1.32583e-05 -0.000387248" quat="0.996539 9.40455e-10 0.0831212 1.10893e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                        <body name="35-f-r-tarsus-l" pos="0.00369156 4.91617e-05 -0.000801659">
+                            <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                            <joint type="hinge" name="35-f-r-tarsus-l" pos="0 0 0" axis="0 -1.0 0.0" range="-3.14 3.14" />
+                            <geom name="35-f-r-tarsus" size="0.00052802 0.000116403 0.000225" pos="0.000499769 -5.4962e-06 -0.000140754" quat="0.996539 9.40455e-10 0.0831212 1.10893e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            <body name="36-f-r-claws-l" pos="0.00100122 -7.83429e-06 -0.000280076">
+                                <inertial pos="0 0 0" mass="0.00001" diaginertia="1e-11 1e-11 1e-11" />
+                                <joint type="hinge" name="36-f-r-claws-l" pos="0 0 0" axis="0 -1.0 0.0" range="-3.14 3.14" />
+                                <geom name="36-f-r-claws" size="0.000706716 0.000226432 8.35e-05" pos="0.000678616 6.72541e-05 -0.000108414" quat="0.996539 9.40455e-10 0.0831212 1.10893e-08" type="box" rgba="0.4 0.33 0.26 1.0" />
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+        </body>
+        </body>
+    </body>
+    </worldbody>
+    <actuator>
+
+        <!-- <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="04-t1-l" joint="04-t1-l" gear="1" /> -->
+        <!--<motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="05-t2-l" joint="05-t2-l" gear="1" /> -->
+        <!--<motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="06-t3-l" joint="06-t3-l" gear="1" /> -->
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="07-a2-l" joint="07-a2-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="08-a3-l" joint="08-a3-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="09-a4-l" joint="09-a4-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="10-a5-l" joint="10-a5-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="11-a6-l" joint="11-a6-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="12-a7-l" joint="12-a7-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="13-a8-l" joint="13-a8-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="14-a9-l" joint="14-a9-l" gear="1" />
+
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="26-h-l-coxa-l" joint="26-h-l-coxa-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="27-h-l-femur-l" joint="27-h-l-femur-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="28-h-l-tibia-l" joint="28-h-l-tibia-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="29-h-l-tarsus-l" joint="29-h-l-tarsus-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="30-h-l-claws-l" joint="30-h-l-claws-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="42-h-r-coxa-l" joint="42-h-r-coxa-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="43-h-r-femur-l" joint="43-h-r-femur-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="44-h-r-tibia-l" joint="44-h-r-tibia-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="45-h-r-tarsus-l" joint="45-h-r-tarsus-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="46-h-r-claws-l" joint="46-h-r-claws-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="21-m-l-coxa-l" joint="21-m-l-coxa-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="22-m-l-femur-l" joint="22-m-l-femur-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="23-m-l-tibia-l" joint="23-m-l-tibia-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="24-m-l-tarsus-l" joint="24-m-l-tarsus-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="25-m-l-claws-l" joint="25-m-l-claws-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="37-m-r-coxa-l" joint="37-m-r-coxa-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="38-m-r-femur-l" joint="38-m-r-femur-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="39-m-r-tibia-l" joint="39-m-r-tibia-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="40-m-r-tarsus-l" joint="40-m-r-tarsus-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="41-m-r-claws-l" joint="41-m-r-claws-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="16-f-l-coxa-l" joint="16-f-l-coxa-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="17-f-l-femur-l" joint="17-f-l-femur-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="18-f-l-tibia-l" joint="18-f-l-tibia-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="19-f-l-tarsus-l" joint="19-f-l-tarsus-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="20-f-l-claws-l" joint="20-f-l-claws-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="31-f-r-coxa-l" joint="31-f-r-coxa-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="32-f-r-femur-l" joint="32-f-r-femur-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="33-f-r-tibia-l" joint="33-f-r-tibia-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="35-f-r-tarsus-l" joint="35-f-r-tarsus-l" gear="1" />
+        <motor forcelimited="true" forcerange="-10 10" ctrllimited="true" ctrlrange="-1.0 1.0"  name="36-f-r-claws-l" joint="36-f-r-claws-l" gear="1" />
+        </actuator>
+    <sensor>
+        <framepos name="04-t1-l" objtype="body" objname="04-t1-l" />
+        <!--<framepos name="14-a9-l" objtype="body" objname="14-a9-l" />
+        <joint type="hinge"pos name="04-t1-l_pos" joint="04-t1-l" /> -->
+        <!-- <joint type="hinge"pos name="05-t2-l_pos" joint="05-t2-l" />
+        <joint type="hinge"pos name="06-t3-l_pos" joint="06-t3-l" />
+        <joint type="hinge"pos name="07-a2-l_pos" joint="07-a2-l" />
+        <joint type="hinge"pos name="08-a3-l_pos" joint="08-a3-l" />
+        <joint type="hinge"pos name="09-a4-l_pos" joint="09-a4-l" />
+        <joint type="hinge"pos name="10-a5-l_pos" joint="10-a5-l" />
+        <joint type="hinge"pos name="11-a6-l_pos" joint="11-a6-l" />
+        <joint type="hinge"pos name="12-a7-l_pos" joint="12-a7-l" />
+        <joint type="hinge"pos name="13-a8-l_pos" joint="13-a8-l" />
+        <joint type="hinge"pos name="14-a9-l_pos" joint="14-a9-l" />
+        <joint type="hinge"pos name="26-h-l-co(6emur-l_pos" joint="22-m-l-femur-l" />
+        <joint type="hinge"pos name="23-m-l-tibia-l_pos" joint="23-m-l-tibia-l" />
+        <joint type="hinge"pos name="24-m-l-tarsus-l_pos" joint="24-m-l-tarsus-l" />
+        <joint type="hinge"pos name="25-m-l-claws-l_pos" joint="25-m-l-claws-l" />
+        <joint type="hinge"pos name="37-m-r-coxa-l_pos" joint="37-m-r-coxa-l" />
+        <joint type="hinge"pos name="38-m-r-femur-l_pos" joint="38-m-r-femur-l" />
+        <joint type="hinge"pos name="39-m-r-tibia-l_pos" joint="39-m-r-tibia-l" />
+        <joint type="hinge"pos name="40-m-r-tarsus-l_pos" joint="40-m-r-tarsus-l" />
+        <joint type="hinge"pos name="41-m-r-claws-l_pos" joint="41-m-r-claws-l" />
+        <joint type="hinge"pos name="16-f-l-coxa-l_pos" joint="16-f-l-coxa-l" />
+        <joint type="hinge"pos name="17-f-l(6l-claws-l_pos" joint="20-f-l-claws-l" />
+        <joint type="hinge"pos name="31-f-r-coxa-l_pos" joint="31-f-r-coxa-l" />
+        <joint type="hinge"pos name="32-f-r-femur-l_pos" joint="32-f-r-femur-l" />
+        <joint type="hinge"pos name="33-f-r-tibia-l_pos" joint="33-f-r-tibia-l" />
+        <joint type="hinge"pos name="35-f-r-tarsus-l_pos" joint="35-f-r-tarsus-l" />
+        <joint type="hinge"pos name="36-f-r-claws-l_pos" joint="36-f-r-claws-l" /> -->
+        </sensor>
+    </mujoco>
