@@ -154,7 +154,7 @@ class Stac:
             parent.add(
                 name=key,
                 size=[0.005, 0.005, 0.005],
-                rgba="0 0 0 0.8",
+                rgba=(0, 0, 0, 0.8),
                 pos=pos,
                 group=3,
             )
