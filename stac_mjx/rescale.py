@@ -10,6 +10,7 @@ def _scale_vec(vec: list[float] | np.ndarray, s: float) -> None:
     Args:
         vec (list[float] | np.ndarray): The vector to scale.
         s (float): The scalar multiplier.
+
     Returns:
         None
     """
@@ -80,6 +81,7 @@ def _recolour_tree(body, rgba: list[float]) -> None:
 
 def dm_scale_spec(spec: MjSpec, scale: float) -> MjSpec:
     """Scale a spec by a scalar.
+
     Args:
         spec (MjSpec): The spec to scale.
         scale (float): The scalar multiplier.
