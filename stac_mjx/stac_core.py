@@ -232,7 +232,7 @@ class StacCore:
         tol (float): Tolerance for the q_solver.
     """
 
-    def __init__(self, tol=1e-5):
+    def __init__(self, tol=1e-5, n_iter_q=400, n_iter_m=2000):
         """Initialze StacCore with 'q_solver' and 'm_solver'.
 
         Args:
@@ -242,9 +242,9 @@ class StacCore:
 
         # TODO: make maxiter a config parameter
         self.q_solver = ProjectedGradient(
-            fun=q_loss, projection=projection_box, maxiter=400, tol=tol
+            fun=q_loss, projection=projection_box, maxiter=n_iter_q, tol=tol
         )
-        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
+        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=n_iter_m)
 
     def q_opt(
         self,
