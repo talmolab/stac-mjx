@@ -1,10 +1,12 @@
-"""Rescale utils"""
+"""Rescale utils."""
 
 import numpy as np
+from mujoco import MjSpec
 
 
 def _scale_vec(vec: list[float] | np.ndarray, s: float) -> None:
     """Scale a vector in-place by a scalar.
+
     Args:
         vec (list[float] | np.ndarray): The vector to scale.
         s (float): The scalar multiplier.
@@ -17,9 +19,11 @@ def _scale_vec(vec: list[float] | np.ndarray, s: float) -> None:
 
 def _scale_body_tree(body, s: float) -> None:
     """Recursively scale position, size, and fromto attributes on a body and its descendants.
+
     Args:
         body (Any): The body object to scale.
         s (float): The scalar multiplier.
+
     Returns:
         None
     """
@@ -74,7 +78,15 @@ def _recolour_tree(body, rgba: list[float]) -> None:
         _recolour_tree(child, rgba)
 
 
-def dm_scale_spec(spec, scale):
+def dm_scale_spec(spec: MjSpec, scale: float) -> MjSpec:
+    """Scale a spec by a scalar.
+    Args:
+        spec (MjSpec): The spec to scale.
+        scale (float): The scalar multiplier.
+
+    Returns:
+        MjSpec: The scaled spec.
+    """
     scaled_spec = spec.copy()
 
     # Traverse the kinematic tree, scaling all geoms
