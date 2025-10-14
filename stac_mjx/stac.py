@@ -30,6 +30,25 @@ _MUJOCO_JOINT_TYPE_DIMS = {
     mujoco.mjtJoint.mjJNT_HINGE: 1,
 }
 
+_MUJOCO_JOINT_TYPE_UNCONSTRAINED = {
+    mujoco.mjtJoint.mjJNT_FREE: (
+        jp.concatenate([-jp.inf * jp.ones(3), -1.0 * jp.ones(4)]),
+        jp.concatenate([jp.inf * jp.ones(3), 1.0 * jp.ones(4)]),
+    ),
+    mujoco.mjtJoint.mjJNT_BALL: (
+        jp.concatenate([-1.0 * jp.ones(4)]),
+        jp.concatenate([1.0 * jp.ones(4)]),
+    ),
+    mujoco.mjtJoint.mjJNT_SLIDE: (
+        jp.concatenate([-jp.inf * jp.ones(1)]),
+        jp.concatenate([jp.inf * jp.ones(1)]),
+    ),
+    mujoco.mjtJoint.mjJNT_HINGE: (
+        jp.concatenate([-2 * jp.pi * jp.ones(1)]),
+        jp.concatenate([2 * jp.pi * jp.ones(1)]),
+    ),
+}
+
 
 def _align_joint_dims(types, ranges, names):
     """Creates bounds and joint names aligned with qpos dimensions."""
@@ -40,12 +59,16 @@ def _align_joint_dims(types, ranges, names):
         dims = _MUJOCO_JOINT_TYPE_DIMS[type]
         # Set inf bounds for freejoint
         if type == mujoco.mjtJoint.mjJNT_FREE:
-            lb.append(_ROOT_QPOS_LB)
-            ub.append(_ROOT_QPOS_UB)
+            lb.append(_MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][0])
+            ub.append(_MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1])
             part_names += [name] * dims
         else:
-            lb.append(range[0] * jp.ones(dims))
-            ub.append(range[1] * jp.ones(dims))
+            l, u = range
+            if l == 0 and u == 0:  # default joint lims are 0 0, which is unconstrained
+                l = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][0]
+                u = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1]
+            lb.append(l * jp.ones(dims))
+            ub.append(u * jp.ones(dims))
             part_names += [name] * dims
 
     return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
@@ -108,8 +131,15 @@ class Stac:
         # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
         self._freejoint = bool(self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE)
+        self._slidejoint = bool(
+            self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE
+        )
+        self._fixed = not (self._freejoint or self._slidejoint)
 
-        self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
+        # Create Stac_Core object
+        self.stac_core_obj = stac_core.StacCore(
+            self.cfg.model.FTOL, self.cfg.model.N_ITER_Q, self.cfg.model.N_ITER_M
+        )
 
     def part_opt_setup(self):
         """Set up the lists of indices for part optimization."""
@@ -217,7 +247,7 @@ class Stac:
             print(
                 "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
             )
-        elif self._freejoint:
+        elif not self._fixed:
             mjx_data = compute_stac.root_optimization(
                 self.stac_core_obj,
                 mjx_model,
@@ -228,6 +258,10 @@ class Stac:
                 self._ub,
                 self._body_site_idxs,
                 self._trunk_kps,
+            )
+        else:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping Root Optimization"
             )
 
         for n_iter in range(self.cfg.model.N_ITERS):
@@ -346,7 +380,10 @@ class Stac:
             print(
                 "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
             )
-        elif self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
+        elif self._mj_model.jnt_type[0] in (
+            mujoco.mjtJoint.mjJNT_FREE,
+            mujoco.mjtJoint.mjJNT_SLIDE,
+        ):
             vmap_root_opt = jax.vmap(
                 compute_stac.root_optimization,
                 in_axes=(None, 0, 0, 0, None, None, None, None, None),
@@ -361,6 +398,10 @@ class Stac:
                 self._ub,
                 self._body_site_idxs,
                 self._trunk_kps,
+            )
+        else:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping root_optimization()"
             )
 
         # q_phase - pose
