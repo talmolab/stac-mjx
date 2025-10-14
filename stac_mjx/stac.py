@@ -549,7 +549,7 @@ class Stac:
             self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets.reshape((-1, 3))
         ):
             parent = self._spec.body(v)
-            parent.add(
+            parent.add_site(
                 name=key + "_new",
                 size=[0.005, 0.005, 0.005],
                 rgba=[0, 0, 0, 1],
