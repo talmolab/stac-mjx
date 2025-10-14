@@ -151,7 +151,7 @@ class Stac:
             if isinstance(pos, str):
                 pos = [float(p) for p in pos.split(" ")]
 
-            parent.add(
+            parent.add_site(
                 name=key,
                 size=[0.005, 0.005, 0.005],
                 rgba=(0, 0, 0, 0.8),
