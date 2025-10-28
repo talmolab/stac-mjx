@@ -6,7 +6,6 @@ brax
 opencv-python
 wandb
 mediapy
-dm_control
 tqdm
 numba
 hydra-core

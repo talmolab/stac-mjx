@@ -32,7 +32,6 @@ dependencies = [
     "mediapy",
     "ndx_pose==0.1.1",
     "tqdm",
-    "dm_control",
     ]
     dynamic = ["version", "readme"]
 
