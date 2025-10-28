@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from dm_control import mjcf
+import mujoco
 from stac_mjx.utils import mjx_load
 
 # Define path roots
@@ -11,8 +11,8 @@ PROJECT_ROOT = TEST_DIR.parent.parent
 
 # Common model loading/testing code (Feel free to add more!)
 def load_model(path: str):
-    root = mjcf.from_path(path)
-    model = mjcf.Physics.from_mjcf_model(root).model.ptr
+    spec = mujoco.MjSpec.from_file(str(path))
+    model = spec.compile()
 
     mjx_model, mjx_data = mjx_load(model)
 

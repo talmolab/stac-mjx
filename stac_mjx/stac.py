@@ -8,11 +8,9 @@ import numpy as np
 import mujoco
 from mujoco import mjx
 
-from dm_control.mujoco.wrapper.mjbindings import enums
-
 from stac_mjx import utils, rescale, compute_stac, io, stac_core
 
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import DictConfig
 from typing import List, Union
 from pathlib import Path
 from copy import deepcopy
@@ -578,13 +576,13 @@ class Stac:
         scene_option.sitegroup[2] = 1
 
         scene_option.sitegroup[3] = 0
-        scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = True
+        scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
+        scene_option.flags[mujoco.mjtVisFlag.mjVIS_LIGHT] = True
+        scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_SKYBOX] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_FOG] = True
         mj_data = mujoco.MjData(render_mj_model)
 
         mujoco.mj_kinematics(render_mj_model, mj_data)
