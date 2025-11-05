@@ -1,10 +1,6 @@
 import pytest
 import stac_mjx
-from dm_control import mjcf
-import dm_control
 from pathlib import Path
-import mujoco
-from stac_mjx.utils import mjx_load
 import stac_mjx
 import optax
 import jaxopt
