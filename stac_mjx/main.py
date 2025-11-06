@@ -118,13 +118,7 @@ def run_stac(
     if cfg.stac.continuous:
         print("handling edge effects")
         batched_qpos = utils.handle_edge_effects(
-            ik_only_data.qpos.reshape(
-                (
-                    -1,
-                    cfg.stac.n_frames_per_clip + utils.CONTINUOUS_BATCH_OVERLAP,
-                    ik_only_data.qpos.shape[-1],
-                )
-            )
+            ik_only_data.qpos, cfg.stac.n_frames_per_clip
         )
     else:
         batched_qpos = ik_only_data.qpos.reshape(

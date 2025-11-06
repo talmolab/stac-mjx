@@ -347,13 +347,25 @@ def batch_kp_data(
     return batched_kp_data
 
 
-def handle_edge_effects(batched_data: jp.ndarray):
-    """Naive handling: remove the final overlapping frames for each batch."""
-    return jp.concatenate(
-        [
-            batched_data[0:1, :, :],
-            batched_data[1:-1, CONTINUOUS_BATCH_OVERLAP:, :],
-            batched_data[-1:, :-CONTINUOUS_BATCH_OVERLAP, :],
-        ],
-        axis=0,
+def handle_edge_effects(qpos: jp.ndarray, n_frames_per_clip: int):
+    """Naive handling: remove the final overlapping frames for each batch.
+
+    Args:
+        qpos (jp.ndarray): qpos data after inverse kinematics
+        n_frames_per_clip (int): number of frames per clip
+
+    Returns:
+        jp.ndarray: processed qpos data in batched format (num_batches, n_frames_per_clip, num_qpos_dims)
+    """
+    batched_qpos = qpos.reshape(
+        (-1, n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP, qpos.shape[-1])
     )
+    first = batched_qpos[0, :, :]
+    middle = batched_qpos[1:-1, CONTINUOUS_BATCH_OVERLAP:, :]
+    last = batched_qpos[-1, CONTINUOUS_BATCH_OVERLAP:-CONTINUOUS_BATCH_OVERLAP, :]
+
+    flattened_middle = middle.reshape((-1,) + middle.shape[2:])
+    cleaned_qpos = jp.concatenate([first, flattened_middle, last], axis=0)
+
+    # Reshape cleaned_qpos to be batched again
+    return cleaned_qpos.reshape((-1, n_frames_per_clip, cleaned_qpos.shape[-1]))
