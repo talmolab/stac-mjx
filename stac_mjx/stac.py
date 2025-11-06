@@ -315,7 +315,7 @@ class Stac:
         """
         # Create batches of kp_data
         # TODO: add continuous option
-        batched_kp_data = utils.chunk_kp_data(kp_data, self.cfg.stac.n_frames_per_clip)
+        batched_kp_data = utils.batch_kp_data(kp_data, self.cfg.stac.n_frames_per_clip)
 
         # Create mjx model and data
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)

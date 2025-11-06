@@ -311,36 +311,38 @@ def compute_velocity_from_kinematics(
         return mocap_qvels.at[:, 6:].set(clipped_vels)
 
 
-def chunk_kp_data(
+def batch_kp_data(
     kp_data: jp.ndarray, n_frames_per_clip: int, continuous: bool = False
 ):
     """Reshape data for parallel processing."""
     n_frames = n_frames_per_clip
     total_frames = kp_data.shape[0]
-    n_chunks = int(total_frames // n_frames)  # Cut off the last chunk if it's not full
+    n_batches = int(total_frames // n_frames)  # Cut off the last batch if it's not full
     if (
         continuous
-    ):  # For continuous data, create overlapping clips (10 frames) to allow for edge effects post-processing
+    ):  # For continuous data, create overlapping batches (10 frames) to allow for edge effects post-processing
         overlap = 10
         window = n_frames + overlap
         if (
             total_frames < window
         ):  # If there's no need to overlap just reshape to add batch dim
-            chunked_kp_data = kp_data.reshape((n_chunks, window) + kp_data.shape[1:])
+            batched_kp_data = kp_data.reshape((n_batches, window) + kp_data.shape[1:])
         else:
             step = n_frames
-            starts = jp.arange(0, n_chunks * step, step)
-            chunks = [kp_data[s : s + window] for s in starts]
-            chunks[-1] = jp.pad(chunks[-1], ((0, overlap), (0, 0), (0, 0)), mode="mean")
-            chunked_kp_data = jp.stack(chunks, axis=0)
+            starts = jp.arange(0, n_batches * step, step)
+            batches = [kp_data[s : s + window] for s in starts]
+            batches[-1] = jp.pad(
+                batches[-1], ((0, overlap), (0, 0), (0, 0)), mode="mean"
+            )
+            batched_kp_data = jp.stack(batches, axis=0)
     else:
-        chunked_kp_data = kp_data[: int(n_chunks) * n_frames]
-        # Reshape the array to create chunks
-        chunked_kp_data = chunked_kp_data.reshape(
-            (n_chunks, n_frames) + kp_data.shape[1:]
+        batched_kp_data = kp_data[: int(n_batches) * n_frames]
+        # Reshape the array to create batches
+        batched_kp_data = batched_kp_data.reshape(
+            (n_batches, n_frames) + kp_data.shape[1:]
         )
 
-    return chunked_kp_data
+    return batched_kp_data
 
 
 # def smooth_edge_effects(qpos: jp.ndarray, segment_length: int):
