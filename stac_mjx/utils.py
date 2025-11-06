@@ -348,5 +348,12 @@ def batch_kp_data(
 
 
 def handle_edge_effects(batched_data: jp.ndarray):
-    """Naive handling: remove the last 10 frames if continuous."""
-    return batched_data[:, :-CONTINUOUS_BATCH_OVERLAP, :]
+    """Naive handling: remove the final overlapping frames for each batch."""
+    return jp.concatenate(
+        [
+            batched_data[0:1, :, :],
+            batched_data[1:-1, CONTINUOUS_BATCH_OVERLAP:, :],
+            batched_data[-1:, :-CONTINUOUS_BATCH_OVERLAP, :],
+        ],
+        axis=0,
+    )

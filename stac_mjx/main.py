@@ -114,14 +114,22 @@ def run_stac(
     print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
 
-    # TODO: if continuous, reshape to remove overlapping frames
-    batched_qpos = ik_only_data.qpos.reshape(
-        (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
-    )
-
     # Naive edge effect handling: remove the last 10 frames if continuous
     if cfg.stac.continuous:
-        batched_qpos = utils.handle_edge_effects(batched_qpos)
+        print("handling edge effects")
+        batched_qpos = utils.handle_edge_effects(
+            ik_only_data.qpos.reshape(
+                (
+                    -1,
+                    cfg.stac.n_frames_per_clip + utils.CONTINUOUS_BATCH_OVERLAP,
+                    ik_only_data.qpos.shape[-1],
+                )
+            )
+        )
+    else:
+        batched_qpos = ik_only_data.qpos.reshape(
+            (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
+        )
 
     if cfg.stac.infer_qvels:
         t_vel = time.time()
