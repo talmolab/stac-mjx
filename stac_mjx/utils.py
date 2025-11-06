@@ -4,16 +4,16 @@ import os
 
 import jax
 from jax import numpy as jp
-from jax.lib import xla_bridge
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
 from stac_mjx import io
+from scipy import ndimage
 
 
 def enable_xla_flags():
     """Enables XLA Flags for faster runtime on Nvidia GPUs."""
-    if xla_bridge.get_backend().platform == "gpu":
+    if jax.extend.backend.get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
 
@@ -309,3 +309,140 @@ def compute_velocity_from_kinematics(
         clipped_vels = jp.clip(vels, -max_qvel, max_qvel)
 
         return mocap_qvels.at[:, 6:].set(clipped_vels)
+
+
+def chunk_kp_data(
+    kp_data: jp.ndarray, n_frames_per_clip: int, continuous: bool = False
+):
+    """Reshape data for parallel processing."""
+    n_frames = n_frames_per_clip
+    total_frames = kp_data.shape[0]
+    n_chunks = int(total_frames // n_frames)  # Cut off the last chunk if it's not full
+    if (
+        continuous
+    ):  # For continuous data, create overlapping clips (10 frames) to allow for edge effects post-processing
+        overlap = 10
+        window = n_frames + overlap
+        if (
+            total_frames < window
+        ):  # If there's no need to overlap just reshape to add batch dim
+            chunked_kp_data = kp_data.reshape((n_chunks, window) + kp_data.shape[1:])
+        else:
+            step = n_frames
+            starts = jp.arange(0, n_chunks * step, step)
+            chunks = [kp_data[s : s + window] for s in starts]
+            chunks[-1] = jp.pad(chunks[-1], ((0, overlap), (0, 0), (0, 0)), mode="mean")
+            chunked_kp_data = jp.stack(chunks, axis=0)
+    else:
+        chunked_kp_data = kp_data[: int(n_chunks) * n_frames]
+        # Reshape the array to create chunks
+        chunked_kp_data = chunked_kp_data.reshape(
+            (n_chunks, n_frames) + kp_data.shape[1:]
+        )
+
+    return chunked_kp_data
+
+
+# def smooth_edge_effects(qpos: jp.ndarray, segment_length: int):
+#     """Smooth the edge effects of the qposes.
+
+#     Args:
+#         qpos (jp.ndarray): qpos to smooth
+#         segment_length (int): length of each segment
+#     Returns:
+#         jp.ndarray: smoothed qposes
+#     """
+#     # Smooth the edge effects from segment_length-frame segments
+#     n_frames, n_joints = qpos.shape
+
+#     # Create a copy to modify
+#     qpos_smoothed = qpos.copy()
+
+#     # Define smoothing parameters with increased blending
+#     smooth_window = (
+#         200  # frames to smooth on each side of boundary (increased for more blending)
+#     )
+#     blend_window = (
+#         60  # frames for blending the smoothed region (increased for more blending)
+#     )
+
+#     for segment_idx in range(1, n_frames // segment_length):
+#         boundary_frame = segment_idx * segment_length
+
+#         # Define the region to smooth (around the boundary)
+#         start_frame = max(0, boundary_frame - smooth_window)
+#         end_frame = min(n_frames, boundary_frame + smooth_window)
+
+#         # Apply multi-pass smoothing for better results
+#         for joint_idx in range(n_joints):
+#             segment = qpos_smoothed[start_frame:end_frame, joint_idx].copy()
+
+#             # First pass: Gaussian smoothing with much larger sigma for heavy smoothing
+#             smoothed_segment = ndimage.gaussian_filter1d(segment, sigma=7.0)
+
+#             # Second pass: Additional median filter to remove outliers
+#             smoothed_segment = ndimage.median_filter(smoothed_segment, size=7)
+
+#             # Third pass: Another round of heavy Gaussian smoothing
+#             smoothed_segment = ndimage.gaussian_filter1d(smoothed_segment, sigma=5.0)
+
+#             # Fourth pass: Final gentle Gaussian smoothing for extra smoothness
+#             smoothed_segment = ndimage.gaussian_filter1d(smoothed_segment, sigma=2.0)
+#             # Create smooth blending weights with extended transition zones
+#             blend_start = max(0, boundary_frame - blend_window - start_frame)
+#             blend_end = min(len(segment), boundary_frame + blend_window - start_frame)
+
+#             # Use cosine-based blending weights for smoother transitions
+#             weights = np.ones_like(segment)
+#             if blend_start > 0:
+#                 # Cosine transition from 0 to 1
+#                 t = np.linspace(0, np.pi / 2, blend_start)
+#                 weights[:blend_start] = np.sin(t)
+#             if blend_end < len(segment):
+#                 # Cosine transition from 1 to 0
+#                 t = np.linspace(0, np.pi / 2, len(segment) - blend_end)
+#                 weights[blend_end:] = np.cos(t)
+
+#             # Apply weighted blending with additional feathering
+#             blended_segment = weights * smoothed_segment + (1 - weights) * segment
+
+#             # Apply additional feathering at the edges of the blend region
+#             feather_size = min(5, blend_start // 3, (len(segment) - blend_end) // 3)
+#             if feather_size > 0:
+#                 # Feather the start
+#                 if blend_start > feather_size:
+#                     feather_weights = np.linspace(0, 1, feather_size)
+#                     blended_segment[blend_start - feather_size : blend_start] = (
+#                         feather_weights
+#                         * blended_segment[blend_start - feather_size : blend_start]
+#                         + (1 - feather_weights)
+#                         * segment[blend_start - feather_size : blend_start]
+#                     )
+#                 # Feather the end
+#                 if blend_end + feather_size < len(segment):
+#                     feather_weights = np.linspace(1, 0, feather_size)
+#                     blended_segment[blend_end : blend_end + feather_size] = (
+#                         feather_weights
+#                         * blended_segment[blend_end : blend_end + feather_size]
+#                         + (1 - feather_weights)
+#                         * segment[blend_end : blend_end + feather_size]
+#                     )
+
+#             qpos_smoothed[start_frame:end_frame, joint_idx] = blended_segment
+
+#     # Final global smoothing pass with enhanced blending
+#     for joint_idx in range(n_joints):
+#         # Apply two-stage global smoothing for better blending
+#         qpos_smoothed[:, joint_idx] = ndimage.gaussian_filter1d(
+#             qpos_smoothed[:, joint_idx], sigma=1.2, mode="nearest"
+#         )
+#         # Second pass with lighter smoothing to maintain detail
+#         qpos_smoothed[:, joint_idx] = ndimage.gaussian_filter1d(
+#             qpos_smoothed[:, joint_idx], sigma=0.6, mode="nearest"
+#         )
+
+#     print(f"Smoothed {n_frames // segment_length - 1} segment boundaries")
+#     print(f"Applied enhanced multi-pass smoothing with cosine blending and feathering")
+#     print(f"Smoothed data shape: {qpos_smoothed.shape}")
+
+#     return qpos_smoothed

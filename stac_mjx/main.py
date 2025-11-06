@@ -113,6 +113,8 @@ def run_stac(
 
     print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
+
+    # TODO: if continuous, reshape to remove overlapping frames
     batched_qpos = ik_only_data.qpos.reshape(
         (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
     )

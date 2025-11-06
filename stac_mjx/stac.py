@@ -112,7 +112,7 @@ class Stac:
         # Runs faster on GPU with this
         self._mj_model.opt.jacobian = 0  # dense
         self._freejoint = bool(self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE)
-        
+
         self.stac_core_obj = stac_core.StacCore(self.cfg.model.FTOL)
 
     def part_opt_setup(self):
@@ -187,20 +187,6 @@ class Stac:
             is_regularized,
         )
 
-    def _chunk_kp_data(self, kp_data):
-        """Reshape data for parallel processing."""
-        n_frames = self.cfg.stac.n_frames_per_clip
-        total_frames = kp_data.shape[0]
-
-        n_chunks = int(total_frames / n_frames)
-
-        kp_data = kp_data[: int(n_chunks) * n_frames]
-
-        # Reshape the array to create chunks
-        kp_data = kp_data.reshape((n_chunks, n_frames) + kp_data.shape[1:])
-
-        return kp_data
-
     def _get_error_stats(self, errors: list):
         """Compute error stats."""
         flattened_errors = np.array(errors).reshape(-1)
@@ -231,7 +217,6 @@ class Stac:
         # Calculate initial xpos and such
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
-        
 
         # Begin optimization steps
         # Skip root optimization if model is fixed (no free joint at root)
@@ -335,7 +320,8 @@ class Stac:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
-        batched_kp_data = self._chunk_kp_data(kp_data)
+        # TODO: add continuous option
+        batched_kp_data = utils.chunk_kp_data(kp_data, self.cfg.stac.n_frames_per_clip)
 
         # Create mjx model and data
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)

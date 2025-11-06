@@ -16,14 +16,22 @@ classifiers = [
     "Programming Language :: Python :: 3.12"]
 dependencies = [
     "numpy<2.0",
+    "tqdm",
     "matplotlib",
     "pandas",
-    "pip",
     "black",
     "mujoco",
     "mujoco-mjx",
     "brax",
-    "dm_control"]
+    "pynwb",
+    "mediapy",
+    "ipykernel",
+    "ndx_pose==0.1.1",
+    "imageio[ffmpeg]",
+    "hydra-core",
+    "optax[all]",
+    "jaxopt==0.8.5",
+    ]
     dynamic = ["version", "readme"]
 
 [tool.setuptools.dynamic]
@@ -41,22 +49,14 @@ dev = [
     "twine",
     "build",
     "matplotlib",
-    "ipykernel",
     "opencv-python",
-    "wandb",
     "mediapy",
-    "pynwb",
-    "tqdm",
     "numba",
-    "ndx_pose==0.1.1",
-    "hydra-core",
     "imageio",
     "h5py",
     "flax[all]",
-    "optax[all]",
     "jax[cuda12]",
     "imageio[pyav]",
-    "imageio[ffmpeg]",
     ]
 
 [project.urls]

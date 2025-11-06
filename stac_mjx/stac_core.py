@@ -248,8 +248,9 @@ class StacCore:
         """
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
+        # TODO: make maxiter a config parameter
         self.q_solver = ProjectedGradient(
-            fun=q_loss, projection=projection_box, maxiter=250, tol=tol
+            fun=q_loss, projection=projection_box, maxiter=500, tol=tol
         )
         self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
 
