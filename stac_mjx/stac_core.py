@@ -1,4 +1,4 @@
-"""Implementation of stac for animal motion capture in dm_control suite."""
+"""Implementation of STAC for animal motion capture."""
 
 import jax
 import jax.numpy as jp
@@ -12,7 +12,6 @@ from jaxopt import OptaxSolver
 import optax
 
 from stac_mjx import utils
-from stac_mjx import io
 
 
 def huber(x, delta=5.0, max=10, max_slope=0.1):

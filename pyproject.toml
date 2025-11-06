@@ -23,13 +23,15 @@ dependencies = [
     "mujoco",
     "mujoco-mjx",
     "brax",
-    "pynwb",
-    "mediapy",
     "ipykernel",
-    "ndx_pose==0.1.1",
-    "imageio[ffmpeg]",
     "hydra-core",
-    "optax[all]",
+    "imageio[ffmpeg]",
+    "h5py",
+    "flax[all]",
+    "optax",
+    "mediapy",
+    "ndx_pose==0.1.1",
+    "tqdm",
     "jaxopt==0.8.5",
     ]
     dynamic = ["version", "readme"]
@@ -52,11 +54,6 @@ dev = [
     "opencv-python",
     "mediapy",
     "numba",
-    "imageio",
-    "h5py",
-    "flax[all]",
-    "jax[cuda12]",
-    "imageio[pyav]",
     ]
 
 [project.urls]

@@ -8,13 +8,9 @@ import numpy as np
 import mujoco
 from mujoco import mjx
 
-from dm_control import mjcf
-from dm_control.locomotion.walkers import rescale
-from dm_control.mujoco.wrapper.mjbindings import enums
+from stac_mjx import utils, rescale, compute_stac, io, stac_core
 
-from stac_mjx import utils, compute_stac, io, stac_core
-
-from omegaconf import OmegaConf, DictConfig
+from omegaconf import DictConfig
 from typing import List, Union
 from pathlib import Path
 from copy import deepcopy
@@ -68,14 +64,14 @@ class Stac:
         """
         self.cfg = cfg
         self._kp_names = kp_names
-        self._root = mjcf.from_path(xml_path)
+        self._spec = mujoco.MjSpec.from_file(str(xml_path))
         self.stac_core_obj = None
 
         (
             self._mj_model,
             self._body_site_idxs,
             self._is_regularized,
-        ) = self._create_body_sites(self._root)
+        ) = self._create_body_sites(self._spec)
 
         self._body_names = [
             self._mj_model.body(i).name for i in range(self._mj_model.nbody)
@@ -136,40 +132,38 @@ class Stac:
 
         return indiv_parts
 
-    def _create_body_sites(self, root: mjcf.Element):
+    def _create_body_sites(self, spec: mujoco.MjSpec):
         """Create body site elements using dmcontrol mjcf for each keypoint.
 
         Args:
-            root (mjcf.Element):
+            spec (mujoco.MjSpec):
 
         Returns:
             mujoco.Model, list of marker site indices, boolean mask for offset
             regularization, lists for part names and body names.
         """
         for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
-            parent = root.find("body", v)
+            parent = spec.body(v)
             pos = self.cfg.model.KEYPOINT_INITIAL_OFFSETS[key]
-            parent.add(
-                "site",
+
+            if isinstance(pos, str):
+                pos = [float(p) for p in pos.split(" ")]
+
+            parent.add_site(
                 name=key,
-                type="sphere",
-                size=[0.005],
-                rgba="0 0 0 0.8",
+                size=[0.005, 0.005, 0.005],
+                rgba=(0, 0, 0, 0.8),
                 pos=pos,
                 group=3,
             )
 
-        rescale.rescale_subtree(
-            root,
-            self.cfg.model.SCALE_FACTOR,
-            self.cfg.model.SCALE_FACTOR,
-        )
-        physics = mjcf.Physics.from_mjcf_model(root)
+        rescale.dm_scale_spec(spec, self.cfg.model.SCALE_FACTOR)
+        model = self._spec.compile()
 
-        axis = physics.named.model.site_pos._axes[0]
         site_index_map = {
-            key: int(axis.convert_key_item(key))
-            for key in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
+            site.name: i
+            for i, site in enumerate(self._spec.sites)
+            if site.name in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
         }
 
         # Define which offsets to regularize
@@ -182,7 +176,7 @@ class Stac:
         is_regularized = jp.stack(is_regularized).flatten()
         body_site_idxs = jp.array(list(site_index_map.values()))
         return (
-            physics.model.ptr,
+            model,
             body_site_idxs,
             is_regularized,
         )
@@ -451,27 +445,28 @@ class Stac:
         for id, name in enumerate(self.cfg.model.KEYPOINT_MODEL_PAIRS):
             start = (np.random.rand(3) - 0.5) * 0.001
             rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[name]
+
+            if isinstance(rgba, str):
+                rgba = [float(c) for c in rgba.split(" ")]
             site_name = name + "_kp"
             keypoint_site_names.append(site_name)
-            site = self._root.worldbody.add(
-                "site",
+            site = self._spec.worldbody.add_site(
                 name=site_name,
-                type="sphere",
-                size=[0.005],
+                size=[0.005, 0.005, 0.005],
                 rgba=rgba,
                 pos=start,
                 group=2,
             )
             keypoint_sites.append(site)
 
-        physics = mjcf.Physics.from_mjcf_model(self._root)
+        model = self._spec.compile()
 
-        axis = physics.named.model.site_pos._axes[0]
         # Combine the two lists of site names and create the index map
         site_index_map = {
-            key: int(axis.convert_key_item(key))
-            for key in list(self.cfg.model.KEYPOINT_MODEL_PAIRS.keys())
-            + keypoint_site_names
+            site.name: i
+            for i, site in enumerate(self._spec.sites)
+            if site.name
+            in list(self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()) + keypoint_site_names
         }
         body_site_idxs = [
             site_index_map[n] for n in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
@@ -480,7 +475,7 @@ class Stac:
 
         self._body_site_idxs = body_site_idxs
         self._keypoint_site_idxs = keypoint_site_idxs
-        return (deepcopy(physics.model.ptr), body_site_idxs, keypoint_site_idxs)
+        return (deepcopy(model), body_site_idxs, keypoint_site_idxs)
 
     def render(
         self,
@@ -538,13 +533,11 @@ class Stac:
         for (key, v), pos in zip(
             self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets.reshape((-1, 3))
         ):
-            parent = self._root.find("body", v)
-            parent.add(
-                "site",
+            parent = self._spec.body(v)
+            parent.add_site(
                 name=key + "_new",
-                type="sphere",
-                size=[0.005],
-                rgba="0 0 0 1",
+                size=[0.005, 0.005, 0.005],
+                rgba=[0, 0, 0, 1],
                 pos=pos,
                 group=2,
             )
@@ -552,18 +545,16 @@ class Stac:
         # Tendons from new marker sites to kp
         if show_marker_error:
             for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
-                tendon = self._root.tendon.add(
-                    "spatial",
+                tendon = self._spec.add_tendon(
                     name=key + "-" + v,
                     width="0.001",
-                    rgba="255 0 0 1",  # Red
+                    rgba=[255, 0, 0, 1],  # Red
                     limited=False,
                 )
-                tendon.add("site", site=key + "_kp")
-                tendon.add("site", site=key + "_new")
+                tendon.wrap_site(key + "_kp")
+                tendon.wrap_site(key + "_new")
 
-        physics = mjcf.Physics.from_mjcf_model(self._root)
-        render_mj_model = deepcopy(physics.model.ptr)
+        render_mj_model = deepcopy(self._spec.compile())
 
         scene_option = mujoco.MjvOption()
         scene_option.geomgroup[1] = 0
@@ -572,13 +563,13 @@ class Stac:
         scene_option.sitegroup[2] = 1
 
         scene_option.sitegroup[3] = 0
-        scene_option.flags[enums.mjtVisFlag.mjVIS_TRANSPARENT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_LIGHT] = True
-        scene_option.flags[enums.mjtVisFlag.mjVIS_CONVEXHULL] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SHADOW] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_REFLECTION] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_SKYBOX] = True
-        scene_option.flags[enums.mjtRndFlag.mjRND_FOG] = True
+        scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
+        scene_option.flags[mujoco.mjtVisFlag.mjVIS_LIGHT] = True
+        scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_SKYBOX] = True
+        scene_option.flags[mujoco.mjtRndFlag.mjRND_FOG] = True
         mj_data = mujoco.MjData(render_mj_model)
 
         mujoco.mj_kinematics(render_mj_model, mj_data)
