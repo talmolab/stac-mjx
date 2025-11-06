@@ -9,11 +9,14 @@ from mujoco.mjx._src import smooth
 import numpy as np
 from stac_mjx import io
 from scipy import ndimage
+from jax.extend.backend import get_backend
+
+CONTINUOUS_BATCH_OVERLAP = 10
 
 
 def enable_xla_flags():
     """Enables XLA Flags for faster runtime on Nvidia GPUs."""
-    if jax.extend.backend.get_backend().platform == "gpu":
+    if get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
 
@@ -318,21 +321,20 @@ def batch_kp_data(
     n_frames = n_frames_per_clip
     total_frames = kp_data.shape[0]
     n_batches = int(total_frames // n_frames)  # Cut off the last batch if it's not full
-    if (
-        continuous
-    ):  # For continuous data, create overlapping batches (10 frames) to allow for edge effects post-processing
-        overlap = 10
-        window = n_frames + overlap
-        if (
-            total_frames < window
-        ):  # If there's no need to overlap just reshape to add batch dim
+    # For continuous data, create overlapping batches (10 frames) to allow for edge effects post-processing
+    if continuous:
+        window = n_frames + CONTINUOUS_BATCH_OVERLAP
+        # If there's only one batch, just reshape to add batch dim
+        if total_frames < window:
             batched_kp_data = kp_data.reshape((n_batches, window) + kp_data.shape[1:])
         else:
             step = n_frames
             starts = jp.arange(0, n_batches * step, step)
             batches = [kp_data[s : s + window] for s in starts]
             batches[-1] = jp.pad(
-                batches[-1], ((0, overlap), (0, 0), (0, 0)), mode="mean"
+                batches[-1],
+                ((0, CONTINUOUS_BATCH_OVERLAP), (0, 0)),
+                mode="wrap",
             )
             batched_kp_data = jp.stack(batches, axis=0)
     else:
@@ -343,3 +345,8 @@ def batch_kp_data(
         )
 
     return batched_kp_data
+
+
+def handle_edge_effects(batched_data: jp.ndarray):
+    """Naive handling: remove the last 10 frames if continuous."""
+    return batched_data[:, :-CONTINUOUS_BATCH_OVERLAP, :]

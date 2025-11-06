@@ -85,14 +85,14 @@ def run_stac(
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
-        print(f"saving data to {fit_offsets_path}")
+        print(f"saving data to {fit_offsets_path}", flush=True)
         io.save_data_to_h5(
             config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
         )
         (fit_offsets_data, fit_offsets_path)
     else:
         print(
-            "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to 0."
+            "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to False."
         )
 
     # Stop here if not doing ik only phase
@@ -118,6 +118,11 @@ def run_stac(
     batched_qpos = ik_only_data.qpos.reshape(
         (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
     )
+
+    # Naive edge effect handling: remove the last 10 frames if continuous
+    if cfg.stac.continuous:
+        batched_qpos = utils.handle_edge_effects(batched_qpos)
+
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
