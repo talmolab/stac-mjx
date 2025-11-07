@@ -314,7 +314,6 @@ class Stac:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
-        # TODO: add continuous option
         batched_kp_data = utils.batch_kp_data(
             kp_data,
             self.cfg.stac.n_frames_per_clip,
