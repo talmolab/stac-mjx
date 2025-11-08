@@ -161,9 +161,8 @@ class Stac:
         model = self._spec.compile()
 
         site_index_map = {
-            site.name: i
-            for i, site in enumerate(self._spec.sites)
-            if site.name in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
+            site_name: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+            for site_name in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
         }
 
         # Define which offsets to regularize
