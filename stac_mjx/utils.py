@@ -369,13 +369,13 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
     ) -> jp.ndarray:
 
         n = a.shape[axis]
-        x = jp.linspace(0.0, 1.0, n, dtype=jp.float64)
+        x = jp.linspace(0.0, 1.0, n)
 
         # Numerically stable sigmoid: 0.5 * (1 + tanh(z/2))
         z = steepness * (x - center)
         m = 0.5 * (1.0 + jp.tanh(z / 2.0))  # shape: (n,)
 
-        # reshape for broadcasting along the chosen axis
+        # Reshape for broadcasting along the chosen axis
         shape = [1] * a.ndim
         shape[axis] = n
         m = m.reshape(shape)
@@ -384,16 +384,15 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
 
     def f(data: jp.ndarray):
         batched_data = data.reshape(
-            (-1, n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP, data.shape[-1])
+            (-1, n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP, data.shape[1:])
         )
-        # Apply crossfade individually on the last CONTINUOUS_BATCH_OVERLAP frames of each clip
 
         num_clips = batched_data.shape[0]
         for i in range(num_clips - 1):
             a = batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :]
             b = batched_data[i + 1, :CONTINUOUS_BATCH_OVERLAP, :]
             cross = crossfade_sigmoid(a, b, axis=0)
-            # print(a, b, cross)
+
             # batched_data = batched_data.at[i, -CONTINUOUS_BATCH_OVERLAP:, :].set(cross)
             batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :] = cross
 
@@ -404,7 +403,9 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
         ]
 
         flattened_middle_data = middle_data.reshape((-1,) + middle_data.shape[2:])
-        return jp.concatenate([first_data, flattened_middle_data, last_data], axis=0)
+        res = jp.concatenate([first_data, flattened_middle_data, last_data], axis=0)
+        print(f"res shape: {res.shape}")
+        return res
 
     ik_only_data.qpos = f(ik_only_data.qpos)
     ik_only_data.kp_data = f(ik_only_data.kp_data)
