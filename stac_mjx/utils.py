@@ -384,7 +384,11 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
 
     def f(data: jp.ndarray):
         batched_data = data.reshape(
-            (-1, n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP, data.shape[1:])
+            (
+                -1,
+                n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP,
+            )
+            + data.shape[1:]
         )
 
         num_clips = batched_data.shape[0]
