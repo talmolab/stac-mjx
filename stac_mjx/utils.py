@@ -347,25 +347,69 @@ def batch_kp_data(
     return batched_kp_data
 
 
-def handle_edge_effects(qpos: jp.ndarray, n_frames_per_clip: int):
+# TODO: make this more efficient by parallelizing the crossfade operation
+def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
     """Naive handling: remove the final overlapping frames for each batch.
 
     Args:
-        qpos (jp.ndarray): qpos data after inverse kinematics
+        ik_only_data (io.StacData): ik_only data to be processed
         n_frames_per_clip (int): number of frames per clip
 
     Returns:
-        jp.ndarray: processed qpos data in batched format (num_batches, n_frames_per_clip, num_qpos_dims)
+        io.StacData: processed data
     """
-    batched_qpos = qpos.reshape(
-        (-1, n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP, qpos.shape[-1])
-    )
-    first = batched_qpos[0, :, :]
-    middle = batched_qpos[1:-1, CONTINUOUS_BATCH_OVERLAP:, :]
-    last = batched_qpos[-1, CONTINUOUS_BATCH_OVERLAP:-CONTINUOUS_BATCH_OVERLAP, :]
 
-    flattened_middle = middle.reshape((-1,) + middle.shape[2:])
-    cleaned_qpos = jp.concatenate([first, flattened_middle, last], axis=0)
+    def crossfade_sigmoid(
+        a: jp.ndarray,
+        b: jp.ndarray,
+        *,
+        axis: int = 0,
+        center: float = 0.5,
+        steepness: float = 10.0,
+    ) -> jp.ndarray:
 
-    # Reshape cleaned_qpos to be batched again
-    return cleaned_qpos.reshape((-1, n_frames_per_clip, cleaned_qpos.shape[-1]))
+        n = a.shape[axis]
+        x = jp.linspace(0.0, 1.0, n, dtype=jp.float64)
+
+        # Numerically stable sigmoid: 0.5 * (1 + tanh(z/2))
+        z = steepness * (x - center)
+        m = 0.5 * (1.0 + jp.tanh(z / 2.0))  # shape: (n,)
+
+        # reshape for broadcasting along the chosen axis
+        shape = [1] * a.ndim
+        shape[axis] = n
+        m = m.reshape(shape)
+
+        return (1.0 - m) * a + m * b
+
+    def f(data: jp.ndarray):
+        batched_data = data.reshape(
+            (-1, n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP, data.shape[-1])
+        )
+        # Apply crossfade individually on the last CONTINUOUS_BATCH_OVERLAP frames of each clip
+
+        num_clips = batched_data.shape[0]
+        for i in range(num_clips - 1):
+            a = batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :]
+            b = batched_data[i + 1, :CONTINUOUS_BATCH_OVERLAP, :]
+            cross = crossfade_sigmoid(a, b, axis=0)
+            # print(a, b, cross)
+            # batched_data = batched_data.at[i, -CONTINUOUS_BATCH_OVERLAP:, :].set(cross)
+            batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :] = cross
+
+        first_data = batched_data[0, :, :]
+        middle_data = batched_data[1:-1, CONTINUOUS_BATCH_OVERLAP:, :]
+        last_data = batched_data[
+            -1, CONTINUOUS_BATCH_OVERLAP:-CONTINUOUS_BATCH_OVERLAP, :
+        ]
+
+        flattened_middle_data = middle_data.reshape((-1,) + middle_data.shape[2:])
+        return jp.concatenate([first_data, flattened_middle_data, last_data], axis=0)
+
+    ik_only_data.qpos = f(ik_only_data.qpos)
+    ik_only_data.kp_data = f(ik_only_data.kp_data)
+    ik_only_data.xpos = f(ik_only_data.xpos)
+    ik_only_data.xquat = f(ik_only_data.xquat)
+    ik_only_data.marker_sites = f(ik_only_data.marker_sites)
+
+    return ik_only_data

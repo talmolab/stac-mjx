@@ -116,15 +116,18 @@ def run_stac(
 
     # Naive edge effect handling: remove the last 10 frames if continuous
     if cfg.stac.continuous:
-        print("handling edge effects")
-        batched_qpos = utils.handle_edge_effects(
-            ik_only_data.qpos, cfg.stac.n_frames_per_clip
-        )
-    else:
-        batched_qpos = ik_only_data.qpos.reshape(
-            (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
+        print("Handling edge effects")
+
+        ik_only_data = utils.handle_edge_effects(
+            ik_only_data, cfg.stac.n_frames_per_clip
         )
 
+    batched_qpos = ik_only_data.qpos.reshape(
+        (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
+    )
+    print(f"batched_qpos shape: {batched_qpos.shape}")
+
+    print(f"ik_only_data.qpos shape: {ik_only_data.qpos.shape}")
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
