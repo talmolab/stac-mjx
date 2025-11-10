@@ -249,7 +249,7 @@ class StacCore:
 
         # TODO: make maxiter a config parameter
         self.q_solver = ProjectedGradient(
-            fun=q_loss, projection=projection_box, maxiter=250, tol=tol
+            fun=q_loss, projection=projection_box, maxiter=400, tol=tol
         )
         self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=2000)
 
