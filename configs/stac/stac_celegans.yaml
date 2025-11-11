@@ -1,7 +1,7 @@
 fit_offsets_path: "celegans_fit_offsets.h5"
 ik_only_path: "celegans_ik_only.h5"
 #data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
-
+continuous: False
 n_fit_frames: 500
 skip_fit_offsets: False
 skip_ik_only: True
