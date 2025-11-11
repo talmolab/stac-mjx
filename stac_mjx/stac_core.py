@@ -14,13 +14,6 @@ import optax
 from stac_mjx import utils
 
 
-def huber(x, delta=5.0, max=10, max_slope=0.1):
-    """Compute the Huber loss + sum."""
-    x = jp.where(jp.abs(x) < delta, 0.5 * x**2, delta * (jp.abs(x) - 0.5 * delta))
-    x = jp.where(x > max, (x - max) * max_slope + max, x)
-    return jp.sum(x)
-
-
 def q_loss(
     q: jp.ndarray,
     mjx_model,
