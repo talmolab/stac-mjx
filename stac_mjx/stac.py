@@ -245,9 +245,6 @@ class Stac:
                 )
             )
 
-            # for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-            #     print(f"Frame {i+1} done in {t} with a final error of {e}")
-
             flattened_errors, mean, std = self._get_error_stats(frame_error)
             # Print the results
             print(f"Mean: {mean}")
@@ -281,9 +278,6 @@ class Stac:
                 self._indiv_parts,
             )
         )
-
-        # for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-        #     print(f"Frame {i+1} done in {t} with a final error of {e}")
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results

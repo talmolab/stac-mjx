@@ -408,7 +408,6 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
 
         flattened_middle_data = middle_data.reshape((-1,) + middle_data.shape[2:])
         res = jp.concatenate([first_data, flattened_middle_data, last_data], axis=0)
-        print(f"res shape: {res.shape}")
         return res
 
     ik_only_data.qpos = f(ik_only_data.qpos)

@@ -116,8 +116,7 @@ def run_stac(
 
     # Naive edge effect handling: remove the last 10 frames if continuous
     if cfg.stac.continuous:
-        print("Handling edge effects")
-
+        print("Handling edge effects...")
         ik_only_data = utils.handle_edge_effects(
             ik_only_data, cfg.stac.n_frames_per_clip
         )
@@ -125,18 +124,17 @@ def run_stac(
     batched_qpos = ik_only_data.qpos.reshape(
         (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
     )
-    print(f"batched_qpos shape: {batched_qpos.shape}")
 
-    print(f"ik_only_data.qpos shape: {ik_only_data.qpos.shape}")
+    print(f"Final qpos shape: {ik_only_data.qpos.shape}")
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         # set dict key after reshaping and casting to numpy
         ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
-        print(f"Finished compute velocity in {time.time() - t_vel}")
+        print(f"Finished compute velocity in {time.time() - t_vel} seconds")
 
     print(
-        f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
+        f"Saving data to {ik_only_path}. Finished in {(time.time() - start_time)/60:.2f} minutes"
     )
     io.save_data_to_h5(config=cfg, file_path=ik_only_path, **ik_only_data.as_dict())
     return fit_offsets_path, ik_only_path
