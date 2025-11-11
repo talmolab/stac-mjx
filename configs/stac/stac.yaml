@@ -1,7 +1,7 @@
 fit_offsets_path: "fit.p"
 ik_only_path: "ik_only.p"
 data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
-
+continuous: False
 n_fit_frames: 1000
 skip_fit_offsets: False
 skip_ik_only: True

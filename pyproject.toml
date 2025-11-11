@@ -16,9 +16,9 @@ classifiers = [
     "Programming Language :: Python :: 3.12"]
 dependencies = [
     "numpy<2.0",
+    "tqdm",
     "matplotlib",
     "pandas",
-    "pip",
     "black",
     "mujoco",
     "mujoco-mjx",
@@ -32,6 +32,8 @@ dependencies = [
     "mediapy",
     "ndx_pose==0.1.1",
     "tqdm",
+    "jaxopt==0.8.5",
+    "jax>=0.7.2",
     ]
     dynamic = ["version", "readme"]
 
@@ -52,8 +54,6 @@ dev = [
     "matplotlib",
     "opencv-python",
     "mediapy",
-    "pynwb",
-    "tqdm",
     "numba",
     ]
 

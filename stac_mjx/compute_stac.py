@@ -51,7 +51,7 @@ def root_optimization(
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:7].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
-    j = time.time()
+
     mjx_data, res = stac_core_obj.q_opt(
         mjx_model,
         mjx_data,
@@ -64,21 +64,14 @@ def root_optimization(
         site_idxs,
     )
 
-    print(f"q_opt 1 finished in {time.time()-j} with an error of {res.state.error}")
-
-    r = time.time()
-
     mjx_data = utils.replace_qs(
         mjx_model, mjx_data, utils.make_qs(q0, qs_to_opt, res.params)
     )
-    print(f"Replace 1 finished in {time.time()-r}")
 
     q0 = jp.copy(mjx_data.qpos[:])
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
 
     # Trunk only optimization
-    j = time.time()
-    print("starting q_opt 2")
     mjx_data, res = stac_core_obj.q_opt(
         mjx_model,
         mjx_data,
@@ -91,15 +84,13 @@ def root_optimization(
         site_idxs,
     )
 
-    print(f"q_opt 2 finished in {time.time()-j} with an error of {res.state.error}")
-    r = time.time()
-
     mjx_data = utils.replace_qs(
         mjx_model, mjx_data, utils.make_qs(q0, qs_to_opt, res.params)
     )
 
-    print(f"Replace 2 finished in {time.time()-r}")
-    print(f"Root optimization finished in {time.time()-s}")
+    print(
+        f"Root optimization finished in {(time.time()-s)/60:.2f} minutes with an error of {res.state.error}"
+    )
 
     return mjx_data
 
@@ -171,7 +162,7 @@ def offset_optimization(
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = utils.kinematics(mjx_model, mjx_data)
 
-    print(f"offset optimization finished in {time.time()-s}")
+    print(f"Offset optimization finished in {time.time()-s} seconds")
 
     return mjx_model, mjx_data, offset_opt_param
 
@@ -268,7 +259,7 @@ def pose_optimization(
         frame_time.append(time.time() - loop_start)
         frame_error.append(error)
 
-    print(f"Pose Optimization done in {time.time()-s}")
+    print(f"Pose Optimization finished in {(time.time()-s)/60.0:.2f} minutes")
     return (
         mjx_data,
         jp.array(qposes),

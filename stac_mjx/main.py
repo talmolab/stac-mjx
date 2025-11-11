@@ -85,14 +85,14 @@ def run_stac(
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
-        print(f"saving data to {fit_offsets_path}")
+        print(f"saving data to {fit_offsets_path}", flush=True)
         io.save_data_to_h5(
             config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
         )
         (fit_offsets_data, fit_offsets_path)
     else:
         print(
-            "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to 0."
+            "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to False."
         )
 
     # Stop here if not doing ik only phase
@@ -113,18 +113,28 @@ def run_stac(
 
     print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
+
+    # Naive edge effect handling: remove the last 10 frames if continuous
+    if cfg.stac.continuous:
+        print("Handling edge effects...")
+        ik_only_data = utils.handle_edge_effects(
+            ik_only_data, cfg.stac.n_frames_per_clip
+        )
+
     batched_qpos = ik_only_data.qpos.reshape(
         (-1, cfg.stac.n_frames_per_clip, ik_only_data.qpos.shape[-1])
     )
+
+    print(f"Final qpos shape: {ik_only_data.qpos.shape}")
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
         # set dict key after reshaping and casting to numpy
         ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
-        print(f"Finished compute velocity in {time.time() - t_vel}")
+        print(f"Finished compute velocity in {time.time() - t_vel} seconds")
 
     print(
-        f"Saving data to {ik_only_path}. Finished in {time.time() - start_time} seconds"
+        f"Saving data to {ik_only_path}. Finished in {(time.time() - start_time)/60:.2f} minutes"
     )
     io.save_data_to_h5(config=cfg, file_path=ik_only_path, **ik_only_data.as_dict())
     return fit_offsets_path, ik_only_path

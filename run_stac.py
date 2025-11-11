@@ -5,6 +5,7 @@ import hydra
 from omegaconf import DictConfig, OmegaConf
 
 import stac_mjx
+from stac_mjx import io
 
 
 def load_and_run_stac(cfg):
@@ -20,7 +21,9 @@ def load_and_run_stac(cfg):
 @hydra.main(config_path="./configs", config_name="config", version_base=None)
 def hydra_entry(cfg: DictConfig):
     logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
-
+    structured_config = OmegaConf.structured(io.Config)
+    OmegaConf.merge(structured_config, cfg)
+    print("Config loaded and validated.")
     stac_mjx.enable_xla_flags()
 
     load_and_run_stac(cfg)

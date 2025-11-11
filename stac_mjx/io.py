@@ -69,6 +69,7 @@ class StacConfig:
     infer_qvels: bool  # Infer qvels if True
     n_frames_per_clip: int  # Number of frames per clip
     mujoco: MujocoConfig  # Configuration for Mujoco
+    continuous: bool  # Whether the data is continuous (to allow for edge effects post-processing)
 
 
 @dataclass

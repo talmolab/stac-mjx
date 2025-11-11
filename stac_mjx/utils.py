@@ -4,16 +4,19 @@ import os
 
 import jax
 from jax import numpy as jp
-from jax.lib import xla_bridge
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
 from stac_mjx import io
+from scipy import ndimage
+from jax.extend.backend import get_backend
+
+CONTINUOUS_BATCH_OVERLAP = 10
 
 
 def enable_xla_flags():
     """Enables XLA Flags for faster runtime on Nvidia GPUs."""
-    if xla_bridge.get_backend().platform == "gpu":
+    if get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
 
@@ -309,3 +312,108 @@ def compute_velocity_from_kinematics(
         clipped_vels = jp.clip(vels, -max_qvel, max_qvel)
 
         return mocap_qvels.at[:, 6:].set(clipped_vels)
+
+
+def batch_kp_data(
+    kp_data: jp.ndarray, n_frames_per_clip: int, continuous: bool = False
+):
+    """Reshape data for parallel processing."""
+    n_frames = n_frames_per_clip
+    total_frames = kp_data.shape[0]
+    n_batches = int(total_frames // n_frames)  # Cut off the last batch if it's not full
+    # For continuous data, create overlapping batches (10 frames) to allow for edge effects post-processing
+    if continuous:
+        window = n_frames + CONTINUOUS_BATCH_OVERLAP
+        # If there's only one batch, just reshape to add batch dim
+        if total_frames < window:
+            batched_kp_data = kp_data.reshape((n_batches, window) + kp_data.shape[1:])
+        else:
+            step = n_frames
+            starts = jp.arange(0, n_batches * step, step)
+            batches = [kp_data[s : s + window] for s in starts]
+            batches[-1] = jp.pad(
+                batches[-1],
+                ((0, CONTINUOUS_BATCH_OVERLAP), (0, 0)),
+                mode="wrap",
+            )
+            batched_kp_data = jp.stack(batches, axis=0)
+    else:
+        batched_kp_data = kp_data[: int(n_batches) * n_frames]
+        # Reshape the array to create batches
+        batched_kp_data = batched_kp_data.reshape(
+            (n_batches, n_frames) + kp_data.shape[1:]
+        )
+
+    return batched_kp_data
+
+
+# TODO: make this more efficient by parallelizing the crossfade operation
+def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
+    """Naive handling: remove the final overlapping frames for each batch.
+
+    Args:
+        ik_only_data (io.StacData): ik_only data to be processed
+        n_frames_per_clip (int): number of frames per clip
+
+    Returns:
+        io.StacData: processed data
+    """
+
+    def crossfade_sigmoid(
+        a: jp.ndarray,
+        b: jp.ndarray,
+        *,
+        axis: int = 0,
+        center: float = 0.5,
+        steepness: float = 10.0,
+    ) -> jp.ndarray:
+
+        n = a.shape[axis]
+        x = jp.linspace(0.0, 1.0, n)
+
+        # Numerically stable sigmoid: 0.5 * (1 + tanh(z/2))
+        z = steepness * (x - center)
+        m = 0.5 * (1.0 + jp.tanh(z / 2.0))  # shape: (n,)
+
+        # Reshape for broadcasting along the chosen axis
+        shape = [1] * a.ndim
+        shape[axis] = n
+        m = m.reshape(shape)
+
+        return (1.0 - m) * a + m * b
+
+    def f(data: jp.ndarray):
+        batched_data = data.reshape(
+            (
+                -1,
+                n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP,
+            )
+            + data.shape[1:]
+        )
+
+        num_clips = batched_data.shape[0]
+        for i in range(num_clips - 1):
+            a = batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :]
+            b = batched_data[i + 1, :CONTINUOUS_BATCH_OVERLAP, :]
+            cross = crossfade_sigmoid(a, b, axis=0)
+
+            # batched_data = batched_data.at[i, -CONTINUOUS_BATCH_OVERLAP:, :].set(cross)
+            batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :] = cross
+
+        first_data = batched_data[0, :, :]
+        middle_data = batched_data[1:-1, CONTINUOUS_BATCH_OVERLAP:, :]
+        last_data = batched_data[
+            -1, CONTINUOUS_BATCH_OVERLAP:-CONTINUOUS_BATCH_OVERLAP, :
+        ]
+
+        flattened_middle_data = middle_data.reshape((-1,) + middle_data.shape[2:])
+        res = jp.concatenate([first_data, flattened_middle_data, last_data], axis=0)
+        return res
+
+    ik_only_data.qpos = f(ik_only_data.qpos)
+    ik_only_data.kp_data = f(ik_only_data.kp_data)
+    ik_only_data.xpos = f(ik_only_data.xpos)
+    ik_only_data.xquat = f(ik_only_data.xquat)
+    ik_only_data.marker_sites = f(ik_only_data.marker_sites)
+
+    return ik_only_data

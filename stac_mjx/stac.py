@@ -161,9 +161,8 @@ class Stac:
         model = self._spec.compile()
 
         site_index_map = {
-            site.name: i
-            for i, site in enumerate(self._spec.sites)
-            if site.name in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
+            site_name: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+            for site_name in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
         }
 
         # Define which offsets to regularize
@@ -180,20 +179,6 @@ class Stac:
             body_site_idxs,
             is_regularized,
         )
-
-    def _chunk_kp_data(self, kp_data):
-        """Reshape data for parallel processing."""
-        n_frames = self.cfg.stac.n_frames_per_clip
-        total_frames = kp_data.shape[0]
-
-        n_chunks = int(total_frames / n_frames)
-
-        kp_data = kp_data[: int(n_chunks) * n_frames]
-
-        # Reshape the array to create chunks
-        kp_data = kp_data.reshape((n_chunks, n_frames) + kp_data.shape[1:])
-
-        return kp_data
 
     def _get_error_stats(self, errors: list):
         """Compute error stats."""
@@ -260,15 +245,12 @@ class Stac:
                 )
             )
 
-            # for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-            #     print(f"Frame {i+1} done in {t} with a final error of {e}")
-
             flattened_errors, mean, std = self._get_error_stats(frame_error)
             # Print the results
             print(f"Mean: {mean}")
             print(f"Standard deviation: {std}")
 
-            print("starting offset optimization")
+            print("starting offset optimization", flush=True)
             mjx_model, mjx_data, self._offsets = compute_stac.offset_optimization(
                 self.stac_core_obj,
                 mjx_model,
@@ -283,7 +265,7 @@ class Stac:
             )
 
         # Optimize the pose for the whole sequence
-        print("Final pose optimization")
+        print("Final pose optimization", flush=True)
         mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
             compute_stac.pose_optimization(
                 self.stac_core_obj,
@@ -296,9 +278,6 @@ class Stac:
                 self._indiv_parts,
             )
         )
-
-        # for i, (t, e) in enumerate(zip(frame_time, frame_error)):
-        #     print(f"Frame {i+1} done in {t} with a final error of {e}")
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
         # Print the results
@@ -328,7 +307,11 @@ class Stac:
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
-        batched_kp_data = self._chunk_kp_data(kp_data)
+        batched_kp_data = utils.batch_kp_data(
+            kp_data,
+            self.cfg.stac.n_frames_per_clip,
+            continuous=self.cfg.stac.continuous,
+        )
 
         # Create mjx model and data
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)
