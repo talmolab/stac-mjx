@@ -33,6 +33,7 @@ dependencies = [
     "ndx_pose==0.1.1",
     "tqdm",
     "jaxopt==0.8.5",
+    "jax>=0.7.2",
     ]
     dynamic = ["version", "readme"]
 
