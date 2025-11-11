@@ -1,0 +1,1211 @@
+<mujoco model="swimmer">
+  <compiler angle="degree" coordinate="local" inertiafromgeom="true"/>
+  <option density="1.2" integrator="RK4" timestep="0.01" viscosity="0.1" cone="elliptic"/>
+  <default>
+    <geom conaffinity="1" condim="1" contype="1" material="geom" rgba="0.8 0.6 .4 1"/>
+    <joint armature="0.1"/>
+    <site type="sphere" size="0.01"/>
+    <muscle ctrllimited="true" ctrlrange="0 1"/>
+  </default>
+  <asset>
+    <texture builtin="gradient" height="100" rgb1="1 1 1" rgb2="0 0 0" type="skybox" width="100"/>
+    <texture builtin="flat" height="1278" mark="cross" markrgb="1 1 1" name="texgeom" random="0.01" rgb1="0.8 0.6 0.4" rgb2="0.8 0.6 0.4" type="cube" width="127"/>
+    <texture builtin="checker" height="100" name="texplane" rgb1="0 0 0" rgb2="0.8 0.8 0.8" type="2d" width="100"/>
+    <material name="MatPlane" reflectance="0.5" shininess="1" specular="1" texrepeat="30 30" texture="texplane"/>
+    <material name="geom" texture="texgeom" texuniform="true"/>
+    <mesh name="ellipsoid1" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.001.stl" refpos="1.25 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid2" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.002.stl" refpos="1.1574074074074074 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid3" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.003.stl" refpos="1.0567632850241546 0 0" refquat="0.9393937941349282 0.3428400494994482 0 0"/>
+    <mesh name="ellipsoid4" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.004.stl" refpos="0.9561191626409018 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid5" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.005.stl" refpos="0.855475040257649 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid6" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.006.stl" refpos="0.7548309178743962 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid7" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.007.stl" refpos="0.6541867954911433 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid8" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.008.stl" refpos="0.5535426731078905 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid9" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.009.stl" refpos="0.45289855072463775 0 0" refquat="0.984807753012208 0.17364817766693033 0 0"/>
+    <mesh name="ellipsoid10" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.010.stl" refpos="0.35225442834138493 0 0" refquat="0.9271838545667874 0.374606593415912 0 0"/>
+    <mesh name="ellipsoid11" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.011.stl" refpos="0.25161030595813205 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid12" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.012.stl" refpos="0.15096618357487912 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid13" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.013.stl" refpos="0.05032206119162645 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid14" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.014.stl" refpos="-0.05032206119162645 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid15" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.015.stl" refpos="-0.15096618357487912 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid16" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.016.stl" refpos="-0.25161030595813205 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid17" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.017.stl" refpos="-0.35225442834138493 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid18" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.018.stl" refpos="-0.45289855072463764 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid19" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.019.stl" refpos="-0.5535426731078905 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid20" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.020.stl" refpos="-0.6541867954911432 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid21" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.021.stl" refpos="-0.7548309178743962 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid22" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.022.stl" refpos="-0.855475040257649 0 0" refquat="1.0 0.0 0 0"/>
+    <mesh name="ellipsoid23" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.023.stl" refpos="-0.9561191626409019 0 0" refquat="0.9222009716704518 0.3867109616368206 0 0"/>
+    <mesh name="ellipsoid24" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.024.stl" refpos="-1.0567632850241548 0 0" refquat="0.9238795325112867 0.3826834323650898 0 0"/>
+    <mesh name="ellipsoid25" file="C:\Users\aadi\projects\con3trol\src\digital-twin-c-elegans\worm-assets\worm_assets\envs\mujoco\assets\Ellipsoid.025.stl" refpos="-1.1574074074074072 0 0" refquat="1.0 0.0 0 0"/>
+  </asset>
+  <worldbody>
+    <camera name="fixedcam" mode="fixed" pos="0 0 50" xyaxes="1 0 0 0 1 0"/>
+    <light cutoff="100" diffuse="1 1 1" dir="-0 0 -1.3" directional="true" exponent="1" pos="0 0 1.3" specular=".1 .1 .1"/>
+    <geom conaffinity="1" condim="3" material="MatPlane" name="floor" pos="0 0 0" rgba="0.8 0.9 0.8 1" size="40 40 0.1" type="plane"/>
+    <!--  ================= SWIMMER ================= /-->
+    <body name="torso1_body" pos="-0.004566192626953125 -0.0 0.0155487060546875">
+      <camera name="track" mode="trackcom" pos="-1.25 0 5" xyaxes="1 0 0 0 1 0"/>
+      <geom density="1000" type="mesh" rgba="0.8 0.2 0.1 1" name="torso1" mesh="ellipsoid1" quat="0.99267578125 0.0 0.11907958984375 0.0"/>
+      <joint axis="1 0 0" name="slider1" pos="0 0 0" type="slide"/>
+      <joint axis="0 1 0" name="slider2" pos="0 0 0" type="slide"/>
+      <joint axis="0 0 1" name="slider3" pos="0 0 0" type="slide"/>
+      <joint axis="0 0 1" name="free_body_rot" pos="0 0 0" type="hinge"/>
+      <site name="site_anterior_dbwml1" pos="-0.05029296875 0.0279998779296875 0.0047760009765625"/>
+      <site name="site_anterior_dbwmr1" pos="-0.046844482421875 0.0279998779296875 0.0188751220703125"/>
+      <site name="site_anterior_vbwml1" pos="-0.05029296875 -0.0279998779296875 0.0047760009765625"/>
+      <site name="site_anterior_vbwmr1" pos="-0.046844482421875 -0.0279998779296875 0.0188751220703125"/>
+      <body name="torso2_body" pos="-0.08984375 0.0 0.0225067138671875">
+        <geom density="1000" type="mesh" name="torso2" mesh="ellipsoid2" quat="0.9970703125 0.0 0.07611083984375 0.0"/>
+        <joint axis="0 0 1" limited="true" name="motor1_rot" pos="-0.00732421875 0.0 0.001129150390625" range="-70 70" type="hinge"/>
+        <geom name="geom2" pos="-0.00732421875 0.0 0.001129150390625" size="0.03849001794597505" type="sphere" density="0"/>
+        <site name="sidesite2_dorsal" pos="-0.00732421875 0.038482666015625 0.001129150390625" rgba="0.8 0.2 0.1 0"/>
+        <site name="sidesite2_ventral" pos="-0.00732421875 -0.038482666015625 0.001129150390625" rgba="0.8 0.2 0.1 0"/>
+        <site name="site_posterior_dbwml1" pos="-0.05865478515625 0.0474853515625 -0.00341796875"/>
+        <site name="site_posterior_dbwmr1" pos="-0.05487060546875 0.0474853515625 0.0208740234375"/>
+        <site name="site_posterior_vbwml1" pos="-0.05865478515625 -0.0474853515625 -0.00341796875"/>
+        <site name="site_posterior_vbwmr1" pos="-0.05487060546875 -0.0474853515625 0.0208740234375"/>
+        <site name="site_anterior_dbwml2" pos="-0.05865478515625 0.0474853515625 -0.00341796875"/>
+        <site name="site_anterior_dbwmr2" pos="-0.05487060546875 0.0474853515625 0.0208740234375"/>
+        <site name="site_anterior_vbwml2" pos="-0.05865478515625 -0.0474853515625 -0.00341796875"/>
+        <site name="site_anterior_vbwmr2" pos="-0.05487060546875 -0.0474853515625 0.0208740234375"/>
+        <body name="torso3_body" pos="-0.09942626953125 0.0 0.015594482421875">
+          <geom density="1000" type="mesh" name="torso3" mesh="ellipsoid3" quat="0.99853515625 0.0 0.052459716796875 0.0"/>
+          <joint axis="0 0 1" limited="true" name="motor2_rot" pos="-0.0067138671875 0.0 0.000732421875" range="-100 100" type="hinge"/>
+          <geom name="geom3" pos="-0.0067138671875 0.0 0.000732421875" size="0.05383819020581656" type="sphere" density="0"/>
+          <site name="sidesite3_dorsal" pos="-0.0067138671875 0.0538330078125 0.000732421875" rgba="0.8 0.2 0.1 0"/>
+          <site name="sidesite3_ventral" pos="-0.0067138671875 -0.0538330078125 0.000732421875" rgba="0.8 0.2 0.1 0"/>
+          <site name="site_posterior_dbwml2" pos="-0.05810546875 0.05999755859375 -0.009490966796875"/>
+          <site name="site_posterior_dbwmr2" pos="-0.0548095703125 0.05999755859375 0.02142333984375"/>
+          <site name="site_posterior_vbwml2" pos="-0.05810546875 -0.05999755859375 -0.009490966796875"/>
+          <site name="site_posterior_vbwmr2" pos="-0.0548095703125 -0.05999755859375 0.02142333984375"/>
+          <site name="site_anterior_dbwml3" pos="-0.05810546875 0.05999755859375 -0.009490966796875"/>
+          <site name="site_anterior_dbwmr3" pos="-0.0548095703125 0.05999755859375 0.02142333984375"/>
+          <site name="site_anterior_vbwml3" pos="-0.05810546875 -0.05999755859375 -0.009490966796875"/>
+          <site name="site_anterior_vbwmr3" pos="-0.0548095703125 -0.05999755859375 0.02142333984375"/>
+          <body name="torso4_body" pos="-0.10009765625 0.0 0.01068115234375">
+            <geom density="1000" type="mesh" name="torso4" mesh="ellipsoid4" quat="0.9990234375 0.0 0.0419921875 0.0"/>
+            <joint axis="0 0 1" limited="true" name="rot4" pos="-0.006103515625 0.0 0.00048828125" range="-100 100" type="hinge"/>
+            <geom name="geom4" pos="-0.006103515625 0.0 0.00048828125" size="0.06470545178841824" type="sphere" density="0"/>
+            <site name="sidesite4_dorsal" pos="-0.006103515625 0.064697265625 0.00048828125" rgba="0.8 0.2 0.1 0"/>
+            <site name="sidesite4_ventral" pos="-0.006103515625 -0.064697265625 0.00048828125" rgba="0.8 0.2 0.1 0"/>
+            <site name="site_posterior_dbwml3" pos="-0.057373046875 0.06939697265625 -0.01318359375"/>
+            <site name="site_posterior_dbwmr3" pos="-0.054443359375 0.06939697265625 0.0225830078125"/>
+            <site name="site_posterior_vbwml3" pos="-0.057373046875 -0.06939697265625 -0.01318359375"/>
+            <site name="site_posterior_vbwmr3" pos="-0.054443359375 -0.06939697265625 0.0225830078125"/>
+            <site name="site_anterior_dbwml4" pos="-0.057373046875 0.06939697265625 -0.01318359375"/>
+            <site name="site_anterior_dbwmr4" pos="-0.054443359375 0.06939697265625 0.0225830078125"/>
+            <site name="site_anterior_vbwml4" pos="-0.057373046875 -0.06939697265625 -0.01318359375"/>
+            <site name="site_anterior_vbwmr4" pos="-0.054443359375 -0.06939697265625 0.0225830078125"/>
+            <body name="torso5_body" pos="-0.100341796875 0.0 0.008544921875">
+              <geom density="1000" type="mesh" name="torso5" mesh="ellipsoid5" quat="0.99951171875 0.0 0.033447265625 0.0"/>
+              <joint axis="0 0 1" limited="true" name="rot5" pos="-0.00537109375 0.0 0.0003662109375" range="-100 100" type="hinge"/>
+              <geom name="geom5" pos="-0.00537109375 0.0 0.0003662109375" size="0.0731178212271016" type="sphere" density="0"/>
+              <site name="sidesite5_dorsal" pos="-0.00537109375 0.0731201171875 0.0003662109375" rgba="0.8 0.2 0.1 0"/>
+              <site name="sidesite5_ventral" pos="-0.00537109375 -0.0731201171875 0.0003662109375" rgba="0.8 0.2 0.1 0"/>
+              <site name="site_posterior_dbwml4" pos="-0.056640625 0.07684326171875 -0.016143798828125"/>
+              <site name="site_posterior_dbwmr4" pos="-0.053955078125 0.07684326171875 0.0235595703125"/>
+              <site name="site_posterior_vbwml4" pos="-0.056640625 -0.07684326171875 -0.016143798828125"/>
+              <site name="site_posterior_vbwmr4" pos="-0.053955078125 -0.07684326171875 0.0235595703125"/>
+              <site name="site_anterior_dbwml5" pos="-0.056640625 0.07684326171875 -0.016143798828125"/>
+              <site name="site_anterior_dbwmr5" pos="-0.053955078125 0.07684326171875 0.0235595703125"/>
+              <site name="site_anterior_vbwml5" pos="-0.056640625 -0.07684326171875 -0.016143798828125"/>
+              <site name="site_anterior_vbwmr5" pos="-0.053955078125 -0.07684326171875 0.0235595703125"/>
+              <body name="torso6_body" pos="-0.100341796875 0.0 0.00677490234375">
+                <geom density="1000" type="mesh" name="torso6" mesh="ellipsoid6" quat="0.99951171875 0.0 0.0270233154296875 0.0"/>
+                <joint axis="0 0 1" limited="true" name="rot6" pos="-0.0048828125 0.0 0.000244140625" range="-100 100" type="hinge"/>
+                <geom name="geom6" pos="-0.0048828125 0.0 0.000244140625" size="0.07985494095046906" type="sphere" density="0"/>
+                <site name="sidesite6_dorsal" pos="-0.0048828125 0.079833984375 0.000244140625" rgba="0.8 0.2 0.1 0"/>
+                <site name="sidesite6_ventral" pos="-0.0048828125 -0.079833984375 0.000244140625" rgba="0.8 0.2 0.1 0"/>
+                <site name="site_posterior_dbwml5" pos="-0.0556640625 0.08282470703125 -0.0184326171875"/>
+                <site name="site_posterior_dbwmr5" pos="-0.0537109375 0.08282470703125 0.02435302734375"/>
+                <site name="site_posterior_vbwml5" pos="-0.0556640625 -0.08282470703125 -0.0184326171875"/>
+                <site name="site_posterior_vbwmr5" pos="-0.0537109375 -0.08282470703125 0.02435302734375"/>
+                <site name="site_anterior_dbwml6" pos="-0.0556640625 0.08282470703125 -0.0184326171875"/>
+                <site name="site_anterior_dbwmr6" pos="-0.0537109375 0.08282470703125 0.02435302734375"/>
+                <site name="site_anterior_vbwml6" pos="-0.0556640625 -0.08282470703125 -0.0184326171875"/>
+                <site name="site_anterior_vbwmr6" pos="-0.0537109375 -0.08282470703125 0.02435302734375"/>
+                <body name="torso7_body" pos="-0.1005859375 0.0 0.0054931640625">
+                  <geom density="1000" type="mesh" name="torso7" mesh="ellipsoid7" quat="1.0 0.0 0.0220489501953125 0.0"/>
+                  <joint axis="0 0 1" limited="true" name="rot7" pos="-0.00390625 0.0 0.00018310546875" range="-100 100" type="hinge"/>
+                  <geom name="geom7" pos="-0.00390625 0.0 0.00018310546875" size="0.08531461147281189" type="sphere" density="0"/>
+                  <site name="sidesite7_dorsal" pos="-0.00390625 0.0853271484375 0.00018310546875" rgba="0.8 0.2 0.1 0"/>
+                  <site name="sidesite7_ventral" pos="-0.00390625 -0.0853271484375 0.00018310546875" rgba="0.8 0.2 0.1 0"/>
+                  <site name="site_posterior_dbwml6" pos="-0.05517578125 0.08770751953125 -0.02032470703125"/>
+                  <site name="site_posterior_dbwmr6" pos="-0.05322265625 0.08770751953125 0.02508544921875"/>
+                  <site name="site_posterior_vbwml6" pos="-0.05517578125 -0.08770751953125 -0.02032470703125"/>
+                  <site name="site_posterior_vbwmr6" pos="-0.05322265625 -0.08770751953125 0.02508544921875"/>
+                  <site name="site_anterior_dbwml7" pos="-0.05517578125 0.08770751953125 -0.02032470703125"/>
+                  <site name="site_anterior_dbwmr7" pos="-0.05322265625 0.08770751953125 0.02508544921875"/>
+                  <site name="site_anterior_vbwml7" pos="-0.05517578125 -0.08770751953125 -0.02032470703125"/>
+                  <site name="site_anterior_vbwmr7" pos="-0.05322265625 -0.08770751953125 0.02508544921875"/>
+                  <body name="torso8_body" pos="-0.1005859375 0.0 0.00445556640625">
+                    <geom density="1000" type="mesh" name="torso8" mesh="ellipsoid8" quat="1.0 0.0 0.0172576904296875 0.0"/>
+                    <joint axis="0 0 1" limited="true" name="rot8" pos="-0.00341796875 0.0 0.0001220703125" range="-100 100" type="hinge"/>
+                    <geom name="geom8" pos="-0.00341796875 0.0 0.0001220703125" size="0.08973031700969426" type="sphere" density="0"/>
+                    <site name="sidesite8_dorsal" pos="-0.00341796875 0.0897216796875 0.0001220703125" rgba="0.8 0.2 0.1 0"/>
+                    <site name="sidesite8_ventral" pos="-0.00341796875 -0.0897216796875 0.0001220703125" rgba="0.8 0.2 0.1 0"/>
+                    <site name="site_posterior_dbwml7" pos="-0.05419921875 0.0916748046875 -0.0218505859375"/>
+                    <site name="site_posterior_dbwmr7" pos="-0.052734375 0.0916748046875 0.02557373046875"/>
+                    <site name="site_posterior_vbwml7" pos="-0.05419921875 -0.0916748046875 -0.0218505859375"/>
+                    <site name="site_posterior_vbwmr7" pos="-0.052734375 -0.0916748046875 0.02557373046875"/>
+                    <site name="site_anterior_dbwml8" pos="-0.05419921875 0.0916748046875 -0.0218505859375"/>
+                    <site name="site_anterior_dbwmr8" pos="-0.052734375 0.0916748046875 0.02557373046875"/>
+                    <site name="site_anterior_vbwml8" pos="-0.05419921875 -0.0916748046875 -0.0218505859375"/>
+                    <site name="site_anterior_vbwmr8" pos="-0.052734375 -0.0916748046875 0.02557373046875"/>
+                    <body name="torso9_body" pos="-0.1005859375 0.0 0.00347900390625">
+                      <geom density="1000" type="mesh" name="torso9" mesh="ellipsoid9" quat="1.0 0.0 0.013885498046875 0.0"/>
+                      <joint axis="0 0 1" limited="true" name="rot9" pos="-0.0029296875 0.0 0.0001220703125" range="-100 100" type="hinge"/>
+                      <geom name="geom9" pos="-0.0029296875 0.0 0.0001220703125" size="0.09325048082403138" type="sphere" density="0"/>
+                      <site name="sidesite9_dorsal" pos="-0.0029296875 0.09326171875 0.0001220703125" rgba="0.8 0.2 0.1 0"/>
+                      <site name="sidesite9_ventral" pos="-0.0029296875 -0.09326171875 0.0001220703125" rgba="0.8 0.2 0.1 0"/>
+                      <site name="site_posterior_dbwml8" pos="-0.05322265625 0.0947265625 -0.02301025390625"/>
+                      <site name="site_posterior_dbwmr8" pos="-0.05224609375 0.0947265625 0.0260009765625"/>
+                      <site name="site_posterior_vbwml8" pos="-0.05322265625 -0.0947265625 -0.02301025390625"/>
+                      <site name="site_posterior_vbwmr8" pos="-0.05224609375 -0.0947265625 0.0260009765625"/>
+                      <site name="site_anterior_dbwml9" pos="-0.05322265625 0.0947265625 -0.02301025390625"/>
+                      <site name="site_anterior_dbwmr9" pos="-0.05224609375 0.0947265625 0.0260009765625"/>
+                      <site name="site_anterior_vbwml9" pos="-0.05322265625 -0.0947265625 -0.02301025390625"/>
+                      <site name="site_anterior_vbwmr9" pos="-0.05224609375 -0.0947265625 0.0260009765625"/>
+                      <body name="torso10_body" pos="-0.1005859375 0.0 0.0028076171875">
+                        <geom density="1000" type="mesh" name="torso10" mesh="ellipsoid10" quat="1.0 0.0 0.0099334716796875 0.0"/>
+                        <joint axis="0 0 1" limited="true" name="rot10" pos="-0.001953125 0.0 6.103515625e-05" range="-100 100" type="hinge"/>
+                        <geom name="geom10" pos="-0.001953125 0.0 6.103515625e-05" size="0.09597369473202175" type="sphere" density="0"/>
+                        <site name="sidesite10_dorsal" pos="-0.001953125 0.095947265625 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                        <site name="sidesite10_ventral" pos="-0.001953125 -0.095947265625 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                        <site name="site_posterior_dbwml9" pos="-0.052734375 0.09710693359375 -0.0240478515625"/>
+                        <site name="site_posterior_dbwmr9" pos="-0.0517578125 0.09710693359375 0.02618408203125"/>
+                        <site name="site_posterior_vbwml9" pos="-0.052734375 -0.09710693359375 -0.0240478515625"/>
+                        <site name="site_posterior_vbwmr9" pos="-0.0517578125 -0.09710693359375 0.02618408203125"/>
+                        <site name="site_anterior_dbwml10" pos="-0.052734375 0.09710693359375 -0.0240478515625"/>
+                        <site name="site_anterior_dbwmr10" pos="-0.0517578125 0.09710693359375 0.02618408203125"/>
+                        <site name="site_anterior_vbwml10" pos="-0.052734375 -0.09710693359375 -0.0240478515625"/>
+                        <site name="site_anterior_vbwmr10" pos="-0.0517578125 -0.09710693359375 0.02618408203125"/>
+                        <body name="torso11_body" pos="-0.1005859375 0.0 0.00201416015625">
+                          <geom density="1000" type="mesh" name="torso11" mesh="ellipsoid11" quat="1.0 0.0 0.0063323974609375 0.0"/>
+                          <joint axis="0 0 1" limited="true" name="rot11" pos="-0.00146484375 0.0 6.103515625e-05" range="-100 100" type="hinge"/>
+                          <geom name="geom11" pos="-0.00146484375 0.0 6.103515625e-05" size="0.09796644073593258" type="sphere" density="0"/>
+                          <site name="sidesite11_dorsal" pos="-0.00146484375 0.09796142578125 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                          <site name="sidesite11_ventral" pos="-0.00146484375 -0.09796142578125 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                          <site name="site_posterior_dbwml10" pos="-0.05224609375 0.09869384765625 -0.02484130859375"/>
+                          <site name="site_posterior_dbwmr10" pos="-0.05126953125 0.09869384765625 0.0262451171875"/>
+                          <site name="site_posterior_vbwml10" pos="-0.05224609375 -0.09869384765625 -0.02484130859375"/>
+                          <site name="site_posterior_vbwmr10" pos="-0.05126953125 -0.09869384765625 0.0262451171875"/>
+                          <site name="site_anterior_dbwml11" pos="-0.05224609375 0.09869384765625 -0.02484130859375"/>
+                          <site name="site_anterior_dbwmr11" pos="-0.05126953125 0.09869384765625 0.0262451171875"/>
+                          <site name="site_anterior_vbwml11" pos="-0.05224609375 -0.09869384765625 -0.02484130859375"/>
+                          <site name="site_anterior_vbwmr11" pos="-0.05126953125 -0.09869384765625 0.0262451171875"/>
+                          <body name="torso12_body" pos="-0.10009765625 0.0 0.00128173828125">
+                            <geom density="1000" type="mesh" name="torso12" mesh="ellipsoid12" quat="1.0 0.0 0.0032062530517578125 0.0"/>
+                            <joint axis="0 0 1" limited="true" name="rot12" pos="-0.0009765625 0.0 0.0" range="-100 100" type="hinge"/>
+                            <geom name="geom12" pos="-0.0009765625 0.0 0.0" size="0.09927271762054325" type="sphere" density="0"/>
+                            <site name="sidesite12_dorsal" pos="-0.0009765625 0.0992431640625 0.0" rgba="0.8 0.2 0.1 0"/>
+                            <site name="sidesite12_ventral" pos="-0.0009765625 -0.0992431640625 0.0" rgba="0.8 0.2 0.1 0"/>
+                            <site name="site_posterior_dbwml11" pos="-0.0517578125 0.09967041015625 -0.02545166015625"/>
+                            <site name="site_posterior_dbwmr11" pos="-0.05078125 0.09967041015625 0.02618408203125"/>
+                            <site name="site_posterior_vbwml11" pos="-0.0517578125 -0.09967041015625 -0.02545166015625"/>
+                            <site name="site_posterior_vbwmr11" pos="-0.05078125 -0.09967041015625 0.02618408203125"/>
+                            <site name="site_anterior_dbwml12" pos="-0.0517578125 0.09967041015625 -0.02545166015625"/>
+                            <site name="site_anterior_dbwmr12" pos="-0.05078125 0.09967041015625 0.02618408203125"/>
+                            <site name="site_anterior_vbwml12" pos="-0.0517578125 -0.09967041015625 -0.02545166015625"/>
+                            <site name="site_anterior_vbwmr12" pos="-0.05078125 -0.09967041015625 0.02618408203125"/>
+                            <body name="torso13_body" pos="-0.1015625 0.0 0.00067138671875">
+                              <geom density="1000" type="mesh" name="torso13" mesh="ellipsoid13" quat="1.0 0.0 -8.404254913330078e-06 0.0"/>
+                              <joint axis="0 0 1" limited="true" name="rot13" pos="0.0 0.0 0.0" range="-100 100" type="hinge"/>
+                              <geom name="geom13" pos="0.0 0.0 0.0" size="0.09991945226240324" type="sphere" density="0"/>
+                              <site name="sidesite13_dorsal" pos="0.0 0.09991455078125 0.0" rgba="0.8 0.2 0.1 0"/>
+                              <site name="sidesite13_ventral" pos="0.0 -0.09991455078125 0.0" rgba="0.8 0.2 0.1 0"/>
+                              <site name="site_posterior_dbwml12" pos="-0.0498046875 0.0999755859375 -0.02587890625"/>
+                              <site name="site_posterior_dbwmr12" pos="-0.0498046875 0.0999755859375 0.02587890625"/>
+                              <site name="site_posterior_vbwml12" pos="-0.0498046875 -0.0999755859375 -0.02587890625"/>
+                              <site name="site_posterior_vbwmr12" pos="-0.0498046875 -0.0999755859375 0.02587890625"/>
+                              <site name="site_anterior_dbwml13" pos="-0.0498046875 0.0999755859375 -0.02587890625"/>
+                              <site name="site_anterior_dbwmr13" pos="-0.0498046875 0.0999755859375 0.02587890625"/>
+                              <site name="site_anterior_vbwml13" pos="-0.0498046875 -0.0999755859375 -0.02587890625"/>
+                              <site name="site_anterior_vbwmr13" pos="-0.0498046875 -0.0999755859375 0.02587890625"/>
+                              <body name="torso14_body" pos="-0.1005859375 0.0 0.0">
+                                <geom density="1000" type="mesh" name="torso14" mesh="ellipsoid14" quat="1.0 0.0 -0.003177642822265625 0.0"/>
+                                <joint axis="0 0 1" limited="true" name="rot14" pos="0.0009765625 0.0 0.0" range="-100 100" type="hinge"/>
+                                <geom name="geom14" pos="0.0009765625 0.0 0.0" size="0.09991945226240324" type="sphere" density="0"/>
+                                <site name="sidesite14_dorsal" pos="0.0009765625 0.09991455078125 0.0" rgba="0.8 0.2 0.1 0"/>
+                                <site name="sidesite14_ventral" pos="0.0009765625 -0.09991455078125 0.0" rgba="0.8 0.2 0.1 0"/>
+                                <site name="site_posterior_dbwml13" pos="-0.048828125 0.09967041015625 -0.026123046875"/>
+                                <site name="site_posterior_dbwmr13" pos="-0.0498046875 0.09967041015625 0.0255126953125"/>
+                                <site name="site_posterior_vbwml13" pos="-0.048828125 -0.09967041015625 -0.026123046875"/>
+                                <site name="site_posterior_vbwmr13" pos="-0.0498046875 -0.09967041015625 0.0255126953125"/>
+                                <site name="site_anterior_dbwml14" pos="-0.048828125 0.09967041015625 -0.026123046875"/>
+                                <site name="site_anterior_dbwmr14" pos="-0.0498046875 0.09967041015625 0.0255126953125"/>
+                                <site name="site_anterior_vbwml14" pos="-0.048828125 -0.09967041015625 -0.026123046875"/>
+                                <site name="site_anterior_vbwmr14" pos="-0.0498046875 -0.09967041015625 0.0255126953125"/>
+                                <body name="torso15_body" pos="-0.1005859375 0.0 -0.00067138671875">
+                                  <geom density="1000" type="mesh" name="torso15" mesh="ellipsoid15" quat="1.0 0.0 -0.006458282470703125 0.0"/>
+                                  <joint axis="0 0 1" limited="true" name="rot15" pos="0.0009765625 0.0 6.103515625e-05" range="-100 100" type="hinge"/>
+                                  <geom name="geom15" pos="0.0009765625 0.0 6.103515625e-05" size="0.09927271762054325" type="sphere" density="0"/>
+                                  <site name="sidesite15_dorsal" pos="0.0009765625 0.0992431640625 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                                  <site name="sidesite15_ventral" pos="0.0009765625 -0.0992431640625 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                                  <site name="site_posterior_dbwml14" pos="-0.048828125 0.09869384765625 -0.02618408203125"/>
+                                  <site name="site_posterior_dbwmr14" pos="-0.048828125 0.09869384765625 0.02496337890625"/>
+                                  <site name="site_posterior_vbwml14" pos="-0.048828125 -0.09869384765625 -0.02618408203125"/>
+                                  <site name="site_posterior_vbwmr14" pos="-0.048828125 -0.09869384765625 0.02496337890625"/>
+                                  <site name="site_anterior_dbwml15" pos="-0.048828125 0.09869384765625 -0.02618408203125"/>
+                                  <site name="site_anterior_dbwmr15" pos="-0.048828125 0.09869384765625 0.02496337890625"/>
+                                  <site name="site_anterior_vbwml15" pos="-0.048828125 -0.09869384765625 -0.02618408203125"/>
+                                  <site name="site_anterior_vbwmr15" pos="-0.048828125 -0.09869384765625 0.02496337890625"/>
+                                  <body name="torso16_body" pos="-0.1005859375 0.0 -0.00128173828125">
+                                    <geom density="1000" type="mesh" name="torso16" mesh="ellipsoid16" quat="1.0 0.0 -0.00980377197265625 0.0"/>
+                                    <joint axis="0 0 1" limited="true" name="rot16" pos="0.001953125 0.0 0.0" range="-100 100" type="hinge"/>
+                                    <geom name="geom16" pos="0.001953125 0.0 0.0" size="0.09796644073593258" type="sphere" density="0"/>
+                                    <site name="sidesite16_dorsal" pos="0.001953125 0.09796142578125 0.0" rgba="0.8 0.2 0.1 0"/>
+                                    <site name="sidesite16_ventral" pos="0.001953125 -0.09796142578125 0.0" rgba="0.8 0.2 0.1 0"/>
+                                    <site name="site_posterior_dbwml15" pos="-0.0478515625 0.09710693359375 -0.02606201171875"/>
+                                    <site name="site_posterior_dbwmr15" pos="-0.048828125 0.09710693359375 0.024169921875"/>
+                                    <site name="site_posterior_vbwml15" pos="-0.0478515625 -0.09710693359375 -0.02606201171875"/>
+                                    <site name="site_posterior_vbwmr15" pos="-0.048828125 -0.09710693359375 0.024169921875"/>
+                                    <site name="site_anterior_dbwml16" pos="-0.0478515625 0.09710693359375 -0.02606201171875"/>
+                                    <site name="site_anterior_dbwmr16" pos="-0.048828125 0.09710693359375 0.024169921875"/>
+                                    <site name="site_anterior_vbwml16" pos="-0.0478515625 -0.09710693359375 -0.02606201171875"/>
+                                    <site name="site_anterior_vbwmr16" pos="-0.048828125 -0.09710693359375 0.024169921875"/>
+                                    <body name="torso17_body" pos="-0.1005859375 0.0 -0.00201416015625">
+                                      <geom density="1000" type="mesh" name="torso17" mesh="ellipsoid17" quat="1.0 0.0 -0.01375579833984375 0.0"/>
+                                      <joint axis="0 0 1" limited="true" name="rot17" pos="0.0029296875 0.0 6.103515625e-05" range="-100 100" type="hinge"/>
+                                      <geom name="geom17" pos="0.0029296875 0.0 6.103515625e-05" size="0.09597369473202175" type="sphere" density="0"/>
+                                      <site name="sidesite17_dorsal" pos="0.0029296875 0.095947265625 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                                      <site name="sidesite17_ventral" pos="0.0029296875 -0.095947265625 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                                      <site name="site_posterior_dbwml16" pos="-0.046875 0.0947265625 -0.02581787109375"/>
+                                      <site name="site_posterior_dbwmr16" pos="-0.0478515625 0.0947265625 0.023193359375"/>
+                                      <site name="site_posterior_vbwml16" pos="-0.046875 -0.0947265625 -0.02581787109375"/>
+                                      <site name="site_posterior_vbwmr16" pos="-0.0478515625 -0.0947265625 0.023193359375"/>
+                                      <site name="site_anterior_dbwml17" pos="-0.046875 0.0947265625 -0.02581787109375"/>
+                                      <site name="site_anterior_dbwmr17" pos="-0.0478515625 0.0947265625 0.023193359375"/>
+                                      <site name="site_anterior_vbwml17" pos="-0.046875 -0.0947265625 -0.02581787109375"/>
+                                      <site name="site_anterior_vbwmr17" pos="-0.0478515625 -0.0947265625 0.023193359375"/>
+                                      <body name="torso18_body" pos="-0.1005859375 0.0 -0.00274658203125">
+                                        <geom density="1000" type="mesh" name="torso18" mesh="ellipsoid18" quat="1.0 0.0 -0.0175933837890625 0.0"/>
+                                        <joint axis="0 0 1" limited="true" name="rot18" pos="0.0029296875 0.0 6.103515625e-05" range="-100 100" type="hinge"/>
+                                        <geom name="geom18" pos="0.0029296875 0.0 6.103515625e-05" size="0.09325048082403138" type="sphere" density="0"/>
+                                        <site name="sidesite18_dorsal" pos="0.0029296875 0.09326171875 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                                        <site name="sidesite18_ventral" pos="0.0029296875 -0.09326171875 6.103515625e-05" rgba="0.8 0.2 0.1 0"/>
+                                        <site name="site_posterior_dbwml17" pos="-0.0458984375 0.0916748046875 -0.025390625"/>
+                                        <site name="site_posterior_dbwmr17" pos="-0.0478515625 0.0916748046875 0.02203369140625"/>
+                                        <site name="site_posterior_vbwml17" pos="-0.0458984375 -0.0916748046875 -0.025390625"/>
+                                        <site name="site_posterior_vbwmr17" pos="-0.0478515625 -0.0916748046875 0.02203369140625"/>
+                                        <site name="site_anterior_dbwml18" pos="-0.0458984375 0.0916748046875 -0.025390625"/>
+                                        <site name="site_anterior_dbwmr18" pos="-0.0478515625 0.0916748046875 0.02203369140625"/>
+                                        <site name="site_anterior_vbwml18" pos="-0.0458984375 -0.0916748046875 -0.025390625"/>
+                                        <site name="site_anterior_vbwmr18" pos="-0.0478515625 -0.0916748046875 0.02203369140625"/>
+                                        <body name="torso19_body" pos="-0.1005859375 0.0 -0.00360107421875">
+                                          <geom density="1000" type="mesh" name="torso19" mesh="ellipsoid19" quat="1.0 0.0 -0.0218353271484375 0.0"/>
+                                          <joint axis="0 0 1" limited="true" name="rot19" pos="0.00390625 0.0 0.00018310546875" range="-100 100" type="hinge"/>
+                                          <geom name="geom19" pos="0.00390625 0.0 0.00018310546875" size="0.08973031700969426" type="sphere" density="0"/>
+                                          <site name="sidesite19_dorsal" pos="0.00390625 0.0897216796875 0.00018310546875" rgba="0.8 0.2 0.1 0"/>
+                                          <site name="sidesite19_ventral" pos="0.00390625 -0.0897216796875 0.00018310546875" rgba="0.8 0.2 0.1 0"/>
+                                          <site name="site_posterior_dbwml18" pos="-0.044921875 0.08770751953125 -0.02471923828125"/>
+                                          <site name="site_posterior_dbwmr18" pos="-0.046875 0.08770751953125 0.0206298828125"/>
+                                          <site name="site_posterior_vbwml18" pos="-0.044921875 -0.08770751953125 -0.02471923828125"/>
+                                          <site name="site_posterior_vbwmr18" pos="-0.046875 -0.08770751953125 0.0206298828125"/>
+                                          <site name="site_anterior_dbwml19" pos="-0.044921875 0.08770751953125 -0.02471923828125"/>
+                                          <site name="site_anterior_dbwmr19" pos="-0.046875 0.08770751953125 0.0206298828125"/>
+                                          <site name="site_anterior_vbwml19" pos="-0.044921875 -0.08770751953125 -0.02471923828125"/>
+                                          <site name="site_anterior_vbwmr19" pos="-0.046875 -0.08770751953125 0.0206298828125"/>
+                                          <body name="torso20_body" pos="-0.1005859375 0.0 -0.00445556640625">
+                                            <geom density="1000" type="mesh" name="torso20" mesh="ellipsoid20" quat="0.99951171875 0.0 -0.0270538330078125 0.0"/>
+                                            <joint axis="0 0 1" limited="true" name="rot20" pos="0.0048828125 0.0 0.000244140625" range="-100 100" type="hinge"/>
+                                            <geom name="geom20" pos="0.0048828125 0.0 0.000244140625" size="0.08531461147281189" type="sphere" density="0"/>
+                                            <site name="sidesite20_dorsal" pos="0.0048828125 0.0853271484375 0.000244140625" rgba="0.8 0.2 0.1 0"/>
+                                            <site name="sidesite20_ventral" pos="0.0048828125 -0.0853271484375 0.000244140625" rgba="0.8 0.2 0.1 0"/>
+                                            <site name="site_posterior_dbwml19" pos="-0.0439453125 0.08282470703125 -0.02386474609375"/>
+                                            <site name="site_posterior_dbwmr19" pos="-0.046875 0.08282470703125 0.0189208984375"/>
+                                            <site name="site_posterior_vbwml19" pos="-0.0439453125 -0.08282470703125 -0.02386474609375"/>
+                                            <site name="site_posterior_vbwmr19" pos="-0.046875 -0.08282470703125 0.0189208984375"/>
+                                            <site name="site_anterior_dbwml20" pos="-0.0439453125 0.08282470703125 -0.02386474609375"/>
+                                            <site name="site_anterior_dbwmr20" pos="-0.046875 0.08282470703125 0.0189208984375"/>
+                                            <site name="site_anterior_vbwml20" pos="-0.0439453125 -0.08282470703125 -0.02386474609375"/>
+                                            <site name="site_anterior_vbwmr20" pos="-0.046875 -0.08282470703125 0.0189208984375"/>
+                                            <body name="torso21_body" pos="-0.1005859375 0.0 -0.0054931640625">
+                                              <geom density="1000" type="mesh" name="torso21" mesh="ellipsoid21" quat="0.99951171875 0.0 -0.033905029296875 0.0"/>
+                                              <joint axis="0 0 1" limited="true" name="rot21" pos="0.0048828125 0.0 0.00030517578125" range="-100 100" type="hinge"/>
+                                              <geom name="geom21" pos="0.0048828125 0.0 0.00030517578125" size="0.07985494095046906" type="sphere" density="0"/>
+                                              <site name="sidesite21_dorsal" pos="0.0048828125 0.079833984375 0.00030517578125" rgba="0.8 0.2 0.1 0"/>
+                                              <site name="sidesite21_ventral" pos="0.0048828125 -0.079833984375 0.00030517578125" rgba="0.8 0.2 0.1 0"/>
+                                              <site name="site_posterior_dbwml20" pos="-0.04296875 0.07684326171875 -0.02288818359375"/>
+                                              <site name="site_posterior_dbwmr20" pos="-0.046875 0.07684326171875 0.01678466796875"/>
+                                              <site name="site_posterior_vbwml20" pos="-0.04296875 -0.07684326171875 -0.02288818359375"/>
+                                              <site name="site_posterior_vbwmr20" pos="-0.046875 -0.07684326171875 0.01678466796875"/>
+                                              <site name="site_anterior_dbwml21" pos="-0.04296875 0.07684326171875 -0.02288818359375"/>
+                                              <site name="site_anterior_dbwmr21" pos="-0.046875 0.07684326171875 0.01678466796875"/>
+                                              <site name="site_anterior_vbwml21" pos="-0.04296875 -0.07684326171875 -0.02288818359375"/>
+                                              <site name="site_anterior_vbwmr21" pos="-0.046875 -0.07684326171875 0.01678466796875"/>
+                                              <body name="torso22_body" pos="-0.099609375 0.0 -0.00689697265625">
+                                                <geom density="1000" type="mesh" name="torso22" mesh="ellipsoid22" quat="0.9990234375 0.0 -0.041168212890625 0.0"/>
+                                                <joint axis="0 0 1" limited="true" name="rot22" pos="0.005859375 0.0 0.00042724609375" range="-100 100" type="hinge"/>
+                                                <geom name="geom22" pos="0.005859375 0.0 0.00042724609375" size="0.0731178212271016" type="sphere" density="0"/>
+                                                <site name="sidesite22_dorsal" pos="0.005859375 0.0731201171875 0.00042724609375" rgba="0.8 0.2 0.1 0"/>
+                                                <site name="sidesite22_ventral" pos="0.005859375 -0.0731201171875 0.00042724609375" rgba="0.8 0.2 0.1 0"/>
+                                                <site name="site_posterior_dbwml21" pos="-0.04296875 0.06939697265625 -0.021575927734375"/>
+                                                <site name="site_posterior_dbwmr21" pos="-0.046875 0.06939697265625 0.01422119140625"/>
+                                                <site name="site_posterior_vbwml21" pos="-0.04296875 -0.06939697265625 -0.021575927734375"/>
+                                                <site name="site_posterior_vbwmr21" pos="-0.046875 -0.06939697265625 0.01422119140625"/>
+                                                <site name="site_anterior_dbwml22" pos="-0.04296875 0.06939697265625 -0.021575927734375"/>
+                                                <site name="site_anterior_dbwmr22" pos="-0.046875 0.06939697265625 0.01422119140625"/>
+                                                <site name="site_anterior_vbwml22" pos="-0.04296875 -0.06939697265625 -0.021575927734375"/>
+                                                <site name="site_anterior_vbwmr22" pos="-0.046875 -0.06939697265625 0.01422119140625"/>
+                                                <body name="torso23_body" pos="-0.1015625 0.0 -0.0084228515625">
+                                                  <geom density="1000" type="mesh" name="torso23" mesh="ellipsoid23" quat="0.99853515625 0.0 -0.053253173828125 0.0"/>
+                                                  <joint axis="0 0 1" limited="true" name="rot23" pos="0.0078125 0.0 0.00067138671875" range="-100 100" type="hinge"/>
+                                                  <geom name="geom23" pos="0.0078125 0.0 0.00067138671875" size="0.06470545178841823" type="sphere" density="0"/>
+                                                  <site name="sidesite23_dorsal" pos="0.0078125 0.064697265625 0.00067138671875" rgba="0.8 0.2 0.1 0"/>
+                                                  <site name="sidesite23_ventral" pos="0.0078125 -0.064697265625 0.00067138671875" rgba="0.8 0.2 0.1 0"/>
+                                                  <site name="site_posterior_dbwml22" pos="-0.041015625 0.05999755859375 -0.020111083984375"/>
+                                                  <site name="site_posterior_dbwmr22" pos="-0.044921875 0.05999755859375 0.0107421875"/>
+                                                  <site name="site_posterior_vbwml22" pos="-0.041015625 -0.05999755859375 -0.020111083984375"/>
+                                                  <site name="site_posterior_vbwmr22" pos="-0.044921875 -0.05999755859375 0.0107421875"/>
+                                                  <site name="site_anterior_dbwml23" pos="-0.041015625 0.05999755859375 -0.020111083984375"/>
+                                                  <site name="site_anterior_dbwmr23" pos="-0.044921875 0.05999755859375 0.0107421875"/>
+                                                  <site name="site_anterior_vbwml23" pos="-0.041015625 -0.05999755859375 -0.020111083984375"/>
+                                                  <site name="site_anterior_vbwmr23" pos="-0.044921875 -0.05999755859375 0.0107421875"/>
+                                                  <body name="torso24_body" pos="-0.099609375 0.0 -0.011016845703125">
+                                                    <geom density="1000" type="mesh" name="torso24" mesh="ellipsoid24" quat="0.9970703125 0.0 -0.0755615234375 0.0"/>
+                                                    <joint axis="0 0 1" limited="true" name="rot24" pos="0.0078125 0.0 0.00103759765625" range="-100 100" type="hinge"/>
+                                                    <geom name="geom24" pos="0.0078125 0.0 0.00103759765625" size="0.053838190205816525" type="sphere" density="0"/>
+                                                    <site name="sidesite24_dorsal" pos="0.0078125 0.0538330078125 0.00103759765625" rgba="0.8 0.2 0.1 0"/>
+                                                    <site name="sidesite24_ventral" pos="0.0078125 -0.0538330078125 0.00103759765625" rgba="0.8 0.2 0.1 0"/>
+                                                    <site name="site_posterior_dbwml23" pos="-0.041015625 0.0474853515625 -0.0186767578125"/>
+                                                    <site name="site_posterior_dbwmr23" pos="-0.044921875 0.0474853515625 0.005645751953125"/>
+                                                    <site name="site_posterior_vbwml23" pos="-0.041015625 -0.0474853515625 -0.0186767578125"/>
+                                                    <site name="site_posterior_vbwmr23" pos="-0.044921875 -0.0474853515625 0.005645751953125"/>
+                                                    <site name="site_anterior_dbwml24" pos="-0.041015625 0.0474853515625 -0.0186767578125"/>
+                                                    <site name="site_anterior_dbwmr24" pos="-0.044921875 0.0474853515625 0.005645751953125"/>
+                                                    <site name="site_anterior_vbwmr24" pos="-0.044921875 -0.0474853515625 0.005645751953125"/>
+                                                    <body name="torso25_body" pos="-0.099609375 0.0 -0.01580810546875">
+                                                      <geom density="1000" type="mesh" name="torso25" mesh="ellipsoid25" quat="0.99267578125 0.0 -0.1195068359375 0.0"/>
+                                                      <joint axis="0 0 1" limited="true" name="rot25" pos="0.0078125 0.0 0.00177001953125" range="-70 70" type="hinge"/>
+                                                      <site name="sidesite25_dorsal" pos="0.0078125 0.038482666015625 0.00177001953125" rgba="0.8 0.2 0.1 0"/>
+                                                      <site name="sidesite25_ventral" pos="0.0078125 -0.038482666015625 0.00177001953125" rgba="0.8 0.2 0.1 0"/>
+                                                      <site name="site_posterior_dbwml24" pos="-0.0390625 0.0279998779296875 -0.01715087890625"/>
+                                                      <site name="site_posterior_dbwmr24" pos="-0.04296875 0.0279998779296875 -0.003082275390625"/>
+                                                      <site name="site_posterior_vbwmr24" pos="-0.04296875 -0.0279998779296875 -0.003082275390625"/>
+                                                      <geom name="geom25" pos="0.0078125 0.0 0.00177001953125" size="0.03849001794597507" type="sphere" density="0"/>
+                                                    </body>
+                                                  </body>
+                                                </body>
+                                              </body>
+                                            </body>
+                                          </body>
+                                        </body>
+                                      </body>
+                                    </body>
+                                  </body>
+                                </body>
+                              </body>
+                            </body>
+                          </body>
+                        </body>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+  <contact>
+    <pair geom1="floor" geom2="torso1" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso2" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso3" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso4" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso5" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso6" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso7" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso8" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso9" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso10" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso11" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso12" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso13" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso14" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso15" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso16" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso17" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso18" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso19" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso20" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso21" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso22" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso23" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso24" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+    <pair geom1="floor" geom2="torso25" condim="3" friction="1 1 0.005 0.0001 0.0001" solimp="0 0.95 0.001 0.5 2"/>
+  </contact>
+  <tendon>
+    <spatial name="tendon_dbwml1" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml1"/>
+      <geom geom="geom2" sidesite="sidesite2_dorsal"/>
+      <site site="site_posterior_dbwml1"/>
+    </spatial>
+    <spatial name="tendon_dbwmr1" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr1"/>
+      <geom geom="geom2" sidesite="sidesite2_dorsal"/>
+      <site site="site_posterior_dbwmr1"/>
+    </spatial>
+    <spatial name="tendon_vbwml1" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml1"/>
+      <geom geom="geom2" sidesite="sidesite2_ventral"/>
+      <site site="site_posterior_vbwml1"/>
+    </spatial>
+    <spatial name="tendon_vbwmr1" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr1"/>
+      <geom geom="geom2" sidesite="sidesite2_ventral"/>
+      <site site="site_posterior_vbwmr1"/>
+    </spatial>
+    <spatial name="tendon_dbwml2" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml2"/>
+      <geom geom="geom3" sidesite="sidesite3_dorsal"/>
+      <site site="site_posterior_dbwml2"/>
+    </spatial>
+    <spatial name="tendon_dbwmr2" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr2"/>
+      <geom geom="geom3" sidesite="sidesite3_dorsal"/>
+      <site site="site_posterior_dbwmr2"/>
+    </spatial>
+    <spatial name="tendon_vbwml2" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml2"/>
+      <geom geom="geom3" sidesite="sidesite3_ventral"/>
+      <site site="site_posterior_vbwml2"/>
+    </spatial>
+    <spatial name="tendon_vbwmr2" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr2"/>
+      <geom geom="geom3" sidesite="sidesite3_ventral"/>
+      <site site="site_posterior_vbwmr2"/>
+    </spatial>
+    <spatial name="tendon_dbwml3" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml3"/>
+      <geom geom="geom4" sidesite="sidesite4_dorsal"/>
+      <site site="site_posterior_dbwml3"/>
+    </spatial>
+    <spatial name="tendon_dbwmr3" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr3"/>
+      <geom geom="geom4" sidesite="sidesite4_dorsal"/>
+      <site site="site_posterior_dbwmr3"/>
+    </spatial>
+    <spatial name="tendon_vbwml3" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml3"/>
+      <geom geom="geom4" sidesite="sidesite4_ventral"/>
+      <site site="site_posterior_vbwml3"/>
+    </spatial>
+    <spatial name="tendon_vbwmr3" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr3"/>
+      <geom geom="geom4" sidesite="sidesite4_ventral"/>
+      <site site="site_posterior_vbwmr3"/>
+    </spatial>
+    <spatial name="tendon_dbwml4" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml4"/>
+      <geom geom="geom5" sidesite="sidesite5_dorsal"/>
+      <site site="site_posterior_dbwml4"/>
+    </spatial>
+    <spatial name="tendon_dbwmr4" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr4"/>
+      <geom geom="geom5" sidesite="sidesite5_dorsal"/>
+      <site site="site_posterior_dbwmr4"/>
+    </spatial>
+    <spatial name="tendon_vbwml4" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml4"/>
+      <geom geom="geom5" sidesite="sidesite5_ventral"/>
+      <site site="site_posterior_vbwml4"/>
+    </spatial>
+    <spatial name="tendon_vbwmr4" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr4"/>
+      <geom geom="geom5" sidesite="sidesite5_ventral"/>
+      <site site="site_posterior_vbwmr4"/>
+    </spatial>
+    <spatial name="tendon_dbwml5" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml5"/>
+      <geom geom="geom6" sidesite="sidesite6_dorsal"/>
+      <site site="site_posterior_dbwml5"/>
+    </spatial>
+    <spatial name="tendon_dbwmr5" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr5"/>
+      <geom geom="geom6" sidesite="sidesite6_dorsal"/>
+      <site site="site_posterior_dbwmr5"/>
+    </spatial>
+    <spatial name="tendon_vbwml5" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml5"/>
+      <geom geom="geom6" sidesite="sidesite6_ventral"/>
+      <site site="site_posterior_vbwml5"/>
+    </spatial>
+    <spatial name="tendon_vbwmr5" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr5"/>
+      <geom geom="geom6" sidesite="sidesite6_ventral"/>
+      <site site="site_posterior_vbwmr5"/>
+    </spatial>
+    <spatial name="tendon_dbwml6" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml6"/>
+      <geom geom="geom7" sidesite="sidesite7_dorsal"/>
+      <site site="site_posterior_dbwml6"/>
+    </spatial>
+    <spatial name="tendon_dbwmr6" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr6"/>
+      <geom geom="geom7" sidesite="sidesite7_dorsal"/>
+      <site site="site_posterior_dbwmr6"/>
+    </spatial>
+    <spatial name="tendon_vbwml6" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml6"/>
+      <geom geom="geom7" sidesite="sidesite7_ventral"/>
+      <site site="site_posterior_vbwml6"/>
+    </spatial>
+    <spatial name="tendon_vbwmr6" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr6"/>
+      <geom geom="geom7" sidesite="sidesite7_ventral"/>
+      <site site="site_posterior_vbwmr6"/>
+    </spatial>
+    <spatial name="tendon_dbwml7" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml7"/>
+      <geom geom="geom8" sidesite="sidesite8_dorsal"/>
+      <site site="site_posterior_dbwml7"/>
+    </spatial>
+    <spatial name="tendon_dbwmr7" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr7"/>
+      <geom geom="geom8" sidesite="sidesite8_dorsal"/>
+      <site site="site_posterior_dbwmr7"/>
+    </spatial>
+    <spatial name="tendon_vbwml7" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml7"/>
+      <geom geom="geom8" sidesite="sidesite8_ventral"/>
+      <site site="site_posterior_vbwml7"/>
+    </spatial>
+    <spatial name="tendon_vbwmr7" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr7"/>
+      <geom geom="geom8" sidesite="sidesite8_ventral"/>
+      <site site="site_posterior_vbwmr7"/>
+    </spatial>
+    <spatial name="tendon_dbwml8" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml8"/>
+      <geom geom="geom9" sidesite="sidesite9_dorsal"/>
+      <site site="site_posterior_dbwml8"/>
+    </spatial>
+    <spatial name="tendon_dbwmr8" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr8"/>
+      <geom geom="geom9" sidesite="sidesite9_dorsal"/>
+      <site site="site_posterior_dbwmr8"/>
+    </spatial>
+    <spatial name="tendon_vbwml8" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml8"/>
+      <geom geom="geom9" sidesite="sidesite9_ventral"/>
+      <site site="site_posterior_vbwml8"/>
+    </spatial>
+    <spatial name="tendon_vbwmr8" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr8"/>
+      <geom geom="geom9" sidesite="sidesite9_ventral"/>
+      <site site="site_posterior_vbwmr8"/>
+    </spatial>
+    <spatial name="tendon_dbwml9" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml9"/>
+      <geom geom="geom10" sidesite="sidesite10_dorsal"/>
+      <site site="site_posterior_dbwml9"/>
+    </spatial>
+    <spatial name="tendon_dbwmr9" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr9"/>
+      <geom geom="geom10" sidesite="sidesite10_dorsal"/>
+      <site site="site_posterior_dbwmr9"/>
+    </spatial>
+    <spatial name="tendon_vbwml9" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml9"/>
+      <geom geom="geom10" sidesite="sidesite10_ventral"/>
+      <site site="site_posterior_vbwml9"/>
+    </spatial>
+    <spatial name="tendon_vbwmr9" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr9"/>
+      <geom geom="geom10" sidesite="sidesite10_ventral"/>
+      <site site="site_posterior_vbwmr9"/>
+    </spatial>
+    <spatial name="tendon_dbwml10" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml10"/>
+      <geom geom="geom11" sidesite="sidesite11_dorsal"/>
+      <site site="site_posterior_dbwml10"/>
+    </spatial>
+    <spatial name="tendon_dbwmr10" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr10"/>
+      <geom geom="geom11" sidesite="sidesite11_dorsal"/>
+      <site site="site_posterior_dbwmr10"/>
+    </spatial>
+    <spatial name="tendon_vbwml10" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml10"/>
+      <geom geom="geom11" sidesite="sidesite11_ventral"/>
+      <site site="site_posterior_vbwml10"/>
+    </spatial>
+    <spatial name="tendon_vbwmr10" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr10"/>
+      <geom geom="geom11" sidesite="sidesite11_ventral"/>
+      <site site="site_posterior_vbwmr10"/>
+    </spatial>
+    <spatial name="tendon_dbwml11" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml11"/>
+      <geom geom="geom12" sidesite="sidesite12_dorsal"/>
+      <site site="site_posterior_dbwml11"/>
+    </spatial>
+    <spatial name="tendon_dbwmr11" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr11"/>
+      <geom geom="geom12" sidesite="sidesite12_dorsal"/>
+      <site site="site_posterior_dbwmr11"/>
+    </spatial>
+    <spatial name="tendon_vbwml11" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml11"/>
+      <geom geom="geom12" sidesite="sidesite12_ventral"/>
+      <site site="site_posterior_vbwml11"/>
+    </spatial>
+    <spatial name="tendon_vbwmr11" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr11"/>
+      <geom geom="geom12" sidesite="sidesite12_ventral"/>
+      <site site="site_posterior_vbwmr11"/>
+    </spatial>
+    <spatial name="tendon_dbwml12" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml12"/>
+      <geom geom="geom13" sidesite="sidesite13_dorsal"/>
+      <site site="site_posterior_dbwml12"/>
+    </spatial>
+    <spatial name="tendon_dbwmr12" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr12"/>
+      <geom geom="geom13" sidesite="sidesite13_dorsal"/>
+      <site site="site_posterior_dbwmr12"/>
+    </spatial>
+    <spatial name="tendon_vbwml12" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml12"/>
+      <geom geom="geom13" sidesite="sidesite13_ventral"/>
+      <site site="site_posterior_vbwml12"/>
+    </spatial>
+    <spatial name="tendon_vbwmr12" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr12"/>
+      <geom geom="geom13" sidesite="sidesite13_ventral"/>
+      <site site="site_posterior_vbwmr12"/>
+    </spatial>
+    <spatial name="tendon_dbwml13" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml13"/>
+      <geom geom="geom14" sidesite="sidesite14_dorsal"/>
+      <site site="site_posterior_dbwml13"/>
+    </spatial>
+    <spatial name="tendon_dbwmr13" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr13"/>
+      <geom geom="geom14" sidesite="sidesite14_dorsal"/>
+      <site site="site_posterior_dbwmr13"/>
+    </spatial>
+    <spatial name="tendon_vbwml13" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml13"/>
+      <geom geom="geom14" sidesite="sidesite14_ventral"/>
+      <site site="site_posterior_vbwml13"/>
+    </spatial>
+    <spatial name="tendon_vbwmr13" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr13"/>
+      <geom geom="geom14" sidesite="sidesite14_ventral"/>
+      <site site="site_posterior_vbwmr13"/>
+    </spatial>
+    <spatial name="tendon_dbwml14" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml14"/>
+      <geom geom="geom15" sidesite="sidesite15_dorsal"/>
+      <site site="site_posterior_dbwml14"/>
+    </spatial>
+    <spatial name="tendon_dbwmr14" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr14"/>
+      <geom geom="geom15" sidesite="sidesite15_dorsal"/>
+      <site site="site_posterior_dbwmr14"/>
+    </spatial>
+    <spatial name="tendon_vbwml14" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml14"/>
+      <geom geom="geom15" sidesite="sidesite15_ventral"/>
+      <site site="site_posterior_vbwml14"/>
+    </spatial>
+    <spatial name="tendon_vbwmr14" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr14"/>
+      <geom geom="geom15" sidesite="sidesite15_ventral"/>
+      <site site="site_posterior_vbwmr14"/>
+    </spatial>
+    <spatial name="tendon_dbwml15" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml15"/>
+      <geom geom="geom16" sidesite="sidesite16_dorsal"/>
+      <site site="site_posterior_dbwml15"/>
+    </spatial>
+    <spatial name="tendon_dbwmr15" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr15"/>
+      <geom geom="geom16" sidesite="sidesite16_dorsal"/>
+      <site site="site_posterior_dbwmr15"/>
+    </spatial>
+    <spatial name="tendon_vbwml15" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml15"/>
+      <geom geom="geom16" sidesite="sidesite16_ventral"/>
+      <site site="site_posterior_vbwml15"/>
+    </spatial>
+    <spatial name="tendon_vbwmr15" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr15"/>
+      <geom geom="geom16" sidesite="sidesite16_ventral"/>
+      <site site="site_posterior_vbwmr15"/>
+    </spatial>
+    <spatial name="tendon_dbwml16" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml16"/>
+      <geom geom="geom17" sidesite="sidesite17_dorsal"/>
+      <site site="site_posterior_dbwml16"/>
+    </spatial>
+    <spatial name="tendon_dbwmr16" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr16"/>
+      <geom geom="geom17" sidesite="sidesite17_dorsal"/>
+      <site site="site_posterior_dbwmr16"/>
+    </spatial>
+    <spatial name="tendon_vbwml16" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml16"/>
+      <geom geom="geom17" sidesite="sidesite17_ventral"/>
+      <site site="site_posterior_vbwml16"/>
+    </spatial>
+    <spatial name="tendon_vbwmr16" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr16"/>
+      <geom geom="geom17" sidesite="sidesite17_ventral"/>
+      <site site="site_posterior_vbwmr16"/>
+    </spatial>
+    <spatial name="tendon_dbwml17" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml17"/>
+      <geom geom="geom18" sidesite="sidesite18_dorsal"/>
+      <site site="site_posterior_dbwml17"/>
+    </spatial>
+    <spatial name="tendon_dbwmr17" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr17"/>
+      <geom geom="geom18" sidesite="sidesite18_dorsal"/>
+      <site site="site_posterior_dbwmr17"/>
+    </spatial>
+    <spatial name="tendon_vbwml17" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml17"/>
+      <geom geom="geom18" sidesite="sidesite18_ventral"/>
+      <site site="site_posterior_vbwml17"/>
+    </spatial>
+    <spatial name="tendon_vbwmr17" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr17"/>
+      <geom geom="geom18" sidesite="sidesite18_ventral"/>
+      <site site="site_posterior_vbwmr17"/>
+    </spatial>
+    <spatial name="tendon_dbwml18" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml18"/>
+      <geom geom="geom19" sidesite="sidesite19_dorsal"/>
+      <site site="site_posterior_dbwml18"/>
+    </spatial>
+    <spatial name="tendon_dbwmr18" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr18"/>
+      <geom geom="geom19" sidesite="sidesite19_dorsal"/>
+      <site site="site_posterior_dbwmr18"/>
+    </spatial>
+    <spatial name="tendon_vbwml18" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml18"/>
+      <geom geom="geom19" sidesite="sidesite19_ventral"/>
+      <site site="site_posterior_vbwml18"/>
+    </spatial>
+    <spatial name="tendon_vbwmr18" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr18"/>
+      <geom geom="geom19" sidesite="sidesite19_ventral"/>
+      <site site="site_posterior_vbwmr18"/>
+    </spatial>
+    <spatial name="tendon_dbwml19" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml19"/>
+      <geom geom="geom20" sidesite="sidesite20_dorsal"/>
+      <site site="site_posterior_dbwml19"/>
+    </spatial>
+    <spatial name="tendon_dbwmr19" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr19"/>
+      <geom geom="geom20" sidesite="sidesite20_dorsal"/>
+      <site site="site_posterior_dbwmr19"/>
+    </spatial>
+    <spatial name="tendon_vbwml19" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml19"/>
+      <geom geom="geom20" sidesite="sidesite20_ventral"/>
+      <site site="site_posterior_vbwml19"/>
+    </spatial>
+    <spatial name="tendon_vbwmr19" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr19"/>
+      <geom geom="geom20" sidesite="sidesite20_ventral"/>
+      <site site="site_posterior_vbwmr19"/>
+    </spatial>
+    <spatial name="tendon_dbwml20" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml20"/>
+      <geom geom="geom21" sidesite="sidesite21_dorsal"/>
+      <site site="site_posterior_dbwml20"/>
+    </spatial>
+    <spatial name="tendon_dbwmr20" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr20"/>
+      <geom geom="geom21" sidesite="sidesite21_dorsal"/>
+      <site site="site_posterior_dbwmr20"/>
+    </spatial>
+    <spatial name="tendon_vbwml20" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml20"/>
+      <geom geom="geom21" sidesite="sidesite21_ventral"/>
+      <site site="site_posterior_vbwml20"/>
+    </spatial>
+    <spatial name="tendon_vbwmr20" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr20"/>
+      <geom geom="geom21" sidesite="sidesite21_ventral"/>
+      <site site="site_posterior_vbwmr20"/>
+    </spatial>
+    <spatial name="tendon_dbwml21" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml21"/>
+      <geom geom="geom22" sidesite="sidesite22_dorsal"/>
+      <site site="site_posterior_dbwml21"/>
+    </spatial>
+    <spatial name="tendon_dbwmr21" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr21"/>
+      <geom geom="geom22" sidesite="sidesite22_dorsal"/>
+      <site site="site_posterior_dbwmr21"/>
+    </spatial>
+    <spatial name="tendon_vbwml21" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml21"/>
+      <geom geom="geom22" sidesite="sidesite22_ventral"/>
+      <site site="site_posterior_vbwml21"/>
+    </spatial>
+    <spatial name="tendon_vbwmr21" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr21"/>
+      <geom geom="geom22" sidesite="sidesite22_ventral"/>
+      <site site="site_posterior_vbwmr21"/>
+    </spatial>
+    <spatial name="tendon_dbwml22" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml22"/>
+      <geom geom="geom23" sidesite="sidesite23_dorsal"/>
+      <site site="site_posterior_dbwml22"/>
+    </spatial>
+    <spatial name="tendon_dbwmr22" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr22"/>
+      <geom geom="geom23" sidesite="sidesite23_dorsal"/>
+      <site site="site_posterior_dbwmr22"/>
+    </spatial>
+    <spatial name="tendon_vbwml22" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml22"/>
+      <geom geom="geom23" sidesite="sidesite23_ventral"/>
+      <site site="site_posterior_vbwml22"/>
+    </spatial>
+    <spatial name="tendon_vbwmr22" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr22"/>
+      <geom geom="geom23" sidesite="sidesite23_ventral"/>
+      <site site="site_posterior_vbwmr22"/>
+    </spatial>
+    <spatial name="tendon_dbwml23" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml23"/>
+      <geom geom="geom24" sidesite="sidesite24_dorsal"/>
+      <site site="site_posterior_dbwml23"/>
+    </spatial>
+    <spatial name="tendon_dbwmr23" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr23"/>
+      <geom geom="geom24" sidesite="sidesite24_dorsal"/>
+      <site site="site_posterior_dbwmr23"/>
+    </spatial>
+    <spatial name="tendon_vbwml23" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwml23"/>
+      <geom geom="geom24" sidesite="sidesite24_ventral"/>
+      <site site="site_posterior_vbwml23"/>
+    </spatial>
+    <spatial name="tendon_vbwmr23" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr23"/>
+      <geom geom="geom24" sidesite="sidesite24_ventral"/>
+      <site site="site_posterior_vbwmr23"/>
+    </spatial>
+    <spatial name="tendon_dbwml24" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwml24"/>
+      <geom geom="geom25" sidesite="sidesite25_dorsal"/>
+      <site site="site_posterior_dbwml24"/>
+    </spatial>
+    <spatial name="tendon_dbwmr24" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_dbwmr24"/>
+      <geom geom="geom25" sidesite="sidesite25_dorsal"/>
+      <site site="site_posterior_dbwmr24"/>
+    </spatial>
+    <spatial name="tendon_vbwmr24" width="0.002" rgba="0.95 0.3 0.3 1">
+      <site site="site_anterior_vbwmr24"/>
+      <geom geom="geom25" sidesite="sidesite25_ventral"/>
+      <site site="site_posterior_vbwmr24"/>
+    </spatial>
+  </tendon>
+  <actuator>
+    <muscle name="muscle_dbwml1" tendon="tendon_dbwml1" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml2" tendon="tendon_dbwml2" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml3" tendon="tendon_dbwml3" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml4" tendon="tendon_dbwml4" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml5" tendon="tendon_dbwml5" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml6" tendon="tendon_dbwml6" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml7" tendon="tendon_dbwml7" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml8" tendon="tendon_dbwml8" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml9" tendon="tendon_dbwml9" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml10" tendon="tendon_dbwml10" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml11" tendon="tendon_dbwml11" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml12" tendon="tendon_dbwml12" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml13" tendon="tendon_dbwml13" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml14" tendon="tendon_dbwml14" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml15" tendon="tendon_dbwml15" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml16" tendon="tendon_dbwml16" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml17" tendon="tendon_dbwml17" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml18" tendon="tendon_dbwml18" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml19" tendon="tendon_dbwml19" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml20" tendon="tendon_dbwml20" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml21" tendon="tendon_dbwml21" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml22" tendon="tendon_dbwml22" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml23" tendon="tendon_dbwml23" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwml24" tendon="tendon_dbwml24" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr1" tendon="tendon_dbwmr1" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr2" tendon="tendon_dbwmr2" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr3" tendon="tendon_dbwmr3" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr4" tendon="tendon_dbwmr4" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr5" tendon="tendon_dbwmr5" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr6" tendon="tendon_dbwmr6" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr7" tendon="tendon_dbwmr7" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr8" tendon="tendon_dbwmr8" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr9" tendon="tendon_dbwmr9" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr10" tendon="tendon_dbwmr10" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr11" tendon="tendon_dbwmr11" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr12" tendon="tendon_dbwmr12" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr13" tendon="tendon_dbwmr13" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr14" tendon="tendon_dbwmr14" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr15" tendon="tendon_dbwmr15" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr16" tendon="tendon_dbwmr16" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr17" tendon="tendon_dbwmr17" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr18" tendon="tendon_dbwmr18" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr19" tendon="tendon_dbwmr19" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr20" tendon="tendon_dbwmr20" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr21" tendon="tendon_dbwmr21" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr22" tendon="tendon_dbwmr22" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr23" tendon="tendon_dbwmr23" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_dbwmr24" tendon="tendon_dbwmr24" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml1" tendon="tendon_vbwml1" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml2" tendon="tendon_vbwml2" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml3" tendon="tendon_vbwml3" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml4" tendon="tendon_vbwml4" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml5" tendon="tendon_vbwml5" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml6" tendon="tendon_vbwml6" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml7" tendon="tendon_vbwml7" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml8" tendon="tendon_vbwml8" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml9" tendon="tendon_vbwml9" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml10" tendon="tendon_vbwml10" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml11" tendon="tendon_vbwml11" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml12" tendon="tendon_vbwml12" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml13" tendon="tendon_vbwml13" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml14" tendon="tendon_vbwml14" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml15" tendon="tendon_vbwml15" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml16" tendon="tendon_vbwml16" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml17" tendon="tendon_vbwml17" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml18" tendon="tendon_vbwml18" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml19" tendon="tendon_vbwml19" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml20" tendon="tendon_vbwml20" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml21" tendon="tendon_vbwml21" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml22" tendon="tendon_vbwml22" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwml23" tendon="tendon_vbwml23" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr1" tendon="tendon_vbwmr1" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr2" tendon="tendon_vbwmr2" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr3" tendon="tendon_vbwmr3" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr4" tendon="tendon_vbwmr4" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr5" tendon="tendon_vbwmr5" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr6" tendon="tendon_vbwmr6" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr7" tendon="tendon_vbwmr7" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr8" tendon="tendon_vbwmr8" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr9" tendon="tendon_vbwmr9" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr10" tendon="tendon_vbwmr10" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr11" tendon="tendon_vbwmr11" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr12" tendon="tendon_vbwmr12" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr13" tendon="tendon_vbwmr13" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr14" tendon="tendon_vbwmr14" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr15" tendon="tendon_vbwmr15" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr16" tendon="tendon_vbwmr16" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr17" tendon="tendon_vbwmr17" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr18" tendon="tendon_vbwmr18" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr19" tendon="tendon_vbwmr19" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr20" tendon="tendon_vbwmr20" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr21" tendon="tendon_vbwmr21" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr22" tendon="tendon_vbwmr22" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr23" tendon="tendon_vbwmr23" lengthrange="0.00959575 0.382248"/>
+    <muscle name="muscle_vbwmr24" tendon="tendon_vbwmr24" lengthrange="0.00959575 0.382248"/>
+  </actuator>
+  <sensor>
+    <tendonpos tendon="tendon_dbwml1"/>
+    <tendonpos tendon="tendon_dbwml2"/>
+    <tendonpos tendon="tendon_dbwml3"/>
+    <tendonpos tendon="tendon_dbwml4"/>
+    <tendonpos tendon="tendon_dbwml5"/>
+    <tendonpos tendon="tendon_dbwml6"/>
+    <tendonpos tendon="tendon_dbwml7"/>
+    <tendonpos tendon="tendon_dbwml8"/>
+    <tendonpos tendon="tendon_dbwml9"/>
+    <tendonpos tendon="tendon_dbwml10"/>
+    <tendonpos tendon="tendon_dbwml11"/>
+    <tendonpos tendon="tendon_dbwml12"/>
+    <tendonpos tendon="tendon_dbwml13"/>
+    <tendonpos tendon="tendon_dbwml14"/>
+    <tendonpos tendon="tendon_dbwml15"/>
+    <tendonpos tendon="tendon_dbwml16"/>
+    <tendonpos tendon="tendon_dbwml17"/>
+    <tendonpos tendon="tendon_dbwml18"/>
+    <tendonpos tendon="tendon_dbwml19"/>
+    <tendonpos tendon="tendon_dbwml20"/>
+    <tendonpos tendon="tendon_dbwml21"/>
+    <tendonpos tendon="tendon_dbwml22"/>
+    <tendonpos tendon="tendon_dbwml23"/>
+    <tendonpos tendon="tendon_dbwml24"/>
+    <tendonpos tendon="tendon_dbwmr1"/>
+    <tendonpos tendon="tendon_dbwmr2"/>
+    <tendonpos tendon="tendon_dbwmr3"/>
+    <tendonpos tendon="tendon_dbwmr4"/>
+    <tendonpos tendon="tendon_dbwmr5"/>
+    <tendonpos tendon="tendon_dbwmr6"/>
+    <tendonpos tendon="tendon_dbwmr7"/>
+    <tendonpos tendon="tendon_dbwmr8"/>
+    <tendonpos tendon="tendon_dbwmr9"/>
+    <tendonpos tendon="tendon_dbwmr10"/>
+    <tendonpos tendon="tendon_dbwmr11"/>
+    <tendonpos tendon="tendon_dbwmr12"/>
+    <tendonpos tendon="tendon_dbwmr13"/>
+    <tendonpos tendon="tendon_dbwmr14"/>
+    <tendonpos tendon="tendon_dbwmr15"/>
+    <tendonpos tendon="tendon_dbwmr16"/>
+    <tendonpos tendon="tendon_dbwmr17"/>
+    <tendonpos tendon="tendon_dbwmr18"/>
+    <tendonpos tendon="tendon_dbwmr19"/>
+    <tendonpos tendon="tendon_dbwmr20"/>
+    <tendonpos tendon="tendon_dbwmr21"/>
+    <tendonpos tendon="tendon_dbwmr22"/>
+    <tendonpos tendon="tendon_dbwmr23"/>
+    <tendonpos tendon="tendon_dbwmr24"/>
+    <tendonpos tendon="tendon_vbwml1"/>
+    <tendonpos tendon="tendon_vbwml2"/>
+    <tendonpos tendon="tendon_vbwml3"/>
+    <tendonpos tendon="tendon_vbwml4"/>
+    <tendonpos tendon="tendon_vbwml5"/>
+    <tendonpos tendon="tendon_vbwml6"/>
+    <tendonpos tendon="tendon_vbwml7"/>
+    <tendonpos tendon="tendon_vbwml8"/>
+    <tendonpos tendon="tendon_vbwml9"/>
+    <tendonpos tendon="tendon_vbwml10"/>
+    <tendonpos tendon="tendon_vbwml11"/>
+    <tendonpos tendon="tendon_vbwml12"/>
+    <tendonpos tendon="tendon_vbwml13"/>
+    <tendonpos tendon="tendon_vbwml14"/>
+    <tendonpos tendon="tendon_vbwml15"/>
+    <tendonpos tendon="tendon_vbwml16"/>
+    <tendonpos tendon="tendon_vbwml17"/>
+    <tendonpos tendon="tendon_vbwml18"/>
+    <tendonpos tendon="tendon_vbwml19"/>
+    <tendonpos tendon="tendon_vbwml20"/>
+    <tendonpos tendon="tendon_vbwml21"/>
+    <tendonpos tendon="tendon_vbwml22"/>
+    <tendonpos tendon="tendon_vbwml23"/>
+    <!-- <tendonpos tendon="tendon_vbwml24"/> -->
+    <tendonpos tendon="tendon_vbwmr1"/>
+    <tendonpos tendon="tendon_vbwmr2"/>
+    <tendonpos tendon="tendon_vbwmr3"/>
+    <tendonpos tendon="tendon_vbwmr4"/>
+    <tendonpos tendon="tendon_vbwmr5"/>
+    <tendonpos tendon="tendon_vbwmr6"/>
+    <tendonpos tendon="tendon_vbwmr7"/>
+    <tendonpos tendon="tendon_vbwmr8"/>
+    <tendonpos tendon="tendon_vbwmr9"/>
+    <tendonpos tendon="tendon_vbwmr10"/>
+    <tendonpos tendon="tendon_vbwmr11"/>
+    <tendonpos tendon="tendon_vbwmr12"/>
+    <tendonpos tendon="tendon_vbwmr13"/>
+    <tendonpos tendon="tendon_vbwmr14"/>
+    <tendonpos tendon="tendon_vbwmr15"/>
+    <tendonpos tendon="tendon_vbwmr16"/>
+    <tendonpos tendon="tendon_vbwmr17"/>
+    <tendonpos tendon="tendon_vbwmr18"/>
+    <tendonpos tendon="tendon_vbwmr19"/>
+    <tendonpos tendon="tendon_vbwmr20"/>
+    <tendonpos tendon="tendon_vbwmr21"/>
+    <tendonpos tendon="tendon_vbwmr22"/>
+    <tendonpos tendon="tendon_vbwmr23"/>
+    <tendonpos tendon="tendon_vbwmr24"/>
+    <tendonvel tendon="tendon_dbwml1"/>
+    <tendonvel tendon="tendon_dbwml2"/>
+    <tendonvel tendon="tendon_dbwml3"/>
+    <tendonvel tendon="tendon_dbwml4"/>
+    <tendonvel tendon="tendon_dbwml5"/>
+    <tendonvel tendon="tendon_dbwml6"/>
+    <tendonvel tendon="tendon_dbwml7"/>
+    <tendonvel tendon="tendon_dbwml8"/>
+    <tendonvel tendon="tendon_dbwml9"/>
+    <tendonvel tendon="tendon_dbwml10"/>
+    <tendonvel tendon="tendon_dbwml11"/>
+    <tendonvel tendon="tendon_dbwml12"/>
+    <tendonvel tendon="tendon_dbwml13"/>
+    <tendonvel tendon="tendon_dbwml14"/>
+    <tendonvel tendon="tendon_dbwml15"/>
+    <tendonvel tendon="tendon_dbwml16"/>
+    <tendonvel tendon="tendon_dbwml17"/>
+    <tendonvel tendon="tendon_dbwml18"/>
+    <tendonvel tendon="tendon_dbwml19"/>
+    <tendonvel tendon="tendon_dbwml20"/>
+    <tendonvel tendon="tendon_dbwml21"/>
+    <tendonvel tendon="tendon_dbwml22"/>
+    <tendonvel tendon="tendon_dbwml23"/>
+    <tendonvel tendon="tendon_dbwml24"/>
+    <tendonvel tendon="tendon_dbwmr1"/>
+    <tendonvel tendon="tendon_dbwmr2"/>
+    <tendonvel tendon="tendon_dbwmr3"/>
+    <tendonvel tendon="tendon_dbwmr4"/>
+    <tendonvel tendon="tendon_dbwmr5"/>
+    <tendonvel tendon="tendon_dbwmr6"/>
+    <tendonvel tendon="tendon_dbwmr7"/>
+    <tendonvel tendon="tendon_dbwmr8"/>
+    <tendonvel tendon="tendon_dbwmr9"/>
+    <tendonvel tendon="tendon_dbwmr10"/>
+    <tendonvel tendon="tendon_dbwmr11"/>
+    <tendonvel tendon="tendon_dbwmr12"/>
+    <tendonvel tendon="tendon_dbwmr13"/>
+    <tendonvel tendon="tendon_dbwmr14"/>
+    <tendonvel tendon="tendon_dbwmr15"/>
+    <tendonvel tendon="tendon_dbwmr16"/>
+    <tendonvel tendon="tendon_dbwmr17"/>
+    <tendonvel tendon="tendon_dbwmr18"/>
+    <tendonvel tendon="tendon_dbwmr19"/>
+    <tendonvel tendon="tendon_dbwmr20"/>
+    <tendonvel tendon="tendon_dbwmr21"/>
+    <tendonvel tendon="tendon_dbwmr22"/>
+    <tendonvel tendon="tendon_dbwmr23"/>
+    <tendonvel tendon="tendon_dbwmr24"/>
+    <tendonvel tendon="tendon_vbwml1"/>
+    <tendonvel tendon="tendon_vbwml2"/>
+    <tendonvel tendon="tendon_vbwml3"/>
+    <tendonvel tendon="tendon_vbwml4"/>
+    <tendonvel tendon="tendon_vbwml5"/>
+    <tendonvel tendon="tendon_vbwml6"/>
+    <tendonvel tendon="tendon_vbwml7"/>
+    <tendonvel tendon="tendon_vbwml8"/>
+    <tendonvel tendon="tendon_vbwml9"/>
+    <tendonvel tendon="tendon_vbwml10"/>
+    <tendonvel tendon="tendon_vbwml11"/>
+    <tendonvel tendon="tendon_vbwml12"/>
+    <tendonvel tendon="tendon_vbwml13"/>
+    <tendonvel tendon="tendon_vbwml14"/>
+    <tendonvel tendon="tendon_vbwml15"/>
+    <tendonvel tendon="tendon_vbwml16"/>
+    <tendonvel tendon="tendon_vbwml17"/>
+    <tendonvel tendon="tendon_vbwml18"/>
+    <tendonvel tendon="tendon_vbwml19"/>
+    <tendonvel tendon="tendon_vbwml20"/>
+    <tendonvel tendon="tendon_vbwml21"/>
+    <tendonvel tendon="tendon_vbwml22"/>
+    <tendonvel tendon="tendon_vbwml23"/>
+    <!-- <tendonvel tendon="tendon_vbwml24"/> -->
+    <tendonvel tendon="tendon_vbwmr1"/>
+    <tendonvel tendon="tendon_vbwmr2"/>
+    <tendonvel tendon="tendon_vbwmr3"/>
+    <tendonvel tendon="tendon_vbwmr4"/>
+    <tendonvel tendon="tendon_vbwmr5"/>
+    <tendonvel tendon="tendon_vbwmr6"/>
+    <tendonvel tendon="tendon_vbwmr7"/>
+    <tendonvel tendon="tendon_vbwmr8"/>
+    <tendonvel tendon="tendon_vbwmr9"/>
+    <tendonvel tendon="tendon_vbwmr10"/>
+    <tendonvel tendon="tendon_vbwmr11"/>
+    <tendonvel tendon="tendon_vbwmr12"/>
+    <tendonvel tendon="tendon_vbwmr13"/>
+    <tendonvel tendon="tendon_vbwmr14"/>
+    <tendonvel tendon="tendon_vbwmr15"/>
+    <tendonvel tendon="tendon_vbwmr16"/>
+    <tendonvel tendon="tendon_vbwmr17"/>
+    <tendonvel tendon="tendon_vbwmr18"/>
+    <tendonvel tendon="tendon_vbwmr19"/>
+    <tendonvel tendon="tendon_vbwmr20"/>
+    <tendonvel tendon="tendon_vbwmr21"/>
+    <tendonvel tendon="tendon_vbwmr22"/>
+    <tendonvel tendon="tendon_vbwmr23"/>
+    <tendonvel tendon="tendon_vbwmr24"/>
+    <subtreecom body="torso1_body"/>
+    <framepos objtype="xbody" objname="torso1_body"/>
+  </sensor>
+</mujoco>
