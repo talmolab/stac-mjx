@@ -237,6 +237,8 @@ class StacCore:
 
         Args:
             tol (float): Tolerance value for ProjectedGradient 'q_solver'.
+            n_iter_q (int): Number of iterations for q optimization.
+            n_iter_m (int): Number of iterations for m optimization.
         """
         self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
 
