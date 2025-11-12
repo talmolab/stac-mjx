@@ -46,7 +46,7 @@ def root_optimization(
     """
     print(f"Root Optimization:")
 
-    if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE: #better way to handle?
+    if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE:  # better way to handle?
         root_dims = 4
     else:
         root_dims = 7
@@ -96,7 +96,7 @@ def root_optimization(
     )
 
     print(
-        f"Root optimization finished in {(time.time()-s)/60:.2f} minutes with an error of {res.state.error}"
+        f"Root optimization finished in {(time.time() - s) / 60:.2f} minutes with an error of {res.state.error}"
     )
 
     return mjx_data
@@ -169,7 +169,7 @@ def offset_optimization(
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = utils.kinematics(mjx_model, mjx_data)
 
-    print(f"Offset optimization finished in {time.time()-s} seconds")
+    print(f"Offset optimization finished in {time.time() - s} seconds")
 
     return mjx_model, mjx_data, offset_opt_param
 
@@ -266,7 +266,7 @@ def pose_optimization(
         frame_time.append(time.time() - loop_start)
         frame_error.append(error)
 
-    print(f"Pose Optimization finished in {(time.time()-s)/60.0:.2f} minutes")
+    print(f"Pose Optimization finished in {(time.time() - s) / 60.0:.2f} minutes")
     return (
         mjx_data,
         jp.array(qposes),
