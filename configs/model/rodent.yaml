@@ -8,6 +8,8 @@ LIMB_FTOL: 1.0e-06
 
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 6
+N_ITER_Q: 400
+N_ITER_M: 2000
 
 KP_NAMES: 
   - 'Snout' 
