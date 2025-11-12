@@ -29,6 +29,8 @@ class ModelConfig:
     ROOT_FTOL: float  # Tolerance for root optimization TODO: currently unused
     LIMB_FTOL: float  # Tolerance for limb optimization TODO: currently unused
     N_ITERS: int  # Number of iterations for STAC algorithm
+    N_ITER_Q: int  # Number of iterations for q optimization
+    N_ITER_M: int  # Number of iterations for m optimization
     KP_NAMES: List[str]  # Ordered list of keypoint names
     KEYPOINT_MODEL_PAIRS: Dict[str, str]  # Mapping from keypoint names to model bodies
     KEYPOINT_INITIAL_OFFSETS: Dict[str, str]  # Initial offsets for keypoints
