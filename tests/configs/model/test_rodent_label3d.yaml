@@ -164,6 +164,8 @@ LIMB_FTOL: 1.0e-06
 
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 6
+N_ITER_Q: 400
+N_ITER_M: 2000
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using _SITES_TO_REGULARIZE. 

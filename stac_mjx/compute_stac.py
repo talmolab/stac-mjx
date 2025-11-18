@@ -3,6 +3,7 @@
 import jax
 import jax.numpy as jp
 import numpy as np
+import mujoco
 from typing import Tuple, List
 import time
 
@@ -43,13 +44,19 @@ def root_optimization(
     Returns:
         mjx.Data: An updated MJX Data
     """
-    print("Root Optimization:")
+    print(f"Root Optimization:")
+
+    if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE:  # better way to handle?
+        root_dims = 4
+    else:
+        root_dims = 7
+    print(f"Optimizing first {root_dims} qposes for root")
     s = time.time()
     q0 = jp.copy(mjx_data.qpos[:])
 
     q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
-    qs_to_opt = qs_to_opt.at[:7].set(True)
+    qs_to_opt = qs_to_opt.at[:root_dims].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
 
     mjx_data, res = stac_core_obj.q_opt(
@@ -89,7 +96,7 @@ def root_optimization(
     )
 
     print(
-        f"Root optimization finished in {(time.time()-s)/60:.2f} minutes with an error of {res.state.error}"
+        f"Root optimization finished in {(time.time() - s) / 60:.2f} minutes with an error of {res.state.error}"
     )
 
     return mjx_data
@@ -162,7 +169,7 @@ def offset_optimization(
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = utils.kinematics(mjx_model, mjx_data)
 
-    print(f"Offset optimization finished in {time.time()-s} seconds")
+    print(f"Offset optimization finished in {time.time() - s} seconds")
 
     return mjx_model, mjx_data, offset_opt_param
 
@@ -259,7 +266,7 @@ def pose_optimization(
         frame_time.append(time.time() - loop_start)
         frame_error.append(error)
 
-    print(f"Pose Optimization finished in {(time.time()-s)/60.0:.2f} minutes")
+    print(f"Pose Optimization finished in {(time.time() - s) / 60.0:.2f} minutes")
     return (
         mjx_data,
         jp.array(qposes),

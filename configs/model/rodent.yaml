@@ -1,13 +1,16 @@
 MJCF_PATH: "models/rodent.xml"
 
 # Tolerance for the optimizations of the full model, limb, and root. 
-# TODO: Re-implement optimizer loops to use these tolerances
 FTOL: 1.0e-04
+
+# Note: these tolerances are currently unused.
 ROOT_FTOL: 1.0e-05
 LIMB_FTOL: 1.0e-06
 
 # Number of alternating pose and offset optimization rounds. 
 N_ITERS: 6
+N_ITER_Q: 400
+N_ITER_M: 2000
 
 KP_NAMES: 
   - 'Snout' 
