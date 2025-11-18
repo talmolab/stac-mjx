@@ -1,8 +1,9 @@
 MJCF_PATH: "models/rodent.xml"
 
 # Tolerance for the optimizations of the full model, limb, and root. 
-# TODO: Re-implement optimizer loops to use these tolerances
 FTOL: 1.0e-04
+
+# Note: these tolerances are currently unused.
 ROOT_FTOL: 1.0e-05
 LIMB_FTOL: 1.0e-06
 
