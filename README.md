@@ -1,7 +1,7 @@
 # stac-mjx :rat:
 `stac-mjx` is an implementation of the [Stac](https://ieeexplore.ieee.org/document/7030016) algorithm for inverse kinematics on markerless motion capture data. It's written in [MJX](https://mujoco.readthedocs.io/en/stable/mjx.html) for hardware acceleration . 
 
-This is part of the Virtual Neurosceince Lab (VNL) project.
+This is part of the Virtual Neuroscience Lab (VNL) project.
 
 ## Installation
 stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment, using the provided `environment.yaml`:
