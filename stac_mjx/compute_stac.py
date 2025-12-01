@@ -54,7 +54,7 @@ def root_optimization(
     s = time.time()
     q0 = jp.copy(mjx_data.qpos[:])
 
-    q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
+    q0 = q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:root_dims].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)

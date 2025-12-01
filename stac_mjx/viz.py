@@ -11,7 +11,7 @@ from typing import Union, Dict
 
 def viz_stac(
     data_path: Union[Path, str],
-    # cfg: DictConfig,
+    cfg: DictConfig,
     n_frames: int,
     save_path: Union[Path, str],
     start_frame: int = 0,

@@ -45,6 +45,7 @@ def run_stac(
     kp_data: jp.ndarray,
     kp_names: List[str],
     base_path=None,
+    save_path=None,
 ) -> tuple[str, str]:
     """High level function for running skeletal registration.
 
@@ -59,14 +60,16 @@ def run_stac(
     """
     if base_path is None:
         base_path = Path.cwd()
+    if save_path is None:
+        save_path = Path.cwd()
 
     utils.enable_xla_flags()
 
     start_time = time.time()
 
     # Getting paths
-    fit_offsets_path = base_path / cfg.stac.fit_offsets_path
-    ik_only_path = base_path / cfg.stac.ik_only_path
+    fit_offsets_path = save_path / cfg.stac.fit_offsets_path
+    ik_only_path = save_path / cfg.stac.ik_only_path
 
     xml_path = base_path / cfg.model.MJCF_PATH
 
@@ -107,7 +110,7 @@ def run_stac(
         )
 
     print("Running ik_only()")
-    cfg, fit_offsets_data = io.load_stac_data(fit_offsets_path)
+    _, fit_offsets_data = io.load_stac_data(fit_offsets_path)
 
     offsets = fit_offsets_data.offsets
 

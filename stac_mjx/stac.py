@@ -125,6 +125,7 @@ class Stac:
             "newton": mujoco.mjtSolver.mjSOL_NEWTON,
         }[cfg.stac.mujoco.solver.lower()]
 
+        self._mj_model.opt.timestep = cfg.stac.mujoco.dt
         self._mj_model.opt.iterations = cfg.stac.mujoco.iterations
         self._mj_model.opt.ls_iterations = cfg.stac.mujoco.ls_iterations
 
@@ -594,7 +595,7 @@ class Stac:
         render_mj_model = deepcopy(self._spec.compile())
 
         scene_option = mujoco.MjvOption()
-        scene_option.geomgroup[1] = 0
+        scene_option.geomgroup[1] = 1
         scene_option.geomgroup[2] = 1
 
         scene_option.sitegroup[2] = 1

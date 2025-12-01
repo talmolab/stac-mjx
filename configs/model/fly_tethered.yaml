@@ -1,5 +1,7 @@
-# MJCF_PATH: 'models/fruitfly/fruitfly_freeforce.xml'
-MJCF_PATH: 'models/fruitfly/fruitfly_force_free.xml'
+MJCF_PATH: 'fruitfly_force_fast_free.xml'
+name: 'fruitfly_force_fast_V1'
+
+N_FRAMES_PER_CLIP: 600 # 1000 environments
 
 # Tolerance for the optimizations of the full model, limb, and root. 
 # TODO: Re-implement optimizer loops to use these tolerances
@@ -115,12 +117,12 @@ KEYPOINT_INITIAL_OFFSETS:
 TRUNK_OPTIMIZATION_KEYPOINTS: {}
   
 INDIVIDUAL_PART_OPTIMIZATION: 
-  "T1L": ["coxa_T1_left", "femur_T1_left", "tibia_T1_left", "tarsus_T1_left", "claw_T1_left"]
-  "T1R": ["coxa_T1_right", "femur_T1_right", "tibia_T1_right", "tarsus_T1_right", "claw_T1_right"]
-  "T2L": ["coxa_T2_left", "femur_T2_left", "tibia_T2_left", "tarsus_T2_left", "claw_T2_left"]
-  "T2R": ["coxa_T2_right", "femur_T2_right", "tibia_T2_right", "tarsus_T2_right", "claw_T2_right"]
-  "T3L": ["coxa_T3_left", "femur_T3_left", "tibia_T3_left", "tarsus_T3_left", "claw_T3_left"]
-  "T3R": ["coxa_T3_right", "femur_T3_right", "tibia_T3_right", "tarsus_T3_right", "claw_T3_right"]
+  "T1L": ["coxa_T1_left", "femur_T1_left", "tibia_T1_left", "tarsus_T1_left", "tarsus2_T1_left", "tarsus3_T1_left", "claw_T1_left"]
+  "T1R": ["coxa_T1_right", "femur_T1_right", "tibia_T1_right", "tarsus_T1_right", "tarsus2_T1_right", "tarsus3_T1_right", "claw_T1_right"]
+  "T2L": ["coxa_T2_left", "femur_T2_left", "tibia_T2_left", "tarsus_T2_left", "tarsus2_T2_left", "tarsus3_T2_left", "claw_T2_left"]
+  "T2R": ["coxa_T2_right", "femur_T2_right", "tibia_T2_right", "tarsus_T2_right", "tarsus2_T2_right", "tarsus3_T2_right", "claw_T2_right"]
+  "T3L": ["coxa_T3_left", "femur_T3_left", "tibia_T3_left", "tarsus_T3_left", "tarsus2_T3_left", "tarsus3_T3_left", "claw_T3_left"]
+  "T3R": ["coxa_T3_right", "femur_T3_right", "tibia_T3_right", "tarsus_T3_right", "tarsus2_T3_right", "tarsus3_T3_right", "claw_T3_right"]
 
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:

@@ -1,20 +1,19 @@
-fit_offsets_path: "Fruitfly_fit.p"
-ik_only_path: "transform_mocap_fly.h5"
-# This data is unpublished, need to speak to Elliot Abe about how to obtain it.
-# A possible source is https://datadryad.org/stash/dataset/doi:10.5061/dryad.nzs7h44s4
-# See the discussion here for more info: 
-# https://github.com/talmolab/stac-mjx/pull/70#discussion_r1789355185
+fit_offsets_path: "Fruitfly_V1_fit.h5"
+ik_only_path: "Fruitfly_V1_ik.h5"
 
-data_path: "tests/data/bout_dict.h5"
-gpu: '0'
+data_path: "/data/users/eabe/biomech_model/Flybody/datasets/Tuthill_data/New_aligned_Walking_V2_avg.h5"
+save_path: "/data/users/eabe/biomech_model/Flybody/datasets/Tuthill_data/"
 
 n_fit_frames: 601
 n_frames_per_clip: 300
-
-skip_fit: True
-skip_transform: False
+skip_fit_offsets: False
+skip_ik_only: False
+infer_qvels: True 
+continuous: True
+enable_padding: True
 
 mujoco:
-  solver: "newton"
+  solver: "cg"
   iterations: 1
   ls_iterations: 4
+  dt: 0.00333
