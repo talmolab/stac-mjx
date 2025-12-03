@@ -1,0 +1,19 @@
+fit_offsets_path: "Fruitfly_fit_V1_courtship.h5"
+ik_only_path: "Fruitfly_ik_V1_courtship.h5"
+
+data_path: "/data2/users/eabe/datasets/Johnson_lab/courtship/example_bout_0.h5"
+save_path: "/data2/users/eabe/datasets/Johnson_lab/courtship/"
+
+continuous: False
+enable_padding: True
+n_fit_frames: 1200
+n_frames_per_clip: 1200
+skip_fit_offsets: False
+skip_ik_only: False
+infer_qvels: True 
+
+mujoco:
+  solver: "cg"
+  iterations: 1
+  ls_iterations: 4
+  dt: 0.00333

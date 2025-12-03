@@ -43,67 +43,67 @@ def parse_hydra_config(cfg: DictConfig):
     base_path = Path('/home/eabe/Research/MyRepos/Fly_tracking/assets/fruitfly_v1')
     import stac_mjx.io_dict_to_hdf5 as ioh5
 
-    # ##### Full fly #####
-    data_path = stac_cfg.data_path
-    # data_path = base_path / stac_cfg.data_path
-    bout_dict = ioh5.load(data_path)
-    legs_data = ['L1', 'R1', 'L2','R2', 'L3','R3']
-    joints_data = ['A','B','C','D','E']
-    sorted_kp_names = [leg + joint for leg in legs_data for joint in joints_data]
-    xpos_all = []
+    # # ##### Full fly #####
+    # data_path = stac_cfg.data_path
+    # # data_path = base_path / stac_cfg.data_path
+    # bout_dict = ioh5.load(data_path)
+    # legs_data = ['L1', 'R1', 'L2','R2', 'L3','R3']
+    # joints_data = ['A','B','C','D','E']
+    # sorted_kp_names = [leg + joint for leg in legs_data for joint in joints_data]
+    # xpos_all = []
 
-    # First pass: collect all clips and find max length
-    clips = []
-    max_length = 0
-    for nbout, key in enumerate(bout_dict.keys()):
-        bout_data = bout_dict[key]['clipped_kp']
-        bout_data = bout_data - bout_data[0:1,0:1,:]  # Center to first frame
-        # bout_data = bout_dict[key]['aligned_xpos']
-        # bout_data[:,4::5,-1] = jp.clip(bout_data[:,4::5,-1], -0.125)
-        bout_data = bout_data.reshape(bout_data.shape[0],-1)
-        clips.append(bout_data)
-        max_length = max(max_length, bout_data.shape[0])
+    # # First pass: collect all clips and find max length
+    # clips = []
+    # max_length = 0
+    # for nbout, key in enumerate(bout_dict.keys()):
+    #     bout_data = bout_dict[key]['clipped_kp']
+    #     bout_data = bout_data - bout_data[0:1,0:1,:]  # Center to first frame
+    #     # bout_data = bout_dict[key]['aligned_xpos']
+    #     # bout_data[:,4::5,-1] = jp.clip(bout_data[:,4::5,-1], -0.125)
+    #     bout_data = bout_data.reshape(bout_data.shape[0],-1)
+    #     clips.append(bout_data)
+    #     max_length = max(max_length, bout_data.shape[0])
 
-    # Check if padding is enabled (add this config option)
-    enable_padding = getattr(cfg.stac, 'enable_padding', False)
+    # # Check if padding is enabled (add this config option)
+    # enable_padding = getattr(cfg.stac, 'enable_padding', False)
 
-    if enable_padding:
-        # Update cfg with max clip length only if padding is enabled
-        print(f"Before update - cfg.stac.n_frames_per_clip: {cfg.stac.n_frames_per_clip}")
-        print(f"Max length found: {max_length}")
-        cfg.stac.n_frames_per_clip = max_length
-        print(f"After update - cfg.stac.n_frames_per_clip: {cfg.stac.n_frames_per_clip}")
+    # if enable_padding:
+    #     # Update cfg with max clip length only if padding is enabled
+    #     print(f"Before update - cfg.stac.n_frames_per_clip: {cfg.stac.n_frames_per_clip}")
+    #     print(f"Max length found: {max_length}")
+    #     cfg.stac.n_frames_per_clip = max_length
+    #     print(f"After update - cfg.stac.n_frames_per_clip: {cfg.stac.n_frames_per_clip}")
 
-        # Second pass: pad clips to max length
-        for bout_data in clips:
-            if bout_data.shape[0] < max_length:
-                # Pad with the last valid entry
-                last_frame = bout_data[-1:, :]  # Keep last frame with same shape
-                padding_needed = max_length - bout_data.shape[0]
-                padding = jp.repeat(last_frame, padding_needed, axis=0)
-                bout_data = jp.concatenate([bout_data, padding], axis=0)
-            xpos_all.append(bout_data)
-    else:
-        # No padding: just concatenate clips as-is
-        print(f"Padding disabled - using clips with original lengths")
-        print(f"Clip lengths: {[clip.shape[0] for clip in clips]}")
-        for bout_data in clips:
-            xpos_all.append(bout_data)
+    #     # Second pass: pad clips to max length
+    #     for bout_data in clips:
+    #         if bout_data.shape[0] < max_length:
+    #             # Pad with the last valid entry
+    #             last_frame = bout_data[-1:, :]  # Keep last frame with same shape
+    #             padding_needed = max_length - bout_data.shape[0]
+    #             padding = jp.repeat(last_frame, padding_needed, axis=0)
+    #             bout_data = jp.concatenate([bout_data, padding], axis=0)
+    #         xpos_all.append(bout_data)
+    # else:
+    #     # No padding: just concatenate clips as-is
+    #     print(f"Padding disabled - using clips with original lengths")
+    #     print(f"Clip lengths: {[clip.shape[0] for clip in clips]}")
+    #     for bout_data in clips:
+    #         xpos_all.append(bout_data)
 
-    kp_data = jp.concatenate(xpos_all, axis=0)
-    kp_data = kp_data * model_cfg['MOCAP_SCALE_FACTOR']
-    print(f"kp_data shape: {kp_data.shape}")
-    print(f"Updated n_frames_per_clip to: {cfg.stac.n_frames_per_clip}")
+    # kp_data = jp.concatenate(xpos_all, axis=0)
+    # kp_data = kp_data * model_cfg['MOCAP_SCALE_FACTOR']
+    # print(f"kp_data shape: {kp_data.shape}")
+    # print(f"Updated n_frames_per_clip to: {cfg.stac.n_frames_per_clip}")
     
     
     # ###### Johnson Lab Fly #####
-    # data_dict = ioh5.load(cfg.stac.data_path)
-    # kp_data = jp.array(data_dict['aligned_keypoints'].reshape(data_dict['aligned_keypoints'].shape[0],-1))
-    # kp_data = kp_data * model_cfg['MOCAP_SCALE_FACTOR']
-    # sorted_kp_names = data_dict['kp_names']
-    # print(f"kp_data shape: {kp_data.shape}")
-    # cfg.stac.n_frames_per_clip = kp_data.shape[0]
-    # print(f"Updated n_frames_per_clip to: {cfg.stac.n_frames_per_clip}")
+    data_dict = ioh5.load(cfg.stac.data_path)
+    kp_data = jp.array(data_dict['aligned_keypoints'].reshape(data_dict['aligned_keypoints'].shape[0],-1))
+    kp_data = kp_data * model_cfg['MOCAP_SCALE_FACTOR']
+    sorted_kp_names = data_dict['kp_names']
+    print(f"kp_data shape: {kp_data.shape}")
+    cfg.stac.n_frames_per_clip = kp_data.shape[0]
+    print(f"Updated n_frames_per_clip to: {cfg.stac.n_frames_per_clip}")
 
     fit_path, transform_path = stac_mjx.run_stac(
         cfg, kp_data, sorted_kp_names, base_path=base_path, save_path=save_path
@@ -111,7 +111,7 @@ def parse_hydra_config(cfg: DictConfig):
 
     # set args
     data_path = save_path / cfg.stac["ik_only_path"]
-    n_frames = 500
+    n_frames = 1200
     video_dir = Path.cwd().parent / f"videos/{cfg.model.name}.mp4"
 
     # Call mujoco_viz

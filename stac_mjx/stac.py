@@ -597,10 +597,10 @@ class Stac:
         scene_option = mujoco.MjvOption()
         scene_option.geomgroup[1] = 1
         scene_option.geomgroup[2] = 1
+        scene_option.sitegroup[:] = [1, 1, 1, 1, 1, 0]
 
-        scene_option.sitegroup[2] = 1
-
-        scene_option.sitegroup[3] = 0
+        # scene_option.sitegroup[2] = 1
+        # scene_option.sitegroup[3] = 1
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_LIGHT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = True

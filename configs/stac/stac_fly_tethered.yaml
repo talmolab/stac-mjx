@@ -6,7 +6,7 @@ save_path: "/data/users/eabe/biomech_model/Flybody/datasets/Tuthill_data/"
 
 n_fit_frames: 601
 n_frames_per_clip: 300
-skip_fit_offsets: False
+skip_fit_offsets: True
 skip_ik_only: False
 infer_qvels: True 
 continuous: True

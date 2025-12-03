@@ -1,4 +1,4 @@
-MJCF_PATH: 'fruitfly_force_fast_free.xml'
+MJCF_PATH: 'fruitfly_v1.xml'
 name: 'fruitfly_force_fast_V1'
 
 N_FRAMES_PER_CLIP: 600 # 1000 environments
