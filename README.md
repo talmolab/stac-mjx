@@ -1,11 +1,11 @@
 # stac-mjx :rat:
-`stac-mjx` is an implementation of the [Stac](https://ieeexplore.ieee.org/document/7030016) algorithm for inverse kinematics on markerless motion capture data, using MuJoCo-compatible body models. It uses [MuJoCo XLA (MJX)](https://mujoco.readthedocs.io/en/stable/mjx.html) for GPU parallelization. 
+`stac-mjx` is an implementation of the [STAC](https://ieeexplore.ieee.org/document/7030016) algorithm for inverse kinematics on markerless motion tracking data, using MuJoCo-compatible body models. It uses [MuJoCo XLA (MJX)](https://mujoco.readthedocs.io/en/stable/mjx.html) for GPU parallelization of the MuJoCo physics. 
 
-This is part of the Virtual Neuroscience Lab (VNL) project.
+This is part of [MIMIC-MJX](https://mimic-mjx.talmolab.org/).
 
 ## Installation
 
-### Option 1: `uv`
+### Option 1: `uv` (fastest)
 
 #### Prerequisites
 
@@ -36,7 +36,7 @@ git clone https://github.com/talmolab/stac-mjx.git
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
-3. Install the package with optional dependencies based on your hardware. CUDA 12, CUDA 13, and CPU-only configurations are supported:
+3. Install the package with optional dependencies based on your hardware. CUDA 12, CUDA 13, and CPU-only configurations are supported. This should take a few minutes:
 
 For CUDA 12.x:
 ```bash
