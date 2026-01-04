@@ -29,6 +29,8 @@ jobs:
 
       - name: Install deps
         run: |
+          uv venv
+          source .venv/bin/activate
           uv pip install ".[dev]"
 
       - name: Black
@@ -50,6 +52,8 @@ jobs:
 
       - name: Install deps
         run: |
+          uv venv
+          source .venv/bin/activate
           uv pip install ".[dev]"
 
       - name: Pytest
