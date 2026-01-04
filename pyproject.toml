@@ -27,7 +27,7 @@ dependencies = [
     "hydra-core",
     "imageio[ffmpeg]",
     "h5py",
-    "flax[all]",
+    "flax",
     "optax",
     "mediapy",
     "ndx_pose==0.1.1",
@@ -56,12 +56,14 @@ dev = [
     "matplotlib",
     "opencv-python",
     "mediapy",
-    "numba",
     ]
 
 [project.urls]
 Homepage = "https://github.com/talmolab/stac-mjx"
 Repository = "https://github.com/talmolab/stac-mjx"
+
+[project.scripts]
+stac-mjx = "stac_mjx.cli:main"
 
 [tool.setuptools.packages.find]
 exclude = ["site"]

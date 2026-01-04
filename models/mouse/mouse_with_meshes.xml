@@ -1,5 +1,5 @@
 <mujoco model="mouse">
-    <compiler angle="radian" meshdir="../meshes/stl"/>
+    <compiler angle="radian" meshdir="./meshes/stl"/>
     <option>
         <flag contact="disable"/>
     </option>
