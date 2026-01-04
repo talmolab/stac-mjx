@@ -1,7 +1,7 @@
 fit_offsets_path: "demo_fit_offsets.h5"
 ik_only_path: "demo_ik_only.h5"
 data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
-
+continuous: False
 n_fit_frames: 10
 skip_fit_offsets: False
 skip_ik_only: True

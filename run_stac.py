@@ -1,33 +1,7 @@
-"""CLI script for running rodent skeletal registration"""
+"""Legacy wrapper to invoke the STAC CLI."""
 
-import logging
-import hydra
-from omegaconf import DictConfig, OmegaConf
-
-import stac_mjx
-from stac_mjx import io
-
-
-def load_and_run_stac(cfg):
-    kp_data, sorted_kp_names = stac_mjx.load_mocap(cfg)
-
-    fit_path, ik_only_path = stac_mjx.run_stac(cfg, kp_data, sorted_kp_names)
-
-    logging.info(
-        f"Run complete. \n fit path: {fit_path} \n ik_only path: {ik_only_path}"
-    )
-
-
-@hydra.main(config_path="./configs", config_name="config", version_base=None)
-def hydra_entry(cfg: DictConfig):
-    logging.info(f"cfg: {OmegaConf.to_yaml(cfg)}")
-    structured_config = OmegaConf.structured(io.Config)
-    OmegaConf.merge(structured_config, cfg)
-    print("Config loaded and validated.")
-    stac_mjx.enable_xla_flags()
-
-    load_and_run_stac(cfg)
+from stac_mjx.cli import main
 
 
 if __name__ == "__main__":
-    hydra_entry()
+    raise SystemExit(main())
