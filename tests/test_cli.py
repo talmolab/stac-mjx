@@ -45,3 +45,10 @@ def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
     assert calls["xla"] == 1
     assert fit_path == "fit_path"
     assert ik_path == "ik_path"
+
+
+def test_parse_args_defaults():
+    args, overrides = cli.parse_args([])
+    assert args.config_path == "configs"
+    assert args.config_name == "config"
+    assert overrides == []
