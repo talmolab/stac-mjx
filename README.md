@@ -128,7 +128,7 @@ stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.
 
 ### In a Jupyter Notebook
 
-A set of high-level functions can be used instead of running the end-to-end CLI script if you want to separate the data preparation and config loading from running the STAC algorithm itself. For example, this allows you pass non-standardized data given to the algorithm (`stac_mjx.run_stac`) if needed (we make some assumptions on the data files used).
+A set of high-level functions can be used instead of running the end-to-end CLI script if you want to separate the data preparation and config loading from running the STAC algorithm itself. For example, this allows you to use your own custom data given to the algorithm (`stac_mjx.run_stac`) if needed (we make some assumptions on the data files used).
 
 1. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration.
 
