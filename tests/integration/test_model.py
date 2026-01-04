@@ -31,7 +31,7 @@ def rodent_model():
 
 @pytest.fixture
 def mouse_model():
-    return str(PROJECT_ROOT / "models" / "mouse_with_meshes.xml")
+    return str(PROJECT_ROOT / "models" / "mouse" / "mouse_with_meshes.xml")
 
 
 # Tests
