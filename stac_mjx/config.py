@@ -15,7 +15,7 @@ class ModelConfig:
     """Configuration for body model."""
 
     MJCF_PATH: str  # Path to model xml
-    FTOL: float  # Tolerance for optimization TODO: currently unused
+    FTOL: float  # Tolerance for optimization
     ROOT_FTOL: float  # Tolerance for root optimization TODO: currently unused
     LIMB_FTOL: float  # Tolerance for limb optimization TODO: currently unused
     N_ITERS: int  # Number of iterations for STAC algorithm
