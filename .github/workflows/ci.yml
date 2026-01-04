@@ -1,4 +1,3 @@
-# Continuous integration
 name: CI
 
 on:
@@ -8,101 +7,60 @@ on:
       - "stac_mjx/**"
       - "tests/**"
       - ".github/workflows/ci.yml"
-      - "environment.yml"
+      - "pyproject.toml"
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "stac_mjx/**"
       - "tests/**"
       - ".github/workflows/ci.yml"
-      - "environment.yml"
+      - "pyproject.toml"
 
 jobs:
-  # Lint with black and docstring check with pydocstyle
   lint:
-    name: Lint
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v3
         with:
           python-version: "3.11"
+          enable-cache: true
 
-      - name: Set up uv
-        uses: astral-sh/setup-uv@v3
-
-      - name: Install dependencies (uv)
+      - name: Install deps
         run: |
-          uv pip install --system --editable ".[dev]"
+          uv pip install --system ".[dev]"
 
-      - name: Run Black
-        run: |
-          black --check stac_mjx tests
+      - name: Black
+        run: black --check stac_mjx tests
 
-      - name: Run pydocstyle
-        run: |
-          pydocstyle --convention=google stac_mjx/
+      - name: Pydocstyle
+        run: pydocstyle --convention=google stac_mjx/
 
-  # Tests with pytest
   tests:
+    runs-on: ubuntu-latest
     timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"]
-        python: ["3.11"]
-
-    name: Tests (${{ matrix.os }}, Python ${{ matrix.python }})
-    runs-on: ${{ matrix.os }}
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Conda
-        uses: conda-incubator/setup-miniconda@v3
+      - uses: astral-sh/setup-uv@v3
         with:
-          miniforge-version: latest
-          conda-solver: "libmamba"
-          environment-file: environment.yml
-          activate-environment: stac-mjx-env
-          python-version: ${{ matrix.python }}
+          python-version: "3.11"
+          enable-cache: true
 
-      - name: Set up uv
-        shell: bash -l {0}
+      - name: Install deps
         run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+          uv pip install --system ".[dev]"
 
-      - name: Install package (uv)
-        shell: bash -l {0}
-        run: |
-          uv pip install --system --editable ".[dev]"
-
-      - name: Print environment info
-        shell: bash -l {0}
-        run: |
-          which python
-          conda info
-          conda list
-          pip freeze
-
-      - name: Test with pytest (with coverage)
-        shell: bash -l {0}
+      - name: Pytest
         run: |
           pytest --cov=stac_mjx --cov-report=xml --durations=-1 -W ignore::PendingDeprecationWarning tests/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
-          fail_ci_if_error: true
-          verbose: false
           token: ${{ secrets.CODECOV_TOKEN }}
 
-      # Smoke test
-      - name: Smoke Test
-        shell: bash -l {0}
-        run: python run_stac.py stac=stac_synth_data model=synth_data
+      - name: Smoke test
+        run: |
+          python run_stac.py stac=stac_synth_data model=synth_data
