@@ -5,13 +5,12 @@ from __future__ import annotations
 import argparse
 import logging
 from pathlib import Path
-from typing import Iterable, Sequence, Tuple
+from typing import Sequence, Tuple
 
-from hydra import compose, initialize_config_dir
 from omegaconf import DictConfig, OmegaConf
 
 import stac_mjx
-from stac_mjx import io
+from stac_mjx.config import compose_config
 
 
 def parse_args(
@@ -50,24 +49,6 @@ def parse_args(
     args, overrides = parser.parse_known_args(argv)
     return args, overrides
 
-
-def compose_config(
-    config_path: Path | str,
-    config_name: str,
-    overrides: Iterable[str] | None = None,
-) -> DictConfig:
-    """Load and validate the Hydra configuration."""
-    overrides = list(overrides or [])
-    overrides.extend(["hydra/job_logging=disabled", "hydra/hydra_logging=disabled"])
-
-    config_dir = Path(config_path).resolve()
-    with initialize_config_dir(config_dir=str(config_dir), version_base=None):
-        cfg = compose(config_name=config_name, overrides=overrides)
-
-    structured_config = OmegaConf.structured(io.Config)
-    merged_cfg = OmegaConf.merge(structured_config, cfg)
-    logging.debug("Config loaded and validated.")
-    return merged_cfg
 
 
 def run_pipeline(

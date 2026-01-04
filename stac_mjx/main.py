@@ -3,22 +3,20 @@
 import jax
 from jax import numpy as jp
 import numpy as np
-import pickle
 import time
-import logging
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import DictConfig
 from stac_mjx import io, utils
+from stac_mjx.config import compose_config
 from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
-import hydra
 from functools import partial
 
 
 def load_configs(
     config_dir: Union[Path, str], config_name: str = "config"
 ) -> DictConfig:
-    """Initializes configs with hydra.
+    """Load and validate configs from a Hydra config directory.
 
     Args:
         config_dir ([Path, str]): Absolute path to config directory.
@@ -26,18 +24,9 @@ def load_configs(
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-    # Initialize Hydra and set the config path
-    with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
-        # Compose the configuration by specifying the config name
-        cfg = hydra.compose(
-            config_name=config_name,
-            overrides=["hydra/job_logging=disabled", "hydra/hydra_logging=disabled"],
-        )
-        # Convert to structured config
-        structured_config = OmegaConf.structured(io.Config)
-        OmegaConf.merge(structured_config, cfg)
-        print("Config loaded and validated.")
-        return cfg
+    cfg = compose_config(config_dir, config_name=config_name)
+    print("Config loaded and validated.")
+    return cfg
 
 
 def run_stac(
@@ -81,7 +70,7 @@ def run_stac(
     vmap_compute_velocity_fn = jax.vmap(compute_velocity_fn)
 
     # Run fit_offsets if not skipping
-    if cfg.stac.skip_fit_offsets != 1:
+    if not cfg.stac.skip_fit_offsets:
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
@@ -96,9 +85,9 @@ def run_stac(
         )
 
     # Stop here if not doing ik only phase
-    if cfg.stac.skip_ik_only == 1:
+    if cfg.stac.skip_ik_only:
         print(
-            "Skipping IK-only phase. To change this behavior, set cfg.stac.skip_ik_only to 0."
+            "Skipping IK-only phase. To change this behavior, set cfg.stac.skip_ik_only to False."
         )
         return fit_offsets_path, None
     elif kp_data.shape[0] % cfg.stac.n_frames_per_clip != 0:

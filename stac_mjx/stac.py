@@ -13,7 +13,6 @@ from stac_mjx import utils, rescale, compute_stac, io, stac_core
 from omegaconf import DictConfig
 from typing import List, Union
 from pathlib import Path
-from copy import deepcopy
 import imageio
 from tqdm import tqdm
 
@@ -87,14 +86,14 @@ class Stac:
         """
         self.cfg = cfg
         self._kp_names = kp_names
-        self._spec = mujoco.MjSpec.from_file(str(xml_path))
+        self._xml_path = Path(xml_path)
         self.stac_core_obj = None
 
         (
             self._mj_model,
             self._body_site_idxs,
             self._is_regularized,
-        ) = self._create_body_sites(self._spec)
+        ) = self._init_body_sites()
 
         self._body_names = [
             self._mj_model.body(i).name for i in range(self._mj_model.nbody)
@@ -162,16 +161,9 @@ class Stac:
 
         return indiv_parts
 
-    def _create_body_sites(self, spec: mujoco.MjSpec):
-        """Create body site elements using dmcontrol mjcf for each keypoint.
-
-        Args:
-            spec (mujoco.MjSpec):
-
-        Returns:
-            mujoco.Model, list of marker site indices, boolean mask for offset
-            regularization, lists for part names and body names.
-        """
+    def _build_body_spec(self) -> mujoco.MjSpec:
+        """Create a fresh spec with body sites for keypoints."""
+        spec = mujoco.MjSpec.from_file(str(self._xml_path))
         for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
             parent = spec.body(v)
             pos = self.cfg.model.KEYPOINT_INITIAL_OFFSETS[key]
@@ -187,8 +179,12 @@ class Stac:
                 group=3,
             )
 
-        rescale.dm_scale_spec(spec, self.cfg.model.SCALE_FACTOR)
-        model = self._spec.compile()
+        return rescale.dm_scale_spec(spec, self.cfg.model.SCALE_FACTOR)
+
+    def _init_body_sites(self):
+        """Compile the fitting model and create site indices and masks."""
+        spec = self._build_body_spec()
+        model = spec.compile()
 
         site_index_map = {
             site_name: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
@@ -204,11 +200,7 @@ class Stac:
                 is_regularized.append(jp.array([0.0, 0.0, 0.0]))
         is_regularized = jp.stack(is_regularized).flatten()
         body_site_idxs = jp.array(list(site_index_map.values()))
-        return (
-            model,
-            body_site_idxs,
-            is_regularized,
-        )
+        return model, body_site_idxs, is_regularized
 
     def _get_error_stats(self, errors: list):
         """Compute error stats."""
@@ -336,8 +328,9 @@ class Stac:
 
         Args:
             mj_model (mujoco.Model): Physics model.
-            kp_data (jp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
-                Keypoint order must match the order in the skeleton file.
+            kp_data (jp.ndarray): Keypoint data in meters with shape
+                (n_frames, 3 * n_keypoints). Keypoint order must match the
+                order in the skeleton file.
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
@@ -470,16 +463,12 @@ class Stac:
             kp_names=self._kp_names,
         )
 
-    def _create_render_sites(self):
-        """Create sites for keypoints (used for rendering only).
-
-        Returns:
-            (mujoco.Model, List, List): Mj_model for rendering, list of keypoint site indices, and list of body site indices
-        """
-        keypoint_sites = []
+    def _build_render_model(self, offsets: jp.ndarray, show_marker_error: bool):
+        """Create a rendering model with keypoint and marker sites."""
+        render_spec = self._build_body_spec()
         keypoint_site_names = []
         # set up keypoint rendering by adding the kp sites to the root body
-        for id, name in enumerate(self.cfg.model.KEYPOINT_MODEL_PAIRS):
+        for name in self.cfg.model.KEYPOINT_MODEL_PAIRS:
             start = (np.random.rand(3) - 0.5) * 0.001
             rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[name]
 
@@ -487,32 +476,46 @@ class Stac:
                 rgba = [float(c) for c in rgba.split(" ")]
             site_name = name + "_kp"
             keypoint_site_names.append(site_name)
-            site = self._spec.worldbody.add_site(
+            render_spec.worldbody.add_site(
                 name=site_name,
                 size=[0.005, 0.005, 0.005],
                 rgba=rgba,
                 pos=start,
                 group=2,
             )
-            keypoint_sites.append(site)
 
-        model = self._spec.compile()
+        # Add body sites for new offsets
+        offsets = np.asarray(offsets).reshape((-1, 3))
+        for (key, v), pos in zip(
+            self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets
+        ):
+            parent = render_spec.body(v)
+            parent.add_site(
+                name=key + "_new",
+                size=[0.005, 0.005, 0.005],
+                rgba=[0, 0, 0, 1],
+                pos=pos,
+                group=2,
+            )
 
-        # Combine the two lists of site names and create the index map
-        site_index_map = {
-            site.name: i
-            for i, site in enumerate(self._spec.sites)
-            if site.name
-            in list(self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()) + keypoint_site_names
-        }
-        body_site_idxs = [
-            site_index_map[n] for n in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
+        # Tendons from new marker sites to kp
+        if show_marker_error:
+            for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
+                tendon = render_spec.add_tendon(
+                    name=key + "-" + v,
+                    width="0.001",
+                    rgba=[255, 0, 0, 1],  # Red
+                    limited=False,
+                )
+                tendon.wrap_site(key + "_kp")
+                tendon.wrap_site(key + "_new")
+
+        render_mj_model = render_spec.compile()
+        keypoint_site_idxs = [
+            mujoco.mj_name2id(render_mj_model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+            for site_name in keypoint_site_names
         ]
-        keypoint_site_idxs = [site_index_map[n] for n in keypoint_site_names]
-
-        self._body_site_idxs = body_site_idxs
-        self._keypoint_site_idxs = keypoint_site_idxs
-        return (deepcopy(model), body_site_idxs, keypoint_site_idxs)
+        return render_mj_model, keypoint_site_idxs
 
     def render(
         self,
@@ -562,36 +565,9 @@ class Stac:
                 f"start_frame + n_frames ({start_frame} + {n_frames}) must be less than the length of given qposes and kp_data ({kp_data.shape[0]})"
             )
 
-        render_mj_model, body_site_idxs, keypoint_site_idxs = (
-            self._create_render_sites()
+        render_mj_model, keypoint_site_idxs = self._build_render_model(
+            offsets, show_marker_error
         )
-
-        # Add body sites for new offsets
-        for (key, v), pos in zip(
-            self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets.reshape((-1, 3))
-        ):
-            parent = self._spec.body(v)
-            parent.add_site(
-                name=key + "_new",
-                size=[0.005, 0.005, 0.005],
-                rgba=[0, 0, 0, 1],
-                pos=pos,
-                group=2,
-            )
-
-        # Tendons from new marker sites to kp
-        if show_marker_error:
-            for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
-                tendon = self._spec.add_tendon(
-                    name=key + "-" + v,
-                    width="0.001",
-                    rgba=[255, 0, 0, 1],  # Red
-                    limited=False,
-                )
-                tendon.wrap_site(key + "_kp")
-                tendon.wrap_site(key + "_new")
-
-        render_mj_model = deepcopy(self._spec.compile())
 
         scene_option = mujoco.MjvOption()
         scene_option.geomgroup[1] = 0

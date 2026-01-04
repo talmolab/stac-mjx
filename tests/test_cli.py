@@ -9,10 +9,11 @@ sys.modules.setdefault(
 )
 
 from stac_mjx import cli
+from stac_mjx.config import compose_config
 
 
 def test_compose_config_loads_and_applies_overrides():
-    cfg = cli.compose_config("tests/configs", "config", ["stac.n_fit_frames=5"])
+    cfg = compose_config("tests/configs", "config", ["stac.n_fit_frames=5"])
 
     assert cfg.stac.n_fit_frames == 5
     assert cfg.model.MJCF_PATH.endswith("models/rodent.xml")
@@ -21,7 +22,7 @@ def test_compose_config_loads_and_applies_overrides():
 
 
 def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
-    cfg = cli.compose_config("tests/configs", "config", [])
+    cfg = compose_config("tests/configs", "config", [])
 
     calls = {"xla": 0}
 
