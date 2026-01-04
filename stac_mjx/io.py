@@ -1,11 +1,8 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
-import os
 import numpy as np
 from jax import numpy as jnp
-import yaml
 import scipy.io as spio
-import pickle
 from typing import Union
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
@@ -16,7 +13,7 @@ from omegaconf import OmegaConf
 from dataclasses import dataclass, asdict, field
 from typing import List
 
-from stac_mjx.config import Config, ModelConfig, MujocoConfig, StacConfig  # re-export
+from stac_mjx.config import Config
 
 
 @dataclass
@@ -43,7 +40,7 @@ class StacData:
         return asdict(self)
 
 
-def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
+def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
     """Load mocap data based on file type.
 
     Loads mocap file based on filetype, and returns the data flattened

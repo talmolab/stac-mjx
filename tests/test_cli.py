@@ -32,7 +32,7 @@ def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
         lambda: calls.__setitem__("xla", calls["xla"] + 1),
     )
     monkeypatch.setattr(
-        cli.stac_mjx, "load_mocap", lambda cfg, base_path=None: ("kp", "names")
+        cli.stac_mjx, "load_data", lambda cfg, base_path=None: ("kp", "names")
     )
     monkeypatch.setattr(
         cli.stac_mjx,

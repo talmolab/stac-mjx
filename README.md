@@ -128,7 +128,7 @@ stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.
 
 ### In a Jupyter Notebook
 
-A set of high-level functions are surfaced if you want to separate the data preparation and config loading from the STAC algorithm itself. This allows you to modify the data given to the algorithm (`stac_mjx.run_stac`) if needed. Below is the most basic usage.
+A set of high-level functions are surfaced if you want to separate the data preparation and config loading from the STAC algorithm itself. For example, this allows you to modify the data given to the algorithm (`stac_mjx.run_stac`) if needed.
 
 1. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration.
 
@@ -144,7 +144,7 @@ A set of high-level functions are surfaced if you want to separate the data prep
    cfg = stac_mjx.load_configs(base_path / "configs")
 
    # Load data
-   kp_data, sorted_kp_names = stac_mjx.load_mocap(cfg, base_path)
+   kp_data, sorted_kp_names = stac_mjx.load_data(cfg, base_path)
 
    # Run stac
    fit_path, ik_only_path = stac_mjx.run_stac(
