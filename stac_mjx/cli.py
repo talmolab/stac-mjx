@@ -14,7 +14,9 @@ import stac_mjx
 from stac_mjx import io
 
 
-def parse_args(argv: Sequence[str] | None = None) -> Tuple[argparse.Namespace, list[str]]:
+def parse_args(
+    argv: Sequence[str] | None = None,
+) -> Tuple[argparse.Namespace, list[str]]:
     """Parse CLI arguments and return the args plus Hydra override list."""
     parser = argparse.ArgumentParser(
         description="Run STAC-MJX inverse kinematics from the command line."
@@ -78,9 +80,7 @@ def run_pipeline(
         stac_mjx.enable_xla_flags()
 
     kp_data, sorted_kp_names = stac_mjx.load_mocap(cfg, base_path=base_path)
-    return stac_mjx.run_stac(
-        cfg, kp_data, sorted_kp_names, base_path=base_path
-    )
+    return stac_mjx.run_stac(cfg, kp_data, sorted_kp_names, base_path=base_path)
 
 
 def main(argv: Sequence[str] | None = None) -> int:

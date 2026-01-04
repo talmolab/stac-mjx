@@ -31,7 +31,9 @@ jobs:
             uv.toml
 
       - name: Install deps
-        run: uv sync --dev
+        run: |
+          uv venv --python 3.11
+          uv pip install ".[dev]"
 
       - name: Black
         run: uv run black --check stac_mjx tests
@@ -54,7 +56,9 @@ jobs:
             uv.toml
 
       - name: Install deps
-        run: uv sync --dev
+        run: |
+          uv venv --python 3.11
+          uv pip install ".[dev]"
 
       - name: Pytest
         run: uv run pytest --cov=stac_mjx --cov-report=xml --durations=-1 -W ignore::PendingDeprecationWarning tests/
