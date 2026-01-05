@@ -29,7 +29,7 @@ def test_load_nwb(config, mocap_nwb):
     Test loading data from .nwb file.
     """
     cfg = load_config_with_overrides(config, stac_data_path_override=mocap_nwb)
-    data, sorted_kp_names = io.load_mocap(cfg)
+    data, sorted_kp_names = io.load_data(cfg)
     assert data.shape == (1000, 69)
     assert len(sorted_kp_names) == 23
 
@@ -39,7 +39,7 @@ def test_load_mat_no_label3d(config, mocap_mat):
     Test loading data from .mat file.
     """
     cfg = load_config_with_overrides(config, stac_data_path_override=mocap_mat)
-    data, sorted_kp_names = io.load_mocap(cfg)
+    data, sorted_kp_names = io.load_data(cfg)
     assert data.shape == (1000, 69)
     assert len(sorted_kp_names) == 23
 
@@ -51,7 +51,7 @@ def test_load_mat_w_label3d(config, rodent_config_label3d, mocap_mat):
     cfg = load_config_with_overrides(
         config, stac_data_path_override=mocap_mat, model_override=rodent_config_label3d
     )
-    data, sorted_kp_names = io.load_mocap(cfg)
+    data, sorted_kp_names = io.load_data(cfg)
     assert data.shape == (1000, 69)
     assert len(sorted_kp_names) == 23
 
@@ -64,7 +64,7 @@ def test_load_mat_no_kp_names(config, rodent_config_no_kp_names, mocap_mat):
     )
 
     with pytest.raises(ValueError):
-        data, sorted_kp_names = io.load_mocap(cfg)
+        data, sorted_kp_names = io.load_data(cfg)
 
 
 def test_load_mat_less_kp_names(config, rodent_config_less_kp_names, mocap_mat):
@@ -75,7 +75,7 @@ def test_load_mat_less_kp_names(config, rodent_config_less_kp_names, mocap_mat):
     )
 
     with pytest.raises(ValueError):
-        data, sorted_kp_names = io.load_mocap(cfg)
+        data, sorted_kp_names = io.load_data(cfg)
 
 
 def test_load_h5(config, mouse_config, mocap_h5):
@@ -89,7 +89,7 @@ def test_load_h5(config, mouse_config, mocap_h5):
         model_override=mouse_config,
     )
 
-    data, sorted_kp_names = io.load_mocap(cfg)
+    data, sorted_kp_names = io.load_data(cfg)
 
     assert data.shape == (3600, 102)
     assert len(sorted_kp_names) == 34

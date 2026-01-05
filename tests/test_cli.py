@@ -9,10 +9,11 @@ sys.modules.setdefault(
 )
 
 from stac_mjx import cli
+from stac_mjx.config import compose_config
 
 
 def test_compose_config_loads_and_applies_overrides():
-    cfg = cli.compose_config("tests/configs", "config", ["stac.n_fit_frames=5"])
+    cfg = compose_config("tests/configs", "config", ["stac.n_fit_frames=5"])
 
     assert cfg.stac.n_fit_frames == 5
     assert cfg.model.MJCF_PATH.endswith("models/rodent.xml")
@@ -21,7 +22,7 @@ def test_compose_config_loads_and_applies_overrides():
 
 
 def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
-    cfg = cli.compose_config("tests/configs", "config", [])
+    cfg = compose_config("tests/configs", "config", [])
 
     calls = {"xla": 0}
 
@@ -31,7 +32,7 @@ def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
         lambda: calls.__setitem__("xla", calls["xla"] + 1),
     )
     monkeypatch.setattr(
-        cli.stac_mjx, "load_mocap", lambda cfg, base_path=None: ("kp", "names")
+        cli.stac_mjx, "load_data", lambda cfg, base_path=None: ("kp", "names")
     )
     monkeypatch.setattr(
         cli.stac_mjx,
@@ -44,3 +45,10 @@ def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
     assert calls["xla"] == 1
     assert fit_path == "fit_path"
     assert ik_path == "ik_path"
+
+
+def test_parse_args_defaults():
+    args, overrides = cli.parse_args([])
+    assert args.config_path == "configs"
+    assert args.config_name == "config"
+    assert overrides == []

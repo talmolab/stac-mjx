@@ -51,7 +51,7 @@ def test_stac_core_compilations(TEST_DIR, PROJECT_DIR):
     assert stac_mjx.stac_core._m_opt._cache_size() == 0
     assert stac_mjx.stac_core._q_opt._cache_size() == 0
 
-    kp_data, sorted_kp_names = stac_mjx.load_mocap(config, base_path=PROJECT_DIR)
+    kp_data, sorted_kp_names = stac_mjx.load_data(config, base_path=PROJECT_DIR)
     # _, _ = stac_mjx.run_stac(config, kp_data, sorted_kp_names, base_path=PROJECT_DIR)
 
     # assert stac_mjx.stac_core.m_loss._cache_size() == 0

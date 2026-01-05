@@ -50,7 +50,7 @@ def root_optimization(
         root_dims = 4
     else:
         root_dims = 7
-    print(f"Optimizing first {root_dims} qposes for root")
+    print(f"Optimizing first {root_dims} qposes for root optimization")
     s = time.time()
     q0 = jp.copy(mjx_data.qpos[:])
 
