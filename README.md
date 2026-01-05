@@ -100,7 +100,7 @@ Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. 
 
 ## Usage
 
-There a few different ways to run stac-mjx. A full demo of the functionality is found at `demos/rodent_demo.ipynb`.
+There a couple recommended ways to run stac-mjx: basic usage through a command line interface, and writing a custom script using the high-level API. 
 
 First, configure your body model and STAC parameters in `config/`:
    - `configs/config.yaml` selects defaults for `model` and `stac` (you can copy/rename this for custom presets).
@@ -108,7 +108,7 @@ First, configure your body model and STAC parameters in `config/`:
    - `configs/stac/*.yaml` sets data paths (e.g., `stac.data_path`), clip sizes, fit/IK output paths, and solver settings.
    - Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
 
-### Using Command Line Interface
+### Command Line Interface
 If no customization is needed, you can run the full pipeline from the CLI:
 
 ```bash
@@ -126,9 +126,9 @@ Hydra overrides can be appended after the CLI flags. For example, to change the 
 stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.nwb stac.n_fit_frames=100
 ```
 
-### In a Jupyter Notebook
+### Custom Python Script/Jupyter Notebook
 
-You can use a set of high-level functions instead of the end-to-end CLI script to decouple data preparation and configuration loading from execution of the STAC algorithm. This makes it easy to load custom data without adhering to the file structure or content assumptions imposed by the CLI. The following is the full CLI script run as a sequence of function calls.
+You can use a set of high-level functions instead of the end-to-end CLI script to decouple data preparation and configuration loading from execution of the STAC algorithm. This makes it easy to load custom data without adhering to the file structure or content assumptions imposed by the CLI. The following is the full CLI script run as a sequence of function calls. Try the [demo notebook](https://github.com/talmolab/stac-mjx/blob/main/demos/rodent_demo.ipynb) to see it in action!
 
 1. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration.
 
