@@ -103,11 +103,11 @@
       <general gainprm="0.2"/>
     </default>
     <default class="ankle">
-      <joint range="-0.1396263401595464 1.396263401595464" damping="0.003"/>
+      <joint range="-0.1 2.0" damping="0.003"/>
       <general gainprm="0.2"/>
     </default>
     <default class="toe">
-      <joint range="0 0.8726646259971648" damping="0.001"/>
+      <joint range="-0.7 0.87" damping="0.001"/>
       <general gainprm="0.025"/>
     </default>
     <default class="scapula">
