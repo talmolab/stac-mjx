@@ -50,7 +50,6 @@ def parse_args(
     return args, overrides
 
 
-
 def run_pipeline(
     cfg: DictConfig,
     base_path: Path,

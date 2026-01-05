@@ -486,9 +486,7 @@ class Stac:
 
         # Add body sites for new offsets
         offsets = np.asarray(offsets).reshape((-1, 3))
-        for (key, v), pos in zip(
-            self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets
-        ):
+        for (key, v), pos in zip(self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets):
             parent = render_spec.body(v)
             parent.add_site(
                 name=key + "_new",

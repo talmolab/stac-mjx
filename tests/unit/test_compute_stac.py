@@ -48,16 +48,18 @@ class FakeStacCore:
 
 
 def test_root_optimization_calls_q_opt_twice(monkeypatch):
-    monkeypatch.setattr(compute_stac, "mujoco", types.SimpleNamespace(
-        mjtJoint=types.SimpleNamespace(mjJNT_SLIDE=1, mjJNT_FREE=0)
-    ))
+    monkeypatch.setattr(
+        compute_stac,
+        "mujoco",
+        types.SimpleNamespace(
+            mjtJoint=types.SimpleNamespace(mjJNT_SLIDE=1, mjJNT_FREE=0)
+        ),
+    )
     monkeypatch.setattr(utils, "kinematics", lambda model, data: data)
     monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
 
     stac_core = FakeStacCore()
-    mjx_model = FakeMjxModel(
-        nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3))
-    )
+    mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=jp.zeros(7))
     kp_data = jp.zeros((1, 6))
     lb = jp.zeros(7)
@@ -91,9 +93,7 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
     monkeypatch.setattr(utils, "set_site_pos", set_site_pos)
 
     stac_core = FakeStacCore()
-    mjx_model = FakeMjxModel(
-        nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3))
-    )
+    mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=jp.zeros(7))
     kp_data = jp.zeros((4, 6))
     offsets = jp.zeros((2, 3))
@@ -122,9 +122,7 @@ def test_pose_optimization_runs_all_frames(monkeypatch):
     monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
 
     stac_core = FakeStacCore()
-    mjx_model = FakeMjxModel(
-        nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3))
-    )
+    mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=jp.zeros(7))
     kp_data = jp.zeros((2, 6))
 

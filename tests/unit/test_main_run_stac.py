@@ -76,9 +76,7 @@ def test_run_stac_ik_only_path(monkeypatch):
 
     monkeypatch.setattr(main, "Stac", DummyStac)
     monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
-    monkeypatch.setattr(
-        main.io, "load_stac_data", lambda path: (cfg, DummyData())
-    )
+    monkeypatch.setattr(main.io, "load_stac_data", lambda path: (cfg, DummyData()))
 
     calls = {"save": 0}
     monkeypatch.setattr(
