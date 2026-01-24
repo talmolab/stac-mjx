@@ -40,10 +40,10 @@ def parse_hydra_config(cfg: DictConfig):
     save_path = Path(cfg.stac.save_path)
     # save_path = Path('/data/users/eabe/biomech_model/Flybody/datasets/Johnsonlab/')
     # base_path = Path.cwd().parent
-    base_path = Path('/home/eabe/Research/MyRepos/Fly_tracking/assets/fruitfly_v1')
+    base_path = Path(cfg.stac.xml_dir)
     import stac_mjx.io_dict_to_hdf5 as ioh5
 
-    # # ##### Full fly #####
+    # ##### Full fly #####
     # data_path = stac_cfg.data_path
     # # data_path = base_path / stac_cfg.data_path
     # bout_dict = ioh5.load(data_path)
@@ -111,7 +111,7 @@ def parse_hydra_config(cfg: DictConfig):
 
     # set args
     data_path = save_path / cfg.stac["ik_only_path"]
-    n_frames = 1200
+    n_frames = 1000
     video_dir = Path.cwd().parent / f"videos/{cfg.model.name}.mp4"
 
     # Call mujoco_viz

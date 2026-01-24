@@ -1,7 +1,5 @@
-# MJCF_PATH: 'models/fruitfly_v2/fruitfly_v2_fast_simple.xml'
-# MJCF_PATH: 'fruitfly_v2_fast_simple.xml'
-MJCF_PATH: 'fruitfly_force_fast_free.xml'
-name: 'fruitfly_force_fast_V1_free'
+MJCF_PATH: 'fruitfly_v1_free.xml'
+name: 'fruitfly_V1_free_walking'
 
 
 N_FRAMES_PER_CLIP: 500 # 1000 environments
@@ -19,125 +17,161 @@ N_ITER_M: 2000
 
 KP_NAMES: 
   Scutellum
+  WingL_base
+  WingR_base
   Antenna_Base
   EyeL
   EyeR
+  WingL_V12
+  WingL_V13
+  WingR_V12
+  WingR_V13
   Abd_A4
   Abd_tip
   T1L_ThxCx
   T1L_Tro
   T1L_FeTi
   T1L_TiTa
+  T1L_TaT1
   T1L_TaT3
   T1L_TaTip
   T1R_ThxCx
   T1R_Tro
   T1R_FeTi
   T1R_TiTa
+  T1R_TaT1
   T1R_TaT3
   T1R_TaTip
   T2L_Tro
   T2L_FeTi
   T2L_TiTa
+  T2L_TaT1
   T2L_TaT3
   T2L_TaTip
   T2R_Tro
   T2R_FeTi
   T2R_TiTa
+  T2R_TaT1
   T2R_TaT3
   T2R_TaTip
   T3L_Tro
   T3L_FeTi
   T3L_TiTa
+  T3L_TaT1
   T3L_TaT3
   T3L_TaTip
   T3R_Tro
   T3R_FeTi
   T3R_TiTa
+  T3R_TaT1
   T3R_TaT3
   T3R_TaTip
 
 # The model sites used to register the keypoints.
 KEYPOINT_MODEL_PAIRS:
   Scutellum: thorax
+  WingL_base: thorax
+  WingR_base: thorax
   Antenna_Base: head
   EyeL: head
   EyeR: head
-  Abd_A4: abdomen
+  WingL_V12: wing_left
+  WingL_V13: wing_left
+  WingR_V12: wing_right
+  WingR_V13: wing_right
+  Abd_A4: abdomen_4
   Abd_tip: abdomen_7
   T1L_ThxCx: coxa_T1_left
   T1L_Tro: femur_T1_left
   T1L_FeTi: tibia_T1_left
   T1L_TiTa: tarsus_T1_left
+  T1L_TaT1: tarsus2_T1_left
   T1L_TaT3: tarsus3_T1_left
   T1L_TaTip: claw_T1_left
   T1R_ThxCx: coxa_T1_right
   T1R_Tro: femur_T1_right
   T1R_FeTi: tibia_T1_right
   T1R_TiTa: tarsus_T1_right
+  T1R_TaT1: tarsus2_T1_right
   T1R_TaT3: tarsus3_T1_right
   T1R_TaTip: claw_T1_right
   T2L_Tro: femur_T2_left
   T2L_FeTi: tibia_T2_left
   T2L_TiTa: tarsus_T2_left
+  T2L_TaT1: tarsus2_T2_left
   T2L_TaT3: tarsus3_T2_left
   T2L_TaTip: claw_T2_left
   T2R_Tro: femur_T2_right
   T2R_FeTi: tibia_T2_right
   T2R_TiTa: tarsus_T2_right
+  T2R_TaT1: tarsus2_T2_right
   T2R_TaT3: tarsus3_T2_right
   T2R_TaTip: claw_T2_right
   T3L_Tro: femur_T3_left
   T3L_FeTi: tibia_T3_left
   T3L_TiTa: tarsus_T3_left
+  T3L_TaT1: tarsus2_T3_left
   T3L_TaT3: tarsus3_T3_left
   T3L_TaTip: claw_T3_left
   T3R_Tro: femur_T3_right
   T3R_FeTi: tibia_T3_right
   T3R_TiTa: tarsus_T3_right
+  T3R_TaT1: tarsus2_T3_right
   T3R_TaT3: tarsus3_T3_right
   T3R_TaTip: claw_T3_right
 
 # The initial offsets for each keypoint in meters.
 KEYPOINT_INITIAL_OFFSETS:
-  Scutellum: 0. 0. 0. 
-  Antenna_Base: 0. 0. 0. 
-  EyeL: 0. 0. 0. 
-  EyeR: 0. 0. 0. 
-  Abd_A4: 0. 0. 0.
-  Abd_tip: 0. 0. 0.
+  Scutellum: -0.0475 0 0.0425
+  WingL_base: -0.00694 0.0432 0.0091
+  WingR_base: -0.00694 -0.0432 0.0091
+  Antenna_Base: 0 0.035 0.01
+  EyeL: -0.03 0.0025 0.025
+  EyeR: 0.03 0.0025 0.025
+  WingL_V12: -0.005 -0.215 0.005
+  WingL_V13: 0.02 -0.26 -0.02
+  WingR_V12: 0.005 0.215 -0.005
+  WingR_V13: -0.02 0.26 0.02
+  Abd_A4: 0 0.015 0.025
+  Abd_tip: 0 0.035 0
   T1L_ThxCx: 0. 0. 0.
   T1L_Tro: 0. 0. 0.
   T1L_FeTi: 0. 0. 0.
   T1L_TiTa: 0. 0. 0.
+  T1L_TaT1: 0. 0. 0.
   T1L_TaT3: 0. 0. 0.
-  T1L_TaTip: 0. 0. 0.
-  T2L_Tro: 0. 0. 0.
-  T2L_FeTi: 0. 0. 0.
-  T2L_TiTa: 0. 0. 0.
-  T2L_TaT3: 0. 0. 0.
-  T2L_TaTip: 0. 0. 0.
-  T3L_Tro: 0. 0. 0.
-  T3L_FeTi: 0. 0. 0.
-  T3L_TiTa: 0. 0. 0.
-  T3L_TaT3: 0. 0. 0.
-  T3L_TaTip: 0. 0. 0.
+  T1L_TaTip: 0 0.005 0
   T1R_ThxCx: 0. 0. 0.
   T1R_Tro: 0. 0. 0.
   T1R_FeTi: 0. 0. 0.
   T1R_TiTa: 0. 0. 0.
-  T1R_TaT3: 0. 0. 0.
+  T1R_TaT1: 0. 0. 0.
+  T1R_TaT3: 0 0.005 0
   T1R_TaTip: 0. 0. 0.
+  T2L_Tro: 0. 0. 0.
+  T2L_FeTi: 0. 0. 0.
+  T2L_TiTa: 0. 0. 0.
+  T2L_TaT1: 0. 0. 0.
+  T2L_TaT3: 0 0.005 0
+  T2L_TaTip: 0. 0. 0.
   T2R_Tro: 0. 0. 0.
   T2R_FeTi: 0. 0. 0.
   T2R_TiTa: 0. 0. 0.
+  T2R_TaT1: 0. 0. 0.
   T2R_TaT3: 0. 0. 0.
-  T2R_TaTip: 0. 0. 0.
+  T2R_TaTip: 0 -0.005 0
+  T3L_Tro: 0. 0. 0.
+  T3L_FeTi: 0. 0. 0.
+  T3L_TiTa: 0. 0. 0.
+  T3L_TaT1: 0. 0. 0.
+  T3L_TaT3: 0. 0. 0.
+  T3L_TaTip: 0 -0.005 0
   T3R_Tro: 0. 0. 0.
   T3R_FeTi: 0. 0. 0.
   T3R_TiTa: 0. 0. 0.
+  T3R_TaT1: 0. 0. 0.
   T3R_TaT3: 0. 0. 0.
-  T3R_TaTip: 0. 0. 0.
+  T3R_TaTip: 0 -0.005 0
 
 ROOT_OPTIMIZATION_KEYPOINT: "Scutellum"
 
@@ -153,45 +187,56 @@ INDIVIDUAL_PART_OPTIMIZATION:
 
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
-  Scutellum: 0.22 0.46 0.67 1
-  Antenna_Base: 0.22 0.46 0.67 1
-  EyeL: 0.22 0.46 0.67 1
-  EyeR: 0.22 0.46 0.67 1
-  Abd_A4: 0.22 0.46 0.67 1
-  Abd_tip: 0.22 0.46 0.67 1
-  T1L_ThxCx: 0.22 0.46 0.67 1
-  T1L_Tro: 0.22 0.46 0.67 1
-  T1L_FeTi: 0.22 0.46 0.67 1
-  T1L_TiTa: 0.22 0.46 0.67 1
-  T1L_TaT3: 0.22 0.46 0.67 1
-  T1L_TaTip: 0.22 0.46 0.67 1
-  T2L_Tro: 0.92 0.5 0.18 1
-  T2L_FeTi: 0.92 0.5 0.18 1
-  T2L_TiTa: 0.92 0.5 0.18 1
-  T2L_TaT3: 0.92 0.5 0.18 1
-  T2L_TaTip: 0.92 0.5 0.18 1
-  T3L_Tro: 0.32 0.62 0.24 1
-  T3L_FeTi: 0.32 0.62 0.24 1
-  T3L_TiTa: 0.32 0.62 0.24 1
-  T3L_TaT3: 0.32 0.62 0.24 1
-  T3L_TaTip: 0.32 0.62 0.24 1
-  T1R_ThxCx: 0.76 0.21 0.17 1
-  T1R_Tro: 0.76 0.21 0.17 1
-  T1R_FeTi: 0.76 0.21 0.17 1
-  T1R_TiTa: 0.76 0.21 0.17 1
-  T1R_TaT3: 0.76 0.21 0.17 1
-  T1R_TaTip: 0.76 0.21 0.17 1
-  T2R_Tro: 0.55 0.41 0.72 1
-  T2R_FeTi: 0.55 0.41 0.72 1
-  T2R_TiTa: 0.55 0.41 0.72 1
-  T2R_TaT3: 0.55 0.41 0.72 1
-  T2R_TaTip: 0.55 0.41 0.72 1
-  T3R_Tro: 0.51 0.34 0.30 1
-  T3R_FeTi: 0.51 0.34 0.30 1
-  T3R_TiTa: 0.51 0.34 0.30 1
-  T3R_TaT3: 0.51 0.34 0.30 1
-  T3R_TaTip: 0.51 0.34 0.30 1
-  
+  Scutellum: 0.22 0.46 0.67 1 
+  WingL_base: 0.22 0.46 0.67 1 
+  WingR_base: 0.22 0.46 0.67 1 
+  Antenna_Base: 0.22 0.46 0.67 1 
+  EyeL: 0.22 0.46 0.67 1 
+  EyeR: 0.22 0.46 0.67 1 
+  WingL_V12: 0.22 0.46 0.67 1 
+  WingL_V13: 0.22 0.46 0.67 1 
+  WingR_V12: 0.22 0.46 0.67 1 
+  WingR_V13: 0.22 0.46 0.67 1 
+  Abd_A4: 0.22 0.46 0.67 1 
+  Abd_tip: 0.22 0.46 0.67 1 
+  T1L_ThxCx: 0.22 0.46 0.67 1 
+  T1L_Tro: 0.22 0.46 0.67 1 
+  T1L_FeTi: 0.22 0.46 0.67 1 
+  T1L_TiTa: 0.22 0.46 0.67 1 
+  T1L_TaT1: 0.22 0.46 0.67 1 
+  T1L_TaT3: 0.22 0.46 0.67 1 
+  T1L_TaTip: 0.22 0.46 0.67 1 
+  T1R_ThxCx: 0.92 0.5 0.18 1 
+  T1R_Tro: 0.92 0.5 0.18 1 
+  T1R_FeTi: 0.92 0.5 0.18 1 
+  T1R_TiTa: 0.92 0.5 0.18 1 
+  T1R_TaT1: 0.92 0.5 0.18 1 
+  T1R_TaT3: 0.92 0.5 0.18 1 
+  T1R_TaTip: 0.32 0.62 0.24 1 
+  T2L_Tro: 0.32 0.62 0.24 1 
+  T2L_FeTi: 0.32 0.62 0.24 1 
+  T2L_TiTa: 0.32 0.62 0.24 1 
+  T2L_TaT1: 0.32 0.62 0.24 1 
+  T2L_TaT3: 0.32 0.62 0.24 1 
+  T2L_TaTip: 0.76 0.21 0.17 1 
+  T2R_Tro: 0.76 0.21 0.17 1 
+  T2R_FeTi: 0.76 0.21 0.17 1 
+  T2R_TiTa: 0.76 0.21 0.17 1 
+  T2R_TaT1: 0.76 0.21 0.17 1 
+  T2R_TaT3: 0.76 0.21 0.17 1 
+  T2R_TaTip: 0.76 0.21 0.17 1 
+  T3L_Tro: 0.55 0.41 0.72 1 
+  T3L_FeTi: 0.55 0.41 0.72 1 
+  T3L_TiTa: 0.55 0.41 0.72 1 
+  T3L_TaT1: 0.55 0.41 0.72 1 
+  T3L_TaT3: 0.55 0.41 0.72 1 
+  T3L_TaTip: 0.55 0.41 0.72 1 
+  T3R_Tro: 0.51 0.34 0.30 1 
+  T3R_FeTi: 0.51 0.34 0.30 1 
+  T3R_TiTa: 0.51 0.34 0.30 1 
+  T3R_TaT1: 0.51 0.34 0.30 1 
+  T3R_TaT3: 0.51 0.34 0.30 1 
+  T3R_TaTip: 0.51 0.34 0.30 1 
 
 # What is the size of the animal you'd like to register, relative to the model?
 SCALE_FACTOR: 1
@@ -203,7 +248,23 @@ MOCAP_SCALE_FACTOR: 1
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using this with M_REG_COEF. 
-SITES_TO_REGULARIZE: {}
+SITES_TO_REGULARIZE: 
+  - Scutellum
+  - Antenna_Base
+  - EyeL
+  - EyeR
+  - Abd_A4
+  - Abd_tip
+  - WingL_V12
+  - WingL_V13
+  - WingR_V12
+  - WingR_V13
+  - T1L_TaTip
+  - T2L_TaTip
+  - T3L_TaTip
+  - T1R_TaTip
+  - T2R_TaTip
+  - T3R_TaTip
 
 RENDER_FPS: 50
 

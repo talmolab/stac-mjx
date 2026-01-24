@@ -1,13 +1,14 @@
-fit_offsets_path: "Fruitfly_fit_V1_free2.h5"
-ik_only_path: "Fruitfly_ik_V1_free2.h5"
+fit_offsets_path: "Fruitfly_fit_V1_free.h5"
+ik_only_path: "Fruitfly_ik_V1_free.h5"
 
-data_path: "/data/users/eabe/biomech_model/Flybody/datasets/Johnsonlab/example_bout_1.h5"
-save_path: "/data/users/eabe/biomech_model/Flybody/datasets/Johnsonlab/"
+data_path: "/data2/users/eabe/datasets/Johnson_lab/free_walking/Predictions_3D_20260114/example_bout_2.h5"
+save_path: "/data2/users/eabe/datasets/Johnson_lab/free_walking/Predictions_3D_20260114"
+xml_dir: "/home/eabe/Research/MyRepos/3d_tracking_dataset/assets/fruitfly_v1/"
 
 continuous: False
 enable_padding: True
 n_fit_frames: 601
-n_frames_per_clip: 300
+n_frames_per_clip: 601
 skip_fit_offsets: False
 skip_ik_only: False
 infer_qvels: True 

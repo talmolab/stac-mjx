@@ -1,12 +1,13 @@
-fit_offsets_path: "Fruitfly_V1_fit.h5"
-ik_only_path: "Fruitfly_V1_ik.h5"
+fit_offsets_path: "Fruitfly_V2.1_mu_fit.h5"
+ik_only_path: "Fruitfly_V2.1_mu_ik.h5"
 
 data_path: "/data/users/eabe/biomech_model/Flybody/datasets/Tuthill_data/New_aligned_Walking_V2_avg.h5"
 save_path: "/data/users/eabe/biomech_model/Flybody/datasets/Tuthill_data/"
+xml_dir: "/home/eabe/Research/MyRepos/fly_neuromechanics/fruitfly_body_models/fruitfly_v2.1"
 
 n_fit_frames: 601
 n_frames_per_clip: 300
-skip_fit_offsets: True
+skip_fit_offsets: False
 skip_ik_only: False
 infer_qvels: True 
 continuous: True

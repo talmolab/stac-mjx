@@ -1,4 +1,4 @@
 defaults:
-  - stac: demo
-  - model: rodent
+  - stac: stac_fly_free
+  - model: fly_free
   - _self_
