@@ -68,8 +68,8 @@ class StacConfig:
 class Config:
     """Combined configuration for the model and STAC."""
 
-    model: ModelConfig  # Configuration for STAC
-    stac: StacConfig  # Configuration for the model
+    model: ModelConfig  # Configuration for the model
+    stac: StacConfig  # Configuration for STAC
 
 
 def compose_config(

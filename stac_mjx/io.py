@@ -76,7 +76,7 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
         data, kp_names = load_h5(file_path)
     else:
         raise ValueError(
-            "Unsupported file extension. Please provide a .nwb or .mat file."
+            "Unsupported file extension. Please provide a .mat, .nwb, or .h5 file."
         )
 
     kp_names = kp_names or cfg.model.KP_NAMES
@@ -89,7 +89,7 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
 
     if len(kp_names) != data.shape[2]:
         raise ValueError(
-            f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
+            f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[2]})"
         )
 
     model_inds = [

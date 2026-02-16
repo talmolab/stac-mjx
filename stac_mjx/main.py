@@ -78,7 +78,6 @@ def run_stac(
         io.save_data_to_h5(
             config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
         )
-        (fit_offsets_data, fit_offsets_path)
     else:
         print(
             "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to False."
