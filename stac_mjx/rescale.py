@@ -42,7 +42,9 @@ def dm_scale_spec(spec: MjSpec, scale: float) -> MjSpec:
 
     # scale the z-position for all keypoints
     for keypoint in scaled_spec.keys:
-        keypoint.qpos[2] = keypoint.qpos[2] * scale
+        qpos = keypoint.qpos
+        qpos[2] = qpos[2] * scale
+        keypoint.qpos = qpos
 
     scale_bodies(scaled_spec.worldbody.first_body(), scale)
     return scaled_spec
