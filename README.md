@@ -1,5 +1,5 @@
 # stac-mjx :rat:
-`stac-mjx` is an implementation of the [STAC](https://ieeexplore.ieee.org/document/7030016) algorithm for inverse kinematics on markerless motion tracking data, using MuJoCo-compatible body models. It uses [MuJoCo XLA (MJX)](https://mujoco.readthedocs.io/en/stable/mjx.html) for GPU parallelization of the MuJoCo physics. 
+`stac-mjx` is an implementation of the [STAC](https://ieeexplore.ieee.org/document/7030016) algorithm for inverse kinematics on markerless motion tracking data, using MuJoCo-compatible body models. It uses [MuJoCo XLA (MJX)](https://mujoco.readthedocs.io/en/stable/mjx.html) for GPU parallelization of the MuJoCo physics.
 
 This is part of [MIMIC-MJX](https://mimic-mjx.talmolab.org/).
 
@@ -7,13 +7,7 @@ This is part of [MIMIC-MJX](https://mimic-mjx.talmolab.org/).
 
 ### Option 1: `uv` (fastest)
 
-#### Prerequisites
-
-- Python 3.11 or 3.12
-- [uv](https://docs.astral.sh/uv/) package manager (recommended) or pip
-- CUDA 12.x or 13.x (for GPU support, optional)
-
-#### Installing `uv`
+**Prerequisites:** Python 3.11 or 3.12, [uv](https://docs.astral.sh/uv/) package manager, and optionally CUDA 12.x or 13.x for GPU support.
 
 If you don't have uv installed:
 
@@ -25,13 +19,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 pip install uv
 ```
 
-#### Installation Steps
-
 1. Clone the repository:
 ```bash
 git clone https://github.com/talmolab/stac-mjx.git
 ```
-2. Create and activate a virutal environment:
+2. Create and activate a virtual environment:
 ```bash
 uv venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
@@ -78,35 +70,44 @@ conda env create -f environment.yaml
 conda activate stac-mjx-env
 ```
 
-Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. We show `osmesa` setup as it supports headless rendering, which is common in remote/cluster setups. To set up (currently on supported on Linux), execute the following commands sequentially:
-   ```bash
-   sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6 
-   conda install -c conda-forge glew 
-   conda install -c conda-forge mesalib 
-   conda install -c anaconda mesa-libgl-cos6-x86_64 
-   conda install -c menpo glfw3
-   ```
-   Finally, set the following environment variables, and reactivate the conda environment:
-   ```bash
-   conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
-   conda deactivate && conda activate base
-   ```
-   To ensure all of the above changes are encapsulated in your Jupyter kernel, create a new kernel with:
-   ```bash
-   conda install ipykernel
-   python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
-   ```
-   
+3. Register the environment as a Jupyter kernel:
+```bash
+conda install ipykernel
+python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
+```
+
+### Headless Rendering Setup
+
+Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. Below is the `osmesa` setup, which supports headless rendering common in remote/cluster environments (currently Linux only).
+
+Install the required system and conda packages:
+```bash
+sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6
+conda install -c conda-forge glew
+conda install -c conda-forge mesalib
+conda install -c anaconda mesa-libgl-cos6-x86_64
+conda install -c menpo glfw3
+```
+
+Set the following environment variables and reactivate your environment:
+```bash
+conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
+conda deactivate && conda activate base
+```
 
 ## Usage
 
-There a couple recommended ways to run stac-mjx: basic usage through a command line interface, and writing a custom script using the high-level API. 
+There are a couple of recommended ways to run stac-mjx: basic usage through a command line interface, and writing a custom script using the high-level API.
 
-First, configure your body model and STAC parameters in `config/`:
-   - `configs/config.yaml` selects defaults for `model` and `stac` (you can copy/rename this for custom presets).
-   - `configs/model/*.yaml` defines the MuJoCo model file (`MJCF_PATH`), keypoint names/order, and mappings in `KEYPOINT_MODEL_PAIRS` plus initial offsets and scale factors.
-   - `configs/stac/*.yaml` sets data paths (e.g., `stac.data_path`), clip sizes, fit/IK output paths, and solver settings.
-   - Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
+First, configure your body model and STAC parameters in `configs/`:
+
+| File | Purpose |
+|------|---------|
+| `configs/config.yaml` | Selects defaults for `model` and `stac` (copy/rename for custom presets) |
+| `configs/model/*.yaml` | MuJoCo model path, keypoint names/order, `KEYPOINT_MODEL_PAIRS` mappings, initial offsets, scale factors |
+| `configs/stac/*.yaml` | Data paths (`stac.data_path`), clip sizes, fit/IK output paths, solver settings |
+
+Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
 
 ### Command Line Interface
 If no customization is needed, you can run the full pipeline from the CLI:
@@ -128,12 +129,16 @@ stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.
 
 ### Custom Python Script/Jupyter Notebook
 
-You can use a set of high-level functions instead of the end-to-end CLI script to decouple data preparation and configuration loading from execution of the STAC algorithm. This makes it easy to load custom data without adhering to the file structure or content assumptions imposed by the CLI. The following is the full CLI script run as a sequence of function calls. Try the [demo notebook](https://github.com/talmolab/stac-mjx/blob/main/demos/rodent_demo.ipynb) to see it in action!
+You can use a set of high-level functions instead of the end-to-end CLI script to decouple data preparation and configuration loading from execution of the STAC algorithm. This makes it easy to load custom data without adhering to the file structure or content assumptions imposed by the CLI.
+
+> **Try the [demo notebook](https://github.com/talmolab/stac-mjx/blob/main/demos/rodent_demo.ipynb) to see it in action!**
+
+The following is the full CLI script run as a sequence of function calls:
 
 1. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration.
 
    ```python
-   import stac_mjx 
+   import stac_mjx
    from pathlib import Path
 
 
@@ -149,33 +154,35 @@ You can use a set of high-level functions instead of the end-to-end CLI script t
    # Run stac
    fit_path, ik_only_path = stac_mjx.run_stac(
       cfg,
-      kp_data, 
-      sorted_kp_names, 
+      kp_data,
+      sorted_kp_names,
       base_path=base_path
    )
    ```
 
-3. Render a video of the final result:
+2. Render a video of the final result:
    ```python
+   import mediapy as media
+
    data_path = base_path / "demo_fit_offsets.h5"
    n_frames = 10
    save_path = base_path / "videos/direct_render.mp4"
 
    # Call mujoco_viz
    cfg, frames = stac_mjx.viz_stac(
-      data_path, 
-      n_frames, 
-      save_path, 
-      start_frame=0, 
-      camera="close_profile", 
+      data_path,
+      n_frames,
+      save_path,
+      start_frame=0,
+      camera="close_profile",
       base_path=Path.cwd().parent,
-   )  
+   )
 
    # Show the video in the notebook (it is also saved to the save_path)
    media.show_video(frames, fps=cfg.model.RENDER_FPS)
    ```
-   
-4. If the rendering is poor, it's likely that some hyperparameter tuning is necessary. (details WIP)
+
+3. If the rendering is poor, it's likely that some hyperparameter tuning is necessary. (details WIP)
 
 
 ### Keypoint Correspondence UI
