@@ -37,6 +37,12 @@ def rodent_config_less_kp_names():
 
 
 @pytest.fixture
+def rodent_config_more_kp_names():
+    """Model config where KP_NAMES has more entries than keypoints in the data."""
+    return "test_rodent_more_kp_names.yaml"
+
+
+@pytest.fixture
 def config():
     """Typical model config file."""
     return _BASE_PATH / "tests/configs"

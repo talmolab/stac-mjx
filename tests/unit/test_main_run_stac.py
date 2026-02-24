@@ -99,3 +99,16 @@ def test_run_stac_requires_divisible_frames(monkeypatch):
 
     with pytest.raises(ValueError):
         main.run_stac(cfg, kp_data, ["a", "b"])
+
+
+def test_run_stac_validates_kp_data_shape(monkeypatch):
+    """kp_data.shape[1] must equal len(kp_names) * 3 (closes #42)."""
+    cfg = make_cfg(skip_fit_offsets=True, skip_ik_only=True)
+    # 2 keypoint names → expect 6 columns; pass 9 to trigger the error
+    kp_data = np.zeros((4, 9))
+
+    monkeypatch.setattr(main, "Stac", DummyStac)
+    monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
+
+    with pytest.raises(ValueError, match="kp_data"):
+        main.run_stac(cfg, kp_data, ["a", "b"])

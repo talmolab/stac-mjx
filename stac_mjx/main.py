@@ -49,6 +49,15 @@ def run_stac(
     if base_path is None:
         base_path = Path.cwd()
 
+    expected_cols = len(kp_names) * 3
+    if kp_data.shape[1] != expected_cols:
+        raise ValueError(
+            f"kp_data has {kp_data.shape[1]} columns but expected {expected_cols} "
+            f"({len(kp_names)} keypoints × 3). "
+            f"Ensure kp_data is shaped (n_frames, n_keypoints * 3) and that "
+            f"kp_names length matches the number of keypoints in kp_data."
+        )
+
     utils.enable_xla_flags()
 
     start_time = time.time()
