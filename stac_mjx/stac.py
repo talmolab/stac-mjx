@@ -87,6 +87,7 @@ class Stac:
         self.cfg = cfg
         self._kp_names = kp_names
         self._xml_path = Path(xml_path)
+        self._marker_size = cfg.model.MARKER_SIZE
         self.stac_core_obj = None
 
         (
@@ -173,7 +174,7 @@ class Stac:
 
             parent.add_site(
                 name=key,
-                size=[0.005, 0.005, 0.005],
+                size=[self._marker_size] * 3,
                 rgba=(0, 0, 0, 0.8),
                 pos=pos,
                 group=3,
@@ -478,7 +479,7 @@ class Stac:
             keypoint_site_names.append(site_name)
             render_spec.worldbody.add_site(
                 name=site_name,
-                size=[0.005, 0.005, 0.005],
+                size=[self._marker_size] * 3,
                 rgba=rgba,
                 pos=start,
                 group=2,
@@ -490,7 +491,7 @@ class Stac:
             parent = render_spec.body(v)
             parent.add_site(
                 name=key + "_new",
-                size=[0.005, 0.005, 0.005],
+                size=[self._marker_size] * 3,
                 rgba=[0, 0, 0, 1],
                 pos=pos,
                 group=2,

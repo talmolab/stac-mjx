@@ -36,6 +36,7 @@ class ModelConfig:
     RENDER_FPS: int  # FPS for rendering
     N_SAMPLE_FRAMES: int  # Number of frames to sample when computing offset residual
     M_REG_COEF: int  # Coefficient for regularization term in offset optimization
+    MARKER_SIZE: float = 0.005  # Radius of site marker spheres for visualization
 
 
 @dataclass
