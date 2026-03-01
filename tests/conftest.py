@@ -7,5 +7,6 @@ from tests.fixtures.configs import (
     rodent_config_label3d,
     rodent_config_no_kp_names,
     rodent_config_less_kp_names,
+    rodent_config_more_kp_names,
     config,
 )

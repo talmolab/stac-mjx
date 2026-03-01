@@ -78,6 +78,18 @@ def test_load_mat_less_kp_names(config, rodent_config_less_kp_names, mocap_mat):
         data, sorted_kp_names = io.load_data(cfg)
 
 
+def test_load_mat_more_kp_names(config, rodent_config_more_kp_names, mocap_mat):
+    """ValueError when KP_NAMES has more entries than data keypoints (closes #42)."""
+    cfg = load_config_with_overrides(
+        config,
+        stac_data_path_override=mocap_mat,
+        model_override=rodent_config_more_kp_names,
+    )
+
+    with pytest.raises(ValueError):
+        data, sorted_kp_names = io.load_data(cfg)
+
+
 def test_load_h5(config, mouse_config, mocap_h5):
     """
     Test loading data from a .h5 file
