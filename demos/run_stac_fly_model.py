@@ -33,7 +33,7 @@ def parse_hydra_config(cfg: DictConfig):
     df_names = [kp + coord for kp in kp_names for coord in coords]
     kp_data_all = tredmill_data[df_names].values
     sorted_kp_names = kp_names
-    kp_data = model_cfg["MOCAP_SCALE_FACTOR"] * kp_data_all.copy()
+    kp_data = kp_data_all.copy()
 
     # import stac_mjx.io_dict_to_hdf5 as ioh5
     # data_path = base_path / stac_cfg.data_path

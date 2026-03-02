@@ -53,9 +53,8 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
     Returns:
         Mocap data flattened into an np array of shape [#frames, keypointXYZ],
         where 'keypointXYZ' represents the flattened 3D keypoint components.
-        The data is also scaled by multiplication with "MOCAP_SCALE_FACTOR", e.g.
-        if the mocap data is in mm and the model is in meters, this should be
-        0.001.
+        Data is returned in its original units; MOCAP_SCALE_FACTOR scaling
+        is applied by run_stac().
 
     Raises:
         ValueError if an unsupported filetype is encountered.
@@ -98,8 +97,6 @@ def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
 
     sorted_kp_names = [kp_names[i] for i in model_inds]
 
-    # Scale mocap data to match model
-    data = data * cfg.model.MOCAP_SCALE_FACTOR
     # Sort in kp_names order
     data = jnp.array(data[:, :, model_inds])
     # Flatten data from [#num frames, #keypoints, xyz]
