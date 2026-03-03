@@ -37,9 +37,12 @@ def run_stac(
 ) -> tuple[str, str]:
     """High level function for running skeletal registration.
 
+    kp_data should be in raw (unscaled) units. It will be scaled internally
+    by cfg.model.MOCAP_SCALE_FACTOR before being passed to the fitting routines.
+
     Args:
         cfg (DictConfig): Configs.
-        kp_data (jp.ndarray): Mocap keypoints to fit to.
+        kp_data (jp.ndarray): Mocap keypoints to fit to, in raw units.
         kp_names (List[str]): Ordered list of keypoint names.
         base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
 
@@ -67,6 +70,9 @@ def run_stac(
     ik_only_path = base_path / cfg.stac.ik_only_path
 
     xml_path = base_path / cfg.model.MJCF_PATH
+
+    # Scale mocap data to match model units
+    kp_data = kp_data * cfg.model.MOCAP_SCALE_FACTOR
 
     stac = Stac(xml_path, cfg, kp_names)
 
