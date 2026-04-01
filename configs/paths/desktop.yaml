@@ -1,0 +1,12 @@
+user: eabe
+
+# set the directory where the output files get saved
+cwd_dir:  /home/${paths.user}/Research/MyRepos/Fly_tracking/
+base_dir: /home/${paths.user}/Research/data/biomech_model/${dataset.name}/RL_${dataset.name}/${version}
+save_dir: ${paths.base_dir}/run_id=${run_id}
+log_dir:  ${paths.save_dir}/logs/
+ckpt_dir: ${paths.save_dir}/ckpt/
+fig_dir:  ${paths.save_dir}/figures/
+data_dir: /home/${paths.user}/Research/data/biomech_model/${dataset.name}/datasets/Tuthill_data/
+
+project_dir: /home/${paths.user}/Research/MyRepos/

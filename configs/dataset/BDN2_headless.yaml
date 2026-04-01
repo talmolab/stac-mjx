@@ -1,0 +1,41 @@
+# @package _global_.dataset
+
+name: BDN2_headless
+env_name: BDN2_headless
+
+# Dataset version - typically a timestamp or identifier
+# This gets interpolated into paths for organizing different data versions
+version: Data_analysis
+
+# Preprocessing settings
+# These determine which preprocessed file to load for STAC IK
+preprocessing:
+  input_filename: preprocessed_bout_${anatomy.name}_${dataset.name}.h5 # Output from preprocess_keypoints_for_ik.py
+  bouts_csv: null  # Optional: if you want to process specific bouts
+
+# STAC pipeline config (merged from stac/stac_fly_free.yaml and stac_ik)
+stac:
+  # Input/output paths
+  data_path: "${paths.data_dir}/preprocessing/${dataset.preprocessing.input_filename}"
+  save_path: "${paths.save_dir}"
+  xml_dir: "${paths.body_model_dir}/${anatomy.name}/"
+
+  # STAC IK parameters
+  continuous: False
+  enable_padding: True
+  n_fit_frames: 601
+  n_frames_per_clip: 601
+  num_clips: 0  # Computed dynamically
+  skip_fit_offsets: False
+  skip_ik_only: False
+  infer_qvels: True
+
+  # Output filenames (saved to data_dir)
+  fit_offsets_path: "Fruitfly_fit_${anatomy.name}_${dataset.name}.h5"
+  ik_only_path: "Fruitfly_ik_${anatomy.name}_${dataset.name}.h5"
+
+  mujoco:
+    solver: "cg"
+    iterations: 1
+    ls_iterations: 4
+    dt: 0.00125
