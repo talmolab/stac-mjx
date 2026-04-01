@@ -24,7 +24,7 @@ def enable_xla_flags():
     os.makedirs(cache_dir, exist_ok=True)
     jax.config.update("jax_compilation_cache_dir", cache_dir)
     jax.config.update("jax_persistent_cache_min_entry_size_bytes", 0)
-    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+    jax.config.update("jax_persistent_cache_min_compile_time_secs", 1)
 
 
 def mjx_load(mj_model):
