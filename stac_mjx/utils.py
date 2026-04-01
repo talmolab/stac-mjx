@@ -19,6 +19,13 @@ def enable_xla_flags():
     if get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
+    # Enable persistent compilation cache to avoid recompilation across runs
+    cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "stac-mjx", "jax")
+    os.makedirs(cache_dir, exist_ok=True)
+    jax.config.update("jax_compilation_cache_dir", cache_dir)
+    jax.config.update("jax_persistent_cache_min_entry_size_bytes", 0)
+    jax.config.update("jax_persistent_cache_min_compile_time_secs", 0)
+
 
 def mjx_load(mj_model):
     """Load mujoco model into mjx."""
