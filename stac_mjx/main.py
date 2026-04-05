@@ -3,20 +3,22 @@
 import jax
 from jax import numpy as jp
 import numpy as np
+import pickle
 import time
-from omegaconf import DictConfig
+import logging
+from omegaconf import DictConfig, OmegaConf
 from stac_mjx import io, utils
-from stac_mjx.config import compose_config
 from stac_mjx.stac import Stac
 from pathlib import Path
 from typing import List, Union
+import hydra
 from functools import partial
 
 
 def load_configs(
     config_dir: Union[Path, str], config_name: str = "config"
 ) -> DictConfig:
-    """Load and validate configs from a Hydra config directory.
+    """Initializes configs with hydra.
 
     Args:
         config_dir ([Path, str]): Absolute path to config directory.
@@ -24,9 +26,18 @@ def load_configs(
     Returns:
         DictConfig: stac.yaml config to use in run_stac()
     """
-    cfg = compose_config(config_dir, config_name=config_name)
-    print("Config loaded and validated.")
-    return cfg
+    # Initialize Hydra and set the config path
+    with hydra.initialize_config_dir(config_dir=str(config_dir), version_base=None):
+        # Compose the configuration by specifying the config name
+        cfg = hydra.compose(
+            config_name=config_name,
+            overrides=["hydra/job_logging=disabled", "hydra/hydra_logging=disabled"],
+        )
+        # Convert to structured config
+        structured_config = OmegaConf.structured(io.Config)
+        OmegaConf.merge(structured_config, cfg)
+        print("Config loaded and validated.")
+        return cfg
 
 
 def run_stac(
@@ -34,6 +45,7 @@ def run_stac(
     kp_data: jp.ndarray,
     kp_names: List[str],
     base_path=None,
+    save_path=None,
 ) -> tuple[str, str]:
     """High level function for running skeletal registration.
 
@@ -48,25 +60,18 @@ def run_stac(
     """
     if base_path is None:
         base_path = Path.cwd()
-
-    expected_cols = len(kp_names) * 3
-    if kp_data.shape[1] != expected_cols:
-        raise ValueError(
-            f"kp_data has {kp_data.shape[1]} columns but expected {expected_cols} "
-            f"({len(kp_names)} keypoints × 3). "
-            f"Ensure kp_data is shaped (n_frames, n_keypoints * 3) and that "
-            f"kp_names length matches the number of keypoints in kp_data."
-        )
+    if save_path is None:
+        save_path = Path.cwd()
 
     utils.enable_xla_flags()
 
     start_time = time.time()
 
     # Getting paths
-    fit_offsets_path = base_path / cfg.stac.fit_offsets_path
-    ik_only_path = base_path / cfg.stac.ik_only_path
+    fit_offsets_path = save_path / cfg.stac.fit_offsets_path
+    ik_only_path = save_path / cfg.stac.ik_only_path
 
-    xml_path = base_path / cfg.model.MJCF_PATH
+    xml_path = cfg.model.MJCF_PATH
 
     stac = Stac(xml_path, cfg, kp_names)
 
@@ -79,7 +84,7 @@ def run_stac(
     vmap_compute_velocity_fn = jax.vmap(compute_velocity_fn)
 
     # Run fit_offsets if not skipping
-    if not cfg.stac.skip_fit_offsets:
+    if cfg.stac.skip_fit_offsets != 1:
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
         fit_offsets_data = stac.fit_offsets(kps)
@@ -87,15 +92,16 @@ def run_stac(
         io.save_data_to_h5(
             config=cfg, file_path=fit_offsets_path, **fit_offsets_data.as_dict()
         )
+        (fit_offsets_data, fit_offsets_path)
     else:
         print(
             "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to False."
         )
 
     # Stop here if not doing ik only phase
-    if cfg.stac.skip_ik_only:
+    if cfg.stac.skip_ik_only == 1:
         print(
-            "Skipping IK-only phase. To change this behavior, set cfg.stac.skip_ik_only to False."
+            "Skipping IK-only phase. To change this behavior, set cfg.stac.skip_ik_only to 0."
         )
         return fit_offsets_path, None
     elif kp_data.shape[0] % cfg.stac.n_frames_per_clip != 0:
@@ -104,7 +110,7 @@ def run_stac(
         )
 
     print("Running ik_only()")
-    cfg, fit_offsets_data = io.load_stac_data(fit_offsets_path)
+    _, fit_offsets_data = io.load_stac_data(fit_offsets_path)
 
     offsets = fit_offsets_data.offsets
 
