@@ -165,8 +165,9 @@
 
     <!-- Shoulder base: allows small translational movement -->
     <body name="shoulder_base" pos="0 0 0">
+      <joint name="sh_tx" type="slide" axis="1 0 0" range="-0.002 0.002" damping="0.5" stiffness="50" springref="0"/>
       <joint name="sh_ty" type="slide" axis="0 1 0" range="-0.002 0.002" damping="0.5" stiffness="50" springref="0"/>
-      <joint name="sh_tz" type="slide" axis="0 0 1" range="-0.002 0.001" damping="0.5" stiffness="50" springref="0"/>
+      <joint name="sh_tz" type="slide" axis="0 0 1" range="-0.002 0.002" damping="0.5" stiffness="50" springref="0"/>
 
     <!-- Clavicle: fixed to shoulder_base -->
     <body name="clavicle" pos="0.014801 0.015912 0.071520" quat="0.149881 0.982988 -0.104926 0.016135">

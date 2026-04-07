@@ -71,7 +71,7 @@ def main(cfg: DictConfig):
         model_config = OmegaConf.load(os.path.join(base_path, "configs/model/mouse_arm.yaml"))
         cfg.model = model_config
     OmegaConf.set_struct(cfg.model, False)
-    OmegaConf.update(cfg.model, "MJCF_PATH", "/root/vast/eric/stac-mjx/models/mouse_forelimb_right_janelia.xml", merge=True)
+    OmegaConf.update(cfg.model, "MJCF_PATH", "/root/vast/eric/stac-mjx/models/mouse_forelimb_right_janelia_moving_shoulder.xml", merge=True)
     OmegaConf.update(cfg.model, "KEYPOINT_MODEL_PAIRS", {"Shoulder": "humerus", "Elbow": "ulna", "Wrist": "wrist"}, merge=True)
     OmegaConf.update(cfg.model, "SCALE_FACTOR", 1.0, merge=True)
     OmegaConf.update(cfg.model, "MOCAP_SCALE_FACTOR", 1.0, merge=True)
