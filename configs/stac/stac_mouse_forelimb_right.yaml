@@ -1,0 +1,16 @@
+model: mouse_forelimb_right
+
+# These are overridden per-clip by the run script
+fit_offsets_path: "forelimb_right_fit.h5"
+ik_only_path: "forelimb_right_ik.h5"
+data_path: "/root/vast/eric/CVAT_mouse_reach/all_data/A36-1_2023-07-18_16-54-01_lightOff_video/A36-1_2023-07-18_16-54-01_lightOff_video_mujoco_registered_forelimb_right_v4.h5"
+num_clips: 1
+n_fit_frames: 100
+skip_fit_offsets: false
+skip_ik_only: false
+infer_qvels: true
+n_frames_per_clip: 100
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

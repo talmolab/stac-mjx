@@ -404,7 +404,8 @@ def render_reprojection_video(
         caps[cam.name] = cap
 
     # Compute calibration cameras in MuJoCo frame
-    shoulder_frame = raw_shoulders[video_start_frame]
+    # Use fixed shoulder reference if available, otherwise per-frame
+    shoulder_frame = reg.shoulder_reference_mm if reg.shoulder_reference_mm is not None else raw_shoulders[video_start_frame]
     mj_cam_params = []
     for cam_params in cameras:
         cp = _compute_calibration_cam_xyaxes(cam_params, reg, shoulder_frame)
@@ -446,14 +447,17 @@ def render_reprojection_video(
             panels = []
             abs_frame = video_start_frame + frame_idx
             shoulder_calib = raw_shoulders[abs_frame]
+            # Use fixed shoulder reference if available (v6+ registration),
+            # otherwise use per-frame raw shoulder (v4 registration)
+            inv_shoulder = reg.shoulder_reference_mm if reg.shoulder_reference_mm is not None else shoulder_calib
 
             # Get mocap keypoints (raw input) in calibration frame
             kp_mj = kp_data[frame_idx].reshape(n_kp, 3)
-            kp_calib = reg.mujoco_to_calibration(kp_mj, shoulder_calib)
+            kp_calib = reg.mujoco_to_calibration(kp_mj, inv_shoulder)
 
             # Get STAC marker sites (FK fitted positions) in calibration frame
             ms_mj = marker_sites[frame_idx]
-            ms_calib = reg.mujoco_to_calibration(ms_mj, shoulder_calib)
+            ms_calib = reg.mujoco_to_calibration(ms_mj, inv_shoulder)
 
             for cam_params in cameras:
                 # Read and undistort video frame

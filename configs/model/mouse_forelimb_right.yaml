@@ -1,0 +1,58 @@
+MJCF_PATH: "/root/vast/eric/stac-mjx/models/mouse_forelimb_right_janelia.xml"
+
+# Tolerance for the optimizations of the full model, limb, and root.
+# TODO: Re-implement optimizer loops to use these tolerances
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+
+# Number of alternating pose and offset optimization rounds.
+# Reduced from 6: v4 data is pre-registered with correct bone lengths,
+# so heavy offset optimization can distort the fit.
+N_ITERS: 1
+
+KP_NAMES:
+  - Shoulder
+  - Elbow
+  - Wrist
+
+# Keypoint-to-body mapping. Shoulder maps to humerus (glenohumeral joint),
+# not scapula, because the registered data uses humerus body position.
+KEYPOINT_MODEL_PAIRS:
+  Shoulder: humerus
+  Elbow: ulna
+  Wrist: wrist
+
+# Initial offsets (meters). Zero because registered data is aligned to body origins.
+KEYPOINT_INITIAL_OFFSETS:
+  Shoulder: 0. 0. 0.
+  Elbow: 0. 0. 0.
+  Wrist: 0. 0. 0.
+
+# Root optimization (unused — no free joint in this model)
+ROOT_OPTIMIZATION_KEYPOINT: Wrist
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+ - "Wrist"
+
+# Color to use for each keypoint when visualizing the results
+KEYPOINT_COLOR_PAIRS:
+  Shoulder: 1 0 0 1
+  Elbow: 0 1 0 1
+  Wrist: 0 0 1 1
+
+# Scale factor relative to model (1:1, data already registered to model scale)
+SCALE_FACTOR: 1.0
+
+# Mocap data is already in meters
+MOCAP_SCALE_FACTOR: 1.0
+
+SITES_TO_REGULARIZE:
+   - Wrist
+
+RENDER_FPS: 30
+
+N_SAMPLE_FRAMES: 50
+
+# No regularization — registered data should produce near-zero offsets
+M_REG_COEF: 0

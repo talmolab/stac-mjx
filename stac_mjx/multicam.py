@@ -83,6 +83,7 @@ class RegistrationTransform:
 
     R_total: np.ndarray  # (3, 3) compound rotation (Procrustes + nudge)
     model_shoulder: np.ndarray  # (3,) = registration_translation in meters
+    shoulder_reference_mm: np.ndarray = None  # (3,) fixed shoulder ref in calibration frame (mm), or None for per-frame
 
     def mujoco_to_calibration(
         self,
@@ -150,11 +151,17 @@ def load_registration_transform(registered_h5_path: str) -> RegistrationTransfor
     with h5py.File(registered_h5_path, "r") as f:
         R_proc = np.array(f.attrs["registration_rotation"])
         model_shoulder = np.array(f.attrs["registration_translation"])
+        # v6+ registrations store a fixed shoulder reference instead of per-frame
+        shoulder_ref = None
+        if "shoulder_reference_mm" in f.attrs:
+            shoulder_ref = np.array(f.attrs["shoulder_reference_mm"])
 
-    # Use the registration rotation directly (nudge already baked into R_proc)
     R_total = R_proc
 
-    return RegistrationTransform(R_total=R_total, model_shoulder=model_shoulder)
+    return RegistrationTransform(
+        R_total=R_total, model_shoulder=model_shoulder,
+        shoulder_reference_mm=shoulder_ref,
+    )
 
 
 def load_raw_shoulder_positions(points3d_path: str) -> np.ndarray:

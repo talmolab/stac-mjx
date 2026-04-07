@@ -75,11 +75,11 @@ def main(cfg: DictConfig):
     OmegaConf.update(cfg.model, "KEYPOINT_MODEL_PAIRS", {"Shoulder": "humerus", "Elbow": "ulna", "Wrist": "wrist"}, merge=True)
     OmegaConf.update(cfg.model, "SCALE_FACTOR", 1.0, merge=True)
     OmegaConf.update(cfg.model, "MOCAP_SCALE_FACTOR", 1.0, merge=True)
-    OmegaConf.update(cfg.model, "N_ITERS", 1, merge=True)
+    OmegaConf.update(cfg.model, "N_ITERS", 6, merge=True)
     OmegaConf.update(cfg.model, "N_SAMPLE_FRAMES", 50, merge=True)
     OmegaConf.update(cfg.model, "M_REG_COEF", 0, merge=True)
 
-    reg_file = "/root/vast/eric/CVAT_mouse_reach/all_data/A36-1_2023-07-18_16-54-01_lightOff_video/A36-1_2023-07-18_16-54-01_lightOff_video_mujoco_registered_forelimb_right_v4.h5"
+    reg_file = "/root/vast/eric/CVAT_mouse_reach/all_data/A36-1_2023-07-18_16-54-01_lightOff_video/A36-1_2023-07-18_16-54-01_lightOff_video_mujoco_registered_forelimb_right_v6.h5"
 
     # Load reach events
     refined_csv_path = os.path.join(base_path, "refined_reaches/A36-1_2023-07-18_16-54-01_lightOff_tone_on_off_trials_edited.csv")
