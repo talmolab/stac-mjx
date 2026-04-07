@@ -33,10 +33,12 @@ class FakeStacCore:
     def __init__(self):
         self.q_calls = 0
         self.m_calls = 0
+        self.q0_args = []
 
     def q_opt(self, *args, **kwargs):
         self.q_calls += 1
         q0 = args[5]
+        self.q0_args.append(q0)
         res = types.SimpleNamespace(params=q0, state=types.SimpleNamespace(error=0.0))
         return args[1], res
 
@@ -81,6 +83,41 @@ def test_root_optimization_calls_q_opt_twice(monkeypatch):
 
     assert isinstance(out, FakeMjxData)
     assert stac_core.q_calls == 2
+
+
+def test_root_optimization_seeds_root_translation_from_correct_keypoint(monkeypatch):
+    monkeypatch.setattr(
+        compute_stac,
+        "mujoco",
+        types.SimpleNamespace(
+            mjtJoint=types.SimpleNamespace(mjJNT_SLIDE=1, mjJNT_FREE=0)
+        ),
+    )
+    monkeypatch.setattr(utils, "kinematics", lambda model, data: data)
+    monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
+
+    stac_core = FakeStacCore()
+    initial_qpos = jp.array([91.0, 92.0, 93.0, 4.0, 5.0, 6.0, 7.0])
+    mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
+    mjx_data = FakeMjxData(qpos=initial_qpos)
+    kp_data = jp.array([[11.0, 12.0, 13.0, 21.0, 22.0, 23.0]])
+
+    compute_stac.root_optimization(
+        stac_core,
+        mjx_model,
+        mjx_data,
+        kp_data,
+        root_kp_idx=1,
+        lb=jp.zeros(7),
+        ub=jp.ones(7),
+        site_idxs=jp.array([0, 1]),
+        trunk_kps=jp.array([True, True]),
+    )
+
+    expected_q0 = jp.array([21.0, 22.0, 23.0, 4.0, 5.0, 6.0, 7.0])
+    assert stac_core.q_calls == 2
+    assert np.allclose(np.array(stac_core.q0_args[0]), np.array(expected_q0))
+    assert np.allclose(np.array(stac_core.q0_args[1]), np.array(expected_q0))
 
 
 def test_offset_optimization_updates_site_pos(monkeypatch):

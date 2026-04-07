@@ -23,26 +23,28 @@ def root_optimization(
     trunk_kps: jp.ndarray,
     frame: int = 0,
 ):
-    """Optimize fit for only the root.
+    """Optimize the root DOFs for a single frame.
 
-    The root is optimized first so as to remove a common contribution to
-    to rest of the child nodes. The choice of "root" node is somewhat
-    aribitrary since the body model is an undirected graph. The root here
-    is intended to mean the node closest to the center of mass of the
-    animal at rest.
+    The root is optimized first to remove a common contribution to the rest of
+    the kinematic chain. This seeds the root translation from the selected root
+    keypoint in `kp_data` and then runs two root-only q-phase solves using the
+    trunk keypoints as the objective.
 
     Args:
-        mjx_model (mjx.Model): MJX Model
-        mjx_data (mjx.Data): MJX Data
-        kp_data (jp.Array): Keypoint data
+        stac_core_obj (stac_core.StacCore): Solver wrapper used for q-phase optimization.
+        mjx_model (mjx.Model): MJX model.
+        mjx_data (mjx.Data): MJX data.
+        kp_data (jp.ndarray): Flattened keypoint data with shape
+            `(n_frames, 3 * n_keypoints)`.
+        root_kp_idx (int): Index of the root keypoint in the ordered keypoint list.
         lb (jp.ndarray): Array of lower bounds for corresponding qpos elements
         ub (jp.ndarray): Array of upper bounds for corresponding qpos elements
         site_idxs (jp.ndarray): Array of indices of offset sites
-        trunk_kps (jp.ndarray): Array of indices of keypoints to optimize
+        trunk_kps (jp.ndarray): Boolean mask of trunk keypoints to optimize.
         frame (int, optional): Frame to optimize. Defaults to 0.
 
     Returns:
-        mjx.Data: An updated MJX Data
+        mjx.Data: Updated MJX data after root optimization.
     """
     print(f"Root Optimization:")
 
@@ -53,8 +55,8 @@ def root_optimization(
     print(f"Optimizing first {root_dims} qposes for root optimization")
     s = time.time()
     q0 = jp.copy(mjx_data.qpos[:])
-
-    q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
+    root_xyz = kp_data[frame, 3 * root_kp_idx : 3 * root_kp_idx + 3]
+    q0 = q0.at[:3].set(root_xyz)
     qs_to_opt = jp.zeros_like(q0, dtype=bool)
     qs_to_opt = qs_to_opt.at[:root_dims].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
@@ -76,7 +78,7 @@ def root_optimization(
     )
 
     q0 = jp.copy(mjx_data.qpos[:])
-    q0.at[:3].set(kp_data[frame, :][root_kp_idx : root_kp_idx + 3])
+    q0 = q0.at[:3].set(root_xyz)
 
     # Trunk only optimization
     mjx_data, res = stac_core_obj.q_opt(
