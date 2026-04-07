@@ -1,7 +1,4 @@
-MJCF_PATH: "models/mouse_with_meshes.xml"
-
-# Frames per clip for ik_only.
-N_FRAMES_PER_CLIP: 360 # 1000 environments
+MJCF_PATH: "models/mouse/mouse_with_meshes.xml"
 
 # Tolerance for the optimizations of the full model, limb, and root.
 # TODO: Re-implement optimizer loops to use these tolerances
@@ -127,63 +124,63 @@ KEYPOINT_INITIAL_OFFSETS:
 ROOT_OPTIMIZATION_KEYPOINT: Trunk
 
 TRUNK_OPTIMIZATION_KEYPOINTS:
- - "Trunk"
- - "HipL"
- - "HipR"
- - "ShoulderL"
- - "ShoulderR"
+  - "Trunk"
+  - "Hip_L"
+  - "Hip_R"
+  - "Shoulder_L"
+  - "Shoulder_R"
 
-INDIVIDUAL_PART_OPTIMIZATION:
-#   "r_leg": [
-#     "mouse__Thoracic1",
-#     "mouse__Lumbar1",
-#     "mouse__Lumbar2",
-#     "mouse__Lumbar3",
-#     "mouse__Lumbar4",
-#     "mouse__Lumbar5",
-#     "mouse__RFemur",
-#     "mouse__RTibia",
-#     "mouse__RTarsus",
-#     "mouse__RBPhalange3",
-#     "mouse__RMetatarsus1",
-#     "mouse__RTarsus_interim_0"
-#   ]
-#   "l_leg": [
-#     "mouse__Thoracic1",
-#     "mouse__Lumbar1",
-#     "mouse__Lumbar2",
-#     "mouse__Lumbar3",
-#     "mouse__Lumbar4",
-#     "mouse__Lumbar5",
-#     "mouse__LFemur",
-#     "mouse__LTibia",
-#     "mouse__LTarsus",
-#     "mouse__RBPhalange3",
-#     "mouse__LMetatarsus1",
-#     "mouse__RTarsus_interim_0"
-#   ]
-#   "r_arm": [
-#     "mouse__RScapula",
-#     "mouse__RHumerus",
-#     "mouse__RRadius",
-#     "mouse__RCarpus",
-#     "mouse__RMetaCarpus1"
-#   ]
-#   "l_arm": [
-#     "mouse__LScapula",
-#     "mouse__LHumerus",
-#     "mouse__LRadius",
-#     "mouse__LCarpus",
-#     "mouse__LMetaCarpus1"
-#   ]
-#   "head": [
-#     "mouse__Cervical1",
-#     "mouse__Cervical2",
-#     "mouse__Cervical3",
-#     "mouse__Cervical4",
-#     "mouse__Cervical5",
-#     "mouse__Cervical6"
-#   ]
+# Optional per-limb pose refinement (see rodent model). The schema requires a real mapping
+# here— a key whose value is only #-comments parses as null and breaks OmegaConf. Use {}
+# to disable. To enable, replace {} with a copy of the template below (uncomment and fix YAML).
+#
+# INDIVIDUAL_PART_OPTIMIZATION template (disabled — paste as the value of the key above):
+#   r_leg:
+#     - mouse__Thoracic1
+#     - mouse__Lumbar1
+#     - mouse__Lumbar2
+#     - mouse__Lumbar3
+#     - mouse__Lumbar4
+#     - mouse__Lumbar5
+#     - mouse__RFemur
+#     - mouse__RTibia
+#     - mouse__RTarsus
+#     - mouse__RBPhalange3
+#     - mouse__RMetatarsus1
+#     - mouse__RTarsus_interim_0
+#   l_leg:
+#     - mouse__Thoracic1
+#     - mouse__Lumbar1
+#     - mouse__Lumbar2
+#     - mouse__Lumbar3
+#     - mouse__Lumbar4
+#     - mouse__Lumbar5
+#     - mouse__LFemur
+#     - mouse__LTibia
+#     - mouse__LTarsus
+#     - mouse__RBPhalange3
+#     - mouse__LMetatarsus1
+#     - mouse__RTarsus_interim_0
+#   r_arm:
+#     - mouse__RScapula
+#     - mouse__RHumerus
+#     - mouse__RRadius
+#     - mouse__RCarpus
+#     - mouse__RMetaCarpus1
+#   l_arm:
+#     - mouse__LScapula
+#     - mouse__LHumerus
+#     - mouse__LRadius
+#     - mouse__LCarpus
+#     - mouse__LMetaCarpus1
+#   head:
+#     - mouse__Cervical1
+#     - mouse__Cervical2
+#     - mouse__Cervical3
+#     - mouse__Cervical4
+#     - mouse__Cervical5
+#     - mouse__Cervical6
+INDIVIDUAL_PART_OPTIMIZATION: {}
 
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
@@ -201,8 +198,6 @@ KEYPOINT_COLOR_PAIRS:
   Tail_4: 0.58 0 0.82 1  # Purple
   Shoulder_L: 0.27 0.5 0.7 1  # Cerulean
   Shoulder_R: 0.2 0.4 0.6 1  # Darker Cerulean
-  HaunchL: 0.85 0.75 0.85 1  # Thistle
-  HaunchR: 0.8 0.6 0.8 1  # Darker Thistle
   Knee_L: 0.27 0.5 0.7 1  # Cerulean
   Knee_R: 0.2 0.4 0.6 1  # Darker Cerulean
   Neck: 0.5 0 0.5 1  # Plum
@@ -233,8 +228,8 @@ SCALE_FACTOR: 1.0
 MOCAP_SCALE_FACTOR: .001
 
 SITES_TO_REGULARIZE:
-   - ShoulderL
-   - ShoulderR
+  - Shoulder_L
+  - Shoulder_R
 #   - SpineF
 #   - SpineL
 #   - SpineM
