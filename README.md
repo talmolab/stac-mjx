@@ -145,7 +145,7 @@ The following is the full CLI script run as a sequence of function calls:
    # Choose parent directory as base path for data files
    base_path = Path.cwd().parent
 
-   # Load configs
+   # Load configs (uses `configs/config.yaml` defaults)
    cfg = stac_mjx.load_configs(base_path / "configs")
 
    # Load data
