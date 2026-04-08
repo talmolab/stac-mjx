@@ -49,7 +49,7 @@ def make_cfg(
         infer_qvels=infer_qvels,
         continuous=continuous,
     )
-    model = types.SimpleNamespace(MJCF_PATH="models/rodent.xml")
+    model = types.SimpleNamespace(MJCF_PATH="models/rodent.xml", MOCAP_SCALE_FACTOR=1.0)
     return types.SimpleNamespace(stac=stac, model=model)
 
 
@@ -112,3 +112,27 @@ def test_run_stac_validates_kp_data_shape(monkeypatch):
 
     with pytest.raises(ValueError, match="kp_data"):
         main.run_stac(cfg, kp_data, ["a", "b"])
+
+
+def test_run_stac_applies_mocap_scale_factor(monkeypatch):
+    """Verify that run_stac() scales kp_data by MOCAP_SCALE_FACTOR."""
+    cfg = make_cfg(skip_fit_offsets=False, skip_ik_only=True)
+    cfg.model.MOCAP_SCALE_FACTOR = 0.001
+
+    raw_kp_data = np.ones((4, 6))
+
+    captured = {}
+
+    class CapturingStac(DummyStac):
+        def fit_offsets(self, kps):
+            captured["fit_kps"] = np.array(kps)
+            return DummyData()
+
+    monkeypatch.setattr(main, "Stac", CapturingStac)
+    monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
+    monkeypatch.setattr(main.io, "save_data_to_h5", lambda *args, **kwargs: None)
+
+    main.run_stac(cfg, raw_kp_data, ["a", "b"])
+
+    expected = raw_kp_data[:2] * 0.001  # n_fit_frames=2
+    np.testing.assert_allclose(captured["fit_kps"], expected)

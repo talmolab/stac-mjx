@@ -217,7 +217,9 @@ class Stac:
         """Alternate between pose and offset optimization for a set number of iterations.
 
         Args:
-            kp_data (jp.ndarray): Mocap keypoints to fit to
+            kp_data (jp.ndarray): Mocap keypoints to fit to, in model units
+                (i.e. already scaled by MOCAP_SCALE_FACTOR). When called via
+                run_stac(), scaling is applied automatically.
 
         Returns:
             Dict: Output data packaged in a dictionary.
@@ -328,10 +330,11 @@ class Stac:
             will contain identical data.)
 
         Args:
-            mj_model (mujoco.Model): Physics model.
-            kp_data (jp.ndarray): Keypoint data in meters with shape
+            kp_data (jp.ndarray): Keypoint data in model units (i.e. already
+                scaled by MOCAP_SCALE_FACTOR) with shape
                 (n_frames, 3 * n_keypoints). Keypoint order must match the
-                order in the skeleton file.
+                order in the skeleton file. When called via run_stac(),
+                scaling is applied automatically.
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
         # Create batches of kp_data
