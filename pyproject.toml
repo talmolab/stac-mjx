@@ -34,7 +34,7 @@ dependencies = [
     "tqdm",
     "jaxopt==0.8.5",
     "jax>=0.7.2",
-    "jaxls",
+    "jaxls @ git+https://github.com/brentyi/jaxls.git",
     "jaxlie",
     ]
     dynamic = ["version", "readme"]

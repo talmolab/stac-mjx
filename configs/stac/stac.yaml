@@ -12,3 +12,13 @@ mujoco:
   solver: "newton"
   iterations: 1
   ls_iterations: 4
+
+# jaxls solver settings
+USE_JAXLS: false
+STEPSIZE_Q: 0.0
+JAXLS_LAMBDA_INITIAL: 1.0
+JAXLS_SMOOTH_WEIGHT: 0.0
+JAXLS_LINEAR_SOLVER: "auto"
+JAXLS_CHUNK_SIZE: 100
+JAXLS_USE_SE3_ROOT: true
+JAXLS_ORIENTATION_KEYPOINTS: {}

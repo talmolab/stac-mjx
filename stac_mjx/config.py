@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List
 
@@ -46,6 +46,7 @@ class MujocoConfig:
     solver: str  # Solver to use ('cg' or 'newton')
     iterations: int  # Number of solver iterations
     ls_iterations: int  # Number of line search iterations
+    dt: float = 0.002  # Timestep for MuJoCo simulation
 
 
 @dataclass
@@ -63,6 +64,16 @@ class StacConfig:
     n_frames_per_clip: int  # Number of frames per clip
     mujoco: MujocoConfig  # Configuration for Mujoco
     continuous: bool  # Whether the data is continuous (to allow for edge effects post-processing)
+    USE_JAXLS: bool = False  # Use jaxls batch LM solver instead of ProjectedGradient
+    STEPSIZE_Q: float = 0.0  # Fixed step size for q optimizer (0 = line search)
+    JAXLS_LAMBDA_INITIAL: float = 1.0  # LM damping factor
+    JAXLS_SMOOTH_WEIGHT: float = 0.0  # Temporal smoothness weight
+    JAXLS_LINEAR_SOLVER: str = "auto"  # Linear solver for jaxls
+    JAXLS_CHUNK_SIZE: int = 100  # Max frames per jaxls solve (0 = no chunking)
+    JAXLS_USE_SE3_ROOT: bool = True  # Use SE3 manifold representation for root
+    JAXLS_ORIENTATION_KEYPOINTS: Dict[str, str] = field(
+        default_factory=dict
+    )  # rear/left/right/front keypoints for warm-start orientation
 
 
 @dataclass

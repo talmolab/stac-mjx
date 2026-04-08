@@ -6,6 +6,7 @@ import numpy as np
 import mujoco
 from typing import Tuple, List
 import time
+
 from stac_mjx import stac_core
 from stac_mjx import utils
 
@@ -24,10 +25,10 @@ def _estimate_orientation_from_keypoints(
 
     Args:
         kp_flat: Keypoint data (T, n_kp*3).
-        rear_idx: Index of rear trunk keypoint (e.g. Scutellum) in KP_NAMES.
-        left_idx: Index of left keypoint (e.g. WingL_base) in KP_NAMES.
-        right_idx: Index of right keypoint (e.g. WingR_base) in KP_NAMES.
-        front_idx: Index of front keypoint (e.g. Antenna_Base). -1 to skip.
+        rear_idx: Index of rear trunk keypoint in KP_NAMES.
+        left_idx: Index of left keypoint in KP_NAMES.
+        right_idx: Index of right keypoint in KP_NAMES.
+        front_idx: Index of front keypoint. -1 to skip.
 
     Returns:
         Quaternions (T, 4) in MuJoCo [w, x, y, z] format.
@@ -35,7 +36,7 @@ def _estimate_orientation_from_keypoints(
 
     def _quat_from_frame(rear, left, right, front, has_front):
         """Build quaternion from 3-4 keypoint positions (single frame)."""
-        # Lateral axis: left → right (fly's left-to-right)
+        # Lateral axis: left -> right (fly's left-to-right)
         lat = left - right
         lat_norm = jp.linalg.norm(lat)
         lat = jp.where(lat_norm > 1e-12, lat / lat_norm, jp.array([0.0, 1.0, 0.0]))
@@ -57,16 +58,14 @@ def _estimate_orientation_from_keypoints(
         fwd = jp.where(fwd_norm > 1e-12, fwd / fwd_norm, jp.array([1.0, 0.0, 0.0]))
 
         # Rotation matrix columns: [fwd, lat, up]
-        # R maps body-frame axes to world-frame directions
         R = jp.stack([fwd, lat, up], axis=-1)  # (3, 3)
 
-        # Shepperd method: rotation matrix → quaternion [w, x, y, z]
+        # Shepperd method: rotation matrix -> quaternion [w, x, y, z]
         trace = R[0, 0] + R[1, 1] + R[2, 2]
-        # Four candidates to avoid numerical instability
-        s0 = jp.sqrt(jp.maximum(trace + 1.0, 0.0)) * 2.0  # 4w
-        s1 = jp.sqrt(jp.maximum(1.0 + R[0, 0] - R[1, 1] - R[2, 2], 0.0)) * 2.0  # 4x
-        s2 = jp.sqrt(jp.maximum(1.0 + R[1, 1] - R[0, 0] - R[2, 2], 0.0)) * 2.0  # 4y
-        s3 = jp.sqrt(jp.maximum(1.0 + R[2, 2] - R[0, 0] - R[1, 1], 0.0)) * 2.0  # 4z
+        s0 = jp.sqrt(jp.maximum(trace + 1.0, 0.0)) * 2.0
+        s1 = jp.sqrt(jp.maximum(1.0 + R[0, 0] - R[1, 1] - R[2, 2], 0.0)) * 2.0
+        s2 = jp.sqrt(jp.maximum(1.0 + R[1, 1] - R[0, 0] - R[2, 2], 0.0)) * 2.0
+        s3 = jp.sqrt(jp.maximum(1.0 + R[2, 2] - R[0, 0] - R[1, 1], 0.0)) * 2.0
 
         q0 = jp.array([s0 / 4.0, (R[2, 1] - R[1, 2]) / s0,
                         (R[0, 2] - R[2, 0]) / s0, (R[1, 0] - R[0, 1]) / s0])
@@ -77,25 +76,21 @@ def _estimate_orientation_from_keypoints(
         q3 = jp.array([(R[1, 0] - R[0, 1]) / s3, (R[0, 2] + R[2, 0]) / s3,
                         (R[1, 2] + R[2, 1]) / s3, s3 / 4.0])
 
-        # Pick the candidate with the largest denominator (most stable)
         diag = jp.array([trace, R[0, 0], R[1, 1], R[2, 2]])
         best = jp.argmax(diag)
         q = jp.where(best == 0, q0,
             jp.where(best == 1, q1,
             jp.where(best == 2, q2, q3)))
 
-        # Normalize
         q = q / jp.linalg.norm(q)
-        # Ensure w >= 0 for consistent sign
         q = jp.where(q[0] < 0, -q, q)
         return q
 
     T = kp_flat.shape[0]
 
-    # Extract per-frame 3D positions for each keypoint
-    rear = kp_flat[:, rear_idx * 3 : rear_idx * 3 + 3]    # (T, 3)
-    left = kp_flat[:, left_idx * 3 : left_idx * 3 + 3]    # (T, 3)
-    right = kp_flat[:, right_idx * 3 : right_idx * 3 + 3]  # (T, 3)
+    rear = kp_flat[:, rear_idx * 3 : rear_idx * 3 + 3]
+    left = kp_flat[:, left_idx * 3 : left_idx * 3 + 3]
+    right = kp_flat[:, right_idx * 3 : right_idx * 3 + 3]
 
     if front_idx >= 0:
         front = kp_flat[:, front_idx * 3 : front_idx * 3 + 3]
@@ -104,11 +99,9 @@ def _estimate_orientation_from_keypoints(
         front = jp.zeros((T, 3))
         has_front = jp.array(False)
 
-    # Vectorize over T frames
     quats = jax.vmap(_quat_from_frame)(rear, left, right, front, jp.broadcast_to(has_front, (T,)))
 
-    # Enforce consistent quaternion sign across trajectory (prevent sign flips
-    # that would confuse the smoothness cost)
+    # Enforce consistent quaternion sign across trajectory
     def _consistent_sign(carry, q):
         prev = carry
         dot = jp.dot(prev, q)
@@ -117,7 +110,7 @@ def _estimate_orientation_from_keypoints(
 
     _, quats = jax.lax.scan(_consistent_sign, quats[0], quats)
 
-    return quats  # (T, 4)
+    return quats
 
 
 def root_optimization(
@@ -168,7 +161,7 @@ def root_optimization(
     qs_to_opt = qs_to_opt.at[:root_dims].set(True)
     kps_to_opt = jp.repeat(trunk_kps, 3)
 
-    no_reg = jp.zeros(mjx_model.nq)  # no joint regularization for root optimization
+    no_reg = jp.zeros(mjx_model.nq)
 
     mjx_data, res = stac_core_obj.q_opt(
         mjx_model,
@@ -366,11 +359,15 @@ def pose_optimization(
 
         return mjx_data, res.state.error
 
+    if getattr(stac_core_obj, '_use_jaxls', False):
+        root_kp_idx = getattr(stac_core_obj, '_root_kp_idx', -1)
+        return _pose_optimization_jaxls(
+            stac_core_obj, mjx_model, mjx_data, kp_data,
+            lb, ub, site_idxs, kps_to_opt, _q_reg, s,
+            root_kp_idx=root_kp_idx,
+        )
+
     # Optimize over each frame using lax.scan to avoid Python loop unrolling.
-    # A Python for-loop over frames inside jax.vmap causes JAX to unroll all
-    # iterations into the computation graph at trace time, which makes XLA
-    # compilation take hours for typical clip lengths (e.g. 601 frames).
-    # jax.lax.scan compiles the loop body once and runs it as a device loop.
     def scan_fn(mjx_data, n_frame):
         mjx_data, error = f(mjx_data, kp_data, n_frame, indiv_parts)
         outputs = (
@@ -382,19 +379,10 @@ def pose_optimization(
         )
         return mjx_data, outputs
 
-    if stac_core_obj._use_jaxls:
-        # Pass root keypoint index so jaxls can build per-frame warm-starts
-        root_kp_idx = getattr(stac_core_obj, '_root_kp_idx', -1)
-        return _pose_optimization_jaxls(
-            stac_core_obj, mjx_model, mjx_data, kp_data,
-            lb, ub, site_idxs, kps_to_opt, _q_reg, s,
-            root_kp_idx=root_kp_idx,
-        )
-
     mjx_data, (qposes, xposes, xquats, marker_sites, frame_error) = jax.lax.scan(
         scan_fn, mjx_data, frames
     )
-    frame_time = []  # per-frame wall-clock timing is not meaningful inside traced JAX code
+    frame_time = []
 
     print(f"Pose Optimization finished in {(time.time() - s) / 60.0:.2f} minutes")
     return (
@@ -426,10 +414,6 @@ def _pose_optimization_jaxls(
     Solves all T frames simultaneously in one jaxls LeastSquaresProblem.
     Adjacent frames are coupled via a smoothness cost when smooth_weight > 0.
 
-    Individual per-limb optimization passes are dropped — the LM Hessian
-    (J^T J) naturally couples all joints, making separate limb passes
-    unnecessary.
-
     Args:
         stac_core_obj: StacCore with _use_jaxls=True.
         mjx_model: MJX Model.
@@ -440,10 +424,10 @@ def _pose_optimization_jaxls(
         kps_to_opt: Per-keypoint weight mask (n_kp*3,).
         q_reg_weights: Per-joint regularization weights (nq,).
         s: Wall-clock start time for logging.
+        root_kp_idx: Index of root keypoint for warm-starting.
 
     Returns:
-        Same tuple as pose_optimization(): (mjx_data, qposes, xposes, xquats,
-        marker_sites, frame_time, frame_error)
+        Same tuple as pose_optimization().
     """
     T = kp_data.shape[0]
     qs_to_opt = jp.ones(mjx_model.nq, dtype=bool)
@@ -453,15 +437,12 @@ def _pose_optimization_jaxls(
 
     # Build per-frame warm-start: tile the root-optimized qpos, then
     # override root xyz with each frame's root keypoint position.
-    # This gives each frame a reasonable starting root position instead
-    # of all frames starting at frame 0's position.
-    q_base = mjx_data.qpos  # root-optimized qpos from root_optimization phase
-    q_init_all = jp.tile(q_base, (T, 1))  # (T, nq)
+    q_base = mjx_data.qpos
+    q_init_all = jp.tile(q_base, (T, 1))
     if root_kp_idx >= 0 and mjx_model.jnt_type[0] in (
         mujoco.mjtJoint.mjJNT_FREE, mujoco.mjtJoint.mjJNT_SLIDE,
     ):
-        # Extract root xyz from keypoint data for each frame
-        kp_root_xyz = kp_flat[:, root_kp_idx * 3 : root_kp_idx * 3 + 3]  # (T, 3)
+        kp_root_xyz = kp_flat[:, root_kp_idx * 3 : root_kp_idx * 3 + 3]
         q_init_all = q_init_all.at[:, :3].set(kp_root_xyz)
 
     # Per-frame orientation warm-start from trunk keypoints
@@ -475,16 +456,10 @@ def _pose_optimization_jaxls(
 
     chunk_size = stac_core_obj._jaxls_chunk_size
     if chunk_size > 0 and T > chunk_size:
-        # Solve in fixed-size chunks to avoid OOM on long clips.
-        # Each chunk is warm-started from the previous chunk's last solved pose,
-        # but root xyz is overridden with per-frame keypoint positions.
         qposes_chunks = []
         for c_start in range(0, T, chunk_size):
             c_end = min(c_start + chunk_size, T)
             q_init_chunk = q_init_all[c_start:c_end]
-            # Warm-start hinge joints from previous chunk's last solved pose.
-            # Keep per-frame root position (0:3) and orientation (3:7) from
-            # q_init_all (which has keypoint-derived values).
             if qposes_chunks:
                 q_prev = qposes_chunks[-1][-1]
                 if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_FREE:
@@ -518,7 +493,7 @@ def _pose_optimization_jaxls(
             ub=ub,
             site_idxs=site_idxs,
             q_reg_weights=q_reg_weights,
-        )  # (T, nq)
+        )
 
     # Compute xpos / xquat / marker_sites for all frames via vmap
     def fk_frame(q):

@@ -1,5 +1,6 @@
 import types
 
+import jax
 import numpy as np
 from jax import numpy as jp
 
@@ -20,6 +21,20 @@ class FakeMjxData:
             xpos=kwargs.get("xpos", self.xpos),
             xquat=kwargs.get("xquat", self.xquat),
         )
+
+
+# Register FakeMjxData as a JAX pytree so it can be used as a carry in jax.lax.scan.
+def _fake_mjx_data_flatten(data):
+    children = (data.qpos, data.site_xpos, data.xpos, data.xquat)
+    return children, None
+
+def _fake_mjx_data_unflatten(aux, children):
+    return FakeMjxData(qpos=children[0], site_xpos=children[1],
+                       xpos=children[2], xquat=children[3])
+
+jax.tree_util.register_pytree_node(
+    FakeMjxData, _fake_mjx_data_flatten, _fake_mjx_data_unflatten
+)
 
 
 class FakeMjxModel:
@@ -137,7 +152,7 @@ def test_pose_optimization_runs_all_frames(monkeypatch):
         indiv_parts=[],
     )
 
-    _, qposes, _, _, marker_sites, _, frame_error = result
+    _, qposes, xposes, xquats, marker_sites, _, frame_error = result
     assert qposes.shape == (2, 7)
-    assert len(marker_sites) == 2
-    assert len(frame_error) == 2
+    assert marker_sites.shape[0] == 2
+    assert frame_error.shape[0] == 2

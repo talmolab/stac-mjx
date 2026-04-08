@@ -13,7 +13,6 @@ from stac_mjx import utils, rescale, compute_stac, io, stac_core
 from omegaconf import DictConfig
 from typing import List, Union
 from pathlib import Path
-from copy import deepcopy
 import imageio
 from tqdm import tqdm
 
@@ -87,14 +86,15 @@ class Stac:
         """
         self.cfg = cfg
         self._kp_names = kp_names
-        self._spec = mujoco.MjSpec.from_file(str(xml_path))
+        self._xml_path = Path(xml_path)
+        self._marker_size = cfg.model.MARKER_SIZE
         self.stac_core_obj = None
 
         (
             self._mj_model,
             self._body_site_idxs,
             self._is_regularized,
-        ) = self._create_body_sites(self._spec)
+        ) = self._init_body_sites()
 
         self._body_names = [
             self._mj_model.body(i).name for i in range(self._mj_model.nbody)
@@ -133,7 +133,11 @@ class Stac:
             "newton": mujoco.mjtSolver.mjSOL_NEWTON,
         }[cfg.stac.mujoco.solver.lower()]
 
-        self._mj_model.opt.timestep = cfg.stac.mujoco.dt
+        # Set timestep if configured (optional field, may not exist in older configs)
+        dt = getattr(cfg.stac.mujoco, "dt", None)
+        if dt is not None:
+            self._mj_model.opt.timestep = dt
+
         self._mj_model.opt.iterations = cfg.stac.mujoco.iterations
         self._mj_model.opt.ls_iterations = cfg.stac.mujoco.ls_iterations
 
@@ -148,19 +152,19 @@ class Stac:
         # Create Stac_Core object
         self.stac_core_obj = stac_core.StacCore(
             self.cfg.model.FTOL, self.cfg.model.N_ITER_Q, self.cfg.model.N_ITER_M,
-            stepsize_q=getattr(self.cfg.model, "STEPSIZE_Q", 0.0),
-            use_jaxls=getattr(self.cfg.model, "USE_JAXLS", False),
-            jaxls_lambda_initial=getattr(self.cfg.model, "JAXLS_LAMBDA_INITIAL", 1.0),
-            smooth_weight=getattr(self.cfg.model, "JAXLS_SMOOTH_WEIGHT", 0.0),
-            jaxls_linear_solver=getattr(self.cfg.model, "JAXLS_LINEAR_SOLVER", "auto"),
-            jaxls_chunk_size=getattr(self.cfg.model, "JAXLS_CHUNK_SIZE", 100),
-            use_se3_root=getattr(self.cfg.model, "JAXLS_USE_SE3_ROOT", True),
+            stepsize_q=getattr(self.cfg.stac, "STEPSIZE_Q", 0.0),
+            use_jaxls=getattr(self.cfg.stac, "USE_JAXLS", False),
+            jaxls_lambda_initial=getattr(self.cfg.stac, "JAXLS_LAMBDA_INITIAL", 1.0),
+            smooth_weight=getattr(self.cfg.stac, "JAXLS_SMOOTH_WEIGHT", 0.0),
+            jaxls_linear_solver=getattr(self.cfg.stac, "JAXLS_LINEAR_SOLVER", "auto"),
+            jaxls_chunk_size=getattr(self.cfg.stac, "JAXLS_CHUNK_SIZE", 100),
+            use_se3_root=getattr(self.cfg.stac, "JAXLS_USE_SE3_ROOT", True),
         )
         # Expose root keypoint index on stac_core_obj for jaxls warm-starting
         self.stac_core_obj._root_kp_idx = self._root_kp_idx
 
         # Parse orientation keypoints for per-frame quaternion warm-start
-        orient_cfg = self.cfg.model.get("JAXLS_ORIENTATION_KEYPOINTS", {})
+        orient_cfg = self.cfg.stac.get("JAXLS_ORIENTATION_KEYPOINTS", {})
         if orient_cfg and len(orient_cfg) >= 3:
             try:
                 rear_idx = self._kp_names.index(orient_cfg["rear"])
@@ -169,7 +173,7 @@ class Stac:
                 front_idx = self._kp_names.index(orient_cfg["front"]) if "front" in orient_cfg else -1
                 self.stac_core_obj._orientation_kp_indices = (rear_idx, left_idx, right_idx, front_idx)
             except (ValueError, KeyError) as exc:
-                print(f"Warning: JAXLS_ORIENTATION_KEYPOINTS: {exc} — orientation warm-start disabled")
+                print(f"Warning: JAXLS_ORIENTATION_KEYPOINTS: {exc} -- orientation warm-start disabled")
                 self.stac_core_obj._orientation_kp_indices = None
         else:
             self.stac_core_obj._orientation_kp_indices = None
@@ -195,16 +199,9 @@ class Stac:
 
         return indiv_parts
 
-    def _create_body_sites(self, spec: mujoco.MjSpec):
-        """Create body site elements using dmcontrol mjcf for each keypoint.
-
-        Args:
-            spec (mujoco.MjSpec):
-
-        Returns:
-            mujoco.Model, list of marker site indices, boolean mask for offset
-            regularization, lists for part names and body names.
-        """
+    def _build_body_spec(self) -> mujoco.MjSpec:
+        """Create a fresh spec with body sites for keypoints."""
+        spec = mujoco.MjSpec.from_file(str(self._xml_path))
         for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
             parent = spec.body(v)
             pos = self.cfg.model.KEYPOINT_INITIAL_OFFSETS[key]
@@ -214,14 +211,18 @@ class Stac:
 
             parent.add_site(
                 name=key,
-                size=[0.005, 0.005, 0.005],
+                size=[self._marker_size] * 3,
                 rgba=(0, 0, 0, 0.8),
                 pos=pos,
                 group=3,
             )
 
-        rescale.dm_scale_spec(spec, self.cfg.model.SCALE_FACTOR)
-        model = self._spec.compile()
+        return rescale.dm_scale_spec(spec, self.cfg.model.SCALE_FACTOR)
+
+    def _init_body_sites(self):
+        """Compile the fitting model and create site indices and masks."""
+        spec = self._build_body_spec()
+        model = spec.compile()
 
         site_index_map = {
             site_name: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
@@ -237,11 +238,7 @@ class Stac:
                 is_regularized.append(jp.array([0.0, 0.0, 0.0]))
         is_regularized = jp.stack(is_regularized).flatten()
         body_site_idxs = jp.array(list(site_index_map.values()))
-        return (
-            model,
-            body_site_idxs,
-            is_regularized,
-        )
+        return model, body_site_idxs, is_regularized
 
     def _get_error_stats(self, errors: list):
         """Compute error stats."""
@@ -371,86 +368,57 @@ class Stac:
 
         Args:
             mj_model (mujoco.Model): Physics model.
-            kp_data (jp.ndarray): Keypoint data in meters (batch_size, n_frames, 3, n_keypoints).
-                Keypoint order must match the order in the skeleton file.
+            kp_data (jp.ndarray): Keypoint data in meters with shape
+                (n_frames, 3 * n_keypoints). Keypoint order must match the
+                order in the skeleton file.
             offsets (jp.ndarray): offsets loaded from offset.p after fit()
         """
-        # Create batches of kp_data
+        # Create batches of kp_data.
+        # jaxls path: disable continuous overlap so clip size matches fit_offsets
+        # (T=n_frames_per_clip). The jaxls smoothness cost handles temporal
+        # continuity, making the overlap + crossfade edge effect handling
+        # unnecessary and avoiding a costly JIT recompile for the larger clip size.
+        use_continuous = self.cfg.stac.continuous and not self.stac_core_obj._use_jaxls
         batched_kp_data = utils.batch_kp_data(
             kp_data,
             self.cfg.stac.n_frames_per_clip,
-            continuous=self.cfg.stac.continuous,
+            continuous=use_continuous,
         )
 
-        # Create mjx model and data
-        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
-
-        def mjx_setup(kp_data, mj_model):
-            """Create mjxmodel and mjxdata and set offet.
-
-            Args:
-                kp_data (_type_): _description_
-
-            Returns:
-                _type_: _description_
-            """
-            # Create mjx model and data
-            mjx_model, mjx_data = utils.mjx_load(mj_model)
-
-            # Set the offsets.
+        if self.stac_core_obj._use_jaxls:
+            # jaxls path: use a single (non-batched) mjx_model/mjx_data so the
+            # JIT-compiled solver from fit_offsets is reused without recompilation.
+            mjx_model, mjx_data = utils.mjx_load(self._mj_model)
             mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
-
-            # forward is used to calculate xpos and such
             mjx_data = mjx.kinematics(mjx_model, mjx_data)
             mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
-            return mjx_model, mjx_data
+            # Root optimization on first clip only to set initial qpos state.
+            # Per-frame root position and orientation are handled by
+            # _pose_optimization_jaxls() warm-start from keypoints.
+            if self._root_kp_idx != -1 and not self._fixed:
+                mjx_data = compute_stac.root_optimization(
+                    self.stac_core_obj,
+                    mjx_model,
+                    mjx_data,
+                    batched_kp_data[0],
+                    self._root_kp_idx,
+                    self._lb,
+                    self._ub,
+                    self._body_site_idxs,
+                    self._trunk_kps,
+                )
 
-        mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
-            batched_kp_data, self._mj_model
-        )
-
-        # q_phase - root
-        if self._root_kp_idx == -1:
-            print(
-                "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
-            )
-        elif self._mj_model.jnt_type[0] in (
-            mujoco.mjtJoint.mjJNT_FREE,
-            mujoco.mjtJoint.mjJNT_SLIDE,
-        ):
-            vmap_root_opt = jax.vmap(
-                compute_stac.root_optimization,
-                in_axes=(None, 0, 0, 0, None, None, None, None, None),
-            )
-            mjx_data = vmap_root_opt(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                batched_kp_data,
-                self._root_kp_idx,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._trunk_kps,
-            )
-        else:
-            print(
-                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping root_optimization()"
-            )
-
-        # q_phase - pose
-        if self.stac_core_obj._use_jaxls:
-            # jaxls uses Python-loop chunking internally, so process clips
-            # sequentially instead of vmapping (which would multiply memory).
+            # Solve each clip sequentially, reusing the cached JIT trace
             n_clips = batched_kp_data.shape[0]
             results = []
             for i in range(n_clips):
-                print(f"Clip {i+1}/{n_clips}")
+                if i % 100 == 0 or i == n_clips - 1:
+                    print(f"Clip {i+1}/{n_clips}")
                 result = compute_stac.pose_optimization(
                     self.stac_core_obj,
-                    jax.tree.map(lambda x: x[i], mjx_model),
-                    jax.tree.map(lambda x: x[i], mjx_data),
+                    mjx_model,
+                    mjx_data,
                     batched_kp_data[i],
                     self._lb,
                     self._ub,
@@ -459,15 +427,60 @@ class Stac:
                     self._kp_weights,
                 )
                 results.append(result)
-            # Stack results: each is (mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error)
-            mjx_data = jax.tree.map(lambda *xs: jp.stack(xs), *(r[0] for r in results))
+            mjx_data_last = results[-1][0]
             qposes = jp.stack([r[1] for r in results])
             xposes = jp.stack([r[2] for r in results])
             xquats = jp.stack([r[3] for r in results])
             marker_sites = jp.stack([r[4] for r in results])
             frame_time = []
             frame_error = jp.stack([r[6] for r in results])
+
+            # Wrap single mjx_model/mjx_data to match batched shape for _package_data
+            mjx_model = jax.tree.map(lambda x: jp.broadcast_to(x, (n_clips, *x.shape)), mjx_model)
+            mjx_data = jax.tree.map(lambda x: jp.broadcast_to(x, (n_clips, *x.shape)), mjx_data_last)
         else:
+            # Non-jaxls path: vmap across clips
+            def mjx_setup(kp_data, mj_model):
+                mjx_model, mjx_data = utils.mjx_load(mj_model)
+                mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+                mjx_data = mjx.kinematics(mjx_model, mjx_data)
+                mjx_data = mjx.com_pos(mjx_model, mjx_data)
+                return mjx_model, mjx_data
+
+            mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
+                batched_kp_data, self._mj_model
+            )
+
+            # q_phase - root
+            if self._root_kp_idx == -1:
+                print(
+                    "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
+                )
+            elif self._mj_model.jnt_type[0] in (
+                mujoco.mjtJoint.mjJNT_FREE,
+                mujoco.mjtJoint.mjJNT_SLIDE,
+            ):
+                vmap_root_opt = jax.vmap(
+                    compute_stac.root_optimization,
+                    in_axes=(None, 0, 0, 0, None, None, None, None, None),
+                )
+                mjx_data = vmap_root_opt(
+                    self.stac_core_obj,
+                    mjx_model,
+                    mjx_data,
+                    batched_kp_data,
+                    self._root_kp_idx,
+                    self._lb,
+                    self._ub,
+                    self._body_site_idxs,
+                    self._trunk_kps,
+                )
+            else:
+                print(
+                    "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping root_optimization()"
+                )
+
+            # q_phase - pose
             vmap_pose_opt = jax.vmap(
                 compute_stac.pose_optimization,
                 in_axes=(None, 0, 0, 0, None, None, None, None, None),
@@ -513,8 +526,8 @@ class Stac:
             get_batch_offsets = jax.vmap(utils.get_site_pos, in_axes=(0, None))
             offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
             qposes = qposes.reshape(-1, qposes.shape[-1])
-            xposes = xposes.reshape(-1, *xposes.shape[2:])
-            xquats = xquats.reshape(-1, *xquats.shape[2:])
+            xposes = xposes.reshape(-1, *xposes.shape[2:], order="F")
+            xquats = xquats.reshape(-1, *xquats.shape[2:], order="F")
             marker_sites = marker_sites.reshape(-1, *marker_sites.shape[2:])
         else:
             offsets = self._offsets.reshape((-1, 3))
@@ -534,16 +547,12 @@ class Stac:
             kp_names=self._kp_names,
         )
 
-    def _create_render_sites(self):
-        """Create sites for keypoints (used for rendering only).
-
-        Returns:
-            (mujoco.Model, List, List): Mj_model for rendering, list of keypoint site indices, and list of body site indices
-        """
-        keypoint_sites = []
+    def _build_render_model(self, offsets: jp.ndarray, show_marker_error: bool):
+        """Create a rendering model with keypoint and marker sites."""
+        render_spec = self._build_body_spec()
         keypoint_site_names = []
         # set up keypoint rendering by adding the kp sites to the root body
-        for id, name in enumerate(self.cfg.model.KEYPOINT_MODEL_PAIRS):
+        for name in self.cfg.model.KEYPOINT_MODEL_PAIRS:
             start = (np.random.rand(3) - 0.5) * 0.001
             rgba = self.cfg.model.KEYPOINT_COLOR_PAIRS[name]
 
@@ -551,32 +560,44 @@ class Stac:
                 rgba = [float(c) for c in rgba.split(" ")]
             site_name = name + "_kp"
             keypoint_site_names.append(site_name)
-            site = self._spec.worldbody.add_site(
+            render_spec.worldbody.add_site(
                 name=site_name,
-                size=[0.005, 0.005, 0.005],
+                size=[self._marker_size] * 3,
                 rgba=rgba,
                 pos=start,
                 group=2,
             )
-            keypoint_sites.append(site)
 
-        model = self._spec.compile()
+        # Add body sites for new offsets
+        offsets = np.asarray(offsets).reshape((-1, 3))
+        for (key, v), pos in zip(self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets):
+            parent = render_spec.body(v)
+            parent.add_site(
+                name=key + "_new",
+                size=[self._marker_size] * 3,
+                rgba=[0, 0, 0, 1],
+                pos=pos,
+                group=2,
+            )
 
-        # Combine the two lists of site names and create the index map
-        site_index_map = {
-            site.name: i
-            for i, site in enumerate(self._spec.sites)
-            if site.name
-            in list(self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()) + keypoint_site_names
-        }
-        body_site_idxs = [
-            site_index_map[n] for n in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
+        # Tendons from new marker sites to kp
+        if show_marker_error:
+            for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
+                tendon = render_spec.add_tendon(
+                    name=key + "-" + v,
+                    width="0.001",
+                    rgba=[255, 0, 0, 1],  # Red
+                    limited=False,
+                )
+                tendon.wrap_site(key + "_kp")
+                tendon.wrap_site(key + "_new")
+
+        render_mj_model = render_spec.compile()
+        keypoint_site_idxs = [
+            mujoco.mj_name2id(render_mj_model, mujoco.mjtObj.mjOBJ_SITE, site_name)
+            for site_name in keypoint_site_names
         ]
-        keypoint_site_idxs = [site_index_map[n] for n in keypoint_site_names]
-
-        self._body_site_idxs = body_site_idxs
-        self._keypoint_site_idxs = keypoint_site_idxs
-        return (deepcopy(model), body_site_idxs, keypoint_site_idxs)
+        return render_mj_model, keypoint_site_idxs
 
     def render(
         self,
@@ -626,44 +647,17 @@ class Stac:
                 f"start_frame + n_frames ({start_frame} + {n_frames}) must be less than the length of given qposes and kp_data ({kp_data.shape[0]})"
             )
 
-        render_mj_model, body_site_idxs, keypoint_site_idxs = (
-            self._create_render_sites()
+        render_mj_model, keypoint_site_idxs = self._build_render_model(
+            offsets, show_marker_error
         )
 
-        # Add body sites for new offsets
-        for (key, v), pos in zip(
-            self.cfg.model.KEYPOINT_MODEL_PAIRS.items(), offsets.reshape((-1, 3))
-        ):
-            parent = self._spec.body(v)
-            parent.add_site(
-                name=key + "_new",
-                size=[0.005, 0.005, 0.005],
-                rgba=[0, 0, 0, 1],
-                pos=pos,
-                group=2,
-            )
-
-        # Tendons from new marker sites to kp
-        if show_marker_error:
-            for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
-                tendon = self._spec.add_tendon(
-                    name=key + "-" + v,
-                    width="0.001",
-                    rgba=[255, 0, 0, 1],  # Red
-                    limited=False,
-                )
-                tendon.wrap_site(key + "_kp")
-                tendon.wrap_site(key + "_new")
-
-        render_mj_model = deepcopy(self._spec.compile())
-
         scene_option = mujoco.MjvOption()
-        scene_option.geomgroup[1] = 1
+        scene_option.geomgroup[1] = 0
         scene_option.geomgroup[2] = 1
-        scene_option.sitegroup[:] = [1, 1, 1, 1, 1, 0]
 
-        # scene_option.sitegroup[2] = 1
-        # scene_option.sitegroup[3] = 1
+        scene_option.sitegroup[2] = 1
+
+        scene_option.sitegroup[3] = 0
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_LIGHT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = True

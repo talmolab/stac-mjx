@@ -1,12 +1,9 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
-import os
 import numpy as np
 from jax import numpy as jnp
-import yaml
 import scipy.io as spio
-import pickle
-from typing import Text, Union
+from typing import Union
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
 import h5py
@@ -14,85 +11,9 @@ from pathlib import Path
 from omegaconf import DictConfig
 from omegaconf import OmegaConf
 from dataclasses import dataclass, asdict, field
-from typing import List, Dict
+from typing import List
 
-
-# Dataclasses for config files and stac-mjx outputs
-
-
-@dataclass
-class ModelConfig:
-    """Configuration for body model."""
-
-    MJCF_PATH: str  # Path to model xml
-    FTOL: float  # Tolerance for optimization TODO: currently unused
-    ROOT_FTOL: float  # Tolerance for root optimization TODO: currently unused
-    LIMB_FTOL: float  # Tolerance for limb optimization TODO: currently unused
-    N_ITERS: int  # Number of iterations for STAC algorithm
-    N_ITER_Q: int  # Number of iterations for q optimization
-    N_ITER_M: int  # Number of iterations for m optimization
-    KP_NAMES: List[str]  # Ordered list of keypoint names
-    KEYPOINT_MODEL_PAIRS: Dict[str, str]  # Mapping from keypoint names to model bodies
-    KEYPOINT_INITIAL_OFFSETS: Dict[str, str]  # Initial offsets for keypoints
-    ROOT_OPTIMIZATION_KEYPOINT: str  # Root optimization keypoint name
-    TRUNK_OPTIMIZATION_KEYPOINTS: List[str]  # Trunk optimization keypoint names
-    INDIVIDUAL_PART_OPTIMIZATION: Dict[
-        str, List[str]
-    ]  # Part optimization keypoint groups
-    KEYPOINT_COLOR_PAIRS: Dict[str, str]  # RGBA color values for keypoints
-    SCALE_FACTOR: float  # Scale factor for model
-    MOCAP_SCALE_FACTOR: float  # Scale factor for mocap data (to convert to meters)
-    SITES_TO_REGULARIZE: List[str]  # Sites to regularize during offset optimization
-    RENDER_FPS: int  # FPS for rendering
-    N_SAMPLE_FRAMES: int  # Number of frames to sample when computing offset residual
-    M_REG_COEF: int  # Coefficient for regularization term in offset optimization
-    STEPSIZE_Q: float = 0.0  # Fixed step size for q optimizer (0 = line search)
-    USE_JAXLS: bool = False  # Use jaxls batch LM solver instead of ProjectedGradient
-    JAXLS_LAMBDA_INITIAL: float = 1.0  # LM damping factor
-    JAXLS_SMOOTH_WEIGHT: float = 0.0  # Temporal smoothness weight
-    JAXLS_LINEAR_SOLVER: str = "dense_cholesky"  # Linear solver for jaxls
-    JAXLS_CHUNK_SIZE: int = 100  # Max frames per jaxls solve (0 = no chunking)
-    JAXLS_ORIENTATION_KEYPOINTS: Dict[str, str] = field(default_factory=dict)  # rear/left/right/front keypoints for warm-start orientation
-
-
-@dataclass
-class MujocoConfig:
-    """Configuration for Mujoco."""
-
-    solver: str  # Solver to use ('cg' or 'newton')
-    iterations: int  # Number of solver iterations
-    ls_iterations: int  # Number of line search iterations
-    dt: float  # Timestep for MuJoCo simulation
-
-
-@dataclass
-class StacConfig:
-    """Configuration for STAC."""
-
-    fit_offsets_path: str  # Save path for fit_offsets() output
-    ik_only_path: str  # Save path for ik_only() output
-    data_path: str  # Path to mocap data
-    num_clips: int  # Number of clips in mocap data
-    n_fit_frames: int  # Number of frames to fit offsets to
-    skip_fit_offsets: bool  # Skip fit_offsets() step if True
-    skip_ik_only: bool  # Skip ik_only() step if True
-    infer_qvels: bool  # Infer qvels if True
-    n_frames_per_clip: int  # Number of frames per clip
-    mujoco: MujocoConfig  # Configuration for Mujoco
-    continuous: bool  # Whether the data is continuous (to allow for edge effects post-processing)
-    
-    # Optional fields used by pipeline scripts (not core STAC algorithm)
-    save_path: str = ""  # Base save directory (used by run_stac scripts)
-    xml_dir: str = ""  # Directory containing XML model files (used by run_stac scripts)
-    enable_padding: bool = False  # Whether to pad clips to same length (preprocessing setting)
-
-
-@dataclass
-class Config:
-    """Combined configuration for the model and STAC."""
-
-    model: ModelConfig  # Configuration for STAC
-    stac: StacConfig  # Configuration for the model
+from stac_mjx.config import Config
 
 
 @dataclass
@@ -119,7 +40,7 @@ class StacData:
         return asdict(self)
 
 
-def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
+def load_data(cfg: DictConfig, base_path: Union[Path, None] = None):
     """Load mocap data based on file type.
 
     Loads mocap file based on filetype, and returns the data flattened
@@ -155,7 +76,7 @@ def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
         data, kp_names = load_h5(file_path)
     else:
         raise ValueError(
-            "Unsupported file extension. Please provide a .nwb or .mat file."
+            "Unsupported file extension. Please provide a .mat, .nwb, or .h5 file."
         )
 
     kp_names = kp_names or cfg.model.KP_NAMES
@@ -168,7 +89,7 @@ def load_mocap(cfg: DictConfig, base_path: Union[Path, None] = None):
 
     if len(kp_names) != data.shape[2]:
         raise ValueError(
-            f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[1]})"
+            f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[2]})"
         )
 
     model_inds = [
@@ -302,7 +223,7 @@ def save_data_to_h5(
     with h5py.File(file_path, "w") as f:
         # Save config as a YAML string with all interpolations resolved
         # This ensures the saved config is self-contained and doesn't reference
-        # external keys like ${dataset.stac.mujoco} that won't exist when loaded
+        # external keys that won't exist when loaded
         config_resolved = OmegaConf.to_container(config, resolve=True)
         config_yaml = OmegaConf.to_yaml(config_resolved)
         f.create_dataset("config", data=np.bytes_(config_yaml))
@@ -334,7 +255,7 @@ def load_stac_data(file_path) -> tuple[Config, StacData]:
         config_yaml = f["config"][()].decode("utf-8")
         config = OmegaConf.create(config_yaml)
         # Only extract model and stac fields for Config dataclass
-        # (config may have additional fields like dataset_name, version, paths, etc.)
+        # (config may have additional fields if saved with extra top-level keys)
         config_filtered = {"model": config["model"], "stac": config["stac"]}
         config = OmegaConf.structured(Config(**config_filtered))
 

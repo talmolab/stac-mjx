@@ -6,27 +6,14 @@ from jax import jit
 
 from functools import partial
 
-try:
-    from jaxopt import ProjectedGradient
-    from jaxopt.projection import projection_box
-    from jaxopt import OptaxSolver
-    _JAXOPT_AVAILABLE = True
-except ImportError:
-    _JAXOPT_AVAILABLE = False
+from jaxopt import ProjectedGradient
+from jaxopt.projection import projection_box
+from jaxopt import OptaxSolver
 
-try:
-    import optax
-    _OPTAX_AVAILABLE = True
-except ImportError:
-    _OPTAX_AVAILABLE = False
+import optax
 
 from stac_mjx import utils
-
-try:
-    from stac_mjx.stac_core_jaxls import JaxlsBatchSolver
-    _JAXLS_AVAILABLE = True
-except ImportError:
-    _JAXLS_AVAILABLE = False
+from stac_mjx.stac_core_jaxls import JaxlsBatchSolver
 
 
 def q_loss(
@@ -50,6 +37,7 @@ def q_loss(
         qs_to_opt (jp.ndarray): Boolean array; for each index in qpos, True = q and False = initial_q when calculating residual
         kps_to_opt (jp.ndarray): Boolean array; only return residuals for the True positions
         initial_q (jp.ndarray): Starting qs for reference
+        site_idxs (jp.ndarray): Site indices for marker positions.
         q_reg_weights (jp.ndarray): Per-qpos L2 regularization weights toward rest (q=0).
             Masked by qs_to_opt so only currently-optimized joints are penalized.
 
@@ -315,27 +303,20 @@ class StacCore:
             n_iter_q (int): Number of iterations for q optimization.
             n_iter_m (int): Number of iterations for m optimization.
             stepsize_q (float): Fixed step size for q optimizer. If > 0, disables the
-                FISTA backtracking line search (a nested while_loop that runs up to 30
-                extra kinematics evaluations per gradient step — very slow inside
-                jax.lax.scan). Set to 0.0 to restore line search. Default: 0.0.
+                FISTA backtracking line search. Default: 0.0.
             use_jaxls (bool): If True and jaxls is available, use the batch
                 Levenberg-Marquardt solver from jaxls instead of ProjectedGradient.
-                All frames are solved simultaneously in one LM problem. Default: False.
             jaxls_lambda_initial (float): Initial LM damping factor. Default: 1.0.
-            smooth_weight (float): Weight for ||q[t]-q[t-1]||² smoothness cost.
-                0.0 disables smoothness (pure per-frame tracking). Start with 0.01–0.1.
+            smooth_weight (float): Weight for temporal smoothness cost.
                 Only used when use_jaxls=True.
             jaxls_linear_solver (str): Linear solver for LM normal equations.
-                "dense_cholesky" is fastest for short clips (T*nq < ~5000).
-                "conjugate_gradient" for longer clips. Default: "auto".
+            jaxls_chunk_size (int): Max frames per jaxls solve (0 = no chunking).
+            use_se3_root (bool): Use SE3 manifold representation for root.
         """
-        self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False) if _OPTAX_AVAILABLE else None
+        self.opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
         self._smooth_weight = smooth_weight
-
-        self._use_jaxls = use_jaxls and _JAXLS_AVAILABLE
         self._jaxls_chunk_size = jaxls_chunk_size
-        if use_jaxls and not _JAXLS_AVAILABLE:
-            print("Warning: use_jaxls=True but jaxls is not installed. Falling back to ProjectedGradient.")
+        self._use_jaxls = use_jaxls
 
         if self._use_jaxls:
             self._jaxls_solver = JaxlsBatchSolver(
@@ -347,23 +328,11 @@ class StacCore:
             )
             self.q_solver = None
         else:
-            if not _JAXOPT_AVAILABLE:
-                raise ImportError(
-                    "jaxopt is required for the default ProjectedGradient solver. "
-                    "Install it with: pip install jaxopt\n"
-                    "Or use the jaxls solver: StacCore(..., use_jaxls=True)"
-                )
             self.q_solver = ProjectedGradient(
                 fun=q_loss, projection=projection_box, maxiter=n_iter_q, tol=tol,
                 stepsize=stepsize_q,
             )
-        if not _JAXOPT_AVAILABLE:
-            # m_solver (offset optimization) always uses OptaxSolver from jaxopt
-            # If jaxopt is unavailable we still create it so offset_optimization
-            # can be called; it will fail at runtime if jaxopt is truly absent.
-            self.m_solver = None
-        else:
-            self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=n_iter_m)
+        self.m_solver = OptaxSolver(opt=self.opt, fun=m_loss, maxiter=n_iter_m)
 
     def q_opt(
         self,
