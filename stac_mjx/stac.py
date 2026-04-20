@@ -199,7 +199,7 @@ class Stac:
                 is_regularized.append(jp.array([1.0, 1.0, 1.0]))
             else:
                 is_regularized.append(jp.array([0.0, 0.0, 0.0]))
-        is_regularized = jp.stack(is_regularized).flatten()
+        is_regularized = jp.stack(is_regularized)
         body_site_idxs = jp.array(list(site_index_map.values()))
         return model, body_site_idxs, is_regularized
 
@@ -277,7 +277,6 @@ class Stac:
             print(f"Mean: {mean}")
             print(f"Standard deviation: {std}")
 
-            print("starting offset optimization", flush=True)
             mjx_model, mjx_data, self._offsets = compute_stac.offset_optimization(
                 self.stac_core_obj,
                 mjx_model,
@@ -447,7 +446,7 @@ class Stac:
             xquats = xquats.reshape(-1, *xquats.shape[2:], order="F")
             marker_sites = marker_sites.reshape(-1, *marker_sites.shape[2:])
         else:
-            offsets = self._offsets.reshape((-1, 3))
+            offsets = self._offsets
 
         offsets = np.array(offsets)
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])

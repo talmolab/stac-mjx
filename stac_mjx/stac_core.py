@@ -129,21 +129,20 @@ def _m_opt(
         mjx_data: MJX data.
         keypoints: Array of shape (T, 3*K), sampled observed markers.
         q: Array of shape (T, nq), fixed pose trajectory for sampled frames.
-        initial_offsets: Array of shape (3*K,), reference offsets.
-        is_regularized: Array of shape (3*K,), 0/1 mask for regularized coords.
+        initial_offsets: Array of shape (K, 3), reference offsets.
+        is_regularized: Array of shape (K, 3), 0/1 mask for regularized coords.
         reg_coef: Scalar regularization coefficient.
         site_idxs: Array of shape (K,), indices of the optimized sites.
 
     Returns:
-        MOptResult: NamedTuple with `.params` (optimized flattened offsets)
-        and `.error` (scalar residual loss at the solution).
+        MOptResult: NamedTuple with ``.params`` of shape ``(K, 3)``
+        (optimized offsets) and ``.error`` (scalar residual loss).
     """
     T = keypoints.shape[0]
     K = site_idxs.shape[0]
 
     y = keypoints.reshape(T, K, 3)
-    m0 = initial_offsets.reshape(K, 3)
-    d = is_regularized.reshape(K, 3).astype(y.dtype)
+    d = is_regularized.astype(y.dtype)
 
     site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
 
@@ -161,16 +160,15 @@ def _m_opt(
 
     # Closed-form solve, coordinate-wise
     denom = T + reg_coef * d
-    numer = s + reg_coef * d * m0
+    numer = s + reg_coef * d * initial_offsets
     m_star = numer / denom
 
     # Residual error at the solution
     data_term = z2 - 2.0 * jp.sum(m_star * s) + T * jp.sum(m_star ** 2)
-    reg_term = reg_coef * jp.sum((d * (m_star - m0)) ** 2)
+    reg_term = reg_coef * jp.sum((d * (m_star - initial_offsets)) ** 2)
     error = data_term + reg_term
 
-    params = m_star.reshape(-1)
-    return MOptResult(params=params, error=error)
+    return MOptResult(params=m_star, error=error)
 
 
 class StacCore:
@@ -242,18 +240,18 @@ class StacCore:
         offset optimization based on the given parameters.
 
         Args:
-            mjx_model (_type_): mjx.Model
-            mjx_data (_type_): mjx.Data
-            keypoints (jp.ndarray): Keypoints for each frame
-            q (jp.ndarray): Joint angles for each frame
-            initial_offsets (jp.ndarray): Initial offset values (from config)
-            is_regularized (jp.ndarray): Boolean mask for regularized sites
-            reg_coef (jp.ndarray): Regularization coefficient
-            site_idxs (jp.ndarray): Site indices in mjx_model.site_xpos
+            mjx_model: mjx.Model
+            mjx_data: mjx.Data
+            keypoints (jp.ndarray): Keypoints of shape (T, 3*K).
+            q (jp.ndarray): Joint angles of shape (T, nq).
+            initial_offsets (jp.ndarray): Reference offsets of shape (K, 3).
+            is_regularized (jp.ndarray): 0/1 mask of shape (K, 3).
+            reg_coef (float): Regularization coefficient.
+            site_idxs (jp.ndarray): Site indices of shape (K,).
 
         Returns:
-            MOptResult: Result with .params (optimized offsets) and .error
-                (scalar residual loss at the solution).
+            MOptResult: Result with ``.params`` of shape ``(K, 3)``
+                and ``.error`` (scalar residual loss).
         """
         return _m_opt(
             mjx_model,

@@ -119,18 +119,20 @@ def offset_optimization(
     """Optimize the marker offsets based on proposed joint angles (q).
 
     Args:
-        mjx_model (mjx.Model): MJX Model
-        mjx_data (mjx.Data): MJX Data
-        kp_data (jp.Array): Keypoint data
-        offsets (jax.Array): List of offsets for the marker sites (to match up with keypoints)
-        q (jax.Array): Proposed joint angles (corresponds to mjx_data.qpos)
-        n_sample_frames (int): Number of frames to sample when computing residual
-        is_regularized (jp.ndarray): Boolean mask representing sites to regularize
-        site_idxs (jp.ndarray): Array of indices of offset sites
-        m_reg_coef (float): Regularization coefficient to apply to regularized sites
+        stac_core_obj: Solver wrapper.
+        mjx_model (mjx.Model): MJX Model.
+        mjx_data (mjx.Data): MJX Data.
+        kp_data (jp.ndarray): Keypoint data of shape (n_frames, 3*K).
+        offsets (jp.ndarray): Current site offsets of shape (K, 3).
+        q (jp.ndarray): Proposed joint angles of shape (n_frames, nq).
+        n_sample_frames (int): Number of frames to sample when computing residual.
+        is_regularized (jp.ndarray): 0/1 mask of shape (K, 3).
+        site_idxs (jp.ndarray): Array of site indices of shape (K,).
+        m_reg_coef (float): Regularization coefficient.
 
     Returns:
-        (mjx.Model, mjx.Data): An updated MJX Model and Data
+        Tuple of (mjx.Model, mjx.Data, jp.ndarray) where the array is the
+        optimized offsets of shape (K, 3).
     """
     key = jax.random.PRNGKey(0)
 
@@ -159,10 +161,7 @@ def offset_optimization(
     offset_opt_param = res.params
     print(f"Final error of {res.error}")
 
-    # Set body sites according to optimized offsets
-    mjx_model = utils.set_site_pos(
-        mjx_model, jp.reshape(offset_opt_param, (-1, 3)), site_idxs
-    )
+    mjx_model = utils.set_site_pos(mjx_model, offset_opt_param, site_idxs)
 
     # Forward kinematics, and save the results to the walker sites as well
     mjx_data = utils.kinematics(mjx_model, mjx_data)
