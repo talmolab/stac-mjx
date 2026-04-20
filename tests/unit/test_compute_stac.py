@@ -42,10 +42,10 @@ class FakeStacCore:
         res = types.SimpleNamespace(params=q0, state=types.SimpleNamespace(error=0.0))
         return args[1], res
 
-    def m_opt(self, offset0, *args, **kwargs):
+    def m_opt(self, mjx_model, mjx_data, keypoints, q, initial_offsets, *args, **kwargs):
         self.m_calls += 1
         return types.SimpleNamespace(
-            params=offset0, state=types.SimpleNamespace(error=0.0)
+            params=jp.asarray(initial_offsets).reshape(-1), error=0.0
         )
 
 

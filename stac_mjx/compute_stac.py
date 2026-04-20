@@ -142,14 +142,10 @@ def offset_optimization(
     s = time.time()
     print("Begining offset optimization:")
 
-    # Define initial position of the optimization
-    offset0 = utils.get_site_pos(mjx_model, site_idxs).flatten()
-
     keypoints = jp.array(kp_data[time_indices, :])
     q = jp.take(q, time_indices, axis=0)
 
     res = stac_core_obj.m_opt(
-        offset0,
         mjx_model,
         mjx_data,
         keypoints,
@@ -161,7 +157,7 @@ def offset_optimization(
     )
 
     offset_opt_param = res.params
-    print(f"Final error of {res.state.error}")
+    print(f"Final error of {res.error}")
 
     # Set body sites according to optimized offsets
     mjx_model = utils.set_site_pos(

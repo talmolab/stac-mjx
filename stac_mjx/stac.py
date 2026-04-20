@@ -138,7 +138,7 @@ class Stac:
 
         # Create Stac_Core object
         self.stac_core_obj = stac_core.StacCore(
-            self.cfg.model.FTOL, self.cfg.model.N_ITER_Q, self.cfg.model.N_ITER_M
+            self.cfg.model.FTOL, self.cfg.model.N_ITER_Q
         )
 
     def part_opt_setup(self):
