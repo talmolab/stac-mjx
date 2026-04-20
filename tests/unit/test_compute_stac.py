@@ -47,7 +47,7 @@ class FakeStacCore:
     ):
         self.m_calls += 1
         return types.SimpleNamespace(
-            params=jp.asarray(initial_offsets).reshape(-1), error=0.0
+            params=jp.asarray(initial_offsets).reshape(-1, 3), error=0.0
         )
 
 
@@ -146,13 +146,13 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
         offsets,
         q,
         n_sample_frames=2,
-        is_regularized=jp.zeros(6),
+        is_regularized=jp.zeros((2, 3)),
         site_idxs=jp.array([0, 1]),
         m_reg_coef=0.0,
     )
 
     assert stac_core.m_calls == 1
-    assert np.allclose(np.array(offset_opt), np.array(offsets).flatten())
+    assert np.allclose(np.array(offset_opt), np.array(offsets))
     assert np.allclose(np.array(mjx_model.site_pos), np.array(offsets))
 
 

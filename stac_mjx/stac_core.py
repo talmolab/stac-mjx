@@ -13,6 +13,8 @@ from stac_mjx import utils
 
 
 class MOptResult(NamedTuple):
+    """Result of marker offset optimization."""
+
     params: jp.ndarray
     error: jp.ndarray
 
