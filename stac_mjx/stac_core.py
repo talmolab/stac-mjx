@@ -116,7 +116,7 @@ def _m_opt(
     standard MuJoCo/MJX site kinematics (site_quat = identity):
 
         min_m  sum_t || y_t - (p_t + R_t m) ||^2
-             + reg_coef * T * || D (m - m0) ||^2
+             + reg_coef * || D (m - m0) ||^2
 
     where y_t are observed markers, m are local site offsets, p_t/R_t are the
     body translation/rotation at frame t, D is the diagonal regularization
