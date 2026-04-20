@@ -14,7 +14,6 @@ import numpy as np
 from stac_mjx import utils
 from stac_mjx.stac_core import _m_opt
 
-
 MINIMAL_XML = """\
 <mujoco>
   <worldbody>
@@ -46,10 +45,7 @@ def model_and_sites():
 
     site_names = ["s1", "s2", "s3"]
     site_idxs = jp.array(
-        [
-            mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, n)
-            for n in site_names
-        ],
+        [mujoco.mj_name2id(mj_model, mujoco.mjtObj.mjOBJ_SITE, n) for n in site_names],
         dtype=jp.int32,
     )
     K = len(site_names)
@@ -79,8 +75,14 @@ def test_identity_pose_recovers_offsets_and_error(model_and_sites):
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_A, site_idxs)
 
     result = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        jp.zeros((K, 3)), jp.zeros((K, 3)), 0.0, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        jp.zeros((K, 3)),
+        jp.zeros((K, 3)),
+        0.0,
+        site_idxs,
     )
 
     np.testing.assert_allclose(result.params, GT_OFFSETS_A, atol=1e-5)
@@ -94,8 +96,14 @@ def test_varied_random_poses(model_and_sites):
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_A, site_idxs)
 
     result = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        jp.zeros((K, 3)), jp.zeros((K, 3)), 0.0, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        jp.zeros((K, 3)),
+        jp.zeros((K, 3)),
+        0.0,
+        site_idxs,
     )
 
     np.testing.assert_allclose(result.params, GT_OFFSETS_A, atol=1e-5)
@@ -109,8 +117,14 @@ def test_sweeping_single_joint(model_and_sites):
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_B, site_idxs)
 
     result = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        GT_OFFSETS_B, jp.zeros((K, 3)), 0.0, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        GT_OFFSETS_B,
+        jp.zeros((K, 3)),
+        0.0,
+        site_idxs,
     )
 
     np.testing.assert_allclose(result.params, GT_OFFSETS_B, atol=1e-5)
@@ -124,8 +138,14 @@ def test_large_rotations(model_and_sites):
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_B, site_idxs)
 
     result = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        jp.zeros((K, 3)), jp.zeros((K, 3)), 0.0, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        jp.zeros((K, 3)),
+        jp.zeros((K, 3)),
+        0.0,
+        site_idxs,
     )
 
     np.testing.assert_allclose(result.params, GT_OFFSETS_B, atol=1e-4)
@@ -141,15 +161,27 @@ def test_reg_coef_zero_vs_strong(model_and_sites):
     # reg_coef=0: even a wildly wrong initial should be ignored
     wrong_initial = jp.ones((K, 3)) * 99.0
     result_noreg = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        wrong_initial, jp.ones((K, 3)), 0.0, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        wrong_initial,
+        jp.ones((K, 3)),
+        0.0,
+        site_idxs,
     )
     np.testing.assert_allclose(result_noreg.params, GT_OFFSETS_A, atol=1e-5)
 
     # reg_coef=1e6: solution collapses to initial_offsets
     result_strong = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        jp.zeros((K, 3)), jp.ones((K, 3)), 1e6, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        jp.zeros((K, 3)),
+        jp.ones((K, 3)),
+        1e6,
+        site_idxs,
     )
     np.testing.assert_allclose(result_strong.params, jp.zeros((K, 3)), atol=1e-3)
 
@@ -165,12 +197,24 @@ def test_partial_regularization(model_and_sites):
     initial_offsets = jp.zeros((K, 3))
 
     result_strong = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        initial_offsets, is_reg, 1e4, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        initial_offsets,
+        is_reg,
+        1e4,
+        site_idxs,
     )
     result_noreg = _m_opt(
-        mjx_model, mjx_data, keypoints, q,
-        initial_offsets, is_reg, 0.0, site_idxs,
+        mjx_model,
+        mjx_data,
+        keypoints,
+        q,
+        initial_offsets,
+        is_reg,
+        0.0,
+        site_idxs,
     )
 
     # First site pulled toward zero by regularization

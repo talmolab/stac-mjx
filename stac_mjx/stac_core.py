@@ -62,7 +62,6 @@ def q_loss(
     return residual
 
 
-
 @partial(jit, static_argnames=["q_solver"])
 def _q_opt(
     q_solver,
@@ -153,10 +152,12 @@ def _m_opt(
         data_t = utils.com_pos(mjx_model, data_t)
         return data_t.xpos[site_bodyid], data_t.xmat[site_bodyid]
 
-    p_all, R_all = jax.vmap(fk_single)(q)         # (T, K, 3), (T, K, 3, 3)
-    z_all = y - p_all                             # (T, K, 3)
-    s = jp.einsum("tkji,tkj->ki", R_all, z_all)   # s_k = sum_t R_{t,k}^T z_{t,k}  ->  (K, 3)
-    z2 = jp.sum(z_all ** 2)                       # z2 = sum_t ||z_t||^2  ->  scalar
+    p_all, R_all = jax.vmap(fk_single)(q)  # (T, K, 3), (T, K, 3, 3)
+    z_all = y - p_all  # (T, K, 3)
+    s = jp.einsum(
+        "tkji,tkj->ki", R_all, z_all
+    )  # s_k = sum_t R_{t,k}^T z_{t,k}  ->  (K, 3)
+    z2 = jp.sum(z_all**2)  # z2 = sum_t ||z_t||^2  ->  scalar
 
     # Closed-form solve, coordinate-wise
     denom = T + reg_coef * d
@@ -164,7 +165,7 @@ def _m_opt(
     m_star = numer / denom
 
     # Residual error at the solution
-    data_term = z2 - 2.0 * jp.sum(m_star * s) + T * jp.sum(m_star ** 2)
+    data_term = z2 - 2.0 * jp.sum(m_star * s) + T * jp.sum(m_star**2)
     reg_term = reg_coef * jp.sum((d * (m_star - initial_offsets)) ** 2)
     error = data_term + reg_term
 
