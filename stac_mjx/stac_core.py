@@ -100,7 +100,7 @@ def _q_opt(
     return mjx_data, None
 
 
-@partial(jit, static_argnames=())
+@jit
 def _m_opt(
     mjx_model,
     mjx_data,
