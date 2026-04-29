@@ -501,9 +501,9 @@ class Stac:
             for key, v in self.cfg.model.KEYPOINT_MODEL_PAIRS.items():
                 tendon = render_spec.add_tendon(
                     name=key + "-" + v,
-                    width="0.001",
-                    rgba=[255, 0, 0, 1],  # Red
-                    limited=False,
+                    width=0.001,
+                    rgba=[1.0, 0.0, 0.0, 1.0],
+                    limited=0,
                 )
                 tendon.wrap_site(key + "_kp")
                 tendon.wrap_site(key + "_new")
