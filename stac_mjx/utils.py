@@ -1,9 +1,13 @@
-"""This module contains utility functions for Stac."""
+"""Utility functions for STAC."""
 
 import os
 
 import jax
+from jax import Array
 from jax import numpy as jp
+from jaxtyping import Float, Int, Bool
+from jaxtyping import jaxtyped
+from beartype import beartype
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
@@ -14,8 +18,8 @@ from jax.extend.backend import get_backend
 CONTINUOUS_BATCH_OVERLAP = 10
 
 
-def enable_xla_flags():
-    """Enables XLA Flags for faster runtime on Nvidia GPUs."""
+def enable_xla_flags() -> None:
+    """Enable XLA flags for faster runtime on Nvidia GPUs."""
     if get_backend().platform == "gpu":
         os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
@@ -27,9 +31,15 @@ def enable_xla_flags():
     jax.config.update("jax_persistent_cache_min_compile_time_secs", 1)
 
 
-def mjx_load(mj_model):
-    """Load mujoco model into mjx."""
-    # Create mjx model and data
+def mjx_load(mj_model) -> tuple[mjx.Model, mjx.Data]:
+    """Load a MuJoCo model into MJX.
+
+    Args:
+        mj_model: MuJoCo model to convert.
+
+    Returns:
+        Tuple of (MJX model, MJX data).
+    """
     mjx_model = mjx.put_model(mj_model)
     mjx_data = mjx.make_data(mjx_model)
 
@@ -37,98 +47,117 @@ def mjx_load(mj_model):
 
 
 @jax.jit
-def kinematics(mjx_model: mjx.Model, mjx_data: mjx.Data):
-    """Jit compiled forward kinematics.
+def kinematics(mjx_model: mjx.Model, mjx_data: mjx.Data) -> mjx.Data:
+    """JIT-compiled forward kinematics.
 
     Args:
-        mjx_model (mjx.Model):
-        mjx_data (mjx.Data):
+        mjx_model: MJX model.
+        mjx_data: MJX data.
 
     Returns:
-        mjx.Data: resulting mjx Data
+        Updated MJX data after forward kinematics.
     """
     return smooth.kinematics(mjx_model, mjx_data)
 
 
 @jax.jit
-def com_pos(mjx_model: mjx.Model, mjx_data: mjx.Data):
-    """Jit compiled com_pos calculation.
+def com_pos(mjx_model: mjx.Model, mjx_data: mjx.Data) -> mjx.Data:
+    """JIT-compiled center-of-mass position calculation.
 
     Args:
-        mjx_model (mjx.Model):
-        mjx_data (mjx.Data):
+        mjx_model: MJX model.
+        mjx_data: MJX data.
 
     Returns:
-        mjx.Data: resulting mjx Data
+        Updated MJX data with center-of-mass positions.
     """
     return smooth.com_pos(mjx_model, mjx_data)
 
 
-def get_site_xpos(mjx_data: mjx.Data, site_idxs: jp.ndarray):
-    """Get MjxData.site_xpos of keypoint body sites.
+def get_site_xpos(
+    mjx_data: mjx.Data,
+    site_idxs: Int[Array, " n_sites"],
+) -> Float[Array, "n_sites 3"]:
+    """Get Cartesian coordinates of keypoint body sites.
 
     Args:
-        mjx_data (mjx.Data):
+        mjx_data: MJX data.
+        site_idxs: Indices of sites to query.
 
     Returns:
-        jax.Array: MjxData.site_xpos of keypoint body sites, ie
-        Cartesian coords of body sites.
+        Cartesian positions of the selected sites.
     """
     return mjx_data.site_xpos[site_idxs]
 
 
-def get_site_pos(mjx_model: mjx.Model, site_idxs: jp.ndarray):
-    """Get MjxModel.site_pos of keypoint body sites.
+def get_site_pos(
+    mjx_model: mjx.Model,
+    site_idxs: Int[Array, " n_sites"],
+) -> Float[Array, "n_sites 3"]:
+    """Get local position offsets of keypoint body sites.
 
     Args:
-        mjx_data (mjx.Data):
+        mjx_model: MJX model.
+        site_idxs: Indices of sites to query.
 
     Returns:
-        jax.Array: MjxModel.site_pos of keypoint body sites, ie
-        local position offset rel. to body.
+        Local position offsets relative to parent body.
     """
     return mjx_model.site_pos[site_idxs]
 
 
-def set_site_pos(mjx_model: mjx.Model, offsets, site_idxs: jp.ndarray):
-    """Set MjxModel.sites_pos to offsets and returns the new mjx_model.
+def set_site_pos(
+    mjx_model: mjx.Model,
+    offsets: Float[Array, "n_sites 3"],
+    site_idxs: Int[Array, " n_sites"],
+) -> mjx.Model:
+    """Set site positions to given offsets.
 
     Args:
-        mjx_model (mjx.Model):
-        offsets (jax.Array):
+        mjx_model: MJX model.
+        offsets: New local position offsets for the sites.
+        site_idxs: Indices of sites to update.
 
     Returns:
-        mjx_model: Resulting mjx.Model
+        Updated MJX model with new site positions.
     """
     new_site_pos = mjx_model.site_pos.at[site_idxs].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
 
 
-def make_qs(q0, qs_to_opt, q):
-    """Create new set of qs combining initial and new qs for part optimization based on qs_to_opt.
+def make_qs(
+    q0: Float[Array, " n_qpos"],
+    qs_to_opt: Bool[Array, " n_qpos"],
+    q: Float[Array, " n_qpos"],
+) -> Float[Array, " n_qpos"]:
+    """Combine initial and optimized joint angles based on optimization mask.
 
     Args:
-        q0 (jax.Array): initial joint angles
-        qs_to_opt (jax.Array): joint angles that were optimized
-        q (jax.Array): new joint angles
+        q0: Initial joint angles.
+        qs_to_opt: Boolean mask selecting which joints were optimized.
+        q: New joint angles from optimization.
 
     Returns:
-        jp.Array: resulting set of joint angles
+        Combined joint angles.
     """
     return jp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jp.copy(q))
 
 
-def replace_qs(mjx_model: mjx.Model, mjx_data: mjx.Data, q):
-    """Replace joint angles in mjx.Data with new ones and performs forward kinematics.
+def replace_qs(
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    q: Float[Array, " n_qpos"] | None,
+) -> mjx.Data:
+    """Replace joint angles in MJX data and run forward kinematics.
 
     Args:
-        mjx_model (mjx.Model):
-        mjx_data (mjx.Data):
-        q (jax.Array): new joint angles
+        mjx_model: MJX model.
+        mjx_data: MJX data.
+        q: New joint angles, or None if optimization failed.
 
     Returns:
-        mjx.Data: resulting mjx Data
+        Updated MJX data after forward kinematics.
     """
     if q is None:
         print("optimization failed, continuing")
@@ -145,8 +174,8 @@ _POLE_LIMIT = 1.0 - 1e-6
 _TOL = 1e-10
 
 
-def _get_qmat_indices_and_signs():
-    """Precomputes index and sign arrays for constructing `qmat` in `quat_mul`."""
+def _get_qmat_indices_and_signs() -> tuple[Int[Array, "4 4"], Int[Array, "4 4"]]:
+    """Precompute index and sign arrays for quaternion multiplication matrix."""
     w, x, y, z = range(4)
     qmat_idx_and_sign = jp.array(
         [
@@ -164,101 +193,96 @@ def _get_qmat_indices_and_signs():
 _qmat_idx, _qmat_sign = _get_qmat_indices_and_signs()
 
 
-def quat_mul(quat1, quat2):
-    """Computes the Hamilton product of two quaternions.
+def quat_mul(
+    quat1: Float[Array, "*batch 4"],
+    quat2: Float[Array, "*batch 4"],
+) -> Float[Array, "*batch 4"]:
+    """Compute the Hamilton product of two quaternions.
 
-    Any number of leading batch dimensions is supported.
+    Supports any number of leading batch dimensions.
 
     Args:
-      quat1: A quaternion [w, i, j, k].
-      quat2: A quaternion [w, i, j, k].
+        quat1: Quaternion [w, i, j, k].
+        quat2: Quaternion [w, i, j, k].
 
     Returns:
-      The quaternion product quat1 * quat2.
+        Quaternion product quat1 * quat2.
     """
-    # Construct a (..., 4, 4) matrix to multiply with quat2 as shown below.
-    qmat = quat1[..., _qmat_idx] * _qmat_sign
-
-    # Compute the batched Hamilton product:
     # |w1 -i1 -j1 -k1|   |w2|   |w1w2 - i1i2 - j1j2 - k1k2|
     # |i1  w1 -k1  j1| . |i2| = |w1i2 + i1w2 + j1k2 - k1j2|
     # |j1  k1  w1 -i1|   |j2|   |w1j2 - i1k2 + j1w2 + k1i2|
     # |k1 -j1  i1  w1|   |k2|   |w1k2 + i1j2 - j1i2 + k1w2|
+    qmat = quat1[..., _qmat_idx] * _qmat_sign
     return (qmat @ quat2[..., None])[..., 0]
 
 
-def _clip_within_precision(number, low, high, precision=_TOL):
-    """Clips input to provided range, checking precision.
+def _clip_within_precision(
+    number: Float[Array, ""],
+    low: float,
+    high: float,
+    precision: float = _TOL,
+) -> Float[Array, ""]:
+    """Clip input to range, checking precision.
 
     Args:
-      number: (float) number to be clipped.
-      low: (float) lower bound.
-      high: (float) upper bound.
-      precision: (float) tolerance.
+        number: Scalar to clip.
+        low: Lower bound.
+        high: Upper bound.
+        precision: Tolerance for out-of-range values.
 
     Returns:
-      Input clipped to given range.
-
-    Raises:
-      ValueError: If number is outside given range by more than given precision.
+        Input clipped to [low, high].
     """
-    # This is raising an error when jitted
-    # def _raise_if_not_in_precision():
-    #     if (number < low - precision).any() or (number > high + precision).any():
-    #         raise ValueError(
-    #             "Input {:.12f} not inside range [{:.12f}, {:.12f}] with precision {}".format(
-    #                 number, low, high, precision
-    #             )
-    #         )
-
-    # jax.debug.callback(_raise_if_not_in_precision)
-
     return jp.clip(number, low, high)
 
 
-def quat_conj(quat):
-    """Return conjugate of quaternion.
+def quat_conj(
+    quat: Float[Array, "*batch 4"],
+) -> Float[Array, "*batch 4"]:
+    """Return conjugate of a quaternion.
 
-    This function supports inputs with or without leading batch dimensions.
+    Supports inputs with or without leading batch dimensions.
 
     Args:
-      quat: A quaternion [w, i, j, k].
+        quat: Quaternion [w, i, j, k].
 
     Returns:
-      A quaternion [w, -i, -j, -k] representing the inverse of the rotation
-      defined by `quat` (not assuming normalization).
+        Conjugate quaternion [w, -i, -j, -k].
     """
-    # Ensure quat is an np.array in case a tuple or a list is passed
     quat = jp.asarray(quat)
     return jp.stack(
         [quat[..., 0], -quat[..., 1], -quat[..., 2], -quat[..., 3]], axis=-1
     )
 
 
-def quat_diff(source, target):
-    """Computes quaternion difference between source and target quaternions.
+def quat_diff(
+    source: Float[Array, "*batch 4"],
+    target: Float[Array, "*batch 4"],
+) -> Float[Array, "*batch 4"]:
+    """Compute quaternion difference from source to target.
 
-    This function supports inputs with or without leading batch dimensions.
+    Supports inputs with or without leading batch dimensions.
 
     Args:
-      source: A quaternion [w, i, j, k].
-      target: A quaternion [w, i, j, k].
+        source: Source quaternion [w, i, j, k].
+        target: Target quaternion [w, i, j, k].
 
     Returns:
-      A quaternion representing the rotation from source to target.
+        Quaternion representing rotation from source to target.
     """
     return quat_mul(quat_conj(source), target)
 
 
-def quat_to_axisangle(quat):
-    """Returns the axis-angle corresponding to the provided quaternion.
+def quat_to_axisangle(
+    quat: Float[Array, " 4"],
+) -> Float[Array, " 3"]:
+    """Convert a quaternion to axis-angle representation.
 
     Args:
-      quat: A quaternion [w, i, j, k].
+        quat: Quaternion [w, i, j, k].
 
     Returns:
-      axisangle: A 3x1 numpy array describing the axis of rotation, with angle
-          encoded by its length.
+        Axis-angle vector with angle encoded by its length.
     """
     angle = 2 * jp.arccos(_clip_within_precision(quat[0], -1.0, 1.0))
 
@@ -275,28 +299,30 @@ def quat_to_axisangle(quat):
     return jax.lax.cond(angle < _TOL, true_fn, false_fn, angle)
 
 
+@jaxtyped(typechecker=beartype)
 def compute_velocity_from_kinematics(
-    qpos_trajectory: jp.ndarray,
+    qpos_trajectory: Float[Array, "n_frames n_qpos"],
     dt: float,
     freejoint: bool = True,
     max_qvel: float = 20.0,
-) -> jp.ndarray:
-    """Computes velocity trajectory from position trajectory for a continuous clip.
+) -> Float[Array, "n_frames n_qvel"]:
+    """Compute velocity trajectory from position trajectory for a continuous clip.
+
+    Assumes freejoint as the first 7 dimensions of qpos when freejoint=True.
 
     Args:
-        qpos_trajectory (jp.ndarray): trajectory of qpos values T x ?
-          Note assumes has freejoint as the first 7 dimensions
-        dt (float): timestep between qpos entries
+        qpos_trajectory: Generalized coordinates over time.
+        dt: Timestep between qpos entries.
+        freejoint: Whether the model has a free joint (first 7 dims).
+        max_qvel: Maximum velocity magnitude for clipping.
 
     Returns:
-        jp.ndarray: Trajectory of velocities.
+        Velocity trajectory.
     """
-    # Padding for velocity corner case.
     qpos_trajectory = jp.concatenate(
         [qpos_trajectory, qpos_trajectory[-1, jp.newaxis, :]], axis=0
     )
 
-    # If there's no freejoint, qpos only has the joint angles so no need for indexing.
     if not freejoint:
         qvel_joints = (qpos_trajectory[1:, :] - qpos_trajectory[:-1, :]) / dt
         return jp.clip(qvel_joints, -max_qvel, max_qvel)
@@ -321,17 +347,27 @@ def compute_velocity_from_kinematics(
         return mocap_qvels.at[:, 6:].set(clipped_vels)
 
 
+@jaxtyped(typechecker=beartype)
 def batch_kp_data(
-    kp_data: jp.ndarray, n_frames_per_clip: int, continuous: bool = False
-):
-    """Reshape data for parallel processing."""
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    n_frames_per_clip: int,
+    continuous: bool = False,
+) -> Float[Array, "n_clips clip_frames n_keypoints_xyz"]:
+    """Reshape keypoint data into batches for parallel processing.
+
+    Args:
+        kp_data: Flattened keypoint data.
+        n_frames_per_clip: Number of frames per clip.
+        continuous: If True, create overlapping batches for edge effect handling.
+
+    Returns:
+        Batched keypoint data.
+    """
     n_frames = n_frames_per_clip
     total_frames = kp_data.shape[0]
-    n_batches = int(total_frames // n_frames)  # Cut off the last batch if it's not full
-    # For continuous data, create overlapping batches (10 frames) to allow for edge effects post-processing
+    n_batches = int(total_frames // n_frames)
     if continuous:
         window = n_frames + CONTINUOUS_BATCH_OVERLAP
-        # If there's only one batch, just reshape to add batch dim
         if total_frames < window:
             batched_kp_data = kp_data.reshape((n_batches, window) + kp_data.shape[1:])
         else:
@@ -346,7 +382,6 @@ def batch_kp_data(
             batched_kp_data = jp.stack(batches, axis=0)
     else:
         batched_kp_data = kp_data[: int(n_batches) * n_frames]
-        # Reshape the array to create batches
         batched_kp_data = batched_kp_data.reshape(
             (n_batches, n_frames) + kp_data.shape[1:]
         )
@@ -355,41 +390,42 @@ def batch_kp_data(
 
 
 # TODO: make this more efficient by parallelizing the crossfade operation
-def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
-    """Naive handling: remove the final overlapping frames for each batch.
+def handle_edge_effects(
+    ik_only_data: io.StacData, n_frames_per_clip: int
+) -> io.StacData:
+    """Handle overlapping batch boundaries via sigmoid crossfade.
 
     Args:
-        ik_only_data (io.StacData): ik_only data to be processed
-        n_frames_per_clip (int): number of frames per clip
+        ik_only_data: IK output data with overlapping batches.
+        n_frames_per_clip: Number of frames per clip.
 
     Returns:
-        io.StacData: processed data
+        Data with crossfaded overlap regions and overlaps removed.
     """
 
     def crossfade_sigmoid(
-        a: jp.ndarray,
-        b: jp.ndarray,
+        a: np.ndarray,
+        b: np.ndarray,
         *,
         axis: int = 0,
         center: float = 0.5,
         steepness: float = 10.0,
-    ) -> jp.ndarray:
+    ) -> np.ndarray:
 
         n = a.shape[axis]
-        x = jp.linspace(0.0, 1.0, n)
+        x = np.linspace(0.0, 1.0, n)
 
         # Numerically stable sigmoid: 0.5 * (1 + tanh(z/2))
         z = steepness * (x - center)
-        m = 0.5 * (1.0 + jp.tanh(z / 2.0))  # shape: (n,)
+        m = 0.5 * (1.0 + np.tanh(z / 2.0))
 
-        # Reshape for broadcasting along the chosen axis
         shape = [1] * a.ndim
         shape[axis] = n
         m = m.reshape(shape)
 
         return (1.0 - m) * a + m * b
 
-    def f(data: jp.ndarray):
+    def f(data: np.ndarray) -> np.ndarray:
         batched_data = data.reshape(
             (
                 -1,
@@ -404,7 +440,6 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
             b = batched_data[i + 1, :CONTINUOUS_BATCH_OVERLAP, :]
             cross = crossfade_sigmoid(a, b, axis=0)
 
-            # batched_data = batched_data.at[i, -CONTINUOUS_BATCH_OVERLAP:, :].set(cross)
             batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :] = cross
 
         first_data = batched_data[0, :, :]
@@ -414,7 +449,7 @@ def handle_edge_effects(ik_only_data: io.StacData, n_frames_per_clip: int):
         ]
 
         flattened_middle_data = middle_data.reshape((-1,) + middle_data.shape[2:])
-        res = jp.concatenate([first_data, flattened_middle_data, last_data], axis=0)
+        res = np.concatenate([first_data, flattened_middle_data, last_data], axis=0)
         return res
 
     ik_only_data.qpos = f(ik_only_data.qpos)

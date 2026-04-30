@@ -2,12 +2,17 @@
 
 import jax
 import jax.numpy as jp
+from jax import Array
 from jax import jit
 
 from functools import partial
 from typing import NamedTuple
 from jaxopt import ProjectedGradient
 from jaxopt.projection import projection_box
+from jaxtyping import Float, Int, Bool
+from jaxtyping import jaxtyped
+from beartype import beartype
+from mujoco import mjx
 
 from stac_mjx import utils
 
@@ -15,49 +20,43 @@ from stac_mjx import utils
 class MOptResult(NamedTuple):
     """Result of marker offset optimization."""
 
-    params: jp.ndarray
-    error: jp.ndarray
+    params: Float[Array, "n_keypoints 3"]
+    error: Float[Array, ""]
 
 
 def q_loss(
-    q: jp.ndarray,
-    mjx_model,
-    mjx_data,
-    kp_data: jp.ndarray,
-    qs_to_opt: jp.ndarray,
-    kps_to_opt: jp.ndarray,
-    initial_q: jp.ndarray,
-    site_idxs: jp.ndarray,
+    q: Float[Array, " n_qpos"],
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    kp_data: Float[Array, " n_keypoints_xyz"],
+    qs_to_opt: Bool[Array, " n_qpos"],
+    kps_to_opt: Bool[Array, " n_keypoints_xyz"],
+    initial_q: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
 ) -> float:
-    """Compute the marker loss for q_phase optimization.
+    """Compute marker loss for pose optimization.
 
     Args:
-        q (jp.ndarray): Proposed qs
-        mjx_model (mjx.Model): Model object (stays constant)
-        mjx_data (mjx.Data): Data object (modified to calculate new xpos)
-        kp_data (jp.ndarray): Ground truth keypoint positions
-        qs_to_opt (jp.ndarray): Boolean array; for each index in qpos, True = q and False = initial_q when calculating residual
-        kps_to_opt (jp.ndarray): Boolean array; only return residuals for the True positions
-        initial_q (jp.ndarray): Starting qs for reference
+        q: Proposed joint angles.
+        mjx_model: MJX model (constant).
+        mjx_data: MJX data (modified for FK).
+        kp_data: Ground truth keypoint positions.
+        qs_to_opt: Mask selecting which joints to optimize.
+        kps_to_opt: Mask selecting which keypoints contribute to loss.
+        initial_q: Starting joint angles for reference.
+        site_idxs: Indices of marker sites.
 
     Returns:
-        float: sum of squares scalar loss
+        Sum of squared residuals.
     """
-    # Replace qpos with new qpos with q and initial_q, based on qs_to_opt
     mjx_data = mjx_data.replace(qpos=utils.make_qs(initial_q, qs_to_opt, q))
 
-    # Clip to bounds ourselves because of potential jaxopt bug
-    # mjx_data = mjx_data.replace(qpos=jp.clip(op_utils.make_qs(initial_q, qs_to_opt, q), utils.params['lb'], utils.params['ub']))
-
-    # Forward kinematics
     mjx_data = utils.kinematics(mjx_model, mjx_data)
     mjx_data = utils.com_pos(mjx_model, mjx_data)
 
-    # Get marker site xpos
     markers = utils.get_site_xpos(mjx_data, site_idxs).flatten()
     residual = kp_data - markers
 
-    # Set irrelevant body sites to 0
     residual = residual * kps_to_opt
     residual = jp.sum(jp.square(residual))
 
@@ -66,17 +65,17 @@ def q_loss(
 
 @partial(jit, static_argnames=["q_solver"])
 def _q_opt(
-    q_solver,
-    mjx_model,
-    mjx_data,
-    marker_ref_arr: jp.ndarray,
-    qs_to_opt: jp.ndarray,
-    kps_to_opt: jp.ndarray,
-    q0: jp.ndarray,
-    lb,
-    ub,
-    site_idxs,
-):
+    q_solver: ProjectedGradient,
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    marker_ref_arr: Float[Array, "n_keypoints_xyz n_frames"],
+    qs_to_opt: Bool[Array, " n_qpos"],
+    kps_to_opt: Bool[Array, " n_keypoints_xyz"],
+    q0: Float[Array, " n_qpos"],
+    lb: Float[Array, " n_qpos"],
+    ub: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
+) -> tuple[mjx.Data, object | None]:
     """Update q_pose using estimated marker parameters."""
     try:
         return mjx_data, q_solver.run(
@@ -102,15 +101,15 @@ def _q_opt(
 
 @jit
 def _m_opt(
-    mjx_model,
-    mjx_data,
-    keypoints: jp.ndarray,
-    q: jp.ndarray,
-    initial_offsets: jp.ndarray,
-    is_regularized: jp.ndarray,
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    keypoints: Float[Array, "n_sample_frames n_keypoints_xyz"],
+    q: Float[Array, "n_sample_frames n_qpos"],
+    initial_offsets: Float[Array, "n_keypoints 3"],
+    is_regularized: Float[Array, "n_keypoints 3"],
     reg_coef: float,
-    site_idxs: jp.ndarray,
-):
+    site_idxs: Int[Array, " n_keypoints"],
+) -> MOptResult:
     """Closed-form marker offset solve.
 
     Exactly solves the quadratic marker-offset objective, assuming
@@ -128,16 +127,15 @@ def _m_opt(
     Args:
         mjx_model: MJX model.
         mjx_data: MJX data.
-        keypoints: Array of shape (T, 3*K), sampled observed markers.
-        q: Array of shape (T, nq), fixed pose trajectory for sampled frames.
-        initial_offsets: Array of shape (K, 3), reference offsets.
-        is_regularized: Array of shape (K, 3), 0/1 mask for regularized coords.
-        reg_coef: Scalar regularization coefficient.
-        site_idxs: Array of shape (K,), indices of the optimized sites.
+        keypoints: Sampled observed marker positions, flattened xyz.
+        q: Fixed pose trajectory for sampled frames.
+        initial_offsets: Reference offsets per keypoint.
+        is_regularized: 0/1 mask for regularized coordinates.
+        reg_coef: Regularization coefficient.
+        site_idxs: Indices of the optimized sites.
 
     Returns:
-        MOptResult: NamedTuple with ``.params`` of shape ``(K, 3)``
-        (optimized offsets) and ``.error`` (scalar residual loss).
+        Optimized offsets and scalar residual loss.
     """
     T = keypoints.shape[0]
     K = site_idxs.shape[0]
@@ -175,43 +173,53 @@ def _m_opt(
 
 
 class StacCore:
-    """StacCore computes pose and offset optimization.
+    """Pose and offset optimization core.
 
-    Pose optimization uses a ProjectedGradient solver (``q_solver``).
-    Offset optimization uses a closed-form solver (``_m_opt``).
-
-    Args:
-        tol (float): Tolerance for the q_solver.
-        n_iter_q (int): Number of iterations for q optimization.
+    Pose optimization uses a ProjectedGradient solver.
+    Offset optimization uses a closed-form solver.
     """
 
-    def __init__(self, tol=1e-5, n_iter_q=400):
+    def __init__(self, tol: float = 1e-5, n_iter_q: int = 400):
         """Initialize StacCore.
 
         Args:
-            tol (float): Tolerance value for ProjectedGradient 'q_solver'.
-            n_iter_q (int): Number of iterations for q optimization.
+            tol: Convergence tolerance for ProjectedGradient solver.
+            n_iter_q: Maximum iterations for pose optimization.
         """
         self.q_solver = ProjectedGradient(
             fun=q_loss, projection=projection_box, maxiter=n_iter_q, tol=tol
         )
 
+    @jaxtyped(typechecker=beartype)
     def q_opt(
         self,
-        mjx_model,
-        mjx_data,
-        marker_ref_arr: jp.ndarray,
-        qs_to_opt: jp.ndarray,
-        kps_to_opt: jp.ndarray,
-        q0: jp.ndarray,
-        lb,
-        ub,
-        site_idxs,
-    ):
-        """Updates q_pose using estimated marker parameters.
+        mjx_model: mjx.Model,
+        mjx_data: mjx.Data,
+        marker_ref_arr: Float[Array, "n_keypoints_xyz n_frames"],
+        qs_to_opt: Bool[Array, " n_qpos"],
+        kps_to_opt: Bool[Array, " n_keypoints_xyz"],
+        q0: Float[Array, " n_qpos"],
+        lb: Float[Array, " n_qpos"],
+        ub: Float[Array, " n_qpos"],
+        site_idxs: Int[Array, " n_keypoints"],
+    ) -> tuple[mjx.Data, object | None]:
+        """Update joint angles using estimated marker parameters.
 
-        This function is a wrapper for `_q_opt()` and updates `q_pose`
-        based on estimated marker parameters.
+        Wrapper for `_q_opt`.
+
+        Args:
+            mjx_model: MJX model.
+            mjx_data: MJX data.
+            marker_ref_arr: Marker reference positions (transposed layout).
+            qs_to_opt: Mask selecting which joints to optimize.
+            kps_to_opt: Mask selecting which keypoints contribute to loss.
+            q0: Initial joint angles.
+            lb: Lower bounds on joint angles.
+            ub: Upper bounds on joint angles.
+            site_idxs: Indices of marker sites.
+
+        Returns:
+            Tuple of (updated MJX data, optimization result or None on failure).
         """
         return _q_opt(
             self.q_solver,
@@ -226,35 +234,34 @@ class StacCore:
             site_idxs,
         )
 
+    @jaxtyped(typechecker=beartype)
     def m_opt(
         self,
-        mjx_model,
-        mjx_data,
-        keypoints,
-        q,
-        initial_offsets,
-        is_regularized,
-        reg_coef,
-        site_idxs,
-    ):
-        """Compute offset optimization.
+        mjx_model: mjx.Model,
+        mjx_data: mjx.Data,
+        keypoints: Float[Array, "n_sample_frames n_keypoints_xyz"],
+        q: Float[Array, "n_sample_frames n_qpos"],
+        initial_offsets: Float[Array, "n_keypoints 3"],
+        is_regularized: Float[Array, "n_keypoints 3"],
+        reg_coef: float,
+        site_idxs: Int[Array, " n_keypoints"],
+    ) -> MOptResult:
+        """Compute marker offset optimization.
 
-        This function serves as a wrapper for `_m_opt()` and computes
-        offset optimization based on the given parameters.
+        Wrapper for `_m_opt`.
 
         Args:
-            mjx_model: mjx.Model
-            mjx_data: mjx.Data
-            keypoints (jp.ndarray): Keypoints of shape (T, 3*K).
-            q (jp.ndarray): Joint angles of shape (T, nq).
-            initial_offsets (jp.ndarray): Reference offsets of shape (K, 3).
-            is_regularized (jp.ndarray): 0/1 mask of shape (K, 3).
-            reg_coef (float): Regularization coefficient.
-            site_idxs (jp.ndarray): Site indices of shape (K,).
+            mjx_model: MJX model.
+            mjx_data: MJX data.
+            keypoints: Sampled observed marker positions, flattened xyz.
+            q: Fixed pose trajectory for sampled frames.
+            initial_offsets: Reference offsets per keypoint.
+            is_regularized: 0/1 mask for regularized coordinates.
+            reg_coef: Regularization coefficient.
+            site_idxs: Indices of marker sites.
 
         Returns:
-            MOptResult: Result with ``.params`` of shape ``(K, 3)``
-                and ``.error`` (scalar residual loss).
+            Optimized offsets and scalar residual loss.
         """
         return _m_opt(
             mjx_model,
