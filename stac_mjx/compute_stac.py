@@ -2,49 +2,52 @@
 
 import jax
 import jax.numpy as jp
+from jax import Array
 import numpy as np
 import mujoco
-from typing import Tuple, List
 import time
+
+from jaxtyping import Float, Int, Bool
+from jaxtyping import jaxtyped
+from beartype import beartype
+from mujoco import mjx
 
 from stac_mjx import stac_core
 from stac_mjx import utils
 
 
+@jaxtyped(typechecker=beartype)
 def root_optimization(
     stac_core_obj: stac_core.StacCore,
-    mjx_model,
-    mjx_data,
-    kp_data: jp.ndarray,
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
     root_kp_idx: int,
-    lb: jp.ndarray,
-    ub: jp.ndarray,
-    site_idxs: jp.ndarray,
-    trunk_kps: jp.ndarray,
+    lb: Float[Array, " n_qpos"],
+    ub: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
+    trunk_kps: Bool[Array, " n_keypoints"],
     frame: int = 0,
-):
-    """Optimize the root DOFs for a single frame.
+) -> mjx.Data:
+    """Optimize root DOFs for a single frame.
 
-    The root is optimized first to remove a common contribution to the rest of
-    the kinematic chain. This seeds the root translation from the selected root
-    keypoint in `kp_data` and then runs two root-only q-phase solves using the
-    trunk keypoints as the objective.
+    Seeds root translation from the selected root keypoint, then runs
+    two root-only q-phase solves using trunk keypoints as the objective.
 
     Args:
-        stac_core_obj (stac_core.StacCore): Solver wrapper used for q-phase optimization.
-        mjx_model (mjx.Model): MJX model.
-        mjx_data (mjx.Data): MJX data.
-        kp_data (jp.ndarray): Flattened keypoint data with shape
-            `(n_frames, 3 * n_keypoints)`.
-        root_kp_idx (int): Index of the root keypoint in the ordered keypoint list.
-        lb (jp.ndarray): Array of lower bounds for corresponding qpos elements
-        ub (jp.ndarray): Array of upper bounds for corresponding qpos elements
-        site_idxs (jp.ndarray): Array of indices of offset sites
-        trunk_kps (jp.ndarray): Boolean mask of trunk keypoints to optimize.
-        frame (int, optional): Frame to optimize. Defaults to 0.
+        stac_core_obj: Solver wrapper for q-phase optimization.
+        mjx_model: MJX model.
+        mjx_data: MJX data.
+        kp_data: Flattened keypoint data.
+        root_kp_idx: Index of root keypoint in the ordered keypoint list.
+        lb: Lower bounds on joint angles.
+        ub: Upper bounds on joint angles.
+        site_idxs: Indices of marker sites.
+        trunk_kps: Boolean mask selecting trunk keypoints.
+        frame: Frame index to optimize.
 
     Returns:
-        mjx.Data: Updated MJX data after root optimization.
+        Updated MJX data after root optimization.
     """
     print(f"Root Optimization:")
 
@@ -104,39 +107,38 @@ def root_optimization(
     return mjx_data
 
 
+@jaxtyped(typechecker=beartype)
 def offset_optimization(
     stac_core_obj: stac_core.StacCore,
-    mjx_model,
-    mjx_data,
-    kp_data: jp.ndarray,
-    offsets: jp.ndarray,
-    q: jp.ndarray,
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    offsets: Float[Array, "n_keypoints 3"],
+    q: Float[Array, "n_frames n_qpos"],
     n_sample_frames: int,
-    is_regularized: jp.ndarray,
-    site_idxs: jp.ndarray,
+    is_regularized: Float[Array, "n_keypoints 3"],
+    site_idxs: Int[Array, " n_keypoints"],
     m_reg_coef: float,
-):
-    """Optimize the marker offsets based on proposed joint angles (q).
+) -> tuple[mjx.Model, mjx.Data, Float[Array, "n_keypoints 3"]]:
+    """Optimize marker offsets based on proposed joint angles.
 
     Args:
         stac_core_obj: Solver wrapper.
-        mjx_model (mjx.Model): MJX Model.
-        mjx_data (mjx.Data): MJX Data.
-        kp_data (jp.ndarray): Keypoint data of shape (n_frames, 3*K).
-        offsets (jp.ndarray): Current site offsets of shape (K, 3).
-        q (jp.ndarray): Proposed joint angles of shape (n_frames, nq).
-        n_sample_frames (int): Number of frames to sample when computing residual.
-        is_regularized (jp.ndarray): 0/1 mask of shape (K, 3).
-        site_idxs (jp.ndarray): Array of site indices of shape (K,).
-        m_reg_coef (float): Regularization coefficient.
+        mjx_model: MJX model.
+        mjx_data: MJX data.
+        kp_data: Flattened keypoint data.
+        offsets: Current site offsets per keypoint.
+        q: Proposed joint angles over all frames.
+        n_sample_frames: Number of frames to sample for offset residual.
+        is_regularized: 0/1 mask for regularized coordinates.
+        site_idxs: Indices of marker sites.
+        m_reg_coef: Regularization coefficient.
 
     Returns:
-        Tuple of (mjx.Model, mjx.Data, jp.ndarray) where the array is the
-        optimized offsets of shape (K, 3).
+        Tuple of (updated model, updated data, optimized offsets).
     """
     key = jax.random.PRNGKey(0)
 
-    # shuffle frames to get sample frames
     all_indices = jp.arange(kp_data.shape[0])
     shuffled_indices = jax.random.permutation(key, all_indices, independent=True)
     time_indices = shuffled_indices[:n_sample_frames]
@@ -159,11 +161,9 @@ def offset_optimization(
     )
 
     offset_opt_param = res.params
-    print(f"Final error of {res.error}")
+    print(f"Final residual error of {res.error}")
 
     mjx_model = utils.set_site_pos(mjx_model, offset_opt_param, site_idxs)
-
-    # Forward kinematics, and save the results to the walker sites as well
     mjx_data = utils.kinematics(mjx_model, mjx_data)
 
     print(f"Offset optimization finished in {time.time() - s} seconds")
@@ -171,29 +171,40 @@ def offset_optimization(
     return mjx_model, mjx_data, offset_opt_param
 
 
+@jaxtyped(typechecker=beartype)
 def pose_optimization(
     stac_core_obj: stac_core.StacCore,
-    mjx_model,
-    mjx_data,
-    kp_data: jp.ndarray,
-    lb: jp.ndarray,
-    ub: jp.ndarray,
-    site_idxs: jp.ndarray,
-    indiv_parts: List[jp.ndarray],
-) -> Tuple:
-    """Perform q_phase over the entire clip.
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    lb: Float[Array, " n_qpos"],
+    ub: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
+    indiv_parts: list[Bool[Array, " n_qpos"]],
+) -> tuple[
+    mjx.Data,
+    Float[Array, "n_frames n_qpos"],
+    list,
+    list,
+    list,
+    list[float],
+    list,
+]:
+    """Run pose optimization over an entire clip.
 
     Args:
-        mjx_model (mjx.Model): MJX Model
-        mjx_data (mjx.Data): MJX Data
-        kp_data (jp.ndarray): Keypoint data
-        lb (jp.ndarray): Array of lower bounds for corresponding qpos elements
-        ub (jp.ndarray): Array of upper bounds for corresponding qpos elements
-        site_idxs (jp.ndarray): Array of indices of offset sites
-        indiv_parts (List[jp.ndarray]): List of joints to optimize, used in individual part optimization
+        stac_core_obj: Solver wrapper.
+        mjx_model: MJX model.
+        mjx_data: MJX data.
+        kp_data: Flattened keypoint data.
+        lb: Lower bounds on joint angles.
+        ub: Upper bounds on joint angles.
+        site_idxs: Indices of marker sites.
+        indiv_parts: Per-part joint masks for individual part optimization.
 
     Returns:
-        Tuple: Updated mjx.Data, optimized qpos, offset site xpos, mjx.Data.xpos for each frame, and info for logging (optimization time and errors)
+        Tuple of (final mjx_data, qposes, xposes, xquats, marker_sites,
+        per-frame times, per-frame errors).
     """
     s = time.time()
     qposes = []
@@ -201,7 +212,6 @@ def pose_optimization(
     xquats = []
     marker_sites = []
 
-    # Iterate through all of the frames
     frames = jp.arange(kp_data.shape[0])
 
     kps_to_opt = jp.ones(kp_data.shape[1], dtype=bool)
@@ -211,7 +221,6 @@ def pose_optimization(
     def f(mjx_data, kp_data, n_frame, parts):
         q0 = jp.copy(mjx_data.qpos[:])
 
-        # While body opt, then part opt
         mjx_data, res = stac_core_obj.q_opt(
             mjx_model,
             mjx_data,
@@ -247,7 +256,6 @@ def pose_optimization(
 
         return mjx_data, res.state.error
 
-    # Optimize over each frame, storing all the results
     frame_time = []
     frame_error = []
     for n_frame in frames:

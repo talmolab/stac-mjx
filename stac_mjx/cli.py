@@ -1,11 +1,9 @@
 """Command-line interface for running STAC-MJX."""
 
-from __future__ import annotations
-
 import argparse
 import logging
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence, Tuple
 
 from omegaconf import DictConfig, OmegaConf
 
@@ -15,8 +13,15 @@ from stac_mjx.config import compose_config
 
 def parse_args(
     argv: Sequence[str] | None = None,
-) -> Tuple[argparse.Namespace, list[str]]:
-    """Parse CLI arguments and return the args plus Hydra override list."""
+) -> tuple[argparse.Namespace, list[str]]:
+    """Parse CLI arguments and return args plus Hydra override list.
+
+    Args:
+        argv: Command-line arguments. Defaults to sys.argv.
+
+    Returns:
+        Tuple of (parsed args, Hydra overrides).
+    """
     parser = argparse.ArgumentParser(
         description="Run STAC-MJX inverse kinematics from the command line."
     )
@@ -55,7 +60,16 @@ def run_pipeline(
     base_path: Path,
     enable_xla: bool = True,
 ) -> tuple[str, str | None]:
-    """Execute the STAC pipeline given a composed config."""
+    """Execute the STAC pipeline given a composed config.
+
+    Args:
+        cfg: STAC configuration.
+        base_path: Base path for resolving relative paths.
+        enable_xla: Whether to set XLA flags before running.
+
+    Returns:
+        Tuple of (fit_offsets path, ik_only path or None).
+    """
     if enable_xla:
         stac_mjx.enable_xla_flags()
 
@@ -64,7 +78,14 @@ def run_pipeline(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """CLI entry point."""
+    """CLI entry point.
+
+    Args:
+        argv: Command-line arguments. Defaults to sys.argv.
+
+    Returns:
+        Exit code (0 on success).
+    """
     logging.basicConfig(level=logging.INFO)
 
     args, hydra_overrides = parse_args(argv)
