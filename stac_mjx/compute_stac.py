@@ -8,15 +8,12 @@ import mujoco
 import time
 
 from jaxtyping import Float, Int, Bool
-from jaxtyping import jaxtyped
-from beartype import beartype
 from mujoco import mjx
 
 from stac_mjx import stac_core
 from stac_mjx import utils
 
 
-@jaxtyped(typechecker=beartype)
 def root_optimization(
     stac_core_obj: stac_core.StacCore,
     mjx_model: mjx.Model,
@@ -107,7 +104,6 @@ def root_optimization(
     return mjx_data
 
 
-@jaxtyped(typechecker=beartype)
 def offset_optimization(
     stac_core_obj: stac_core.StacCore,
     mjx_model: mjx.Model,
@@ -171,7 +167,6 @@ def offset_optimization(
     return mjx_model, mjx_data, offset_opt_param
 
 
-@jaxtyped(typechecker=beartype)
 def pose_optimization(
     stac_core_obj: stac_core.StacCore,
     mjx_model: mjx.Model,

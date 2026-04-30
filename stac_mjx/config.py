@@ -23,7 +23,9 @@ class ModelConfig:
     KEYPOINT_INITIAL_OFFSETS: dict[str, str]  # Initial offsets for keypoints
     ROOT_OPTIMIZATION_KEYPOINT: str  # Root optimization keypoint name
     TRUNK_OPTIMIZATION_KEYPOINTS: list[str]  # Trunk optimization keypoint names
-    INDIVIDUAL_PART_OPTIMIZATION: dict[str, list[str]]  # Part optimization keypoint groups
+    INDIVIDUAL_PART_OPTIMIZATION: dict[
+        str, list[str]
+    ]  # Part optimization keypoint groups
     KEYPOINT_COLOR_PAIRS: dict[str, str]  # RGBA color values for keypoints
     SCALE_FACTOR: float  # Scale factor for model
     MOCAP_SCALE_FACTOR: float  # Scale factor for mocap data (to convert to meters)

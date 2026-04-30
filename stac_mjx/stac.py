@@ -208,7 +208,9 @@ class Stac:
 
     def _init_body_sites(
         self,
-    ) -> tuple[mujoco.MjModel, Int[Array, " n_keypoints"], Float[Array, "n_keypoints 3"]]:
+    ) -> tuple[
+        mujoco.MjModel, Int[Array, " n_keypoints"], Float[Array, "n_keypoints 3"]
+    ]:
         """Compile the fitting model and create site indices and masks.
 
         Returns:
@@ -232,9 +234,7 @@ class Stac:
         body_site_idxs = jp.array(list(site_index_map.values()))
         return model, body_site_idxs, is_regularized
 
-    def _get_error_stats(
-        self, errors: list
-    ) -> tuple[np.ndarray, float, float]:
+    def _get_error_stats(self, errors: list) -> tuple[np.ndarray, float, float]:
         """Compute error statistics.
 
         Args:

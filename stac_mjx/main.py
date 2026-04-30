@@ -13,13 +13,9 @@ from pathlib import Path
 from functools import partial
 
 from jaxtyping import Float
-from jaxtyping import jaxtyped
-from beartype import beartype
 
 
-def load_configs(
-    config_dir: Path | str, config_name: str = "config"
-) -> DictConfig:
+def load_configs(config_dir: Path | str, config_name: str = "config") -> DictConfig:
     """Load and validate configs from a Hydra config directory.
 
     Args:
@@ -34,7 +30,6 @@ def load_configs(
     return cfg
 
 
-@jaxtyped(typechecker=beartype)
 def run_stac(
     cfg: DictConfig,
     kp_data: Float[Array, "n_frames n_keypoints_xyz"],

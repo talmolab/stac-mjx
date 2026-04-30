@@ -27,14 +27,18 @@ class StacData:
     names_qpos: list[str]  # Names of qpos
     names_xpos: list[str]  # Names of xpos
     kp_names: list[str]  # Names of keypoints
-    qvel: np.ndarray = field(default_factory=lambda: np.array([]))  # Inferred joint velocities, OPTIONAL
+    qvel: np.ndarray = field(
+        default_factory=lambda: np.array([])
+    )  # Inferred joint velocities, OPTIONAL
 
     def as_dict(self) -> dict:
         """Convert the dataclass instance to a dictionary."""
         return asdict(self)
 
 
-def load_data(cfg: DictConfig, base_path: Path | None = None) -> tuple[jp.ndarray, list[str]]:
+def load_data(
+    cfg: DictConfig, base_path: Path | None = None
+) -> tuple[jp.ndarray, list[str]]:
     """Load mocap data, flatten, and scale for STAC consumption.
 
     Loads mocap file based on filetype, sorts keypoints to match model order,

@@ -388,6 +388,7 @@ def batch_kp_data(
 
     return batched_kp_data
 
+
 # TODO: make this more efficient by parallelizing the crossfade operation
 def handle_edge_effects(
     ik_only_data: io.StacData, n_frames_per_clip: int
