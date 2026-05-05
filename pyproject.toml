@@ -34,6 +34,8 @@ dependencies = [
     "tqdm",
     "jaxopt==0.8.5",
     "jax>=0.7.2",
+    "jaxtyping",
+    "beartype",
     ]
     dynamic = ["version", "readme"]
 

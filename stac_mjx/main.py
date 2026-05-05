@@ -1,6 +1,7 @@
 """User-level API to run stac."""
 
 import jax
+from jax import Array
 from jax import numpy as jp
 import numpy as np
 import time
@@ -9,20 +10,20 @@ from stac_mjx import io, utils
 from stac_mjx.config import compose_config
 from stac_mjx.stac import Stac
 from pathlib import Path
-from typing import List, Union
 from functools import partial
 
+from jaxtyping import Float
 
-def load_configs(
-    config_dir: Union[Path, str], config_name: str = "config"
-) -> DictConfig:
+
+def load_configs(config_dir: Path | str, config_name: str = "config") -> DictConfig:
     """Load and validate configs from a Hydra config directory.
 
     Args:
-        config_dir ([Path, str]): Absolute path to config directory.
+        config_dir: Absolute path to config directory.
+        config_name: Name of the Hydra config to load.
 
     Returns:
-        DictConfig: stac.yaml config to use in run_stac()
+        Validated STAC configuration.
     """
     cfg = compose_config(config_dir, config_name=config_name)
     print("Config loaded and validated.")
@@ -31,20 +32,27 @@ def load_configs(
 
 def run_stac(
     cfg: DictConfig,
-    kp_data: jp.ndarray,
-    kp_names: List[str],
-    base_path=None,
-) -> tuple[str, str]:
-    """High level function for running skeletal registration.
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    kp_names: list[str],
+    base_path: Path | None = None,
+) -> tuple[str, str | None]:
+    """Run the full skeletal registration pipeline.
+
+    Runs fit_offsets (unless skipped), then ik_only (unless skipped),
+    optionally infers velocities, and saves results to HDF5.
 
     Args:
-        cfg (DictConfig): Configs.
-        kp_data (jp.ndarray): Mocap keypoints to fit to.
-        kp_names (List[str]): Ordered list of keypoint names.
-        base_path (Path, optional): Base path for reference files in configs. Defaults to Path.cwd().
+        cfg: STAC configuration.
+        kp_data: Flattened mocap keypoint data.
+        kp_names: Ordered keypoint names matching kp_data columns.
+        base_path: Base path for resolving relative file paths. Defaults to cwd.
 
     Returns:
-        tuple[str, str]: Paths to saved outputs (fit_offsets and ik_only).
+        Tuple of (fit_offsets output path, ik_only output path or None).
+
+    Raises:
+        ValueError: If kp_data columns don't match kp_names * 3.
+        ValueError: If n_frames_per_clip doesn't evenly divide total frames.
     """
     if base_path is None:
         base_path = Path.cwd()
@@ -62,7 +70,6 @@ def run_stac(
 
     start_time = time.time()
 
-    # Getting paths
     fit_offsets_path = base_path / cfg.stac.fit_offsets_path
     ik_only_path = base_path / cfg.stac.ik_only_path
 
@@ -75,10 +82,8 @@ def run_stac(
         dt=stac._mj_model.opt.timestep,
         freejoint=stac._freejoint,
     )
-    # Initialize function to infer velocity from kinematics
     vmap_compute_velocity_fn = jax.vmap(compute_velocity_fn)
 
-    # Run fit_offsets if not skipping
     if not cfg.stac.skip_fit_offsets:
         kps = kp_data[: cfg.stac.n_fit_frames]
         print(f"Running fit. Mocap data shape: {kps.shape}")
@@ -92,7 +97,6 @@ def run_stac(
             "Skipping fit_offsets. To change this behavior, set cfg.stac.skip_fit_offsets to False."
         )
 
-    # Stop here if not doing ik only phase
     if cfg.stac.skip_ik_only:
         print(
             "Skipping IK-only phase. To change this behavior, set cfg.stac.skip_ik_only to False."
@@ -111,7 +115,6 @@ def run_stac(
     print(f"kp_data shape: {kp_data.shape}")
     ik_only_data = stac.ik_only(kp_data, offsets)
 
-    # Naive edge effect handling: remove the last 10 frames if continuous
     if cfg.stac.continuous:
         print("Handling edge effects...")
         ik_only_data = utils.handle_edge_effects(
@@ -126,7 +129,6 @@ def run_stac(
     if cfg.stac.infer_qvels:
         t_vel = time.time()
         qvels = vmap_compute_velocity_fn(qpos_trajectory=batched_qpos)
-        # set dict key after reshaping and casting to numpy
         ik_only_data.qvel = np.array(qvels).reshape(-1, *qvels.shape[2:])
         print(f"Finished compute velocity in {time.time() - t_vel} seconds")
 
