@@ -153,6 +153,7 @@ class Stac:
             self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE
         )
         self._fixed = not (self._freejoint or self._slidejoint)
+        self._use_lm = getattr(self.cfg.stac, "use_lm", False)
 
         self.stac_core_obj = stac_core.StacCore(
             self.cfg.model.FTOL, self.cfg.model.N_ITER_Q
@@ -250,6 +251,54 @@ class Stac:
 
         return flattened_errors, mean, std
 
+    def _run_root_optimization(self, mjx_model, mjx_data, kp_data):
+        """Dispatch root optimization to LM or PG path."""
+        if self._root_kp_idx == -1:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
+            )
+            return mjx_data
+        if self._fixed:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, "
+                "skipping Root Optimization"
+            )
+            return mjx_data
+
+        root_fn = (
+            compute_stac.root_optimization_lm if self._use_lm
+            else lambda *a, **kw: compute_stac.root_optimization(
+                self.stac_core_obj, *a, **kw
+            )
+        )
+        return root_fn(
+            mjx_model, mjx_data, kp_data,
+            self._root_kp_idx, self._lb, self._ub,
+            self._body_site_idxs, self._trunk_kps,
+        )
+
+    def _run_pose_optimization(self, mjx_model, mjx_data, kp_data):
+        """Dispatch pose optimization to LM or PG path.
+
+        Returns:
+            Tuple of (mjx_data, qposes, xposes, xquats, marker_sites, frame_error).
+        """
+        if self._use_lm:
+            n_frames = kp_data.shape[0]
+            q_init = jp.tile(mjx_data.qpos, (n_frames, 1))
+            return compute_stac.pose_optimization_lm(
+                mjx_model, mjx_data, kp_data,
+                self._lb, self._ub, self._body_site_idxs, q_init,
+            )
+
+        mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
+            compute_stac.pose_optimization(
+                self.stac_core_obj, mjx_model, mjx_data, kp_data,
+                self._lb, self._ub, self._body_site_idxs, self._indiv_parts,
+            )
+        )
+        return mjx_data, qposes, xposes, xquats, marker_sites, frame_error
+
     @jaxtyped(typechecker=beartype)
     def fit_offsets(
         self, kp_data: Float[Array, "n_frames n_keypoints_xyz"]
@@ -274,39 +323,13 @@ class Stac:
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
-        if self._root_kp_idx == -1:
-            print(
-                "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
-            )
-        elif not self._fixed:
-            mjx_data = compute_stac.root_optimization(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                kp_data,
-                self._root_kp_idx,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._trunk_kps,
-            )
-        else:
-            print(
-                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping Root Optimization"
-            )
+        mjx_data = self._run_root_optimization(mjx_model, mjx_data, kp_data)
 
         for n_iter in range(self.cfg.model.N_ITERS):
             print(f"Calibration iteration: {n_iter + 1}/{self.cfg.model.N_ITERS}")
-            mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
-                compute_stac.pose_optimization(
-                    self.stac_core_obj,
-                    mjx_model,
-                    mjx_data,
-                    kp_data,
-                    self._lb,
-                    self._ub,
-                    self._body_site_idxs,
-                    self._indiv_parts,
+            mjx_data, qposes, xposes, xquats, marker_sites, frame_error = (
+                self._run_pose_optimization(
+                    mjx_model, mjx_data, kp_data,
                 )
             )
 
@@ -328,16 +351,9 @@ class Stac:
             )
 
         print("Final pose optimization", flush=True)
-        mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
-            compute_stac.pose_optimization(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                kp_data,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._indiv_parts,
+        mjx_data, qposes, xposes, xquats, marker_sites, frame_error = (
+            self._run_pose_optimization(
+                mjx_model, mjx_data, kp_data,
             )
         )
 
@@ -379,19 +395,25 @@ class Stac:
 
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)
 
+        if self._use_lm:
+            return self._ik_only_lm(
+                mjx_model, mjx_data, batched_kp_data, offsets,
+            )
+        return self._ik_only_pg(
+            mjx_model, mjx_data, batched_kp_data, offsets,
+        )
+
+    def _ik_only_pg(self, mjx_model, mjx_data, batched_kp_data, offsets):
+        """ik_only via vmapped ProjectedGradient (original path)."""
         def mjx_setup(kp_data, mj_model):
-            """Create MJX model/data and set offsets."""
             mjx_model, mjx_data = utils.mjx_load(mj_model)
-
             mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
-
             mjx_data = mjx.kinematics(mjx_model, mjx_data)
             mjx_data = mjx.com_pos(mjx_model, mjx_data)
-
             return mjx_model, mjx_data
 
         mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
-            batched_kp_data, self._mj_model
+            batched_kp_data, self._mj_model,
         )
 
         if self._root_kp_idx == -1:
@@ -402,40 +424,26 @@ class Stac:
             mujoco.mjtJoint.mjJNT_FREE,
             mujoco.mjtJoint.mjJNT_SLIDE,
         ):
-            vmap_root_opt = jax.vmap(
+            mjx_data = jax.vmap(
                 compute_stac.root_optimization,
                 in_axes=(None, 0, 0, 0, None, None, None, None, None),
-            )
-            mjx_data = vmap_root_opt(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                batched_kp_data,
-                self._root_kp_idx,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._trunk_kps,
+            )(
+                self.stac_core_obj, mjx_model, mjx_data, batched_kp_data,
+                self._root_kp_idx, self._lb, self._ub,
+                self._body_site_idxs, self._trunk_kps,
             )
         else:
             print(
                 "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping root_optimization()"
             )
 
-        vmap_pose_opt = jax.vmap(
-            compute_stac.pose_optimization,
-            in_axes=(None, 0, 0, 0, None, None, None, None),
-        )
         mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
-            vmap_pose_opt(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                batched_kp_data,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._indiv_parts,
+            jax.vmap(
+                compute_stac.pose_optimization,
+                in_axes=(None, 0, 0, 0, None, None, None, None),
+            )(
+                self.stac_core_obj, mjx_model, mjx_data, batched_kp_data,
+                self._lb, self._ub, self._body_site_idxs, self._indiv_parts,
             )
         )
 
@@ -448,6 +456,85 @@ class Stac:
             np.array(qposes),
             np.array(xposes),
             np.array(xquats),
+            np.array(marker_sites),
+            np.array(batched_kp_data),
+            batched=True,
+        )
+
+    def _ik_only_lm(self, mjx_model, mjx_data, batched_kp_data, offsets):
+        """ik_only via sequential LM batch solves per clip."""
+        mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
+
+        # Root optimization on first clip
+        mjx_data = self._run_root_optimization(
+            mjx_model, mjx_data, batched_kp_data[0],
+        )
+
+        # Build problem once (same n_frames for every clip)
+        n_frames = batched_kp_data.shape[1]
+        joint_mask = jp.ones(mjx_model.nq, dtype=bool)
+        kp_mask = jp.ones(batched_kp_data.shape[2], dtype=bool)
+        joint_reg_weights = jp.zeros(mjx_model.nq)
+        problem = stac_core.build_q_opt_lm(
+            n_frames, mjx_model, mjx_data, joint_mask, kp_mask,
+            self._lb, self._ub, self._body_site_idxs,
+            batched_kp_data.shape[2], joint_reg_weights,
+        )
+
+        n_clips = batched_kp_data.shape[0]
+        all_qposes, all_xposes, all_xquats = [], [], []
+        all_marker_sites, all_errors = [], []
+
+        for i in range(n_clips):
+            if i % 100 == 0 or i == n_clips - 1:
+                print(f"Clip {i + 1}/{n_clips}")
+
+            q_init = jp.tile(mjx_data.qpos, (n_frames, 1))
+            if self._root_kp_idx >= 0 and not self._fixed:
+                root_xyz = batched_kp_data[i, :, self._root_kp_idx * 3: self._root_kp_idx * 3 + 3]
+                q_init = q_init.at[:, :3].set(root_xyz)
+
+            mjx_data, qposes, xposes, xquats, marker_sites, marker_error = (
+                compute_stac.pose_optimization_lm(
+                    mjx_model, mjx_data, batched_kp_data[i],
+                    self._lb, self._ub, self._body_site_idxs,
+                    q_init, problem=problem,
+                )
+            )
+            all_qposes.append(qposes)
+            all_xposes.append(xposes)
+            all_xquats.append(xquats)
+            all_marker_sites.append(marker_sites)
+            all_errors.append(marker_error)
+
+        qposes = jp.stack(all_qposes)
+        xposes = jp.stack(all_xposes)
+        xquats = jp.stack(all_xquats)
+        marker_sites = jp.stack(all_marker_sites)
+        frame_error = jp.stack(all_errors)
+
+        flattened_errors, mean, std = self._get_error_stats(frame_error)
+        print(f"Mean: {mean}")
+        print(f"Standard deviation: {std}")
+
+        # Broadcast model to match batched shape for _package_data
+        mjx_model_batched = jax.tree.map(
+            lambda x: jp.broadcast_to(x, (n_clips, *x.shape)), mjx_model,
+        )
+
+        # _package_data expects xposes/xquats as (T, n_clips, ...) with F-order
+        # reshape (matching PG vmap output). LM stacks as (n_clips, T, ...), so
+        # swap axes 0 and 1.
+        xposes_t = np.moveaxis(np.array(xposes), 0, 1)
+        xquats_t = np.moveaxis(np.array(xquats), 0, 1)
+
+        return self._package_data(
+            mjx_model_batched,
+            np.array(qposes),
+            xposes_t,
+            xquats_t,
             np.array(marker_sites),
             np.array(batched_kp_data),
             batched=True,

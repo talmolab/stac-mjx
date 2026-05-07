@@ -5,6 +5,7 @@ import jax.numpy as jp
 from jax import Array
 from jax import jit
 
+from dataclasses import dataclass
 from functools import partial
 from typing import NamedTuple
 from jaxopt import ProjectedGradient
@@ -14,7 +15,12 @@ from jaxtyping import jaxtyped
 from beartype import beartype
 from mujoco import mjx
 
+import jaxlie
+import jaxls
+
 from stac_mjx import utils
+
+_FREE_JOINT_NDOF = 7
 
 
 class MOptResult(NamedTuple):
@@ -170,6 +176,289 @@ def _m_opt(
     error = data_term + reg_term
 
     return MOptResult(params=m_star, error=error)
+
+
+# ---------------------------------------------------------------------------
+# Jaxls Levenberg-Marquardt pose optimizer
+# ---------------------------------------------------------------------------
+#
+# Two-step API for batch trajectory IK using jaxls:
+#
+#   problem = build_q_opt_lm(n_frames, mjx_model, mjx_data, ...)  # analyze once
+#   q_out   = q_opt_lm(problem, q_init, kp_data, ...)             # solve (jitted)
+#
+# When joint_mask[:7] are all True the root is represented as jaxlie.SE3 so
+# LM updates stay on the SO(3) manifold (no quaternion drift).  Otherwise
+# falls back to a flat Euclidean parameterization with post-solve quat
+# normalization.
+
+
+@dataclass
+class QOptProblem:
+    analyzed: jaxls.AnalyzedLeastSquaresProblem
+    se3_mode: bool
+    n_frames: int
+    _KpVar: type
+    _SE3Var: type | None = None
+    _JointVar: type | None = None
+    _QVar: type | None = None
+
+
+def build_q_opt_lm(
+    n_frames: int,
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    joint_mask: Bool[Array, " n_qpos"],
+    kp_mask: Bool[Array, " n_keypoints_xyz"],
+    joint_lb: Float[Array, " n_qpos"],
+    joint_ub: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
+    n_kp_coords: int,
+    joint_reg_weights: Float[Array, " n_qpos"],
+    smooth_weight: float = 0.0,
+) -> QOptProblem:
+    """Build and analyze a jaxls least-squares IK problem.
+
+    Call once per unique (n_frames, nq, n_kp_coords) shape.
+    Reusable for any clip with the same shape.
+
+    Uses SE3 manifold parameterization for the root when all seven
+    free-joint DOFs are optimized, otherwise uses flat Euclidean.
+
+    Args:
+        n_frames: Number of timesteps.
+        mjx_model: MJX model (constant across frames).
+        mjx_data: MJX data used as FK template.
+        joint_mask: Boolean mask selecting which joints to optimize.
+        kp_mask: Boolean mask selecting which keypoint coordinates to fit.
+        joint_lb: Joint lower bounds.
+        joint_ub: Joint upper bounds.
+        site_idxs: Marker site indices.
+        n_kp_coords: Total keypoint coordinate count (n_keypoints * 3).
+        joint_reg_weights: Per-joint L2 regularization weights.
+        smooth_weight: Temporal smoothness coupling (0 = independent frames).
+
+    Returns:
+        Analyzed problem handle for ``q_opt_lm``.
+    """
+    se3_mode = bool(jp.all(joint_mask[:_FREE_JOINT_NDOF]))
+
+    if se3_mode:
+        return _build_se3_problem(
+            n_frames, mjx_model, mjx_data, joint_mask, kp_mask,
+            joint_lb, joint_ub, site_idxs, n_kp_coords,
+            joint_reg_weights, smooth_weight,
+        )
+    return _build_flat_problem(
+        n_frames, mjx_model, mjx_data, joint_mask, kp_mask,
+        joint_lb, joint_ub, site_idxs, n_kp_coords,
+        joint_reg_weights, smooth_weight,
+    )
+
+
+def q_opt_lm(
+    problem: QOptProblem,
+    q_init: Float[Array, "n_frames n_qpos"],
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    n_iter: int = 50,
+    lambda_initial: float = 1.0,
+    linear_solver: str = "dense_cholesky",
+) -> Float[Array, "n_frames n_qpos"]:
+    """Solve the analyzed IK problem via Levenberg-Marquardt.
+
+    The heavy lifting (LM iterations) is JIT-compiled inside jaxls.
+
+    Args:
+        problem: Handle from ``build_q_opt_lm``.
+        q_init: Warm-start joint angles.
+        kp_data: Observed keypoint positions.
+        n_iter: Maximum LM iterations.
+        lambda_initial: Initial LM damping factor.
+        linear_solver: ``"dense_cholesky"`` or ``"conjugate_gradient"``.
+
+    Returns:
+        Optimized joint angles.
+    """
+    if kp_data.ndim == 3:
+        kp_data = kp_data.reshape(kp_data.shape[0], -1)
+
+    solver_cfg = dict(
+        verbose=False,
+        linear_solver=linear_solver,
+        trust_region=jaxls.TrustRegionConfig(lambda_initial=lambda_initial),
+        termination=jaxls.TerminationConfig(max_iterations=n_iter),
+    )
+
+    if problem.se3_mode:
+        return _solve_se3(problem, q_init, kp_data, solver_cfg)
+    return _solve_flat(problem, q_init, kp_data, solver_cfg)
+
+
+def _build_se3_problem(n_frames, mjx_model, mjx_data, joint_mask, kp_mask,
+                       joint_lb, joint_ub, site_idxs, n_kp_coords,
+                       joint_reg_weights, smooth_weight):
+    n_hinges = int(mjx_model.nq) - _FREE_JOINT_NDOF
+    joint_default = jp.zeros((n_hinges,))
+    kp_default = jp.zeros((n_kp_coords,))
+
+    SE3Var = jaxls.SE3Var
+    class JointVar(jaxls.Var[jp.ndarray], default_factory=lambda: joint_default): ...
+    class KpVar(jaxls.Var[jp.ndarray], default_factory=lambda: kp_default): ...
+
+    frame_ids = jp.arange(n_frames)
+    root_vars, joint_vars, kp_vars = SE3Var(frame_ids), JointVar(frame_ids), KpVar(frame_ids)
+    costs: list[jaxls.Cost] = []
+
+    @jaxls.Cost.factory
+    def marker_cost(vals: jaxls.VarValues, root: SE3Var, joints: JointVar, kp: KpVar) -> jp.ndarray:
+        se3 = vals[root]
+        hinge_angles = vals[joints]
+        obs = jax.lax.stop_gradient(vals[kp])
+        q = jp.concatenate([se3.translation(), se3.rotation().wxyz, hinge_angles])
+        full_q = jp.where(joint_mask, q, mjx_data.qpos)
+        fk_data = mjx_data.replace(qpos=full_q)
+        fk_data = utils.kinematics(mjx_model, fk_data)
+        fk_data = utils.com_pos(mjx_model, fk_data)
+        return (obs - utils.get_site_xpos(fk_data, site_idxs).flatten()) * kp_mask
+
+    costs.append(marker_cost(root_vars, joint_vars, kp_vars))
+
+    hinge_reg_weights = joint_reg_weights[_FREE_JOINT_NDOF:]
+    hinge_mask = joint_mask[_FREE_JOINT_NDOF:]
+    if jp.any(hinge_reg_weights > 0):
+        @jaxls.Cost.factory
+        def reg_cost(vals: jaxls.VarValues, joints: JointVar) -> jp.ndarray:
+            return jp.sqrt(hinge_reg_weights * hinge_mask) * vals[joints]
+        costs.append(reg_cost(joint_vars))
+
+    hinge_lb, hinge_ub = joint_lb[_FREE_JOINT_NDOF:], joint_ub[_FREE_JOINT_NDOF:]
+
+    @jaxls.Cost.factory(kind="constraint_leq_zero")
+    def limit_cost(vals: jaxls.VarValues, joints: JointVar) -> jp.ndarray:
+        angles = vals[joints]
+        return jp.concatenate([hinge_lb - angles, angles - hinge_ub])
+    costs.append(limit_cost(joint_vars))
+
+    if smooth_weight > 0.0 and n_frames > 1:
+        @jaxls.Cost.factory
+        def smooth_cost(vals: jaxls.VarValues, root_cur: SE3Var, root_prev: SE3Var,
+                        joint_cur: JointVar, joint_prev: JointVar) -> jp.ndarray:
+            root_diff = (vals[root_prev].inverse() @ vals[root_cur]).log()
+            joint_diff = vals[joint_cur] - vals[joint_prev]
+            return jp.concatenate([root_diff, joint_diff]) * smooth_weight
+        costs.append(smooth_cost(
+            SE3Var(jp.arange(1, n_frames)),
+            SE3Var(jp.arange(n_frames - 1)),
+            JointVar(jp.arange(1, n_frames)),
+            JointVar(jp.arange(n_frames - 1)),
+        ))
+
+    analyzed = jaxls.LeastSquaresProblem(
+        costs=costs, variables=[root_vars, joint_vars, kp_vars],
+    ).analyze()
+
+    return QOptProblem(
+        analyzed=analyzed, se3_mode=True, n_frames=n_frames,
+        _KpVar=KpVar, _SE3Var=SE3Var, _JointVar=JointVar,
+    )
+
+
+def _solve_se3(problem, q_init, kp_data, solver_cfg):
+    n_frames = problem.n_frames
+    SE3Var, JointVar, KpVar = problem._SE3Var, problem._JointVar, problem._KpVar
+
+    xyz = q_init[:, :3]
+    wxyz = q_init[:, 3:7]
+    hinges = q_init[:, _FREE_JOINT_NDOF:]
+
+    quat_norm = jp.linalg.norm(wxyz, axis=-1, keepdims=True)
+    wxyz = wxyz / jp.where(quat_norm > 0, quat_norm, 1.0)
+    se3_init = jaxlie.SE3.from_rotation_and_translation(jaxlie.SO3(wxyz=wxyz), xyz)
+
+    frame_ids = jp.arange(n_frames)
+    sol = problem.analyzed.solve(
+        initial_vals=jaxls.VarValues.make([
+            SE3Var(frame_ids).with_value(se3_init),
+            JointVar(frame_ids).with_value(hinges),
+            KpVar(frame_ids).with_value(kp_data),
+        ]),
+        **solver_cfg,
+    )
+
+    roots = sol[SE3Var(frame_ids)]
+    joints = sol[JointVar(frame_ids)]
+    return jp.concatenate([roots.translation(), roots.rotation().wxyz, joints], axis=-1)
+
+
+def _build_flat_problem(n_frames, mjx_model, mjx_data, joint_mask, kp_mask,
+                        joint_lb, joint_ub, site_idxs, n_kp_coords,
+                        joint_reg_weights, smooth_weight):
+    nq = int(mjx_model.nq)
+    qpos_default = jp.zeros((nq,))
+    kp_default = jp.zeros((n_kp_coords,))
+
+    class QVar(jaxls.Var[jp.ndarray], default_factory=lambda: qpos_default): ...
+    class KpVar(jaxls.Var[jp.ndarray], default_factory=lambda: kp_default): ...
+
+    frame_ids = jp.arange(n_frames)
+    qpos_vars, kp_vars = QVar(frame_ids), KpVar(frame_ids)
+
+    costs: list[jaxls.Cost] = []
+
+    @jaxls.Cost.factory
+    def marker_cost(vals: jaxls.VarValues, q: QVar, kp: KpVar) -> jp.ndarray:
+        obs = jax.lax.stop_gradient(vals[kp])
+        full_q = jp.where(joint_mask, vals[q], mjx_data.qpos)
+        fk_data = mjx_data.replace(qpos=full_q)
+        fk_data = utils.kinematics(mjx_model, fk_data)
+        fk_data = utils.com_pos(mjx_model, fk_data)
+        return (obs - utils.get_site_xpos(fk_data, site_idxs).flatten()) * kp_mask
+    costs.append(marker_cost(qpos_vars, kp_vars))
+
+    if jp.any(joint_reg_weights > 0):
+        @jaxls.Cost.factory
+        def reg_cost(vals: jaxls.VarValues, q: QVar) -> jp.ndarray:
+            return jp.sqrt(joint_reg_weights * joint_mask) * vals[q]
+        costs.append(reg_cost(qpos_vars))
+
+    @jaxls.Cost.factory(kind="constraint_leq_zero")
+    def limit_cost(vals: jaxls.VarValues, q: QVar) -> jp.ndarray:
+        q_val = vals[q]
+        return jp.concatenate([joint_lb - q_val, q_val - joint_ub])
+    costs.append(limit_cost(qpos_vars))
+
+    if smooth_weight > 0.0 and n_frames > 1:
+        @jaxls.Cost.factory
+        def smooth_cost(vals: jaxls.VarValues,
+                        q_cur: QVar, q_prev: QVar) -> jp.ndarray:
+            return (vals[q_cur] - vals[q_prev]) * smooth_weight
+        costs.append(smooth_cost(QVar(jp.arange(1, n_frames)), QVar(jp.arange(n_frames - 1))))
+
+    analyzed = jaxls.LeastSquaresProblem(costs=costs, variables=[qpos_vars, kp_vars]).analyze()
+
+    return QOptProblem(
+        analyzed=analyzed, se3_mode=False, n_frames=n_frames,
+        _KpVar=KpVar, _QVar=QVar,
+    )
+
+
+def _solve_flat(problem, q_init, kp_data, solver_cfg):
+    n_frames = problem.n_frames
+    QVar, KpVar = problem._QVar, problem._KpVar
+
+    frame_ids = jp.arange(n_frames)
+    sol = problem.analyzed.solve(
+        initial_vals=jaxls.VarValues.make([
+            QVar(frame_ids).with_value(q_init),
+            KpVar(frame_ids).with_value(kp_data),
+        ]),
+        **solver_cfg,
+    )
+
+    qposes = sol[QVar(frame_ids)]
+    quat = qposes[:, 3:7]
+    quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
+    return qposes.at[:, 3:7].set(quat / jp.where(quat_norm > 0, quat_norm, 1.0))
 
 
 class StacCore:

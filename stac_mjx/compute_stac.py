@@ -12,6 +12,7 @@ from mujoco import mjx
 
 from stac_mjx import stac_core
 from stac_mjx import utils
+from stac_mjx.stac_core import build_q_opt_lm, q_opt_lm
 
 
 def root_optimization(
@@ -101,6 +102,73 @@ def root_optimization(
         f"Root optimization finished in {(time.time() - s) / 60:.2f} minutes with an error of {res.state.error}"
     )
 
+    return mjx_data
+
+
+def root_optimization_lm(
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    root_kp_idx: int,
+    lb: Float[Array, " n_qpos"],
+    ub: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
+    trunk_kps: Bool[Array, " n_keypoints"],
+    frame: int = 0,
+) -> mjx.Data:
+    """Optimize root DOFs for a single frame using LM.
+
+    Same semantics as ``root_optimization`` but uses jaxls LM solver.
+    Runs two solves: first to seed root position, then to refine.
+
+    Args:
+        mjx_model: MJX model.
+        mjx_data: MJX data.
+        kp_data: Flattened keypoint data.
+        root_kp_idx: Index of root keypoint in the ordered keypoint list.
+        lb: Lower bounds on joint angles.
+        ub: Upper bounds on joint angles.
+        site_idxs: Marker site indices.
+        trunk_kps: Boolean mask selecting trunk keypoints.
+        frame: Frame index to optimize.
+
+    Returns:
+        Updated MJX data after root optimization.
+    """
+    print("Root Optimization (LM):")
+
+    if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE:
+        root_dims = 4
+    else:
+        root_dims = 7
+    print(f"Optimizing first {root_dims} qposes for root optimization")
+    t_start = time.time()
+
+    q0 = jp.copy(mjx_data.qpos[:])
+    root_xyz = kp_data[frame, 3 * root_kp_idx : 3 * root_kp_idx + 3]
+    q0 = q0.at[:3].set(root_xyz)
+    joint_mask = jp.zeros_like(q0, dtype=bool).at[:root_dims].set(True)
+    kp_mask = jp.repeat(trunk_kps, 3)
+
+    joint_reg_weights = jp.zeros(mjx_model.nq)
+    kp_frame = kp_data[frame, :][None]  # (1, n_kp_coords)
+    q_init = q0[None]                   # (1, nq)
+
+    problem = build_q_opt_lm(
+        1, mjx_model, mjx_data, joint_mask, kp_mask,
+        lb, ub, site_idxs, kp_frame.shape[1], joint_reg_weights,
+    )
+
+    for _ in range(2):
+        q_out = q_opt_lm(problem, q_init, kp_frame, n_iter=50)
+        q_solved = q_out[0]
+        mjx_data = mjx_data.replace(qpos=q_solved)
+        mjx_data = utils.kinematics(mjx_model, mjx_data)
+        mjx_data = utils.com_pos(mjx_model, mjx_data)
+        q_init = mjx_data.qpos[None]
+        q_init = q_init.at[:, :3].set(root_xyz[None])
+
+    print(f"Root optimization finished in {(time.time() - t_start) / 60:.2f} minutes")
     return mjx_data
 
 
@@ -276,3 +344,86 @@ def pose_optimization(
         frame_time,
         frame_error,
     )
+
+
+def pose_optimization_lm(
+    mjx_model: mjx.Model,
+    mjx_data: mjx.Data,
+    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+    lb: Float[Array, " n_qpos"],
+    ub: Float[Array, " n_qpos"],
+    site_idxs: Int[Array, " n_keypoints"],
+    q_init: Float[Array, "n_frames n_qpos"],
+    kp_mask: Bool[Array, " n_keypoints_xyz"] | None = None,
+    joint_reg_weights: Float[Array, " n_qpos"] | None = None,
+    smooth_weight: float = 0.0,
+    n_iter: int = 50,
+    problem: stac_core.QOptProblem | None = None,
+) -> tuple[
+    mjx.Data,
+    Float[Array, "n_frames n_qpos"],
+    Float[Array, "n_frames n_bodies 3"],
+    Float[Array, "n_frames n_bodies 4"],
+    Float[Array, "n_frames n_keypoints 3"],
+    Float[Array, " n_frames"],
+]:
+    """Batch pose optimization using Levenberg-Marquardt.
+
+    Solves all frames as a single least-squares problem.
+
+    Args:
+        mjx_model: MJX model.
+        mjx_data: MJX data (used as FK template; qpos is overwritten).
+        kp_data: Observed keypoint positions, flattened xyz.
+        lb: Joint lower bounds.
+        ub: Joint upper bounds.
+        site_idxs: Marker site indices.
+        q_init: Warm-start joint angles.
+        kp_mask: Boolean mask selecting which keypoint coordinates to fit
+            (default: all True).
+        joint_reg_weights: Per-joint regularization weights (default: zeros).
+        smooth_weight: Temporal smoothness coupling.
+        n_iter: Maximum LM iterations.
+        problem: Pre-built QOptProblem (reuse across clips of same n_frames).
+
+    Returns:
+        Tuple of (final mjx_data, qposes, xposes, xquats, marker_sites,
+        per-frame marker error).
+    """
+    t_start = time.time()
+    n_frames = kp_data.shape[0]
+
+    if kp_mask is None:
+        kp_mask = jp.ones(kp_data.shape[1], dtype=bool)
+    if joint_reg_weights is None:
+        joint_reg_weights = jp.zeros(mjx_model.nq)
+
+    joint_mask = jp.ones(mjx_model.nq, dtype=bool)
+
+    if problem is None:
+        problem = build_q_opt_lm(
+            n_frames, mjx_model, mjx_data, joint_mask, kp_mask,
+            lb, ub, site_idxs, kp_data.shape[1], joint_reg_weights,
+            smooth_weight,
+        )
+
+    qposes = q_opt_lm(problem, q_init, kp_data, n_iter=n_iter)
+
+    def fk_frame(q):
+        fk_data = mjx_data.replace(qpos=q)
+        fk_data = utils.kinematics(mjx_model, fk_data)
+        fk_data = utils.com_pos(mjx_model, fk_data)
+        return fk_data.xpos, fk_data.xquat, utils.get_site_xpos(fk_data, site_idxs)
+
+    xposes, xquats, marker_sites = jax.vmap(fk_frame)(qposes)
+
+    markers_flat = marker_sites.reshape(n_frames, -1)
+    kp_flat = kp_data.reshape(n_frames, -1)
+    marker_error = jp.sum((kp_flat - markers_flat) ** 2, axis=-1)
+
+    mjx_data = mjx_data.replace(qpos=qposes[-1])
+    mjx_data = utils.kinematics(mjx_model, mjx_data)
+    mjx_data = utils.com_pos(mjx_model, mjx_data)
+
+    print(f"Pose Optimization (LM) finished in {(time.time() - t_start) / 60.0:.2f} minutes")
+    return mjx_data, qposes, xposes, xquats, marker_sites, marker_error

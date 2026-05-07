@@ -60,6 +60,7 @@ class StacConfig:
     n_frames_per_clip: int  # Number of frames per clip
     mujoco: MujocoConfig  # Configuration for Mujoco
     continuous: bool  # Whether the data is continuous (to allow for edge effects post-processing)
+    use_lm: bool = False  # Use jaxls Levenberg-Marquardt solver instead of ProjectedGradient
 
 
 @dataclass
