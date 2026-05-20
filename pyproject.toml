@@ -36,6 +36,7 @@ dependencies = [
     "jax>=0.7.2",
     "jaxtyping",
     "beartype",
+    "jaxls @ git+https://github.com/brentyi/jaxls.git",
     "jaxlie>=1.5.0",
 ]
     dynamic = ["version", "readme"]
