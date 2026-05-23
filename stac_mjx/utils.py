@@ -1,8 +1,15 @@
 """Utility functions for STAC."""
 
 import os
+import sys
 
 os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
+if (
+    os.environ.get("MUJOCO_GL") == "osmesa"
+    and os.environ.get("PYOPENGL_PLATFORM") != "osmesa"
+):
+    os.environ["MUJOCO_GL"] = "egl"
+os.environ.setdefault("MUJOCO_GL", "egl")
 
 import jax
 from jax import Array
@@ -11,6 +18,14 @@ import jaxlie
 from jaxtyping import Float, Int
 from jaxtyping import jaxtyped
 from beartype import beartype
+import mujoco
+
+if not hasattr(mujoco, "_enums"):
+    for name in list(sys.modules):
+        if name == "mujoco" or name.startswith("mujoco."):
+            del sys.modules[name]
+    import mujoco
+
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
@@ -18,17 +33,22 @@ from scipy import ndimage
 from jax.extend.backend import get_backend
 
 
-def enable_xla_flags() -> None:
-    """Enable XLA flags for faster runtime on Nvidia GPUs."""
-    if get_backend().platform == "gpu":
-        os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
-
-    # Enable persistent compilation cache to avoid recompilation across runs
+def _enable_jax_compilation_cache() -> None:
+    """Enable persistent JAX compilation cache for all entrypoints."""
     cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "stac-mjx", "jax")
     os.makedirs(cache_dir, exist_ok=True)
     jax.config.update("jax_compilation_cache_dir", cache_dir)
     jax.config.update("jax_persistent_cache_min_entry_size_bytes", 0)
     jax.config.update("jax_persistent_cache_min_compile_time_secs", 1)
+
+
+_enable_jax_compilation_cache()
+
+
+def enable_xla_flags() -> None:
+    """Enable XLA flags for faster runtime on Nvidia GPUs."""
+    if get_backend().platform == "gpu":
+        os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
 
 def mjx_load(mj_model) -> tuple[mjx.Model, mjx.Data]:

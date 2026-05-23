@@ -66,7 +66,6 @@ class QOptConfig:
     context_frames: int = 64
     coarse_init_stride: int = 10
     calibration_max_iterations: int = 150
-    final_pose_max_iterations: int = 200
     ik_max_iterations: int = 150
 
 

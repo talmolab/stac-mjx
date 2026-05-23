@@ -243,31 +243,6 @@ class Stac:
             initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
         )
 
-    def _run_pose_optimization(
-        self, mjx_model, mjx_data, kp_data, n_solver_max_iters: int
-    ):
-        """Run pose optimization.
-
-        Returns:
-            Tuple of (mjx_data, qpos, body_pos, body_quat, marker_pos, frame_error).
-        """
-        n_frames = kp_data.shape[0]
-        q_init = jp.tile(mjx_data.qpos, (n_frames, 1))
-        return compute_stac.pose_optimization(
-            mjx_model,
-            mjx_data,
-            kp_data,
-            self._lb,
-            self._ub,
-            self._body_site_idxs,
-            q_init,
-            acceleration_smoothness_weight=(
-                self.cfg.stac.q_opt.acceleration_smoothness_weight
-            ),
-            n_solver_max_iters=n_solver_max_iters,
-            initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
-        )
-
     @jaxtyped(typechecker=beartype)
     def calibrate(
         self, kp_data: Float[Array, "n_frames n_keypoints_xyz"]
@@ -298,17 +273,49 @@ class Stac:
             kp_data,
             n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
         )
+        n_frames = kp_data.shape[0]
+        joint_mask = jp.ones(mjx_model.nq, dtype=bool)
+        kp_mask = jp.ones(kp_data.shape[1], dtype=bool)
+        joint_reg_weights = jp.zeros(mjx_model.nq)
+        pose_problem = stac_core.build_q_opt_problem(
+            n_frames,
+            mjx_model,
+            mjx_data,
+            joint_mask,
+            kp_mask,
+            self._lb,
+            self._ub,
+            self._body_site_idxs,
+            kp_data.shape[1],
+            joint_reg_weights,
+            acceleration_smoothness_weight=(
+                self.cfg.stac.q_opt.acceleration_smoothness_weight
+            ),
+            site_offsets=self._offsets,
+            dynamic_site_offsets=True,
+        )
 
+        q_init = jp.tile(mjx_data.qpos, (n_frames, 1))
         for calibration_iter in range(self.cfg.model.N_ITERS):
             print(
                 f"Calibration iteration: {calibration_iter + 1}/{self.cfg.model.N_ITERS}"
             )
             mjx_data, qpos, body_pos, body_quat, marker_pos, frame_error = (
-                self._run_pose_optimization(
+                compute_stac.pose_optimization(
                     mjx_model,
                     mjx_data,
                     kp_data,
+                    self._lb,
+                    self._ub,
+                    self._body_site_idxs,
+                    q_init,
+                    acceleration_smoothness_weight=(
+                        self.cfg.stac.q_opt.acceleration_smoothness_weight
+                    ),
                     n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
+                    initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
+                    site_offsets=self._offsets,
+                    problem=pose_problem,
                 )
             )
 
@@ -327,14 +334,25 @@ class Stac:
                 self._body_site_idxs,
                 self.cfg.model.M_REG_COEF,
             )
+            q_init = qpos
 
         print("Final pose optimization", flush=True)
         mjx_data, qpos, body_pos, body_quat, marker_pos, frame_error = (
-            self._run_pose_optimization(
+            compute_stac.pose_optimization(
                 mjx_model,
                 mjx_data,
                 kp_data,
-                n_solver_max_iters=self.cfg.stac.q_opt.final_pose_max_iterations,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                q_init,
+                acceleration_smoothness_weight=(
+                    self.cfg.stac.q_opt.acceleration_smoothness_weight
+                ),
+                n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
+                initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
+                site_offsets=self._offsets,
+                problem=pose_problem,
             )
         )
 
@@ -388,6 +406,7 @@ class Stac:
     ) -> Float[Array, "solve_frames n_qpos"]:
         """Warm-start a chunk, then refine that warm start with a coarse solve."""
         root_kp_start = self._root_kp_idx * 3
+        # Reuse the previous chunk's overlap when possible to keep chunk boundaries smooth.
         if prev_overlap_q is None:
             q_init = jp.tile(mjx_data.qpos, (solve_frames, 1))
             if self._root_kp_idx >= 0 and not self._fixed:
@@ -414,6 +433,7 @@ class Stac:
         )
         coarse_frames = int(coarse_idx.shape[0])
 
+        # Solve sparse keyframes first, then interpolate them into the dense warm start.
         if coarse_frames not in coarse_problems:
             coarse_problems[coarse_frames] = stac_core.build_q_opt_problem(
                 coarse_frames,
@@ -482,6 +502,7 @@ class Stac:
         prev_overlap_q = None
 
         for chunk_idx, start in enumerate(range(0, total_frames, chunk_size)):
+            # Every chunk is padded to the same solve shape so compiled q_opt calls are reused.
             kp_chunk, n_frames_to_output = utils.make_context_window(
                 kp_data, start, chunk_size, context_frames, solve_frames
             )

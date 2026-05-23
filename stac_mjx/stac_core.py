@@ -7,6 +7,7 @@ import jax
 import jax.numpy as jp
 import jaxlie
 import jaxls
+import mujoco
 from jax import Array, jit
 from jaxtyping import Bool, Float, Int
 from mujoco import mjx
@@ -76,7 +77,7 @@ def m_opt(
     y = keypoints.reshape(T, K, 3)
     d = is_regularized.astype(y.dtype)
 
-    site_bodyid = mjx_model.site_bodyid[site_idxs]
+    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
 
     def fk_single(q_t):
         """Run FK for a single frame, return body pos and rot for sites."""
@@ -106,7 +107,7 @@ def m_opt(
 
 
 # ---------------------------------------------------------------------------
-# Jaxls Levenberg-Marquardt pose optimizer
+# JAXLS pose optimizer
 # ---------------------------------------------------------------------------
 
 
@@ -114,7 +115,11 @@ def m_opt(
 class QOptProblem:
     analyzed: jaxls.AnalyzedLeastSquaresProblem
     se3_mode: bool
+    freejoint_root: bool
     n_frames: int
+    n_kp_coords: int
+    site_offsets: Float[Array, "n_keypoints 3"]
+    dynamic_site_offsets: bool
     _KpVar: type
     _SE3Var: type | None = None
     _JointVar: type | None = None
@@ -133,6 +138,8 @@ def build_q_opt_problem(
     n_kp_coords: int,
     joint_reg_weights: Float[Array, " n_qpos"],
     acceleration_smoothness_weight: float = 1.0,
+    site_offsets: Float[Array, "n_keypoints 3"] | None = None,
+    dynamic_site_offsets: bool = False,
 ) -> QOptProblem:
     """Build and analyze a jaxls least-squares pose problem.
 
@@ -155,11 +162,20 @@ def build_q_opt_problem(
         joint_reg_weights: Per-joint L2 regularization weights.
         acceleration_smoothness_weight: Temporal acceleration smoothness coupling
             (0 = independent frames).
+        site_offsets: Current marker offsets. Defaults to model site positions.
+        dynamic_site_offsets: Pass marker offsets as solve data rather than
+            baking them into the analyzed problem.
 
     Returns:
         Analyzed problem handle for ``q_opt``.
     """
-    se3_mode = bool(jp.all(joint_mask[:_FREE_JOINT_NDOF]))
+    freejoint_root = (
+        int(mjx_model.nq) >= _FREE_JOINT_NDOF
+        and int(mjx_model.jnt_type[0]) == mujoco.mjtJoint.mjJNT_FREE
+    )
+    se3_mode = freejoint_root and bool(jp.all(joint_mask[:_FREE_JOINT_NDOF]))
+    if site_offsets is None:
+        site_offsets = mjx_model.site_pos[site_idxs]
 
     if se3_mode:
         return _build_se3_problem(
@@ -174,6 +190,8 @@ def build_q_opt_problem(
             n_kp_coords,
             joint_reg_weights,
             acceleration_smoothness_weight,
+            site_offsets,
+            dynamic_site_offsets,
         )
     return _build_flat_problem(
         n_frames,
@@ -187,6 +205,9 @@ def build_q_opt_problem(
         n_kp_coords,
         joint_reg_weights,
         acceleration_smoothness_weight,
+        freejoint_root,
+        site_offsets,
+        dynamic_site_offsets,
     )
 
 
@@ -196,6 +217,7 @@ def q_opt(
     kp_data: Float[Array, "n_frames n_keypoints_xyz"],
     n_solver_max_iters: int = 50,
     initial_step_damping: float = 1.0,
+    site_offsets: Float[Array, "n_keypoints 3"] | None = None,
     return_summary: bool = False,
 ) -> Float[Array, "n_frames n_qpos"] | QOptResult:
     """Solve the analyzed q optimization problem.
@@ -206,6 +228,7 @@ def q_opt(
         kp_data: Observed keypoint positions.
         n_solver_max_iters: Maximum solver iterations.
         initial_step_damping: Initial damping on the solver step.
+        site_offsets: Marker offsets for this solve.
         return_summary: Return qpos and jaxls SolveSummary for telemetry.
 
     Returns:
@@ -213,6 +236,13 @@ def q_opt(
     """
     if kp_data.ndim == 3:
         kp_data = kp_data.reshape(kp_data.shape[0], -1)
+    if site_offsets is None:
+        site_offsets = problem.site_offsets
+    if problem.dynamic_site_offsets:
+        offset_data = jp.broadcast_to(
+            site_offsets.reshape(1, -1), (kp_data.shape[0], site_offsets.size)
+        )
+        kp_data = jp.concatenate([kp_data, offset_data], axis=-1)
 
     solver_cfg = dict(
         verbose=False,
@@ -241,10 +271,16 @@ def _build_se3_problem(
     n_kp_coords,
     joint_reg_weights,
     acceleration_smoothness_weight,
+    site_offsets,
+    dynamic_site_offsets,
 ):
     n_hinges = int(mjx_model.nq) - _FREE_JOINT_NDOF
     joint_default = jp.zeros((n_hinges,))
-    kp_default = jp.zeros((n_kp_coords,))
+    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
+    kp_data_dim = (
+        n_kp_coords + site_offsets.size if dynamic_site_offsets else n_kp_coords
+    )
+    kp_default = jp.zeros((kp_data_dim,))
 
     SE3Var = jaxls.SE3Var
 
@@ -272,7 +308,16 @@ def _build_se3_problem(
         fk_data = mjx_data.replace(qpos=full_q)
         fk_data = utils.kinematics(mjx_model, fk_data)
         fk_data = utils.com_pos(mjx_model, fk_data)
-        return (obs - utils.get_site_xpos(fk_data, site_idxs).flatten()) * kp_mask
+        if dynamic_site_offsets:
+            offsets = obs[n_kp_coords:].reshape((-1, 3))
+            obs = obs[:n_kp_coords]
+            marker_pos = fk_data.xpos[site_bodyid] + jp.einsum(
+                "kij,kj->ki", fk_data.xmat[site_bodyid], offsets
+            )
+            markers = marker_pos.flatten()
+        else:
+            markers = utils.get_site_xpos(fk_data, site_idxs).flatten()
+        return (obs - markers) * kp_mask
 
     costs.append(marker_cost(root_vars, joint_vars, kp_vars))
 
@@ -334,7 +379,11 @@ def _build_se3_problem(
     return QOptProblem(
         analyzed=analyzed,
         se3_mode=True,
+        freejoint_root=True,
         n_frames=n_frames,
+        n_kp_coords=n_kp_coords,
+        site_offsets=site_offsets,
+        dynamic_site_offsets=dynamic_site_offsets,
         _KpVar=KpVar,
         _SE3Var=SE3Var,
         _JointVar=JointVar,
@@ -390,10 +439,17 @@ def _build_flat_problem(
     n_kp_coords,
     joint_reg_weights,
     acceleration_smoothness_weight,
+    freejoint_root,
+    site_offsets,
+    dynamic_site_offsets,
 ):
     nq = int(mjx_model.nq)
     qpos_default = jp.zeros((nq,))
-    kp_default = jp.zeros((n_kp_coords,))
+    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
+    kp_data_dim = (
+        n_kp_coords + site_offsets.size if dynamic_site_offsets else n_kp_coords
+    )
+    kp_default = jp.zeros((kp_data_dim,))
 
     class QVar(jaxls.Var[jp.ndarray], default_factory=lambda: qpos_default): ...
 
@@ -411,7 +467,16 @@ def _build_flat_problem(
         fk_data = mjx_data.replace(qpos=full_q)
         fk_data = utils.kinematics(mjx_model, fk_data)
         fk_data = utils.com_pos(mjx_model, fk_data)
-        return (obs - utils.get_site_xpos(fk_data, site_idxs).flatten()) * kp_mask
+        if dynamic_site_offsets:
+            offsets = obs[n_kp_coords:].reshape((-1, 3))
+            obs = obs[:n_kp_coords]
+            marker_pos = fk_data.xpos[site_bodyid] + jp.einsum(
+                "kij,kj->ki", fk_data.xmat[site_bodyid], offsets
+            )
+            markers = marker_pos.flatten()
+        else:
+            markers = utils.get_site_xpos(fk_data, site_idxs).flatten()
+        return (obs - markers) * kp_mask
 
     costs.append(marker_cost(qpos_vars, kp_vars))
 
@@ -455,7 +520,11 @@ def _build_flat_problem(
     return QOptProblem(
         analyzed=analyzed,
         se3_mode=False,
+        freejoint_root=freejoint_root,
         n_frames=n_frames,
+        n_kp_coords=n_kp_coords,
+        site_offsets=site_offsets,
+        dynamic_site_offsets=dynamic_site_offsets,
         _KpVar=KpVar,
         _QVar=QVar,
     )
@@ -482,9 +551,10 @@ def _solve_flat(problem, q_init, kp_data, solver_cfg, return_summary):
         sol, summary = solve_out, None
 
     qpos = sol[QVar(frame_ids)]
-    quat = qpos[:, 3:7]
-    quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
-    qpos = qpos.at[:, 3:7].set(quat / jp.where(quat_norm > 0, quat_norm, 1.0))
+    if problem.freejoint_root:
+        quat = qpos[:, 3:7]
+        quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
+        qpos = qpos.at[:, 3:7].set(quat / jp.where(quat_norm > 0, quat_norm, 1.0))
     if return_summary:
         return QOptResult(qpos, summary)
     return qpos
