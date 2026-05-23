@@ -1,7 +1,7 @@
 """Configuration loading utilities for stac-mjx."""
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from hydra import compose, initialize_config_dir
@@ -13,11 +13,7 @@ class ModelConfig:
     """Configuration for body model."""
 
     MJCF_PATH: str  # Path to model xml
-    FTOL: float  # Tolerance for optimization
-    ROOT_FTOL: float  # Tolerance for root optimization TODO: currently unused
-    LIMB_FTOL: float  # Tolerance for limb optimization TODO: currently unused
     N_ITERS: int  # Number of iterations for STAC algorithm
-    N_ITER_Q: int  # Number of iterations for q optimization
     KP_NAMES: list[str]  # Ordered list of keypoint names
     KEYPOINT_MODEL_PAIRS: dict[str, str]  # Mapping from keypoint names to model bodies
     KEYPOINT_INITIAL_OFFSETS: dict[str, str]  # Initial offsets for keypoints
@@ -49,18 +45,31 @@ class MujocoConfig:
 class StacConfig:
     """Configuration for STAC."""
 
-    fit_offsets_path: str  # Save path for fit_offsets() output
-    ik_only_path: str  # Save path for ik_only() output
+    calibration_path: str  # Save path for calibrate() output
+    ik_path: str  # Save path for run_ik() output
     data_path: str  # Path to mocap data
     num_clips: int  # Number of clips in mocap data
-    n_fit_frames: int  # Number of frames to fit offsets to
-    skip_fit_offsets: bool  # Skip fit_offsets() step if True
-    skip_ik_only: bool  # Skip ik_only() step if True
+    n_calibration_frames: int  # Number of frames to use during calibration
+    skip_calibration: bool  # Skip calibrate() step if True
+    skip_ik: bool  # Skip run_ik() step if True
     infer_qvels: bool  # Infer qvels if True
     n_frames_per_clip: int  # Number of frames per clip
     mujoco: MujocoConfig  # Configuration for Mujoco
     continuous: bool  # Whether the data is continuous (to allow for edge effects post-processing)
-    use_lm: bool = False  # Use jaxls Levenberg-Marquardt solver instead of ProjectedGradient
+    q_opt: "QOptConfig" = field(default_factory=lambda: QOptConfig())
+
+
+@dataclass
+class QOptConfig:
+    """q optimization settings."""
+
+    initial_step_damping: float = 1.0
+    acceleration_smoothness_weight: float = 0.9
+    context_frames: int = 64
+    coarse_init_stride: int = 10
+    calibration_max_iterations: int = 150
+    final_pose_max_iterations: int = 200
+    ik_max_iterations: int = 150
 
 
 @dataclass

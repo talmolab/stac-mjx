@@ -68,7 +68,7 @@ def run_pipeline(
         enable_xla: Whether to set XLA flags before running.
 
     Returns:
-        Tuple of (fit_offsets path, ik_only path or None).
+        Tuple of (calibration path, IK path or None).
     """
     if enable_xla:
         stac_mjx.enable_xla_flags()
@@ -101,15 +101,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(OmegaConf.to_yaml(cfg))
         return 0
 
-    fit_path, ik_only_path = run_pipeline(
+    calibration_path, ik_path = run_pipeline(
         cfg=cfg,
         base_path=base_path,
         enable_xla=not args.skip_xla_flags,
     )
 
     logging.info("Run complete.")
-    logging.info("Fit path: %s", fit_path)
-    logging.info("IK-only path: %s", ik_only_path)
+    logging.info("Calibration path: %s", calibration_path)
+    logging.info("IK path: %s", ik_path)
     return 0
 
 

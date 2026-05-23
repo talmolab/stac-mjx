@@ -3,7 +3,6 @@ from pathlib import Path
 from stac_mjx import main
 from stac_mjx import io
 from stac_mjx.stac import Stac, _align_joint_dims
-from mujoco import _structs
 
 _BASE_PATH = Path.cwd()
 
@@ -16,8 +15,8 @@ def test_init_stac(mocap_nwb, config):
     stac = Stac(xml_path, cfg, sorted_kp_names)
 
     assert stac.cfg == cfg
-    assert stac._kp_names == sorted_kp_names
-    assert isinstance(stac._mj_model, _structs.MjModel)
+    assert callable(stac.calibrate)
+    assert callable(stac.run_ik)
 
 
 def test_align_joint_dims():

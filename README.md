@@ -105,7 +105,7 @@ First, configure your body model and STAC parameters in `configs/`:
 |------|---------|
 | `configs/config.yaml` | Selects defaults for `model` and `stac` (copy/rename for custom presets) |
 | `configs/model/*.yaml` | MuJoCo model path, keypoint names/order, `KEYPOINT_MODEL_PAIRS` mappings, initial offsets, scale factors |
-| `configs/stac/*.yaml` | Data paths (`stac.data_path`), clip sizes, fit/IK output paths, solver settings |
+| `configs/stac/*.yaml` | Data paths (`stac.data_path`), clip sizes, calibration/IK output paths, solver settings |
 
 Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
 
@@ -121,10 +121,10 @@ Common options:
 - `--print-config`: show the composed Hydra config and exit
 - `--skip-xla-flags`: skip setting XLA environment flags before running
 
-Hydra overrides can be appended after the CLI flags. For example, to change the data path and number of fit frames:
+Hydra overrides can be appended after the CLI flags. For example, to change the data path and number of calibration frames:
 
 ```bash
-stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.nwb stac.n_fit_frames=100
+stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.nwb stac.n_calibration_frames=100
 ```
 
 ### Custom Python Script/Jupyter Notebook
@@ -152,7 +152,7 @@ The following is the full CLI script run as a sequence of function calls:
    kp_data, sorted_kp_names = stac_mjx.load_data(cfg, base_path)
 
    # Run stac
-   fit_path, ik_only_path = stac_mjx.run_stac(
+   calibration_path, ik_path = stac_mjx.run_stac(
       cfg,
       kp_data,
       sorted_kp_names,
@@ -164,7 +164,7 @@ The following is the full CLI script run as a sequence of function calls:
    ```python
    import mediapy as media
 
-   data_path = base_path / "demo_fit_offsets.h5"
+   data_path = base_path / "demo_calibration.h5"
    n_frames = 10
    save_path = base_path / "videos/direct_render.mp4"
 

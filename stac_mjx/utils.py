@@ -7,7 +7,7 @@ os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 import jax
 from jax import Array
 from jax import numpy as jp
-from jaxtyping import Float, Int, Bool
+from jaxtyping import Float, Int
 from jaxtyping import jaxtyped
 from beartype import beartype
 from mujoco import mjx
@@ -126,49 +126,6 @@ def set_site_pos(
     new_site_pos = mjx_model.site_pos.at[site_idxs].set(offsets)
     mjx_model = mjx_model.replace(site_pos=new_site_pos)
     return mjx_model
-
-
-def make_qs(
-    q0: Float[Array, " n_qpos"],
-    qs_to_opt: Bool[Array, " n_qpos"],
-    q: Float[Array, " n_qpos"],
-) -> Float[Array, " n_qpos"]:
-    """Combine initial and optimized joint angles based on optimization mask.
-
-    Args:
-        q0: Initial joint angles.
-        qs_to_opt: Boolean mask selecting which joints were optimized.
-        q: New joint angles from optimization.
-
-    Returns:
-        Combined joint angles.
-    """
-    return jp.copy((1 - qs_to_opt) * q0 + qs_to_opt * jp.copy(q))
-
-
-def replace_qs(
-    mjx_model: mjx.Model,
-    mjx_data: mjx.Data,
-    q: Float[Array, " n_qpos"] | None,
-) -> mjx.Data:
-    """Replace joint angles in MJX data and run forward kinematics.
-
-    Args:
-        mjx_model: MJX model.
-        mjx_data: MJX data.
-        q: New joint angles, or None if optimization failed.
-
-    Returns:
-        Updated MJX data after forward kinematics.
-    """
-    if q is None:
-        print("optimization failed, continuing")
-
-    else:
-        mjx_data = mjx_data.replace(qpos=q)
-        mjx_data = kinematics(mjx_model, mjx_data)
-
-    return mjx_data
 
 
 # Constants used to determine when a rotation is close to a pole.
@@ -392,13 +349,11 @@ def batch_kp_data(
 
 
 # TODO: make this more efficient by parallelizing the crossfade operation
-def handle_edge_effects(
-    ik_only_data: io.StacData, n_frames_per_clip: int
-) -> io.StacData:
+def handle_edge_effects(ik_data: io.StacData, n_frames_per_clip: int) -> io.StacData:
     """Handle overlapping batch boundaries via sigmoid crossfade.
 
     Args:
-        ik_only_data: IK output data with overlapping batches.
+        ik_data: IK output data with overlapping batches.
         n_frames_per_clip: Number of frames per clip.
 
     Returns:
@@ -454,10 +409,10 @@ def handle_edge_effects(
         res = np.concatenate([first_data, flattened_middle_data, last_data], axis=0)
         return res
 
-    ik_only_data.qpos = f(ik_only_data.qpos)
-    ik_only_data.kp_data = f(ik_only_data.kp_data)
-    ik_only_data.xpos = f(ik_only_data.xpos)
-    ik_only_data.xquat = f(ik_only_data.xquat)
-    ik_only_data.marker_sites = f(ik_only_data.marker_sites)
+    ik_data.qpos = f(ik_data.qpos)
+    ik_data.kp_data = f(ik_data.kp_data)
+    ik_data.xpos = f(ik_data.xpos)
+    ik_data.xquat = f(ik_data.xquat)
+    ik_data.marker_sites = f(ik_data.marker_sites)
 
-    return ik_only_data
+    return ik_data

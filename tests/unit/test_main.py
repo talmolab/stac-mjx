@@ -18,6 +18,6 @@ def test_load_configs(config):
     assert isinstance(cfg, DictConfig)
 
     # Assert that the resulting configs contain the expected data
-    assert cfg.stac.fit_offsets_path == "fit.p"
-    assert cfg.stac.n_fit_frames == 42
+    assert cfg.stac.calibration_path == "calibration.p"
+    assert cfg.stac.n_calibration_frames == 42
     assert cfg.model.MJCF_PATH == "models/rodent.xml"

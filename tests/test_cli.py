@@ -13,9 +13,9 @@ from stac_mjx.config import compose_config
 
 
 def test_compose_config_loads_and_applies_overrides():
-    cfg = compose_config("tests/configs", "config", ["stac.n_fit_frames=5"])
+    cfg = compose_config("tests/configs", "config", ["stac.n_calibration_frames=5"])
 
-    assert cfg.stac.n_fit_frames == 5
+    assert cfg.stac.n_calibration_frames == 5
     assert cfg.model.MJCF_PATH.endswith("models/rodent.xml")
     # structured config merge should keep required fields
     assert cfg.model.KEYPOINT_MODEL_PAIRS
@@ -37,13 +37,18 @@ def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
     monkeypatch.setattr(
         cli.stac_mjx,
         "run_stac",
-        lambda cfg, kp_data, kp_names, base_path=None: ("fit_path", "ik_path"),
+        lambda cfg, kp_data, kp_names, base_path=None: (
+            "calibration_path",
+            "ik_path",
+        ),
     )
 
-    fit_path, ik_path = cli.run_pipeline(cfg, base_path=Path(tmp_path), enable_xla=True)
+    calibration_path, ik_path = cli.run_pipeline(
+        cfg, base_path=Path(tmp_path), enable_xla=True
+    )
 
     assert calls["xla"] == 1
-    assert fit_path == "fit_path"
+    assert calibration_path == "calibration_path"
     assert ik_path == "ik_path"
 
 

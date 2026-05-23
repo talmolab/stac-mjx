@@ -12,7 +12,7 @@ import mujoco
 import numpy as np
 
 from stac_mjx import utils
-from stac_mjx.stac_core import _m_opt
+from stac_mjx.stac_core import m_opt
 
 MINIMAL_XML = """\
 <mujoco>
@@ -74,7 +74,7 @@ def test_identity_pose_recovers_offsets_and_error(model_and_sites):
     q = jp.zeros((5, mjx_model.nq))
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_A, site_idxs)
 
-    result = _m_opt(
+    result = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -95,7 +95,7 @@ def test_varied_random_poses(model_and_sites):
     q = jp.array(rng.randn(10, int(mjx_model.nq)).astype(np.float32) * 0.5)
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_A, site_idxs)
 
-    result = _m_opt(
+    result = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -116,7 +116,7 @@ def test_sweeping_single_joint(model_and_sites):
     q = q.at[:, 0].set(jp.linspace(0.0, jp.pi / 4, 8))
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_B, site_idxs)
 
-    result = _m_opt(
+    result = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -137,7 +137,7 @@ def test_large_rotations(model_and_sites):
     q = jp.array(rng.randn(15, int(mjx_model.nq)).astype(np.float32) * 1.5)
     keypoints = _generate_keypoints(mjx_model, mjx_data, q, GT_OFFSETS_B, site_idxs)
 
-    result = _m_opt(
+    result = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -160,7 +160,7 @@ def test_reg_coef_zero_vs_strong(model_and_sites):
 
     # reg_coef=0: even a wildly wrong initial should be ignored
     wrong_initial = jp.ones((K, 3)) * 99.0
-    result_noreg = _m_opt(
+    result_noreg = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -173,7 +173,7 @@ def test_reg_coef_zero_vs_strong(model_and_sites):
     np.testing.assert_allclose(result_noreg.params, GT_OFFSETS_A, atol=1e-5)
 
     # reg_coef=1e6: solution collapses to initial_offsets
-    result_strong = _m_opt(
+    result_strong = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -196,7 +196,7 @@ def test_partial_regularization(model_and_sites):
     is_reg = jp.zeros((K, 3)).at[0].set(1.0)
     initial_offsets = jp.zeros((K, 3))
 
-    result_strong = _m_opt(
+    result_strong = m_opt(
         mjx_model,
         mjx_data,
         keypoints,
@@ -206,7 +206,7 @@ def test_partial_regularization(model_and_sites):
         1e4,
         site_idxs,
     )
-    result_noreg = _m_opt(
+    result_noreg = m_opt(
         mjx_model,
         mjx_data,
         keypoints,

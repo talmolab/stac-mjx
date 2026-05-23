@@ -24,27 +24,27 @@ class DummyStac:
         self._mj_model = types.SimpleNamespace(opt=types.SimpleNamespace(timestep=0.1))
         self._freejoint = False
 
-    def fit_offsets(self, kps):
+    def calibrate(self, kps):
         return DummyData()
 
-    def ik_only(self, kp_data, offsets):
+    def run_ik(self, kp_data, offsets):
         return DummyData(qpos=np.zeros((kp_data.shape[0], 2)))
 
 
 def make_cfg(
     *,
-    skip_fit_offsets,
-    skip_ik_only,
+    skip_calibration,
+    skip_ik,
     n_frames_per_clip=2,
     infer_qvels=False,
     continuous=False,
 ):
     stac = types.SimpleNamespace(
-        fit_offsets_path="fit.h5",
-        ik_only_path="ik.h5",
-        skip_fit_offsets=skip_fit_offsets,
-        skip_ik_only=skip_ik_only,
-        n_fit_frames=2,
+        calibration_path="calibration.h5",
+        ik_path="ik.h5",
+        skip_calibration=skip_calibration,
+        skip_ik=skip_ik,
+        n_calibration_frames=2,
         n_frames_per_clip=n_frames_per_clip,
         infer_qvels=infer_qvels,
         continuous=continuous,
@@ -53,29 +53,33 @@ def make_cfg(
     return types.SimpleNamespace(stac=stac, model=model)
 
 
-def test_run_stac_skip_fit_and_ik_only(monkeypatch):
-    cfg = make_cfg(skip_fit_offsets=True, skip_ik_only=True)
+def test_run_stac_skip_calibration_and_ik(monkeypatch):
+    cfg = make_cfg(skip_calibration=True, skip_ik=True)
     kp_data = np.zeros((4, 6))
 
     monkeypatch.setattr(main, "Stac", DummyStac)
-    monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
 
-    calls = {"save": 0}
+    calls = {"save": 0, "xla": 0}
+    monkeypatch.setattr(
+        main.utils,
+        "enable_xla_flags",
+        lambda: calls.__setitem__("xla", calls["xla"] + 1),
+    )
     monkeypatch.setattr(
         main.io, "save_data_to_h5", lambda *args, **kwargs: calls.__setitem__("save", 1)
     )
 
-    fit_path, ik_path = main.run_stac(cfg, kp_data, ["a", "b"])
+    calibration_path, ik_path = main.run_stac(cfg, kp_data, ["a", "b"])
     assert ik_path is None
     assert calls["save"] == 0
+    assert calls["xla"] == 0
 
 
-def test_run_stac_ik_only_path(monkeypatch):
-    cfg = make_cfg(skip_fit_offsets=True, skip_ik_only=False, n_frames_per_clip=2)
+def test_run_stac_ik_path(monkeypatch):
+    cfg = make_cfg(skip_calibration=True, skip_ik=False, n_frames_per_clip=2)
     kp_data = np.zeros((4, 6))
 
     monkeypatch.setattr(main, "Stac", DummyStac)
-    monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
     monkeypatch.setattr(main.io, "load_stac_data", lambda path: (cfg, DummyData()))
 
     calls = {"save": 0}
@@ -85,30 +89,38 @@ def test_run_stac_ik_only_path(monkeypatch):
         lambda *args, **kwargs: calls.__setitem__("save", calls["save"] + 1),
     )
 
-    fit_path, ik_path = main.run_stac(cfg, kp_data, ["a", "b"])
+    calibration_path, ik_path = main.run_stac(cfg, kp_data, ["a", "b"])
     assert ik_path is not None
     assert calls["save"] == 1
 
 
-def test_run_stac_requires_divisible_frames(monkeypatch):
-    cfg = make_cfg(skip_fit_offsets=True, skip_ik_only=False, n_frames_per_clip=3)
+def test_run_stac_allows_nondivisible_frames(monkeypatch):
+    cfg = make_cfg(skip_calibration=True, skip_ik=False, n_frames_per_clip=3)
     kp_data = np.zeros((4, 6))
 
     monkeypatch.setattr(main, "Stac", DummyStac)
-    monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
+    monkeypatch.setattr(main.io, "load_stac_data", lambda path: (cfg, DummyData()))
 
-    with pytest.raises(ValueError):
-        main.run_stac(cfg, kp_data, ["a", "b"])
+    calls = {"save": 0}
+    monkeypatch.setattr(
+        main.io,
+        "save_data_to_h5",
+        lambda *args, **kwargs: calls.__setitem__("save", calls["save"] + 1),
+    )
+
+    calibration_path, ik_path = main.run_stac(cfg, kp_data, ["a", "b"])
+    assert calibration_path is not None
+    assert ik_path is not None
+    assert calls["save"] == 1
 
 
 def test_run_stac_validates_kp_data_shape(monkeypatch):
     """kp_data.shape[1] must equal len(kp_names) * 3 (closes #42)."""
-    cfg = make_cfg(skip_fit_offsets=True, skip_ik_only=True)
+    cfg = make_cfg(skip_calibration=True, skip_ik=True)
     # 2 keypoint names → expect 6 columns; pass 9 to trigger the error
     kp_data = np.zeros((4, 9))
 
     monkeypatch.setattr(main, "Stac", DummyStac)
-    monkeypatch.setattr(main.utils, "enable_xla_flags", lambda: None)
 
     with pytest.raises(ValueError, match="kp_data"):
         main.run_stac(cfg, kp_data, ["a", "b"])
