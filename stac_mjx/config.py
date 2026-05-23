@@ -48,14 +48,12 @@ class StacConfig:
     calibration_path: str  # Save path for calibrate() output
     ik_path: str  # Save path for run_ik() output
     data_path: str  # Path to mocap data
-    num_clips: int  # Number of clips in mocap data
     n_calibration_frames: int  # Number of frames to use during calibration
     skip_calibration: bool  # Skip calibrate() step if True
     skip_ik: bool  # Skip run_ik() step if True
     infer_qvels: bool  # Infer qvels if True
-    n_frames_per_clip: int  # Number of frames per clip
+    n_frames_per_clip: int  # Number of frames per IK chunk
     mujoco: MujocoConfig  # Configuration for Mujoco
-    continuous: bool  # Whether the data is continuous (to allow for edge effects post-processing)
     q_opt: "QOptConfig" = field(default_factory=lambda: QOptConfig())
 
 

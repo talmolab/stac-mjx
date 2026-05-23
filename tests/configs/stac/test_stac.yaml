@@ -1,7 +1,6 @@
 calibration_path: "calibration.p"
 ik_path: "ik.p"
 data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
-continuous: False
 n_calibration_frames: 42
 skip_calibration: False
 skip_ik: False

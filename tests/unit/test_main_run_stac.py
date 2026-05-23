@@ -37,7 +37,6 @@ def make_cfg(
     skip_ik,
     n_frames_per_clip=2,
     infer_qvels=False,
-    continuous=False,
 ):
     stac = types.SimpleNamespace(
         calibration_path="calibration.h5",
@@ -47,7 +46,6 @@ def make_cfg(
         n_calibration_frames=2,
         n_frames_per_clip=n_frames_per_clip,
         infer_qvels=infer_qvels,
-        continuous=continuous,
     )
     model = types.SimpleNamespace(MJCF_PATH="models/rodent.xml")
     return types.SimpleNamespace(stac=stac, model=model)

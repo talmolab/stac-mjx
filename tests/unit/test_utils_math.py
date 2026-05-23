@@ -38,18 +38,6 @@ def test_compute_velocity_from_kinematics_no_freejoint():
     assert np.allclose(np.array(qvel[2]), np.array([0.0, 0.0, 0.0]))
 
 
-def test_batch_kp_data_non_continuous():
-    kp_data = jp.zeros((10, 6))
-    batched = utils.batch_kp_data(kp_data, n_frames_per_clip=4, continuous=False)
-    assert batched.shape == (2, 4, 6)
-
-
-def test_batch_kp_data_continuous():
-    kp_data = jp.zeros((30, 6))
-    batched = utils.batch_kp_data(kp_data, n_frames_per_clip=10, continuous=True)
-    assert batched.shape == (3, 20, 6)
-
-
 def test_enable_xla_flags_sets_env_on_gpu(monkeypatch):
     class FakeBackend:
         platform = "gpu"

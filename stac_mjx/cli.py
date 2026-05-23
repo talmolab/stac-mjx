@@ -73,7 +73,7 @@ def run_pipeline(
     if enable_xla:
         stac_mjx.enable_xla_flags()
 
-    kp_data, sorted_kp_names = stac_mjx.load_data(cfg, base_path=base_path)
+    kp_data, sorted_kp_names = stac_mjx.load_keypoint_data(cfg, base_path=base_path)
     return stac_mjx.run_stac(cfg, kp_data, sorted_kp_names, base_path=base_path)
 
 

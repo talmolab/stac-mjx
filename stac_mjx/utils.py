@@ -13,11 +13,8 @@ from beartype import beartype
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 import numpy as np
-from stac_mjx import io
 from scipy import ndimage
 from jax.extend.backend import get_backend
-
-CONTINUOUS_BATCH_OVERLAP = 10
 
 
 def enable_xla_flags() -> None:
@@ -304,115 +301,3 @@ def compute_velocity_from_kinematics(
         clipped_vels = jp.clip(vels, -max_qvel, max_qvel)
 
         return mocap_qvels.at[:, 6:].set(clipped_vels)
-
-
-@jaxtyped(typechecker=beartype)
-def batch_kp_data(
-    kp_data: Float[Array, "n_frames n_keypoints_xyz"],
-    n_frames_per_clip: int,
-    continuous: bool = False,
-) -> Float[Array, "n_clips clip_frames n_keypoints_xyz"]:
-    """Reshape keypoint data into batches for parallel processing.
-
-    Args:
-        kp_data: Flattened keypoint data.
-        n_frames_per_clip: Number of frames per clip.
-        continuous: If True, create overlapping batches for edge effect handling.
-
-    Returns:
-        Batched keypoint data.
-    """
-    n_frames = n_frames_per_clip
-    total_frames = kp_data.shape[0]
-    n_batches = int(total_frames // n_frames)
-    if continuous:
-        window = n_frames + CONTINUOUS_BATCH_OVERLAP
-        if total_frames < window:
-            batched_kp_data = kp_data.reshape((n_batches, window) + kp_data.shape[1:])
-        else:
-            step = n_frames
-            starts = jp.arange(0, n_batches * step, step)
-            batches = [kp_data[s : s + window] for s in starts]
-            batches[-1] = jp.pad(
-                batches[-1],
-                ((0, CONTINUOUS_BATCH_OVERLAP), (0, 0)),
-                mode="wrap",
-            )
-            batched_kp_data = jp.stack(batches, axis=0)
-    else:
-        batched_kp_data = kp_data[: int(n_batches) * n_frames]
-        batched_kp_data = batched_kp_data.reshape(
-            (n_batches, n_frames) + kp_data.shape[1:]
-        )
-
-    return batched_kp_data
-
-
-# TODO: make this more efficient by parallelizing the crossfade operation
-def handle_edge_effects(ik_data: io.StacData, n_frames_per_clip: int) -> io.StacData:
-    """Handle overlapping batch boundaries via sigmoid crossfade.
-
-    Args:
-        ik_data: IK output data with overlapping batches.
-        n_frames_per_clip: Number of frames per clip.
-
-    Returns:
-        Data with crossfaded overlap regions and overlaps removed.
-    """
-
-    def crossfade_sigmoid(
-        a: np.ndarray,
-        b: np.ndarray,
-        *,
-        axis: int = 0,
-        center: float = 0.5,
-        steepness: float = 10.0,
-    ) -> np.ndarray:
-
-        n = a.shape[axis]
-        x = np.linspace(0.0, 1.0, n)
-
-        # Numerically stable sigmoid: 0.5 * (1 + tanh(z/2))
-        z = steepness * (x - center)
-        m = 0.5 * (1.0 + np.tanh(z / 2.0))
-
-        shape = [1] * a.ndim
-        shape[axis] = n
-        m = m.reshape(shape)
-
-        return (1.0 - m) * a + m * b
-
-    def f(data: np.ndarray) -> np.ndarray:
-        batched_data = data.reshape(
-            (
-                -1,
-                n_frames_per_clip + CONTINUOUS_BATCH_OVERLAP,
-            )
-            + data.shape[1:]
-        )
-
-        num_clips = batched_data.shape[0]
-        for i in range(num_clips - 1):
-            a = batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :]
-            b = batched_data[i + 1, :CONTINUOUS_BATCH_OVERLAP, :]
-            cross = crossfade_sigmoid(a, b, axis=0)
-
-            batched_data[i, -CONTINUOUS_BATCH_OVERLAP:, :] = cross
-
-        first_data = batched_data[0, :, :]
-        middle_data = batched_data[1:-1, CONTINUOUS_BATCH_OVERLAP:, :]
-        last_data = batched_data[
-            -1, CONTINUOUS_BATCH_OVERLAP:-CONTINUOUS_BATCH_OVERLAP, :
-        ]
-
-        flattened_middle_data = middle_data.reshape((-1,) + middle_data.shape[2:])
-        res = np.concatenate([first_data, flattened_middle_data, last_data], axis=0)
-        return res
-
-    ik_data.qpos = f(ik_data.qpos)
-    ik_data.kp_data = f(ik_data.kp_data)
-    ik_data.xpos = f(ik_data.xpos)
-    ik_data.xquat = f(ik_data.xquat)
-    ik_data.marker_sites = f(ik_data.marker_sites)
-
-    return ik_data

@@ -135,7 +135,7 @@ You can use a set of high-level functions instead of the end-to-end CLI script t
 
 The following is the full CLI script run as a sequence of function calls:
 
-1. Run stac-mjx with its basic api: `load_configs` for loading configs and `run_stac` for the keypoint registration.
+1. Run stac-mjx with its basic api: `load_stac_config` for loading config, `load_keypoint_data` for loading keypoints, and `run_stac` for registration.
 
    ```python
    import stac_mjx
@@ -145,11 +145,11 @@ The following is the full CLI script run as a sequence of function calls:
    # Choose parent directory as base path for data files
    base_path = Path.cwd().parent
 
-   # Load configs (uses `configs/config.yaml` defaults)
-   cfg = stac_mjx.load_configs(base_path / "configs")
+   # Load config (uses `configs/config.yaml` defaults)
+   cfg = stac_mjx.load_stac_config(base_path / "configs")
 
-   # Load data
-   kp_data, sorted_kp_names = stac_mjx.load_data(cfg, base_path)
+   # Load keypoint data
+   kp_data, sorted_kp_names = stac_mjx.load_keypoint_data(cfg, base_path)
 
    # Run stac
    calibration_path, ik_path = stac_mjx.run_stac(

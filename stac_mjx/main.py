@@ -12,17 +12,22 @@ from pathlib import Path
 from jaxtyping import Float
 
 
-def load_configs(config_dir: Path | str, config_name: str = "config") -> DictConfig:
-    """Load and validate configs from a Hydra config directory.
+def load_stac_config(
+    config_dir: Path | str,
+    config_name: str = "config",
+    overrides: list[str] | None = None,
+) -> DictConfig:
+    """Load and validate a STAC config from a Hydra config directory.
 
     Args:
         config_dir: Absolute path to config directory.
         config_name: Name of the Hydra config to load.
+        overrides: Optional Hydra override list.
 
     Returns:
         Validated STAC configuration.
     """
-    cfg = compose_config(config_dir, config_name=config_name)
+    cfg = compose_config(config_dir, config_name=config_name, overrides=overrides)
     print("Config loaded and validated.")
     return cfg
 

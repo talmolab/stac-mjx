@@ -36,7 +36,7 @@ class StacData:
         return asdict(self)
 
 
-def load_data(
+def load_keypoint_data(
     cfg: DictConfig, base_path: Path | None = None
 ) -> tuple[jp.ndarray, list[str]]:
     """Load mocap data, flatten, and scale for STAC consumption.
