@@ -134,7 +134,7 @@ def offset_optimization(
     s = time.time()
     print("Begining offset optimization:")
 
-    keypoints = jp.array(kp_data[time_indices, :])
+    keypoints = kp_data[time_indices, :]
     q = jp.take(q, time_indices, axis=0)
 
     res = stac_core.m_opt(

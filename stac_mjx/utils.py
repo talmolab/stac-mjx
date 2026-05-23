@@ -7,6 +7,7 @@ os.environ.setdefault("XLA_PYTHON_CLIENT_PREALLOCATE", "false")
 import jax
 from jax import Array
 from jax import numpy as jp
+import jaxlie
 from jaxtyping import Float, Int
 from jaxtyping import jaxtyped
 from beartype import beartype
@@ -125,6 +126,98 @@ def set_site_pos(
     return mjx_model
 
 
+def make_context_window(
+    data: Float[Array, "n_frames n_features"],
+    start: int,
+    n_center_frames: int,
+    n_context_frames: int,
+    n_solve_frames: int,
+) -> tuple[Float[Array, "n_solve_frames n_features"], int]:
+    """Create a fixed-shape context-padded window from a frame sequence."""
+    total_frames = int(data.shape[0])
+    n_frames_to_output = min(n_center_frames, total_frames - start)
+    data_start = max(start - n_context_frames, 0)
+    data_stop = min(start + n_center_frames + n_context_frames, total_frames)
+    prefix = max(n_context_frames - start, 0)
+    suffix = n_solve_frames - prefix - (data_stop - data_start)
+
+    parts = []
+    if prefix > 0:
+        parts.append(jp.repeat(data[:1], prefix, axis=0))
+    parts.append(data[data_start:data_stop])
+    if suffix > 0:
+        parts.append(jp.repeat(data[-1:], suffix, axis=0))
+    return jp.concatenate(parts, axis=0), n_frames_to_output
+
+
+def normalize_freejoint_quat(
+    qpos: Float[Array, "n_frames n_qpos"],
+    freejoint: bool,
+) -> Float[Array, "n_frames n_qpos"]:
+    """Normalize freejoint quaternions in a batched qpos array."""
+    if not freejoint:
+        return qpos
+    quat = qpos[:, 3:7]
+    quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
+    return qpos.at[:, 3:7].set(quat / jp.where(quat_norm > 0, quat_norm, 1.0))
+
+
+def interpolate_qpos_from_keyframes(
+    keyframe_qpos: Float[Array, "n_keyframes n_qpos"],
+    keyframe_indices: Int[Array, " n_keyframes"],
+    n_frames: int,
+    freejoint: bool,
+) -> Float[Array, "n_frames n_qpos"]:
+    """Interpolate sparse qpos keyframes onto every frame.
+
+    For each frame, find the neighboring keyframes and interpolate between them.
+    For free joints, interpolate root xyz and hinge coordinates linearly, but
+    interpolate root rotation on SO(3) using log/exp instead of raw quaternion
+    interpolation.
+    """
+    frame_ids = jp.arange(n_frames)
+
+    # For each frame, find bracketing keyframes: left <= frame < right.
+    right = jp.searchsorted(keyframe_indices, frame_ids, side="right")
+    right = jp.clip(right, 1, keyframe_qpos.shape[0] - 1)
+    left = right - 1
+
+    # Fractional position of each frame between its two keyframes.
+    left_t = keyframe_indices[left]
+    right_t = keyframe_indices[right]
+    alpha = (
+        (frame_ids - left_t).astype(keyframe_qpos.dtype)
+        / jp.maximum(right_t - left_t, 1).astype(keyframe_qpos.dtype)
+    )[:, None]
+    q_left = keyframe_qpos[left]
+    q_right = keyframe_qpos[right]
+
+    if freejoint:
+        # MuJoCo free-joint qpos layout: [root xyz, root quat wxyz, hinges...].
+        xyz = (1.0 - alpha) * q_left[:, :3] + alpha * q_right[:, :3]
+        left_wxyz = q_left[:, 3:7]
+        right_wxyz = q_right[:, 3:7]
+        left_wxyz = left_wxyz / jp.maximum(
+            jp.linalg.norm(left_wxyz, axis=-1, keepdims=True), 1e-12
+        )
+        right_wxyz = right_wxyz / jp.maximum(
+            jp.linalg.norm(right_wxyz, axis=-1, keepdims=True), 1e-12
+        )
+
+        # Geodesic rotation interpolation:
+        # R = R_left exp(alpha log(R_left^{-1} R_right)).
+        left_rot = jaxlie.SO3(wxyz=left_wxyz)
+        right_rot = jaxlie.SO3(wxyz=right_wxyz)
+        rot = left_rot @ jaxlie.SO3.exp(alpha * (left_rot.inverse() @ right_rot).log())
+        hinges = (1.0 - alpha) * q_left[:, 7:] + alpha * q_right[:, 7:]
+        return normalize_freejoint_quat(
+            jp.concatenate([xyz, rot.wxyz, hinges], axis=-1), freejoint=True
+        )
+
+    # Plain qpos: simple linear interpolation.
+    return (1.0 - alpha) * q_left + alpha * q_right
+
+
 # Constants used to determine when a rotation is close to a pole.
 _POLE_LIMIT = 1.0 - 1e-6
 _TOL = 1e-10
@@ -205,7 +298,6 @@ def quat_conj(
     Returns:
         Conjugate quaternion [w, -i, -j, -k].
     """
-    quat = jp.asarray(quat)
     return jp.stack(
         [quat[..., 0], -quat[..., 1], -quat[..., 2], -quat[..., 3]], axis=-1
     )

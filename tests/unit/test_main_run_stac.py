@@ -1,5 +1,7 @@
 import types
 
+from jax import Array
+import jax.numpy as jp
 import numpy as np
 import pytest
 
@@ -9,7 +11,7 @@ from stac_mjx import main
 class DummyData:
     def __init__(self, qpos=None, offsets=None):
         self.qpos = qpos if qpos is not None else np.zeros((4, 2))
-        self.offsets = offsets if offsets is not None else np.zeros((2, 3))
+        self.offsets = offsets if offsets is not None else jp.zeros((2, 3))
         self.qvel = np.array([])
 
     def as_dict(self):
@@ -28,6 +30,7 @@ class DummyStac:
         return DummyData()
 
     def run_ik(self, kp_data, offsets):
+        assert isinstance(offsets, Array)
         return DummyData(qpos=np.zeros((kp_data.shape[0], 2)))
 
 

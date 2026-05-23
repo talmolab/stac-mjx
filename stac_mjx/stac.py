@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import imageio
-import jaxlie
 import mujoco
 import numpy as np
 from beartype import beartype
@@ -350,10 +349,103 @@ class Stac:
             np.array(kp_data),
         )
 
+    def _prepare_ik_state(
+        self,
+        kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+        offsets: Float[Array, "n_keypoints 3"],
+    ) -> tuple[mjx.Model, mjx.Data]:
+        """Load model state, apply offsets, and seed the root for IK."""
+        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
+
+        self._offsets = offsets
+        mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
+
+        mjx_data = self._run_root_optimization(
+            mjx_model,
+            mjx_data,
+            kp_data,
+            n_solver_max_iters=self.cfg.stac.q_opt.ik_max_iterations,
+        )
+
+        return mjx_model, mjx_data
+
+    def _initialize_ik_chunk_qpos(
+        self,
+        mjx_model: mjx.Model,
+        mjx_data: mjx.Data,
+        kp_chunk: Float[Array, "solve_frames n_keypoints_xyz"],
+        solve_frames: int,
+        prev_overlap_q: Float[Array, "context_frames n_qpos"] | None,
+        coarse_stride: int,
+        coarse_problems: dict[int, stac_core.QOptProblem],
+        q_opt_cfg,
+        joint_mask: Array,
+        kp_mask: Array,
+        joint_reg_weights: Array,
+        acceleration_smoothness_weight: float,
+    ) -> Float[Array, "solve_frames n_qpos"]:
+        """Warm-start a chunk, then refine that warm start with a coarse solve."""
+        root_kp_start = self._root_kp_idx * 3
+        if prev_overlap_q is None:
+            q_init = jp.tile(mjx_data.qpos, (solve_frames, 1))
+            if self._root_kp_idx >= 0 and not self._fixed:
+                q_init = q_init.at[:, :3].set(
+                    kp_chunk[:, root_kp_start : root_kp_start + 3]
+                )
+        else:
+            init_overlap = min(int(prev_overlap_q.shape[0]), solve_frames)
+            q_init = jp.tile(prev_overlap_q[init_overlap - 1], (solve_frames, 1))
+            q_init = q_init.at[:init_overlap].set(prev_overlap_q[:init_overlap])
+            if self._root_kp_idx >= 0 and not self._fixed:
+                q_init = q_init.at[init_overlap:, :3].set(
+                    kp_chunk[init_overlap:, root_kp_start : root_kp_start + 3]
+                )
+        q_init = utils.normalize_freejoint_quat(q_init, self._freejoint)
+
+        if solve_frames <= 1:
+            n_coarse_frames = 1
+        else:
+            n_coarse_frames = (solve_frames - 2) // coarse_stride + 2
+        coarse_idx = jp.minimum(
+            jp.arange(n_coarse_frames, dtype=jp.int32) * coarse_stride,
+            solve_frames - 1,
+        )
+        coarse_frames = int(coarse_idx.shape[0])
+
+        if coarse_frames not in coarse_problems:
+            coarse_problems[coarse_frames] = stac_core.build_q_opt_problem(
+                coarse_frames,
+                mjx_model,
+                mjx_data,
+                joint_mask,
+                kp_mask,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                kp_chunk.shape[1],
+                joint_reg_weights,
+                acceleration_smoothness_weight=acceleration_smoothness_weight,
+            )
+
+        q_coarse = stac_core.q_opt(
+            coarse_problems[coarse_frames],
+            q_init[coarse_idx],
+            kp_chunk[coarse_idx],
+            n_solver_max_iters=q_opt_cfg.ik_max_iterations,
+            initial_step_damping=q_opt_cfg.initial_step_damping,
+        )
+
+        return utils.interpolate_qpos_from_keyframes(
+            q_coarse, coarse_idx, solve_frames, self._freejoint
+        )
+
+    @jaxtyped(typechecker=beartype)
     def run_ik(
         self,
         kp_data: Float[Array, "n_frames n_keypoints_xyz"],
-        offsets: np.ndarray,
+        offsets: Float[Array, "n_keypoints 3"],
     ) -> io.StacData:
         """Run inverse kinematics using calibrated marker offsets.
 
@@ -368,19 +460,7 @@ class Stac:
         Returns:
             Packaged STAC output data.
         """
-        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
-
-        self._offsets = jp.asarray(offsets)
-        mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
-        mjx_data = mjx.kinematics(mjx_model, mjx_data)
-        mjx_data = mjx.com_pos(mjx_model, mjx_data)
-
-        mjx_data = self._run_root_optimization(
-            mjx_model,
-            mjx_data,
-            kp_data,
-            n_solver_max_iters=self.cfg.stac.q_opt.ik_max_iterations,
-        )
+        mjx_model, mjx_data = self._prepare_ik_state(kp_data, offsets)
 
         chunk_size = int(self.cfg.stac.n_frames_per_clip)
         q_opt_cfg = self.cfg.stac.q_opt
@@ -396,25 +476,15 @@ class Stac:
         acceleration_smoothness_weight = q_opt_cfg.acceleration_smoothness_weight
         problems = {}
         coarse_problems = {}
-        root_kp_start = self._root_kp_idx * 3
 
         all_qpos, all_body_pos, all_body_quat = [], [], []
         all_marker_pos, all_errors = [], []
         prev_overlap_q = None
 
         for chunk_idx, start in enumerate(range(0, total_frames, chunk_size)):
-            keep = min(chunk_size, total_frames - start)
-            data_start = max(start - context_frames, 0)
-            data_stop = min(start + chunk_size + context_frames, total_frames)
-            prefix = max(context_frames - start, 0)
-            suffix = solve_frames - prefix - (data_stop - data_start)
-            kp_parts = []
-            if prefix > 0:
-                kp_parts.append(jp.repeat(kp_data[:1], prefix, axis=0))
-            kp_parts.append(kp_data[data_start:data_stop])
-            if suffix > 0:
-                kp_parts.append(jp.repeat(kp_data[-1:], suffix, axis=0))
-            kp_chunk = jp.concatenate(kp_parts, axis=0)
+            kp_chunk, n_frames_to_output = utils.make_context_window(
+                kp_data, start, chunk_size, context_frames, solve_frames
+            )
             if chunk_idx % 100 == 0 or chunk_idx == n_chunks - 1:
                 print(f"Clip {chunk_idx + 1}/{n_chunks}")
 
@@ -433,92 +503,20 @@ class Stac:
                     acceleration_smoothness_weight=acceleration_smoothness_weight,
                 )
 
-            if prev_overlap_q is None:
-                q_init = jp.tile(mjx_data.qpos, (solve_frames, 1))
-                if self._root_kp_idx >= 0 and not self._fixed:
-                    q_init = q_init.at[:, :3].set(
-                        kp_chunk[:, root_kp_start : root_kp_start + 3]
-                    )
-            else:
-                init_overlap = min(int(prev_overlap_q.shape[0]), solve_frames)
-                q_init = jp.tile(prev_overlap_q[init_overlap - 1], (solve_frames, 1))
-                q_init = q_init.at[:init_overlap].set(prev_overlap_q[:init_overlap])
-                if self._root_kp_idx >= 0 and not self._fixed:
-                    q_init = q_init.at[init_overlap:, :3].set(
-                        kp_chunk[init_overlap:, root_kp_start : root_kp_start + 3]
-                    )
-
-            if self._freejoint:
-                quat = q_init[:, 3:7]
-                quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
-                q_init = q_init.at[:, 3:7].set(
-                    quat / jp.where(quat_norm > 0, quat_norm, 1.0)
-                )
-
-            coarse_idx_np = np.arange(0, solve_frames, coarse_stride, dtype=np.int32)
-            if coarse_idx_np[-1] != solve_frames - 1:
-                coarse_idx_np = np.concatenate(
-                    [coarse_idx_np, np.array([solve_frames - 1], dtype=np.int32)]
-                )
-            coarse_idx = jp.array(coarse_idx_np)
-            coarse_frames = int(coarse_idx.shape[0])
-            if coarse_frames not in coarse_problems:
-                coarse_problems[coarse_frames] = stac_core.build_q_opt_problem(
-                    coarse_frames,
-                    mjx_model,
-                    mjx_data,
-                    joint_mask,
-                    kp_mask,
-                    self._lb,
-                    self._ub,
-                    self._body_site_idxs,
-                    kp_data.shape[1],
-                    joint_reg_weights,
-                    acceleration_smoothness_weight=acceleration_smoothness_weight,
-                )
-            q_coarse = stac_core.q_opt(
-                coarse_problems[coarse_frames],
-                q_init[coarse_idx],
-                kp_chunk[coarse_idx],
-                n_solver_max_iters=q_opt_cfg.ik_max_iterations,
-                initial_step_damping=q_opt_cfg.initial_step_damping,
+            q_init = self._initialize_ik_chunk_qpos(
+                mjx_model,
+                mjx_data,
+                kp_chunk,
+                solve_frames,
+                prev_overlap_q,
+                coarse_stride,
+                coarse_problems,
+                q_opt_cfg,
+                joint_mask,
+                kp_mask,
+                joint_reg_weights,
+                acceleration_smoothness_weight,
             )
-            frame_ids = jp.arange(solve_frames)
-            right = jp.searchsorted(coarse_idx, frame_ids, side="right")
-            right = jp.clip(right, 1, coarse_frames - 1)
-            left = right - 1
-            left_t = coarse_idx[left]
-            right_t = coarse_idx[right]
-            alpha = (
-                (frame_ids - left_t).astype(q_coarse.dtype)
-                / jp.maximum(right_t - left_t, 1).astype(q_coarse.dtype)
-            )[:, None]
-            q_left = q_coarse[left]
-            q_right = q_coarse[right]
-            if self._freejoint:
-                xyz = (1.0 - alpha) * q_left[:, :3] + alpha * q_right[:, :3]
-                left_wxyz = q_left[:, 3:7]
-                right_wxyz = q_right[:, 3:7]
-                left_wxyz = left_wxyz / jp.maximum(
-                    jp.linalg.norm(left_wxyz, axis=-1, keepdims=True), 1e-12
-                )
-                right_wxyz = right_wxyz / jp.maximum(
-                    jp.linalg.norm(right_wxyz, axis=-1, keepdims=True), 1e-12
-                )
-                left_rot = jaxlie.SO3(wxyz=left_wxyz)
-                right_rot = jaxlie.SO3(wxyz=right_wxyz)
-                rot = left_rot @ jaxlie.SO3.exp(
-                    alpha * (left_rot.inverse() @ right_rot).log()
-                )
-                hinges = (1.0 - alpha) * q_left[:, 7:] + alpha * q_right[:, 7:]
-                q_init = jp.concatenate([xyz, rot.wxyz, hinges], axis=-1)
-                quat = q_init[:, 3:7]
-                quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
-                q_init = q_init.at[:, 3:7].set(
-                    quat / jp.where(quat_norm > 0, quat_norm, 1.0)
-                )
-            else:
-                q_init = (1.0 - alpha) * q_left + alpha * q_right
 
             _, qpos, body_pos, body_quat, marker_pos, marker_error = (
                 compute_stac.pose_optimization(
@@ -535,18 +533,26 @@ class Stac:
                     initial_step_damping=q_opt_cfg.initial_step_damping,
                 )
             )
-            keep_start = context_frames
-            q_keep = qpos[keep_start : keep_start + keep]
-            all_qpos.append(q_keep)
-            all_body_pos.append(body_pos[keep_start : keep_start + keep])
-            all_body_quat.append(body_quat[keep_start : keep_start + keep])
-            all_marker_pos.append(marker_pos[keep_start : keep_start + keep])
-            all_errors.append(marker_error[keep_start : keep_start + keep])
+            output_start = context_frames
+            q_output = qpos[output_start : output_start + n_frames_to_output]
+            all_qpos.append(q_output)
+            all_body_pos.append(
+                body_pos[output_start : output_start + n_frames_to_output]
+            )
+            all_body_quat.append(
+                body_quat[output_start : output_start + n_frames_to_output]
+            )
+            all_marker_pos.append(
+                marker_pos[output_start : output_start + n_frames_to_output]
+            )
+            all_errors.append(
+                marker_error[output_start : output_start + n_frames_to_output]
+            )
 
-            init_overlap = min(context_frames, int(q_keep.shape[0]))
-            prev_overlap_q = q_keep[-init_overlap:] if init_overlap > 0 else None
+            init_overlap = min(context_frames, int(q_output.shape[0]))
+            prev_overlap_q = q_output[-init_overlap:] if init_overlap > 0 else None
 
-            mjx_data = mjx_data.replace(qpos=q_keep[-1])
+            mjx_data = mjx_data.replace(qpos=q_output[-1])
             mjx_data = utils.kinematics(mjx_model, mjx_data)
             mjx_data = utils.com_pos(mjx_model, mjx_data)
 
@@ -589,7 +595,6 @@ class Stac:
             Packaged STAC output data.
         """
         offsets = self._offsets
-        offsets = np.array(offsets)
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
         return io.StacData(
@@ -672,7 +677,7 @@ class Stac:
         self,
         qpos: np.ndarray,
         kp_data: np.ndarray,
-        offsets: np.ndarray,
+        offsets: Float[Array, "n_keypoints 3"],
         n_frames: int,
         save_path: str | Path,
         start_frame: int = 0,

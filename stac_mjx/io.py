@@ -2,6 +2,7 @@
 
 import numpy as np
 import jax.numpy as jp
+from jax import Array
 import scipy.io as spio
 from pynwb import NWBHDF5IO
 from ndx_pose import PoseEstimationSeries, PoseEstimation
@@ -22,7 +23,7 @@ class StacData:
     xpos: np.ndarray  # Body positions
     xquat: np.ndarray  # Body quaternions
     marker_sites: np.ndarray  # Marker site positions
-    offsets: np.ndarray  # Marker site offsets
+    offsets: Array  # Marker site offsets
     kp_data: np.ndarray  # Keypoint data
     names_qpos: list[str]  # Names of qpos
     names_xpos: list[str]  # Names of xpos
@@ -198,7 +199,7 @@ def save_data_to_h5(
     names_xpos: list[str],
     kp_data: np.ndarray,
     marker_sites: np.ndarray,
-    offsets: np.ndarray,
+    offsets: Array,
     qpos: np.ndarray,
     xpos: np.ndarray,
     xquat: np.ndarray,
@@ -256,7 +257,7 @@ def load_stac_data(file_path: str | Path) -> tuple[Config, StacData]:
         names_xpos = [name.decode("utf-8") for name in f["names_xpos"]]
         kp_data = f["kp_data"][()]
         marker_sites = f["marker_sites"][()]
-        offsets = f["offsets"][()]
+        offsets = jp.array(f["offsets"][()])
         qpos = f["qpos"][()]
         qvel = f["qvel"][()]
         xpos = f["xpos"][()]

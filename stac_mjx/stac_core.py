@@ -76,7 +76,7 @@ def m_opt(
     y = keypoints.reshape(T, K, 3)
     d = is_regularized.astype(y.dtype)
 
-    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
+    site_bodyid = mjx_model.site_bodyid[site_idxs]
 
     def fk_single(q_t):
         """Run FK for a single frame, return body pos and rot for sites."""

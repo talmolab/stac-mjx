@@ -131,9 +131,7 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
 
     def fake_m_opt(mjx_model, mjx_data, keypoints, q, initial_offsets, *args, **kwargs):
         calls["m_opt"] += 1
-        return types.SimpleNamespace(
-            params=jp.asarray(initial_offsets).reshape(-1, 3), error=0.0
-        )
+        return types.SimpleNamespace(params=initial_offsets.reshape(-1, 3), error=0.0)
 
     monkeypatch.setattr(compute_stac.stac_core, "m_opt", fake_m_opt)
 
