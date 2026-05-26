@@ -102,12 +102,9 @@ class Stac:
         self._kp_names = kp_names
         self._xml_path = Path(xml_path)
         self._marker_size = cfg.model.MARKER_SIZE
-
-        (
-            self._mj_model,
-            self._body_site_idxs,
-            self._is_regularized,
-        ) = self._init_body_sites()
+        self._mj_model, self._body_site_idxs, self._is_regularized = (
+            self._init_body_sites()
+        )
 
         self._body_names = [
             self._mj_model.body(i).name for i in range(self._mj_model.nbody)
@@ -208,10 +205,8 @@ class Stac:
             Tuple of (flattened errors, mean, standard deviation).
         """
         flattened_errors = np.array(errors).reshape(-1)
-
         mean = np.mean(flattened_errors)
         std = np.std(flattened_errors)
-
         return flattened_errors, mean, std
 
     def _run_root_optimization(
@@ -259,11 +254,8 @@ class Stac:
             Packaged STAC output data.
         """
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)
-
         self._offsets = jp.copy(utils.get_site_pos(mjx_model, self._body_site_idxs))
-
         mjx_model = utils.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
-
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
@@ -288,9 +280,7 @@ class Stac:
             self._body_site_idxs,
             kp_data.shape[1],
             joint_reg_weights,
-            acceleration_smoothness_weight=(
-                self.cfg.stac.q_opt.acceleration_smoothness_weight
-            ),
+            velocity_smoothness_weight=self.cfg.stac.q_opt.velocity_smoothness_weight,
             site_offsets=self._offsets,
             dynamic_site_offsets=True,
         )
@@ -309,8 +299,8 @@ class Stac:
                     self._ub,
                     self._body_site_idxs,
                     q_init,
-                    acceleration_smoothness_weight=(
-                        self.cfg.stac.q_opt.acceleration_smoothness_weight
+                    velocity_smoothness_weight=(
+                        self.cfg.stac.q_opt.velocity_smoothness_weight
                     ),
                     n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
                     initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
@@ -318,10 +308,8 @@ class Stac:
                     problem=pose_problem,
                 )
             )
-
             flattened_errors, mean, std = self._get_error_stats(frame_error)
-            print(f"Mean: {mean}")
-            print(f"Standard deviation: {std}")
+            print(f"Mean: {mean:.6f} \t Standard deviation: {std:.6f}")
 
             mjx_model, mjx_data, self._offsets = compute_stac.offset_optimization(
                 mjx_model,
@@ -346,8 +334,8 @@ class Stac:
                 self._ub,
                 self._body_site_idxs,
                 q_init,
-                acceleration_smoothness_weight=(
-                    self.cfg.stac.q_opt.acceleration_smoothness_weight
+                velocity_smoothness_weight=(
+                    self.cfg.stac.q_opt.velocity_smoothness_weight
                 ),
                 n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
                 initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
@@ -357,8 +345,7 @@ class Stac:
         )
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
-        print(f"Mean: {mean}")
-        print(f"Standard deviation: {std}")
+        print(f"Mean: {mean:.6f} \t Standard deviation: {std:.6f}")
         return self._package_data(
             np.array(qpos),
             np.array(body_pos),
@@ -402,7 +389,7 @@ class Stac:
         joint_mask: Array,
         kp_mask: Array,
         joint_reg_weights: Array,
-        acceleration_smoothness_weight: float,
+        velocity_smoothness_weight: float,
     ) -> Float[Array, "solve_frames n_qpos"]:
         """Warm-start a chunk, then refine that warm start with a coarse solve."""
         root_kp_start = self._root_kp_idx * 3
@@ -421,19 +408,63 @@ class Stac:
                 q_init = q_init.at[init_overlap:, :3].set(
                     kp_chunk[init_overlap:, root_kp_start : root_kp_start + 3]
                 )
-        q_init = utils.normalize_freejoint_quat(q_init, self._freejoint)
 
-        if solve_frames <= 1:
-            n_coarse_frames = 1
-        else:
-            n_coarse_frames = (solve_frames - 2) // coarse_stride + 2
-        coarse_idx = jp.minimum(
-            jp.arange(n_coarse_frames, dtype=jp.int32) * coarse_stride,
-            solve_frames - 1,
-        )
+        q_init = utils.normalize_freejoint_quat(q_init, self._freejoint)
+        if coarse_stride <= 0:
+            return q_init
+
+        n_coarse_frames = (solve_frames - 2) // coarse_stride + 2 if solve_frames > 1 else 1
+        coarse_idx = jp.minimum(jp.arange(n_coarse_frames, dtype=jp.int32) * coarse_stride, solve_frames - 1)
         coarse_frames = int(coarse_idx.shape[0])
+        coarse_max_frames = int(getattr(q_opt_cfg, "coarse_init_max_frames", 0))
 
         # Solve sparse keyframes first, then interpolate them into the dense warm start.
+        if coarse_max_frames > 1 and coarse_frames > coarse_max_frames:
+            q_coarse_parts = []
+            q_prev_segment = None
+            for coarse_start in range(0, coarse_frames, coarse_max_frames):
+                coarse_stop = min(coarse_start + coarse_max_frames, coarse_frames)
+                segment_idx = coarse_idx[coarse_start:coarse_stop]
+                segment_frames = int(segment_idx.shape[0])
+                q_segment_init = q_init[segment_idx]
+                if q_prev_segment is not None:
+                    q_segment_init = jp.tile(q_prev_segment[-1], (segment_frames, 1))
+                    if self._root_kp_idx >= 0 and not self._fixed:
+                        q_segment_init = q_segment_init.at[:, :3].set(
+                            kp_chunk[
+                                segment_idx, root_kp_start : root_kp_start + 3
+                            ]
+                        )
+
+                if segment_frames not in coarse_problems:
+                    coarse_problems[segment_frames] = stac_core.build_q_opt_problem(
+                        segment_frames,
+                        mjx_model,
+                        mjx_data,
+                        joint_mask,
+                        kp_mask,
+                        self._lb,
+                        self._ub,
+                        self._body_site_idxs,
+                        kp_chunk.shape[1],
+                        joint_reg_weights,
+                        velocity_smoothness_weight=velocity_smoothness_weight,
+                    )
+
+                q_segment = stac_core.q_opt(
+                    coarse_problems[segment_frames],
+                    q_segment_init,
+                    kp_chunk[segment_idx],
+                    n_solver_max_iters=q_opt_cfg.ik_max_iterations,
+                    initial_step_damping=q_opt_cfg.initial_step_damping,
+                )
+                q_coarse_parts.append(q_segment)
+                q_prev_segment = q_segment
+            q_coarse = jp.concatenate(q_coarse_parts, axis=0)
+            return utils.interpolate_qpos_from_keyframes(
+                q_coarse, coarse_idx, solve_frames, self._freejoint
+            )
+
         if coarse_frames not in coarse_problems:
             coarse_problems[coarse_frames] = stac_core.build_q_opt_problem(
                 coarse_frames,
@@ -446,7 +477,7 @@ class Stac:
                 self._body_site_idxs,
                 kp_chunk.shape[1],
                 joint_reg_weights,
-                acceleration_smoothness_weight=acceleration_smoothness_weight,
+                velocity_smoothness_weight=velocity_smoothness_weight,
             )
 
         q_coarse = stac_core.q_opt(
@@ -493,7 +524,7 @@ class Stac:
         joint_mask = jp.ones(mjx_model.nq, dtype=bool)
         kp_mask = jp.ones(kp_data.shape[1], dtype=bool)
         joint_reg_weights = jp.zeros(mjx_model.nq)
-        acceleration_smoothness_weight = q_opt_cfg.acceleration_smoothness_weight
+        velocity_smoothness_weight = q_opt_cfg.velocity_smoothness_weight
         problems = {}
         coarse_problems = {}
 
@@ -521,7 +552,7 @@ class Stac:
                     self._body_site_idxs,
                     kp_data.shape[1],
                     joint_reg_weights,
-                    acceleration_smoothness_weight=acceleration_smoothness_weight,
+                    velocity_smoothness_weight=velocity_smoothness_weight,
                 )
 
             q_init = self._initialize_ik_chunk_qpos(
@@ -536,7 +567,7 @@ class Stac:
                 joint_mask,
                 kp_mask,
                 joint_reg_weights,
-                acceleration_smoothness_weight,
+                velocity_smoothness_weight,
             )
 
             _, qpos, body_pos, body_quat, marker_pos, marker_error = (
@@ -549,7 +580,7 @@ class Stac:
                     self._body_site_idxs,
                     q_init,
                     problem=problems[solve_frames],
-                    acceleration_smoothness_weight=acceleration_smoothness_weight,
+                    velocity_smoothness_weight=velocity_smoothness_weight,
                     n_solver_max_iters=q_opt_cfg.ik_max_iterations,
                     initial_step_damping=q_opt_cfg.initial_step_damping,
                 )
@@ -583,9 +614,8 @@ class Stac:
         marker_pos = jp.concatenate(all_marker_pos, axis=0)
         frame_error = jp.concatenate(all_errors, axis=0)
 
-        flattened_errors, mean, std = self._get_error_stats(frame_error)
-        print(f"Mean: {mean}")
-        print(f"Standard deviation: {std}")
+        _, mean, std = self._get_error_stats(frame_error)
+        print(f"Mean: {mean:.6f} \t Standard deviation: {std:.6f}")
 
         return self._package_data(
             np.array(qpos),

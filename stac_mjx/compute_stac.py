@@ -169,7 +169,7 @@ def pose_optimization(
     q_init: Float[Array, "n_frames n_qpos"],
     kp_mask: Bool[Array, " n_keypoints_xyz"] | None = None,
     joint_reg_weights: Float[Array, " n_qpos"] | None = None,
-    acceleration_smoothness_weight: float = 0.0,
+    velocity_smoothness_weight: float = 0.0,
     n_solver_max_iters: int = 50,
     initial_step_damping: float = 1.0,
     site_offsets: Float[Array, "n_keypoints 3"] | None = None,
@@ -195,7 +195,7 @@ def pose_optimization(
         kp_mask: Boolean mask selecting which keypoint coordinates to fit
             (default: all True).
         joint_reg_weights: Per-joint regularization weights (default: zeros).
-        acceleration_smoothness_weight: Temporal acceleration smoothness coupling.
+        velocity_smoothness_weight: Temporal velocity smoothness coupling.
         n_solver_max_iters: Maximum solver iterations.
         initial_step_damping: Initial damping on the solver step.
         site_offsets: Marker offsets for this solve.
@@ -227,7 +227,7 @@ def pose_optimization(
             site_idxs,
             kp_data.shape[1],
             joint_reg_weights,
-            acceleration_smoothness_weight,
+            velocity_smoothness_weight,
             site_offsets=site_offsets,
             dynamic_site_offsets=site_offsets is not None,
         )

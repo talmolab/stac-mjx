@@ -137,7 +137,7 @@ def build_q_opt_problem(
     site_idxs: Int[Array, " n_keypoints"],
     n_kp_coords: int,
     joint_reg_weights: Float[Array, " n_qpos"],
-    acceleration_smoothness_weight: float = 1.0,
+    velocity_smoothness_weight: float = 0.0,
     site_offsets: Float[Array, "n_keypoints 3"] | None = None,
     dynamic_site_offsets: bool = False,
 ) -> QOptProblem:
@@ -160,7 +160,7 @@ def build_q_opt_problem(
         site_idxs: Marker site indices.
         n_kp_coords: Total keypoint coordinate count (n_keypoints * 3).
         joint_reg_weights: Per-joint L2 regularization weights.
-        acceleration_smoothness_weight: Temporal acceleration smoothness coupling
+        velocity_smoothness_weight: Temporal velocity smoothness coupling
             (0 = independent frames).
         site_offsets: Current marker offsets. Defaults to model site positions.
         dynamic_site_offsets: Pass marker offsets as solve data rather than
@@ -189,7 +189,7 @@ def build_q_opt_problem(
             site_idxs,
             n_kp_coords,
             joint_reg_weights,
-            acceleration_smoothness_weight,
+            velocity_smoothness_weight,
             site_offsets,
             dynamic_site_offsets,
         )
@@ -204,7 +204,7 @@ def build_q_opt_problem(
         site_idxs,
         n_kp_coords,
         joint_reg_weights,
-        acceleration_smoothness_weight,
+        velocity_smoothness_weight,
         freejoint_root,
         site_offsets,
         dynamic_site_offsets,
@@ -270,7 +270,7 @@ def _build_se3_problem(
     site_idxs,
     n_kp_coords,
     joint_reg_weights,
-    acceleration_smoothness_weight,
+    velocity_smoothness_weight,
     site_offsets,
     dynamic_site_offsets,
 ):
@@ -340,34 +340,25 @@ def _build_se3_problem(
 
     costs.append(limit_cost(joint_vars))
 
-    if acceleration_smoothness_weight > 0.0 and n_frames > 2:
-
+    if velocity_smoothness_weight > 0.0 and n_frames > 1:
         @jaxls.Cost.factory
-        def smooth_acceleration_cost(
+        def smooth_velocity_cost(
             vals: jaxls.VarValues,
             root_prev: SE3Var,
             root_cur: SE3Var,
-            root_next: SE3Var,
             joint_prev: JointVar,
             joint_cur: JointVar,
-            joint_next: JointVar,
         ) -> jp.ndarray:
-            root_prev_inc = (vals[root_prev].inverse() @ vals[root_cur]).log()
-            root_next_inc = (vals[root_cur].inverse() @ vals[root_next]).log()
-            root_acc = root_next_inc - root_prev_inc
-            joint_acc = vals[joint_next] - 2.0 * vals[joint_cur] + vals[joint_prev]
-            return (
-                jp.concatenate([root_acc, joint_acc]) * acceleration_smoothness_weight
-            )
+            root_vel = (vals[root_prev].inverse() @ vals[root_cur]).log()
+            joint_vel = vals[joint_cur] - vals[joint_prev]
+            return jp.concatenate([root_vel, joint_vel]) * velocity_smoothness_weight
 
         costs.append(
-            smooth_acceleration_cost(
-                SE3Var(jp.arange(n_frames - 2)),
-                SE3Var(jp.arange(1, n_frames - 1)),
-                SE3Var(jp.arange(2, n_frames)),
-                JointVar(jp.arange(n_frames - 2)),
-                JointVar(jp.arange(1, n_frames - 1)),
-                JointVar(jp.arange(2, n_frames)),
+            smooth_velocity_cost(
+                SE3Var(jp.arange(n_frames - 1)),
+                SE3Var(jp.arange(1, n_frames)),
+                JointVar(jp.arange(n_frames - 1)),
+                JointVar(jp.arange(1, n_frames)),
             )
         )
 
@@ -438,7 +429,7 @@ def _build_flat_problem(
     site_idxs,
     n_kp_coords,
     joint_reg_weights,
-    acceleration_smoothness_weight,
+    velocity_smoothness_weight,
     freejoint_root,
     site_offsets,
     dynamic_site_offsets,
@@ -495,21 +486,18 @@ def _build_flat_problem(
 
     costs.append(limit_cost(qpos_vars))
 
-    if acceleration_smoothness_weight > 0.0 and n_frames > 2:
+    if velocity_smoothness_weight > 0.0 and n_frames > 1:
 
         @jaxls.Cost.factory
-        def smooth_acceleration_cost(
-            vals: jaxls.VarValues, q_prev: QVar, q_cur: QVar, q_next: QVar
+        def smooth_velocity_cost(
+            vals: jaxls.VarValues, q_prev: QVar, q_cur: QVar
         ) -> jp.ndarray:
-            return (
-                vals[q_next] - 2.0 * vals[q_cur] + vals[q_prev]
-            ) * acceleration_smoothness_weight
+            return (vals[q_cur] - vals[q_prev]) * velocity_smoothness_weight
 
         costs.append(
-            smooth_acceleration_cost(
-                QVar(jp.arange(n_frames - 2)),
-                QVar(jp.arange(1, n_frames - 1)),
-                QVar(jp.arange(2, n_frames)),
+            smooth_velocity_cost(
+                QVar(jp.arange(n_frames - 1)),
+                QVar(jp.arange(1, n_frames)),
             )
         )
 

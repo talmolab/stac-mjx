@@ -62,9 +62,10 @@ class QOptConfig:
     """q optimization settings."""
 
     initial_step_damping: float = 1.0
-    acceleration_smoothness_weight: float = 0.9
+    velocity_smoothness_weight: float = 0.05
     context_frames: int = 64
-    coarse_init_stride: int = 10
+    coarse_init_stride: int = 8
+    coarse_init_max_frames: int = 16
     calibration_max_iterations: int = 150
     ik_max_iterations: int = 150
 
