@@ -26,7 +26,6 @@ import mujoco
 import numpy as np
 import yaml
 
-
 _COMMON_ROOT_BODIES = ("torso", "reference_base", "thorax", "trunk", "body")
 
 
@@ -162,9 +161,7 @@ def replay(
     if xml_path is None:
         mjcf = model_cfg.get("MJCF_PATH")
         if mjcf is None:
-            raise ValueError(
-                "No MJCF_PATH in the H5 config and --xml not provided."
-            )
+            raise ValueError("No MJCF_PATH in the H5 config and --xml not provided.")
         xml_path = _resolve_xml_path(mjcf, h5_path)
     else:
         xml_path = Path(xml_path).resolve()
@@ -221,7 +218,9 @@ def replay(
     print(f"  qpos: {qpos.shape}, model.nq: {model.nq}")
     if has_markers:
         print(f"  kp_data: {kp_data.shape}, marker_sites: {marker_sites.shape}")
-    print(f"  FPS: {fps}, scale: {scale}, tracking body: '{root_name}' (id {root_body_id})")
+    print(
+        f"  FPS: {fps}, scale: {scale}, tracking body: '{root_name}' (id {root_body_id})"
+    )
     print(f"  sphere_size: {sphere_size:.4f} m")
     print()
     print("Controls:")
@@ -260,7 +259,9 @@ def replay(
 
     import mujoco.viewer  # noqa: delayed so headless imports don't break
 
-    with mujoco.viewer.launch_passive(model, mj_data, key_callback=key_callback) as viewer:
+    with mujoco.viewer.launch_passive(
+        model, mj_data, key_callback=key_callback
+    ) as viewer:
         viewer.cam.distance = sphere_size * 30
         viewer.cam.elevation = -20.0
         viewer.cam.azimuth = 90.0
@@ -282,7 +283,8 @@ def replay(
                     f"lookat=({lk[0]:+.4f},{lk[1]:+.4f},{lk[2]:+.4f})  "
                     f"dist={viewer.cam.distance:.4f}  "
                     f"az={viewer.cam.azimuth:6.1f}  el={viewer.cam.elevation:+5.1f}",
-                    end="", flush=True,
+                    end="",
+                    flush=True,
                 )
                 last_cam_print = now
 
@@ -344,23 +346,31 @@ def main() -> None:
         help="Path to MJCF XML model. Auto-resolved from H5 config if omitted.",
     )
     parser.add_argument(
-        "--fps", type=float, default=None,
+        "--fps",
+        type=float,
+        default=None,
         help="Playback fps (default: from H5 config, or 30).",
     )
     parser.add_argument(
-        "--scale", type=float, default=None,
+        "--scale",
+        type=float,
+        default=None,
         help="Geometry scale factor (default: from H5 config, or 1.0).",
     )
     parser.add_argument(
-        "--no-markers", action="store_true",
+        "--no-markers",
+        action="store_true",
         help="Don't overlay input keypoints / marker sites.",
     )
     parser.add_argument(
-        "--sphere-size", type=float, default=None,
+        "--sphere-size",
+        type=float,
+        default=None,
         help="Radius (m) of debug spheres (default: auto-scaled from model).",
     )
     parser.add_argument(
-        "--root-body", default=None,
+        "--root-body",
+        default=None,
         help="Body name for camera tracking (default: auto-detect).",
     )
     args = parser.parse_args()
