@@ -113,6 +113,8 @@ def m_opt(
 
 @dataclass
 class QOptProblem:
+    """Compiled jaxls least-squares problem for pose optimization."""
+
     analyzed: jaxls.AnalyzedLeastSquaresProblem
     se3_mode: bool
     freejoint_root: bool
@@ -333,14 +335,17 @@ def _build_se3_problem(
 
     hinge_lb, hinge_ub = joint_lb[_FREE_JOINT_NDOF:], joint_ub[_FREE_JOINT_NDOF:]
 
-    @jaxls.Cost.factory(kind="constraint_leq_zero")
-    def limit_cost(vals: jaxls.VarValues, joints: JointVar) -> jp.ndarray:
-        angles = vals[joints]
-        return jp.concatenate([hinge_lb - angles, angles - hinge_ub])
+    if n_hinges > 0:
 
-    costs.append(limit_cost(joint_vars))
+        @jaxls.Cost.factory(kind="constraint_leq_zero")
+        def limit_cost(vals: jaxls.VarValues, joints: JointVar) -> jp.ndarray:
+            angles = vals[joints]
+            return jp.concatenate([hinge_lb - angles, angles - hinge_ub])
+
+        costs.append(limit_cost(joint_vars))
 
     if velocity_smoothness_weight > 0.0 and n_frames > 1:
+
         @jaxls.Cost.factory
         def smooth_velocity_cost(
             vals: jaxls.VarValues,
