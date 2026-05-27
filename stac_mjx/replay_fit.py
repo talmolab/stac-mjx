@@ -16,10 +16,11 @@ Examples::
     replay("fit_offsets.h5")
 """
 
+from __future__ import annotations
+
 import argparse
 import time
 from pathlib import Path
-from typing import Optional, Union
 
 import h5py
 import mujoco
@@ -29,7 +30,7 @@ import yaml
 _COMMON_ROOT_BODIES = ("torso", "reference_base", "thorax", "trunk", "body")
 
 
-def _resolve_xml_path(mjcf_path: str, h5_path: Union[str, Path]) -> Path:
+def _resolve_xml_path(mjcf_path: str, h5_path: str | Path) -> Path:
     """Find the MJCF XML on disk, searching several locations."""
     p = Path(mjcf_path)
     if p.is_absolute() and p.exists():
@@ -52,7 +53,7 @@ def _resolve_xml_path(mjcf_path: str, h5_path: Union[str, Path]) -> Path:
     )
 
 
-def _detect_root_body(model: mujoco.MjModel, hint: Optional[str] = None) -> int:
+def _detect_root_body(model: mujoco.MjModel, hint: str | None = None) -> int:
     """Return the body id to track with the camera."""
     if hint is not None:
         bid = mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_BODY, hint)
@@ -69,7 +70,7 @@ def _detect_root_body(model: mujoco.MjModel, hint: Optional[str] = None) -> int:
     return 1  # first non-world body
 
 
-def _load_h5_for_replay(h5_path: Union[str, Path]) -> dict:
+def _load_h5_for_replay(h5_path: str | Path) -> dict:
     """Load STAC output H5 with minimal dependencies (h5py + numpy)."""
     with h5py.File(h5_path, "r") as f:
         result: dict = {}
@@ -113,23 +114,25 @@ def _normalize_shapes(data: dict) -> dict:
     return data
 
 
-def _auto_sphere_size(model: mujoco.MjModel) -> float:
-    """Heuristic: sphere radius ~ 1/200 of the model's bounding extent."""
+def _model_extent(model: mujoco.MjModel) -> float:
+    """Return the bounding extent of all non-world bodies."""
     data = mujoco.MjData(model)
     mujoco.mj_forward(model, data)
-    extents = data.xpos[1:].max(axis=0) - data.xpos[1:].min(axis=0)
-    extent = max(extents.max(), 0.01)
-    return float(extent / 200.0)
+    body_xpos = data.xpos[1:]
+    if body_xpos.size == 0:
+        return 0.01
+    extents = body_xpos.max(axis=0) - body_xpos.min(axis=0)
+    return float(max(extents.max(), 0.01))
 
 
 def replay(
-    h5_path: Union[str, Path],
-    xml_path: Optional[Union[str, Path]] = None,
-    fps: Optional[float] = None,
-    scale: Optional[float] = None,
+    h5_path: str | Path,
+    xml_path: str | Path | None = None,
+    fps: float | None = None,
+    scale: float | None = None,
     show_markers: bool = True,
-    sphere_size: Optional[float] = None,
-    root_body: Optional[str] = None,
+    sphere_size: float | None = None,
+    root_body: str | None = None,
 ) -> None:
     """Launch interactive MuJoCo viewer to replay a STAC fit.
 
@@ -150,6 +153,8 @@ def replay(
             tries common names (``torso``, ``reference_base``, ...)
             then falls back to the first non-world body.
     """
+    from stac_mjx.rescale import dm_scale_spec
+
     h5_path = Path(h5_path).resolve()
     if not h5_path.exists():
         raise FileNotFoundError(f"H5 file not found: {h5_path}")
@@ -179,15 +184,11 @@ def replay(
     marker_sites = data.get("marker_sites")
     has_markers = show_markers and kp_data is not None and marker_sites is not None
 
-    model = mujoco.MjModel.from_xml_path(str(xml_path))
+    spec = mujoco.MjSpec.from_file(str(xml_path))
     if scale != 1.0:
-        model.body_pos[:] *= scale
-        model.geom_pos[:] *= scale
-        model.geom_size[:] *= scale
-        model.site_pos[:] *= scale
-        if model.nmesh > 0:
-            model.mesh_vert[:] *= scale
+        spec = dm_scale_spec(spec, scale)
         print(f"  Model geometry scaled by {scale}")
+    model = spec.compile()
     mj_data = mujoco.MjData(model)
 
     if qpos.shape[1] != model.nq:
@@ -196,8 +197,9 @@ def replay(
             f"The H5 was probably fit against a different MJCF."
         )
 
+    extent = _model_extent(model)
     if sphere_size is None:
-        sphere_size = _auto_sphere_size(model)
+        sphere_size = extent / 200.0
 
     root_body_id = _detect_root_body(model, root_body)
     root_name = mujoco.mj_id2name(model, mujoco.mjtObj.mjOBJ_BODY, root_body_id)
@@ -262,7 +264,7 @@ def replay(
     with mujoco.viewer.launch_passive(
         model, mj_data, key_callback=key_callback
     ) as viewer:
-        viewer.cam.distance = sphere_size * 30
+        viewer.cam.distance = extent * 2.0
         viewer.cam.elevation = -20.0
         viewer.cam.azimuth = 90.0
         if has_markers:
