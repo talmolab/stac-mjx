@@ -60,12 +60,13 @@ dev = [
     "mediapy",
     ]
 
+[project.scripts]
+stac-mjx = "stac_mjx.cli:main"
+stac-viewer = "stac_mjx.replay_fit:main"
+
 [project.urls]
 Homepage = "https://github.com/talmolab/stac-mjx"
 Repository = "https://github.com/talmolab/stac-mjx"
-
-[project.scripts]
-stac-mjx = "stac_mjx.cli:main"
 
 [tool.setuptools.packages.find]
 exclude = ["site"]
