@@ -413,8 +413,7 @@ class Stac:
         if coarse_stride <= 0:
             return q_init
 
-        n_coarse_frames = (solve_frames - 2) // coarse_stride + 2 if solve_frames > 1 else 1
-        coarse_idx = jp.minimum(jp.arange(n_coarse_frames, dtype=jp.int32) * coarse_stride, solve_frames - 1)
+        coarse_idx = utils.coarse_keyframe_indices(solve_frames, coarse_stride)
         coarse_frames = int(coarse_idx.shape[0])
         coarse_max_frames = int(getattr(q_opt_cfg, "coarse_init_max_frames", 0))
 
@@ -431,9 +430,7 @@ class Stac:
                     q_segment_init = jp.tile(q_prev_segment[-1], (segment_frames, 1))
                     if self._root_kp_idx >= 0 and not self._fixed:
                         q_segment_init = q_segment_init.at[:, :3].set(
-                            kp_chunk[
-                                segment_idx, root_kp_start : root_kp_start + 3
-                            ]
+                            kp_chunk[segment_idx, root_kp_start : root_kp_start + 3]
                         )
 
                 if segment_frames not in coarse_problems:

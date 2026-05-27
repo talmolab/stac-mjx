@@ -170,6 +170,14 @@ def make_context_window(
     return jp.concatenate(parts, axis=0), n_frames_to_output
 
 
+def coarse_keyframe_indices(n_frames: int, stride: int) -> Int[Array, " n_keyframes"]:
+    """Return strided coarse IK keyframes, always including the final frame."""
+    if n_frames <= 1:
+        return jp.zeros((1,), dtype=jp.int32)
+    n_keyframes = (n_frames - 2) // stride + 2
+    return jp.minimum(jp.arange(n_keyframes, dtype=jp.int32) * stride, n_frames - 1)
+
+
 def normalize_freejoint_quat(
     qpos: Float[Array, "n_frames n_qpos"],
     freejoint: bool,
@@ -399,9 +407,10 @@ def compute_velocity_from_kinematics(
         qvel_translation = (qpos_trajectory[1:, :3] - qpos_trajectory[:-1, :3]) / dt
         qvel_gyro = []
         for t in range(qpos_trajectory.shape[0] - 1):
-            normed_diff = quat_diff(
-                qpos_trajectory[t, 3:7], qpos_trajectory[t + 1, 3:7]
-            )
+            quat_prev = qpos_trajectory[t, 3:7]
+            quat_cur = qpos_trajectory[t + 1, 3:7]
+            quat_cur = jp.where(jp.dot(quat_prev, quat_cur) < 0.0, -quat_cur, quat_cur)
+            normed_diff = quat_diff(quat_prev, quat_cur)
             normed_diff /= jp.linalg.norm(normed_diff)
             angle = quat_to_axisangle(normed_diff)
             qvel_gyro.append(angle / dt)
