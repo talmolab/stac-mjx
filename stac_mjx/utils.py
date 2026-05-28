@@ -15,7 +15,7 @@ import jax
 from jax import Array
 from jax import numpy as jp
 import jaxlie
-from jaxtyping import Float, Int
+from jaxtyping import ArrayLike, Float, Int
 from jaxtyping import jaxtyped
 from beartype import beartype
 import mujoco
@@ -377,7 +377,7 @@ def quat_to_axisangle(
 
 @jaxtyped(typechecker=beartype)
 def compute_velocity_from_kinematics(
-    qpos_trajectory: Float[Array, "n_frames n_qpos"],
+    qpos_trajectory: Float[ArrayLike, "n_frames n_qpos"],
     dt: float,
     freejoint: bool = True,
     max_qvel: float = 20.0,
@@ -395,6 +395,7 @@ def compute_velocity_from_kinematics(
     Returns:
         Velocity trajectory.
     """
+    qpos_trajectory = jp.asarray(qpos_trajectory)
     qpos_trajectory = jp.concatenate(
         [qpos_trajectory, qpos_trajectory[-1, jp.newaxis, :]], axis=0
     )
@@ -405,16 +406,15 @@ def compute_velocity_from_kinematics(
     else:
         qvel_joints = (qpos_trajectory[1:, 7:] - qpos_trajectory[:-1, 7:]) / dt
         qvel_translation = (qpos_trajectory[1:, :3] - qpos_trajectory[:-1, :3]) / dt
-        qvel_gyro = []
-        for t in range(qpos_trajectory.shape[0] - 1):
-            quat_prev = qpos_trajectory[t, 3:7]
-            quat_cur = qpos_trajectory[t + 1, 3:7]
-            quat_cur = jp.where(jp.dot(quat_prev, quat_cur) < 0.0, -quat_cur, quat_cur)
-            normed_diff = quat_diff(quat_prev, quat_cur)
-            normed_diff /= jp.linalg.norm(normed_diff)
-            angle = quat_to_axisangle(normed_diff)
-            qvel_gyro.append(angle / dt)
-        qvel_gyro = jp.stack(qvel_gyro)
+        quat_prev = qpos_trajectory[:-1, 3:7]
+        quat_cur = qpos_trajectory[1:, 3:7]
+        same_sign = jp.sum(quat_prev * quat_cur, axis=-1, keepdims=True) >= 0.0
+        quat_cur = jp.where(same_sign, quat_cur, -quat_cur)
+        normed_diff = quat_diff(quat_prev, quat_cur)
+        normed_diff /= jp.maximum(
+            jp.linalg.norm(normed_diff, axis=-1, keepdims=True), 1e-12
+        )
+        qvel_gyro = jax.vmap(quat_to_axisangle)(normed_diff) / dt
 
         mocap_qvels = jp.concatenate([qvel_translation, qvel_gyro, qvel_joints], axis=1)
 
