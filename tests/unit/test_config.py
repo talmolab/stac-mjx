@@ -6,7 +6,7 @@ def test_compose_config_loads_defaults():
     assert cfg.model.MJCF_PATH.endswith("models/rodent.xml")
     assert cfg.stac.n_calibration_frames > 0
     assert cfg.stac.q_opt.initial_step_damping == 1.0
-    assert cfg.stac.q_opt.acceleration_smoothness_weight == 0.9
+    assert cfg.stac.q_opt.velocity_smoothness_weight == 0.05
 
 
 def test_compose_config_applies_overrides():
