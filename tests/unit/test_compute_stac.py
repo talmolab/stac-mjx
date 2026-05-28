@@ -29,28 +29,6 @@ class FakeMjxModel:
         self.site_pos = site_pos
 
 
-class FakeStacCore:
-    def __init__(self):
-        self.q_calls = 0
-        self.m_calls = 0
-        self.q0_args = []
-
-    def q_opt(self, *args, **kwargs):
-        self.q_calls += 1
-        q0 = args[5]
-        self.q0_args.append(q0)
-        res = types.SimpleNamespace(params=q0, state=types.SimpleNamespace(error=0.0))
-        return args[1], res
-
-    def m_opt(
-        self, mjx_model, mjx_data, keypoints, q, initial_offsets, *args, **kwargs
-    ):
-        self.m_calls += 1
-        return types.SimpleNamespace(
-            params=jp.asarray(initial_offsets).reshape(-1, 3), error=0.0
-        )
-
-
 def test_root_optimization_calls_q_opt_twice(monkeypatch):
     monkeypatch.setattr(
         compute_stac,
@@ -61,8 +39,18 @@ def test_root_optimization_calls_q_opt_twice(monkeypatch):
     )
     monkeypatch.setattr(utils, "kinematics", lambda model, data: data)
     monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
+    monkeypatch.setattr(
+        compute_stac, "build_q_opt_problem", lambda *args, **kwargs: object()
+    )
 
-    stac_core = FakeStacCore()
+    q_init_args = []
+
+    def fake_q_opt(problem, q_init, kp_frame, **kwargs):
+        q_init_args.append(q_init)
+        return q_init
+
+    monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
+
     mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=jp.zeros(7))
     kp_data = jp.zeros((1, 6))
@@ -72,7 +60,6 @@ def test_root_optimization_calls_q_opt_twice(monkeypatch):
     trunk_kps = jp.array([True, True])
 
     out = compute_stac.root_optimization(
-        stac_core,
         mjx_model,
         mjx_data,
         kp_data,
@@ -84,7 +71,7 @@ def test_root_optimization_calls_q_opt_twice(monkeypatch):
     )
 
     assert isinstance(out, FakeMjxData)
-    assert stac_core.q_calls == 2
+    assert len(q_init_args) == 2
 
 
 def test_root_optimization_seeds_root_translation_from_correct_keypoint(monkeypatch):
@@ -97,15 +84,24 @@ def test_root_optimization_seeds_root_translation_from_correct_keypoint(monkeypa
     )
     monkeypatch.setattr(utils, "kinematics", lambda model, data: data)
     monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
+    monkeypatch.setattr(
+        compute_stac, "build_q_opt_problem", lambda *args, **kwargs: object()
+    )
 
-    stac_core = FakeStacCore()
+    q_init_args = []
+
+    def fake_q_opt(problem, q_init, kp_frame, **kwargs):
+        q_init_args.append(q_init)
+        return q_init
+
+    monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
+
     initial_qpos = jp.array([91.0, 92.0, 93.0, 4.0, 5.0, 6.0, 7.0])
     mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=initial_qpos)
     kp_data = jp.array([[11.0, 12.0, 13.0, 21.0, 22.0, 23.0]])
 
     compute_stac.root_optimization(
-        stac_core,
         mjx_model,
         mjx_data,
         kp_data,
@@ -117,9 +113,9 @@ def test_root_optimization_seeds_root_translation_from_correct_keypoint(monkeypa
     )
 
     expected_q0 = jp.array([21.0, 22.0, 23.0, 4.0, 5.0, 6.0, 7.0])
-    assert stac_core.q_calls == 2
-    assert np.allclose(np.array(stac_core.q0_args[0]), np.array(expected_q0))
-    assert np.allclose(np.array(stac_core.q0_args[1]), np.array(expected_q0))
+    assert len(q_init_args) == 2
+    assert np.allclose(np.array(q_init_args[0][0]), np.array(expected_q0))
+    assert np.allclose(np.array(q_init_args[1][0]), np.array(expected_q0))
 
 
 def test_offset_optimization_updates_site_pos(monkeypatch):
@@ -131,7 +127,14 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
 
     monkeypatch.setattr(utils, "set_site_pos", set_site_pos)
 
-    stac_core = FakeStacCore()
+    calls = {"m_opt": 0}
+
+    def fake_m_opt(mjx_model, mjx_data, keypoints, q, initial_offsets, *args, **kwargs):
+        calls["m_opt"] += 1
+        return types.SimpleNamespace(params=initial_offsets.reshape(-1, 3), error=0.0)
+
+    monkeypatch.setattr(compute_stac.stac_core, "m_opt", fake_m_opt)
+
     mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=jp.zeros(7))
     kp_data = jp.zeros((4, 6))
@@ -139,7 +142,6 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
     q = jp.zeros((4, 7))
 
     mjx_model, mjx_data, offset_opt = compute_stac.offset_optimization(
-        stac_core,
         mjx_model,
         mjx_data,
         kp_data,
@@ -151,7 +153,7 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
         m_reg_coef=0.0,
     )
 
-    assert stac_core.m_calls == 1
+    assert calls["m_opt"] == 1
     assert np.allclose(np.array(offset_opt), np.array(offsets))
     assert np.allclose(np.array(mjx_model.site_pos), np.array(offsets))
 
@@ -159,24 +161,33 @@ def test_offset_optimization_updates_site_pos(monkeypatch):
 def test_pose_optimization_runs_all_frames(monkeypatch):
     monkeypatch.setattr(utils, "kinematics", lambda model, data: data)
     monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
+    monkeypatch.setattr(
+        utils, "get_site_xpos", lambda data, site_idxs: data.site_xpos[site_idxs]
+    )
+    monkeypatch.setattr(
+        compute_stac, "build_q_opt_problem", lambda *args, **kwargs: object()
+    )
 
-    stac_core = FakeStacCore()
+    def fake_q_opt(problem, q_init, kp_data, **kwargs):
+        return q_init
+
+    monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
+
     mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
     mjx_data = FakeMjxData(qpos=jp.zeros(7))
     kp_data = jp.zeros((2, 6))
 
     result = compute_stac.pose_optimization(
-        stac_core,
         mjx_model,
         mjx_data,
         kp_data,
         lb=jp.zeros(7),
         ub=jp.ones(7),
         site_idxs=jp.array([0, 1]),
-        indiv_parts=[],
+        q_init=jp.zeros((2, 7)),
     )
 
-    _, qposes, _, _, marker_sites, _, frame_error = result
-    assert qposes.shape == (2, 7)
-    assert len(marker_sites) == 2
-    assert len(frame_error) == 2
+    _, qpos, _, _, marker_pos, frame_error = result
+    assert qpos.shape == (2, 7)
+    assert marker_pos.shape[0] == 2
+    assert frame_error.shape[0] == 2

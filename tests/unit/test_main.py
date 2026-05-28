@@ -6,18 +6,24 @@ from typing import Dict
 import pytest
 
 
-def test_load_configs(config):
+def test_load_stac_config(config):
     # Check that utils.params is not defined before loading
     with pytest.raises(AttributeError):
         io.params
 
     # Call the function
-    cfg = main.load_configs(config)
+    cfg = main.load_stac_config(config)
 
     # Assert that the configs are the correct type
     assert isinstance(cfg, DictConfig)
 
     # Assert that the resulting configs contain the expected data
-    assert cfg.stac.fit_offsets_path == "fit.p"
-    assert cfg.stac.n_fit_frames == 42
+    assert cfg.stac.calibration_path == "calibration.p"
+    assert cfg.stac.n_calibration_frames == 42
     assert cfg.model.MJCF_PATH == "models/rodent.xml"
+
+
+def test_load_stac_config_applies_overrides(config):
+    cfg = main.load_stac_config(config, overrides=["stac.n_calibration_frames=5"])
+
+    assert cfg.stac.n_calibration_frames == 5

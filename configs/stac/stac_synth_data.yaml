@@ -1,10 +1,10 @@
-fit_offsets_path: "synth_fit.h5"
-ik_only_path: "synth_ik_only.h5"
+calibration_path: "synth_calibration.h5"
+ik_path: "synth_ik.h5"
 data_path: "tests/data/test_synth_1_frames.nwb"
 
-n_fit_frames: 1
-skip_fit_offsets: False
-skip_ik_only: True
+n_calibration_frames: 1
+skip_calibration: False
+skip_ik: True
 infer_qvels: False # Infer qvels from stac output
 n_frames_per_clip: 1
 

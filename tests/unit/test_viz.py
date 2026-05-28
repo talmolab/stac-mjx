@@ -1,6 +1,7 @@
 import types
 from pathlib import Path
 
+import jax.numpy as jp
 import numpy as np
 
 from stac_mjx import viz
@@ -14,7 +15,7 @@ def test_viz_stac_calls_render(monkeypatch, tmp_path):
         qpos=np.zeros((2, 3)),
         kp_data=np.zeros((2, 6)),
         kp_names=["a", "b"],
-        offsets=np.zeros((2, 3)),
+        offsets=jp.zeros((2, 3)),
     )
 
     monkeypatch.setattr(viz.io, "load_stac_data", lambda path: (cfg, data))

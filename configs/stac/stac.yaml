@@ -1,10 +1,9 @@
-fit_offsets_path: "fit.p"
-ik_only_path: "ik_only.p"
+calibration_path: "calibration.p"
+ik_path: "ik.p"
 data_path: "tests/data/test_rodent_mocap_1000_frames.nwb"
-continuous: False
-n_fit_frames: 1000
-skip_fit_offsets: False
-skip_ik_only: True
+n_calibration_frames: 1000
+skip_calibration: False
+skip_ik: True
 infer_qvels: True 
 n_frames_per_clip: 250
 

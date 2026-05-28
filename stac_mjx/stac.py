@@ -1,24 +1,19 @@
 """Stac class handling high level functionality of stac-mjx."""
 
-import jax
+from pathlib import Path
+
+import imageio
+import mujoco
+import numpy as np
+from beartype import beartype
 from jax import Array
 from jax import numpy as jp
-
-import numpy as np
-
-import mujoco
+from jaxtyping import Float, Int, jaxtyped
 from mujoco import mjx
-
-from stac_mjx import utils, rescale, compute_stac, io, stac_core
-
 from omegaconf import DictConfig
-from pathlib import Path
-import imageio
 from tqdm import tqdm
 
-from jaxtyping import Float, Int, Bool
-from jaxtyping import jaxtyped
-from beartype import beartype
+from stac_mjx import compute_stac, io, rescale, stac_core, utils
 
 _ROOT_QPOS_LB = jp.concatenate([-jp.inf * jp.ones(3), -1.0 * jp.ones(4)])
 _ROOT_QPOS_UB = jp.concatenate([jp.inf * jp.ones(3), 1.0 * jp.ones(4)])
@@ -107,13 +102,9 @@ class Stac:
         self._kp_names = kp_names
         self._xml_path = Path(xml_path)
         self._marker_size = cfg.model.MARKER_SIZE
-        self.stac_core_obj = None
-
-        (
-            self._mj_model,
-            self._body_site_idxs,
-            self._is_regularized,
-        ) = self._init_body_sites()
+        self._mj_model, self._body_site_idxs, self._is_regularized = (
+            self._init_body_sites()
+        )
 
         self._body_names = [
             self._mj_model.body(i).name for i in range(self._mj_model.nbody)
@@ -131,8 +122,6 @@ class Stac:
         self._lb, self._ub, self._part_names = _align_joint_dims(
             self._mj_model.jnt_type, self._mj_model.jnt_range, joint_names
         )
-
-        self._indiv_parts = self.part_opt_setup()
 
         # Generate boolean flags for keypoints included in trunk optimization.
         self._trunk_kps = jp.array(
@@ -153,34 +142,6 @@ class Stac:
             self._mj_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE
         )
         self._fixed = not (self._freejoint or self._slidejoint)
-
-        self.stac_core_obj = stac_core.StacCore(
-            self.cfg.model.FTOL, self.cfg.model.N_ITER_Q
-        )
-
-    def part_opt_setup(self) -> list[Bool[Array, " n_qpos"]]:
-        """Set up joint masks for individual part optimization.
-
-        Returns:
-            List of boolean masks, one per part group.
-        """
-
-        def get_part_ids(parts: list[str]) -> Bool[Array, " n_qpos"]:
-            return jp.array(
-                [any(part in name for part in parts) for name in self._part_names]
-            )
-
-        if "INDIVIDUAL_PART_OPTIMIZATION" not in self.cfg.model:
-            indiv_parts = []
-        else:
-            indiv_parts = jp.array(
-                [
-                    get_part_ids(parts)
-                    for parts in self.cfg.model.INDIVIDUAL_PART_OPTIMIZATION.values()
-                ]
-            )
-
-        return indiv_parts
 
     def _build_body_spec(self) -> mujoco.MjSpec:
         """Create a fresh spec with body sites for keypoints.
@@ -244,17 +205,44 @@ class Stac:
             Tuple of (flattened errors, mean, standard deviation).
         """
         flattened_errors = np.array(errors).reshape(-1)
-
         mean = np.mean(flattened_errors)
         std = np.std(flattened_errors)
-
         return flattened_errors, mean, std
 
+    def _run_root_optimization(
+        self, mjx_model, mjx_data, kp_data, n_solver_max_iters: int
+    ):
+        """Run root optimization when configured."""
+        if self._root_kp_idx == -1:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
+            )
+            return mjx_data
+        if self._fixed:
+            print(
+                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, "
+                "skipping Root Optimization"
+            )
+            return mjx_data
+
+        return compute_stac.root_optimization(
+            mjx_model,
+            mjx_data,
+            kp_data,
+            self._root_kp_idx,
+            self._lb,
+            self._ub,
+            self._body_site_idxs,
+            self._trunk_kps,
+            n_solver_max_iters=n_solver_max_iters,
+            initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
+        )
+
     @jaxtyped(typechecker=beartype)
-    def fit_offsets(
+    def calibrate(
         self, kp_data: Float[Array, "n_frames n_keypoints_xyz"]
     ) -> io.StacData:
-        """Alternate between pose and offset optimization.
+        """Calibrate marker offsets using alternating pose and offset solves.
 
         Runs root optimization, then alternates pose and offset optimization
         for N_ITERS iterations, followed by a final pose optimization pass.
@@ -266,235 +254,402 @@ class Stac:
             Packaged STAC output data.
         """
         mjx_model, mjx_data = utils.mjx_load(self._mj_model)
-
         self._offsets = jp.copy(utils.get_site_pos(mjx_model, self._body_site_idxs))
-
         mjx_model = utils.set_site_pos(mjx_model, self._offsets, self._body_site_idxs)
-
         mjx_data = mjx.kinematics(mjx_model, mjx_data)
         mjx_data = mjx.com_pos(mjx_model, mjx_data)
 
-        if self._root_kp_idx == -1:
-            print(
-                "ROOT_OPTIMIZATION_KEYPOINT not specified, skipping Root Optimization."
-            )
-        elif not self._fixed:
-            mjx_data = compute_stac.root_optimization(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                kp_data,
-                self._root_kp_idx,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._trunk_kps,
-            )
-        else:
-            print(
-                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping Root Optimization"
-            )
+        mjx_data = self._run_root_optimization(
+            mjx_model,
+            mjx_data,
+            kp_data,
+            n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
+        )
+        n_frames = kp_data.shape[0]
+        joint_mask = jp.ones(mjx_model.nq, dtype=bool)
+        kp_mask = jp.ones(kp_data.shape[1], dtype=bool)
+        joint_reg_weights = jp.zeros(mjx_model.nq)
+        pose_problem = stac_core.build_q_opt_problem(
+            n_frames,
+            mjx_model,
+            mjx_data,
+            joint_mask,
+            kp_mask,
+            self._lb,
+            self._ub,
+            self._body_site_idxs,
+            kp_data.shape[1],
+            joint_reg_weights,
+            velocity_smoothness_weight=self.cfg.stac.q_opt.velocity_smoothness_weight,
+            site_offsets=self._offsets,
+            dynamic_site_offsets=True,
+        )
 
-        for n_iter in range(self.cfg.model.N_ITERS):
-            print(f"Calibration iteration: {n_iter + 1}/{self.cfg.model.N_ITERS}")
-            mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
+        q_init = jp.tile(mjx_data.qpos, (n_frames, 1))
+        for calibration_iter in range(self.cfg.model.N_ITERS):
+            print(
+                f"Calibration iteration: {calibration_iter + 1}/{self.cfg.model.N_ITERS}"
+            )
+            mjx_data, qpos, body_pos, body_quat, marker_pos, frame_error = (
                 compute_stac.pose_optimization(
-                    self.stac_core_obj,
                     mjx_model,
                     mjx_data,
                     kp_data,
                     self._lb,
                     self._ub,
                     self._body_site_idxs,
-                    self._indiv_parts,
+                    q_init,
+                    velocity_smoothness_weight=(
+                        self.cfg.stac.q_opt.velocity_smoothness_weight
+                    ),
+                    n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
+                    initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
+                    site_offsets=self._offsets,
+                    problem=pose_problem,
                 )
             )
-
             flattened_errors, mean, std = self._get_error_stats(frame_error)
-            print(f"Mean: {mean}")
-            print(f"Standard deviation: {std}")
+            print(f"Mean: {mean:.6f} \t Standard deviation: {std:.6f}")
 
             mjx_model, mjx_data, self._offsets = compute_stac.offset_optimization(
-                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 kp_data,
                 self._offsets,
-                qposes,
+                qpos,
                 self.cfg.model.N_SAMPLE_FRAMES,
                 self._is_regularized,
                 self._body_site_idxs,
                 self.cfg.model.M_REG_COEF,
             )
+            q_init = qpos
 
         print("Final pose optimization", flush=True)
-        mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
+        mjx_data, qpos, body_pos, body_quat, marker_pos, frame_error = (
             compute_stac.pose_optimization(
-                self.stac_core_obj,
                 mjx_model,
                 mjx_data,
                 kp_data,
                 self._lb,
                 self._ub,
                 self._body_site_idxs,
-                self._indiv_parts,
+                q_init,
+                velocity_smoothness_weight=(
+                    self.cfg.stac.q_opt.velocity_smoothness_weight
+                ),
+                n_solver_max_iters=self.cfg.stac.q_opt.calibration_max_iterations,
+                initial_step_damping=self.cfg.stac.q_opt.initial_step_damping,
+                site_offsets=self._offsets,
+                problem=pose_problem,
             )
         )
 
         flattened_errors, mean, std = self._get_error_stats(frame_error)
-        print(f"Mean: {mean}")
-        print(f"Standard deviation: {std}")
+        print(f"Mean: {mean:.6f} \t Standard deviation: {std:.6f}")
         return self._package_data(
-            mjx_model,
-            np.array(qposes),
-            np.array(xposes),
-            np.array(xquats),
-            np.array(marker_sites),
+            np.array(qpos),
+            np.array(body_pos),
+            np.array(body_quat),
+            np.array(marker_pos),
             np.array(kp_data),
         )
 
-    def ik_only(
+    def _prepare_ik_state(
         self,
         kp_data: Float[Array, "n_frames n_keypoints_xyz"],
-        offsets: np.ndarray,
-    ) -> io.StacData:
-        """Run inverse kinematics only, using pre-fitted offsets.
+        offsets: Float[Array, "n_keypoints 3"],
+    ) -> tuple[mjx.Model, mjx.Data]:
+        """Load model state, apply offsets, and seed the root for IK."""
+        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
 
-        Stand-alone IK step for use after marker offsets have been determined
-        by fit_offsets(). Useful when running IK on a different dataset than
-        was used during fitting.
+        self._offsets = offsets
+        mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+        mjx_data = mjx.kinematics(mjx_model, mjx_data)
+        mjx_data = mjx.com_pos(mjx_model, mjx_data)
+
+        mjx_data = self._run_root_optimization(
+            mjx_model,
+            mjx_data,
+            kp_data,
+            n_solver_max_iters=self.cfg.stac.q_opt.ik_max_iterations,
+        )
+
+        return mjx_model, mjx_data
+
+    def _initialize_ik_chunk_qpos(
+        self,
+        mjx_model: mjx.Model,
+        mjx_data: mjx.Data,
+        kp_chunk: Float[Array, "solve_frames n_keypoints_xyz"],
+        solve_frames: int,
+        prev_overlap_q: Float[Array, "context_frames n_qpos"] | None,
+        coarse_stride: int,
+        coarse_problems: dict[int, stac_core.QOptProblem],
+        q_opt_cfg,
+        joint_mask: Array,
+        kp_mask: Array,
+        joint_reg_weights: Array,
+        velocity_smoothness_weight: float,
+    ) -> Float[Array, "solve_frames n_qpos"]:
+        """Warm-start a chunk, then refine that warm start with a coarse solve."""
+        root_kp_start = self._root_kp_idx * 3
+        # Reuse the previous chunk's overlap when possible to keep chunk boundaries smooth.
+        if prev_overlap_q is None:
+            q_init = jp.tile(mjx_data.qpos, (solve_frames, 1))
+            if self._root_kp_idx >= 0 and not self._fixed:
+                q_init = q_init.at[:, :3].set(
+                    kp_chunk[:, root_kp_start : root_kp_start + 3]
+                )
+        else:
+            init_overlap = min(int(prev_overlap_q.shape[0]), solve_frames)
+            q_init = jp.tile(prev_overlap_q[init_overlap - 1], (solve_frames, 1))
+            q_init = q_init.at[:init_overlap].set(prev_overlap_q[:init_overlap])
+            if self._root_kp_idx >= 0 and not self._fixed:
+                q_init = q_init.at[init_overlap:, :3].set(
+                    kp_chunk[init_overlap:, root_kp_start : root_kp_start + 3]
+                )
+
+        q_init = utils.normalize_freejoint_quat(q_init, self._freejoint)
+        if coarse_stride <= 0:
+            return q_init
+
+        coarse_idx = utils.coarse_keyframe_indices(solve_frames, coarse_stride)
+        coarse_frames = int(coarse_idx.shape[0])
+        coarse_max_frames = int(getattr(q_opt_cfg, "coarse_init_max_frames", 0))
+
+        # Solve sparse keyframes first, then interpolate them into the dense warm start.
+        if coarse_max_frames > 1 and coarse_frames > coarse_max_frames:
+            q_coarse_parts = []
+            q_prev_segment = None
+            for coarse_start in range(0, coarse_frames, coarse_max_frames):
+                coarse_stop = min(coarse_start + coarse_max_frames, coarse_frames)
+                segment_idx = coarse_idx[coarse_start:coarse_stop]
+                segment_frames = int(segment_idx.shape[0])
+                q_segment_init = q_init[segment_idx]
+                if q_prev_segment is not None:
+                    q_segment_init = jp.tile(q_prev_segment[-1], (segment_frames, 1))
+                    if self._root_kp_idx >= 0 and not self._fixed:
+                        q_segment_init = q_segment_init.at[:, :3].set(
+                            kp_chunk[segment_idx, root_kp_start : root_kp_start + 3]
+                        )
+
+                if segment_frames not in coarse_problems:
+                    coarse_problems[segment_frames] = stac_core.build_q_opt_problem(
+                        segment_frames,
+                        mjx_model,
+                        mjx_data,
+                        joint_mask,
+                        kp_mask,
+                        self._lb,
+                        self._ub,
+                        self._body_site_idxs,
+                        kp_chunk.shape[1],
+                        joint_reg_weights,
+                        velocity_smoothness_weight=velocity_smoothness_weight,
+                    )
+
+                q_segment = stac_core.q_opt(
+                    coarse_problems[segment_frames],
+                    q_segment_init,
+                    kp_chunk[segment_idx],
+                    n_solver_max_iters=q_opt_cfg.ik_max_iterations,
+                    initial_step_damping=q_opt_cfg.initial_step_damping,
+                )
+                q_coarse_parts.append(q_segment)
+                q_prev_segment = q_segment
+            q_coarse = jp.concatenate(q_coarse_parts, axis=0)
+            return utils.interpolate_qpos_from_keyframes(
+                q_coarse, coarse_idx, solve_frames, self._freejoint
+            )
+
+        if coarse_frames not in coarse_problems:
+            coarse_problems[coarse_frames] = stac_core.build_q_opt_problem(
+                coarse_frames,
+                mjx_model,
+                mjx_data,
+                joint_mask,
+                kp_mask,
+                self._lb,
+                self._ub,
+                self._body_site_idxs,
+                kp_chunk.shape[1],
+                joint_reg_weights,
+                velocity_smoothness_weight=velocity_smoothness_weight,
+            )
+
+        q_coarse = stac_core.q_opt(
+            coarse_problems[coarse_frames],
+            q_init[coarse_idx],
+            kp_chunk[coarse_idx],
+            n_solver_max_iters=q_opt_cfg.ik_max_iterations,
+            initial_step_damping=q_opt_cfg.initial_step_damping,
+        )
+
+        return utils.interpolate_qpos_from_keyframes(
+            q_coarse, coarse_idx, solve_frames, self._freejoint
+        )
+
+    @jaxtyped(typechecker=beartype)
+    def run_ik(
+        self,
+        kp_data: Float[Array, "n_frames n_keypoints_xyz"],
+        offsets: Float[Array, "n_keypoints 3"],
+    ) -> io.StacData:
+        """Run inverse kinematics using calibrated marker offsets.
+
+        Stand-alone IK step for use after marker offsets have been calibrated.
+        Useful when running IK on a different dataset than was used during
+        calibration.
 
         Args:
             kp_data: Flattened keypoint data in meters.
-            offsets: Marker offsets from a previous fit_offsets() run.
+            offsets: Marker offsets from a previous calibration run.
 
         Returns:
             Packaged STAC output data.
         """
-        batched_kp_data = utils.batch_kp_data(
-            kp_data,
-            self.cfg.stac.n_frames_per_clip,
-            continuous=self.cfg.stac.continuous,
-        )
+        mjx_model, mjx_data = self._prepare_ik_state(kp_data, offsets)
 
-        mjx_model, mjx_data = utils.mjx_load(self._mj_model)
+        chunk_size = int(self.cfg.stac.n_frames_per_clip)
+        q_opt_cfg = self.cfg.stac.q_opt
+        context_frames = int(q_opt_cfg.context_frames)
+        coarse_stride = int(q_opt_cfg.coarse_init_stride)
+        total_frames = int(kp_data.shape[0])
+        n_chunks = (total_frames + chunk_size - 1) // chunk_size
+        solve_frames = chunk_size + 2 * context_frames
 
-        def mjx_setup(kp_data, mj_model):
-            """Create MJX model/data and set offsets."""
-            mjx_model, mjx_data = utils.mjx_load(mj_model)
+        joint_mask = jp.ones(mjx_model.nq, dtype=bool)
+        kp_mask = jp.ones(kp_data.shape[1], dtype=bool)
+        joint_reg_weights = jp.zeros(mjx_model.nq)
+        velocity_smoothness_weight = q_opt_cfg.velocity_smoothness_weight
+        problems = {}
+        coarse_problems = {}
 
-            mjx_model = utils.set_site_pos(mjx_model, offsets, self._body_site_idxs)
+        all_qpos, all_body_pos, all_body_quat = [], [], []
+        all_marker_pos, all_errors = [], []
+        prev_overlap_q = None
 
-            mjx_data = mjx.kinematics(mjx_model, mjx_data)
-            mjx_data = mjx.com_pos(mjx_model, mjx_data)
-
-            return mjx_model, mjx_data
-
-        mjx_model, mjx_data = jax.vmap(mjx_setup, in_axes=(0, None))(
-            batched_kp_data, self._mj_model
-        )
-
-        if self._root_kp_idx == -1:
-            print(
-                "Missing or invalid ROOT_OPTIMIZATION_KEYPOINT, skipping root_optimization()"
+        for chunk_idx, start in enumerate(range(0, total_frames, chunk_size)):
+            # Every chunk is padded to the same solve shape so compiled q_opt calls are reused.
+            kp_chunk, n_frames_to_output = utils.make_context_window(
+                kp_data, start, chunk_size, context_frames, solve_frames
             )
-        elif self._mj_model.jnt_type[0] in (
-            mujoco.mjtJoint.mjJNT_FREE,
-            mujoco.mjtJoint.mjJNT_SLIDE,
-        ):
-            vmap_root_opt = jax.vmap(
-                compute_stac.root_optimization,
-                in_axes=(None, 0, 0, 0, None, None, None, None, None),
-            )
-            mjx_data = vmap_root_opt(
-                self.stac_core_obj,
+            if chunk_idx % 100 == 0 or chunk_idx == n_chunks - 1:
+                print(f"Clip {chunk_idx + 1}/{n_chunks}")
+
+            if solve_frames not in problems:
+                problems[solve_frames] = stac_core.build_q_opt_problem(
+                    solve_frames,
+                    mjx_model,
+                    mjx_data,
+                    joint_mask,
+                    kp_mask,
+                    self._lb,
+                    self._ub,
+                    self._body_site_idxs,
+                    kp_data.shape[1],
+                    joint_reg_weights,
+                    velocity_smoothness_weight=velocity_smoothness_weight,
+                )
+
+            q_init = self._initialize_ik_chunk_qpos(
                 mjx_model,
                 mjx_data,
-                batched_kp_data,
-                self._root_kp_idx,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._trunk_kps,
-            )
-        else:
-            print(
-                "ROOT_OPTIMIZATION_KEYPOINT specified but model has fixed root, skipping root_optimization()"
+                kp_chunk,
+                solve_frames,
+                prev_overlap_q,
+                coarse_stride,
+                coarse_problems,
+                q_opt_cfg,
+                joint_mask,
+                kp_mask,
+                joint_reg_weights,
+                velocity_smoothness_weight,
             )
 
-        vmap_pose_opt = jax.vmap(
-            compute_stac.pose_optimization,
-            in_axes=(None, 0, 0, 0, None, None, None, None),
-        )
-        mjx_data, qposes, xposes, xquats, marker_sites, frame_time, frame_error = (
-            vmap_pose_opt(
-                self.stac_core_obj,
-                mjx_model,
-                mjx_data,
-                batched_kp_data,
-                self._lb,
-                self._ub,
-                self._body_site_idxs,
-                self._indiv_parts,
+            _, qpos, body_pos, body_quat, marker_pos, marker_error = (
+                compute_stac.pose_optimization(
+                    mjx_model,
+                    mjx_data,
+                    kp_chunk,
+                    self._lb,
+                    self._ub,
+                    self._body_site_idxs,
+                    q_init,
+                    problem=problems[solve_frames],
+                    velocity_smoothness_weight=velocity_smoothness_weight,
+                    n_solver_max_iters=q_opt_cfg.ik_max_iterations,
+                    initial_step_damping=q_opt_cfg.initial_step_damping,
+                )
             )
-        )
+            output_start = context_frames
+            q_output = qpos[output_start : output_start + n_frames_to_output]
+            all_qpos.append(q_output)
+            all_body_pos.append(
+                body_pos[output_start : output_start + n_frames_to_output]
+            )
+            all_body_quat.append(
+                body_quat[output_start : output_start + n_frames_to_output]
+            )
+            all_marker_pos.append(
+                marker_pos[output_start : output_start + n_frames_to_output]
+            )
+            all_errors.append(
+                marker_error[output_start : output_start + n_frames_to_output]
+            )
 
-        flattened_errors, mean, std = self._get_error_stats(frame_error)
-        print(f"Mean: {mean}")
-        print(f"Standard deviation: {std}")
+            init_overlap = min(context_frames, int(q_output.shape[0]))
+            prev_overlap_q = q_output[-init_overlap:] if init_overlap > 0 else None
+
+            mjx_data = mjx_data.replace(qpos=q_output[-1])
+            mjx_data = utils.kinematics(mjx_model, mjx_data)
+            mjx_data = utils.com_pos(mjx_model, mjx_data)
+
+        qpos = jp.concatenate(all_qpos, axis=0)
+        body_pos = jp.concatenate(all_body_pos, axis=0)
+        body_quat = jp.concatenate(all_body_quat, axis=0)
+        marker_pos = jp.concatenate(all_marker_pos, axis=0)
+        frame_error = jp.concatenate(all_errors, axis=0)
+
+        _, mean, std = self._get_error_stats(frame_error)
+        print(f"Mean: {mean:.6f} \t Standard deviation: {std:.6f}")
 
         return self._package_data(
-            mjx_model,
-            np.array(qposes),
-            np.array(xposes),
-            np.array(xquats),
-            np.array(marker_sites),
-            np.array(batched_kp_data),
-            batched=True,
+            np.array(qpos),
+            np.array(body_pos),
+            np.array(body_quat),
+            np.array(marker_pos),
+            np.array(kp_data),
         )
 
     def _package_data(
         self,
-        mjx_model: mjx.Model,
-        qposes: np.ndarray,
-        xposes: np.ndarray,
-        xquats: np.ndarray,
-        marker_sites: np.ndarray,
+        qpos: np.ndarray,
+        body_pos: np.ndarray,
+        body_quat: np.ndarray,
+        marker_pos: np.ndarray,
         kp_data: np.ndarray,
-        batched: bool = False,
     ) -> io.StacData:
         """Package optimization results into a StacData structure.
 
         Args:
-            mjx_model: MJX model (used to extract offsets when batched).
-            qposes: Generalized coordinates per frame.
-            xposes: Body positions per frame.
-            xquats: Body quaternions per frame.
-            marker_sites: Marker site positions per frame.
-            kp_data: Keypoint data (may be batched).
-            batched: Whether the data has a batch dimension.
+            qpos: Generalized coordinates per frame.
+            body_pos: Body positions per frame.
+            body_quat: Body quaternions per frame.
+            marker_pos: Marker site positions per frame.
+            kp_data: Keypoint data.
 
         Returns:
             Packaged STAC output data.
         """
-        if batched:
-            get_batch_offsets = jax.vmap(utils.get_site_pos, in_axes=(0, None))
-            offsets = get_batch_offsets(mjx_model, self._body_site_idxs)[0]
-            qposes = qposes.reshape(-1, qposes.shape[-1])
-            xposes = xposes.reshape(-1, *xposes.shape[2:], order="F")
-            xquats = xquats.reshape(-1, *xquats.shape[2:], order="F")
-            marker_sites = marker_sites.reshape(-1, *marker_sites.shape[2:])
-        else:
-            offsets = self._offsets
-
-        offsets = np.array(offsets)
+        offsets = self._offsets
         kp_data = kp_data.reshape(-1, kp_data.shape[-1])
 
         return io.StacData(
-            qpos=qposes,
-            xpos=xposes,
-            xquat=xquats,
-            marker_sites=marker_sites,
+            qpos=qpos,
+            xpos=body_pos,
+            xquat=body_quat,
+            marker_sites=marker_pos,
             offsets=offsets,
             names_qpos=self._part_names,
             names_xpos=self._body_names,
@@ -568,9 +723,9 @@ class Stac:
 
     def render(
         self,
-        qposes: np.ndarray,
+        qpos: np.ndarray,
         kp_data: np.ndarray,
-        offsets: np.ndarray,
+        offsets: Float[Array, "n_keypoints 3"],
         n_frames: int,
         save_path: str | Path,
         start_frame: int = 0,
@@ -582,7 +737,7 @@ class Stac:
         """Render fitted results as a video.
 
         Args:
-            qposes: Joint angles per frame.
+            qpos: Joint angles per frame.
             kp_data: Mocap keypoint data per frame.
             offsets: Marker offsets.
             n_frames: Number of frames to render.
@@ -597,11 +752,11 @@ class Stac:
             List of rendered RGB frames.
 
         Raises:
-            ValueError: If qposes/kp_data lengths mismatch or frame range is invalid.
+            ValueError: If qpos/kp_data lengths mismatch or frame range is invalid.
         """
-        if qposes.shape[0] != kp_data.shape[0]:
+        if qpos.shape[0] != kp_data.shape[0]:
             raise ValueError(
-                f"Length of qposes ({qposes.shape[0]}) is not equal to the length of kp_data({kp_data.shape[0]})"
+                f"Length of qpos ({qpos.shape[0]}) is not equal to the length of kp_data({kp_data.shape[0]})"
             )
         if start_frame < 0 or start_frame > kp_data.shape[0]:
             raise ValueError(
@@ -609,7 +764,7 @@ class Stac:
             )
         if start_frame + n_frames > kp_data.shape[0]:
             raise ValueError(
-                f"start_frame + n_frames ({start_frame} + {n_frames}) must be less than the length of given qposes and kp_data ({kp_data.shape[0]})"
+                f"start_frame + n_frames ({start_frame} + {n_frames}) must be less than the length of given qpos and kp_data ({kp_data.shape[0]})"
             )
 
         render_mj_model, keypoint_site_idxs = self._build_render_model(
@@ -636,14 +791,14 @@ class Stac:
 
         renderer = mujoco.Renderer(render_mj_model, height=height, width=width)
 
-        kp_data = kp_data[: qposes.shape[0]]
+        kp_data = kp_data[: qpos.shape[0]]
 
         kp_data = kp_data[start_frame : start_frame + n_frames]
-        qposes = qposes[start_frame : start_frame + n_frames]
+        qpos = qpos[start_frame : start_frame + n_frames]
 
         frames = []
         with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
-            for qpos, kps in tqdm(zip(qposes, kp_data)):
+            for qpos, kps in tqdm(zip(qpos, kp_data)):
                 # Set keypoints--they're in cartesian space, but since they're attached to the worldbody they're the same as offsets
                 render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
                 mj_data.qpos = qpos

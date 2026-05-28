@@ -35,7 +35,7 @@ def viz_stac(
         Tuple of (config, list of rendered RGB frames).
     """
     cfg, d = io.load_stac_data(data_path)
-    qposes = d.qpos
+    qpos = d.qpos
     kp_data = d.kp_data
     kp_names = d.kp_names
     offsets = d.offsets
@@ -48,7 +48,7 @@ def viz_stac(
     stac = Stac(xml_path, cfg, kp_names)
 
     return cfg, stac.render(
-        qposes,
+        qpos,
         kp_data,
         offsets,
         n_frames,
