@@ -5,8 +5,8 @@ coverage:
         target: auto
         threshold: 1%
         informational: true # Project coverage for stats only.
-    patch: #  Only measures lines adjusted in the pull request.
+    patch: # Only measures lines adjusted in the pull request.
       default:
-        target: 0%
+        target: 80%
         threshold: 5%
-        informational: false # true: Patch coverage for stats only.
+        informational: true # Unit tests are now in place; informational while the team adjusts.
