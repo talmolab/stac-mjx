@@ -228,9 +228,22 @@ def m_opt(
 
 
 # TODO: put these values in config, move to just optax by implementing solver loop
-opt = optax.sgd(learning_rate=5e-4, momentum=0.9, nesterov=False)
+opt = optax.sgd(learning_rate=1e-10, momentum=0.9, nesterov=False)
 
 q_solver = ProjectedGradient(
-    fun=q_loss, projection=projection_box, maxiter=250, tol=1e-10
+    # stepsize=0.0 -> jaxopt uses backtracking line search (+ FISTA
+    # acceleration) instead of one fixed step for every DOF. A fixed
+    # stepsize=0.1 (previous value) was tuned against small keypoint sets
+    # (e.g. v18's 5 keypoints) and overshoots/saturates high-gradient shared
+    # DOFs -- e.g. a root translation DOF summed over v21's 19 keypoints --
+    # pushing them to their joint-range limit every frame regardless of
+    # whether the data actually calls for it (verified: v21's sh_tx/ty/tz
+    # saturated at whatever range was given, +-0.5mm or +-10mm, with the
+    # fixed stepsize; with stepsize=0.0 they settle within +-3mm even when
+    # allowed +-10mm, and per-frame marker error is unchanged or better).
+    # Costs ~2x runtime per frame (extra function evals for the line search)
+    # -- acceptable given it fixes silent optimizer-induced fit corruption
+    # rather than just moving where it saturates.
+    fun=q_loss, projection=projection_box, maxiter=1200, tol=1e-12, stepsize=0.0,
 )
 m_solver = OptaxSolver(opt=opt, fun=m_loss, maxiter=2000)

@@ -1,0 +1,15 @@
+model: mouse_arm_hand_v18
+
+fit_offsets_path: "v18_fit.h5"
+ik_only_path: "v18_ik.h5"
+data_path: ""    # set per-clip in run script
+num_clips: 1
+n_fit_frames: 100
+skip_fit_offsets: false
+skip_ik_only: false
+infer_qvels: true
+n_frames_per_clip: 100
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

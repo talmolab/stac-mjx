@@ -1,0 +1,55 @@
+MJCF_PATH: "/mnt/vast/niyo/stac-mjx/models/mouse_forelimb_right_janelia_arm_hand_v17.xml"
+
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+N_ITERS: 6
+
+KP_NAMES:
+  - Shoulder
+  - Elbow
+  - Wrist
+  - KnuckleC
+  - KnuckleL
+
+KEYPOINT_MODEL_PAIRS:
+  Shoulder: humerus
+  Elbow: ulna
+  Wrist: wrist
+  KnuckleC: wrist
+  KnuckleL: wrist
+
+KEYPOINT_INITIAL_OFFSETS:
+  Shoulder: 0. 0. 0.
+  Elbow: 0. 0. 0.
+  Wrist: 0. 0. 0.
+  # Eric's hand-tuned offsets via the dash app, locked into the v17 XML site pos already.
+  # STAC reads these as the initial offset for fit_offsets — stay at the XML value.
+  KnuckleC: -0.0018  0.0032 -0.0009
+  KnuckleL: -0.0001  0.0029 -0.0019
+
+ROOT_OPTIMIZATION_KEYPOINT: Wrist
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+ - "Wrist"
+ - "KnuckleC"
+ - "KnuckleL"
+
+KEYPOINT_COLOR_PAIRS:
+  Shoulder: 1 0 0 1
+  Elbow:    1 0.6 0 1
+  Wrist:    1 1 0 1
+  KnuckleC: 0 1 1 1
+  KnuckleL: 1 0 1 1
+
+SCALE_FACTOR: 1.0
+MOCAP_SCALE_FACTOR: 1.0
+
+SITES_TO_REGULARIZE:
+   - Wrist
+   - KnuckleC
+   - KnuckleL
+
+RENDER_FPS: 30
+N_SAMPLE_FRAMES: 50
+M_REG_COEF: 0

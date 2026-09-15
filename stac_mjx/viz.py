@@ -7,6 +7,7 @@ from stac_mjx.stac import Stac
 from stac_mjx import io
 from omegaconf import DictConfig
 from typing import Union, Dict
+import mujoco as mj
 
 
 def viz_stac(
@@ -51,6 +52,11 @@ def viz_stac(
     # initialize stac to create mj_model with scaling and marker body sites according to config
     # Set the learned offsets for body sites manually
     stac = Stac(xml_path, cfg, kp_names)
+
+    scene_option = mj.MjvOption()
+    scene_option.flags[mj.mjtVisFlag.mjVIS_JOINT] = 0
+    scene_option.flags[mj.mjtVisFlag.mjVIS_ACTUATOR] = 0
+    scene_option.flags[mj.mjtVisFlag.mjVIS_LIGHT] = 0
 
     return cfg, stac.render(
         qposes,

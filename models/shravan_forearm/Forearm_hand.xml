@@ -1,0 +1,178 @@
+<?xml version="1.0" ?>
+<mujoco>
+  <worldbody>
+    <body name="Armature" pos="0.0 0.0 0.0" quat="1.0 0.0 0.0 0.0">
+      <body name="humerus_right" pos="-0.007198303006589413 -0.014188741333782673 0.07143588364124298" quat="0.08093014359474182 -0.21296805143356323 0.6348454356193542 -0.738286018371582">
+        <joint name="rx_humerus_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+        <joint name="ry_humerus_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="0.0 1.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+        <joint name="rz_humerus_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="0.0 0.0 1.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+        <body name="ulna_right" pos="-4.656612873077393e-10 0.010368251241743565 2.7939677238464355e-09" quat="0.761254608631134 0.6444835662841797 -0.05247258022427559 -0.04877479746937752">
+          <joint name="rx_ulna_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+          <body name="radius_right" pos="0.0005223327316343784 -9.856186807155609e-06 -0.00015130185056477785" quat="0.992009162902832 0.02553595043718815 0.10974417626857758 0.05676215887069702">
+            <joint name="ry_radius_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="0.0 1.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+            <body name="N_L_C_right" pos="0.0008239732123911381 0.01150410808622837 -0.0004082144587300718" quat="0.9855083227157593 -0.16401995718479156 -0.035953864455223083 -0.024044625461101532">
+              <joint name="rx_N_L_C_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+              <joint name="ry_N_L_C_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="0.0 1.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+              <joint name="rz_N_L_C_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="0.0 0.0 1.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+              <body name="Metacarpal_hand_1_right" pos="-0.0012866663746535778 0.0003781308769248426 0.00083781941793859" quat="0.8694460988044739 -0.06482356041669846 0.14071635901927948 0.46910586953163147">
+                <joint name="rx_Metacarpal_hand_1_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                <body name="Phalanx_hand_1_1_right" pos="-2.3283064365386963e-09 0.0006753604393452406 4.3655745685100555e-09" quat="0.9412590861320496 0.25909334421157837 0.2048787921667099 -0.07019030302762985">
+                  <joint name="rx_Phalanx_hand_1_1_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                  <body name="Phalanx_hand_2_1_right" pos="-4.190951585769653e-09 0.000659746234305203 1.8044374883174896e-09" quat="0.9700451493263245 -0.22801433503627777 0.06510783731937408 0.052753351628780365">
+                    <joint name="rx_Phalanx_hand_2_1_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                    <geom name="Phalanx_hand_2_1_right_bone" mesh="Phalanx_hand_2_1_right_bone" pos="-1.3737007975578308e-08 2.2118911147117615e-09 1.5779733075760305e-08" quat="0.5377950072288513 -0.30074453353881836 -0.394574910402298 0.6816450357437134" type="mesh" material="bone" group="0"/>
+                  </body>
+                  <geom name="Phalanx_hand_1_1_right_bone" mesh="Phalanx_hand_1_1_right_bone" pos="-1.7462298274040222e-08 7.799826562404633e-09 2.136221155524254e-08" quat="0.44284218549728394 -0.3491652011871338 -0.20818118751049042 0.7991464734077454" type="mesh" material="bone" group="0"/>
+                </body>
+                <geom name="Sesamoid_hand_b_right_bone" mesh="Sesamoid_hand_b_right_bone" pos="-9.510060772299767e-05 0.0006985221989452839 -0.0003126088413409889" quat="0.6060397028923035 -0.06480149924755096 -0.28776922821998596 0.7387188673019409" type="mesh" material="bone" group="0"/>
+                <geom name="Multangular_right_bone" mesh="Multangular_right_bone" pos="-7.450580596923828e-09 -2.3283064365386963e-10 5.704350769519806e-09" quat="0.6060397624969482 -0.064801424741745 -0.2877688407897949 0.7387189269065857" type="mesh" material="bone" group="0"/>
+                <geom name="Metacarpal_hand_1_right_bone" mesh="Metacarpal_hand_1_right_bone" pos="-1.0419171303510666e-08 4.656612873077393e-10 1.9848812371492386e-08" quat="0.6060397028923035 -0.06480149924755096 -0.28776922821998596 0.7387188673019409" type="mesh" material="bone" group="0"/>
+              </body>
+              <body name="Metacarpal_hand_2_right" pos="-0.0010377089492976665 0.0003532748087309301 0.0006854033563286066" quat="0.9664426445960999 0.059026699513196945 0.20537450909614563 0.1425686776638031">
+                <joint name="rx_Metacarpal_hand_2_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                <body name="Phalanx_hand_1_2_right" pos="0.0 0.0025264862924814224 2.3355823941528797e-09" quat="0.9702768325805664 -0.2230159491300583 0.013910632580518723 0.09291502088308334">
+                  <joint name="rx_Phalanx_hand_1_2_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                  <body name="Phalanx_hand_2_2_right" pos="4.656612873077393e-10 0.001935172127559781 6.100890459492803e-09" quat="0.6904547214508057 -0.7004553079605103 0.16852742433547974 0.06506269425153732">
+                    <joint name="rx_Phalanx_hand_2_2_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                    <body name="Phalanx_hand_3_2_right" pos="-3.2232492230832577e-09 0.0012717497302219272 -2.4010660126805305e-09" quat="0.9922130703926086 0.12442358583211899 0.005361741408705711 0.0017839273205026984">
+                      <joint name="rx_Phalanx_hand_3_2_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                      <geom name="Phalanx_hand_3_2_right_bone" mesh="Phalanx_hand_3_2_right_bone" pos="-1.2580130714923143e-08 -3.6197889130562544e-09 -6.628397386521101e-09" quat="0.3205825388431549 0.0563364252448082 -0.8533391952514648 0.4072656035423279" type="mesh" material="bone" group="0"/>
+                    </body>
+                    <geom name="Phalanx_hand_2_2_right_bone" mesh="Phalanx_hand_2_2_right_bone" pos="2.2264430299401283e-09 6.195250534801744e-09 6.199115887284279e-09" quat="0.3149254024028778 0.09949176758527756 -0.895548403263092 0.2981887459754944" type="mesh" material="bone" group="0"/>
+                  </body>
+                  <geom name="Phalanx_hand_1_2_right_bone" mesh="Phalanx_hand_1_2_right_bone" pos="1.7462298274040222e-09 -3.4924596548080444e-10 6.373738870024681e-09" quat="0.41865482926368713 -0.04337691143155098 -0.3499208390712738 0.8369002342224121" type="mesh" material="bone" group="0"/>
+                </body>
+                <geom name="Sesamoid_hand_j_right_bone" mesh="Sesamoid_hand_j_right_bone" pos="-0.0002882283879444003 0.0023140995763242245 -0.00021051765361335129" quat="0.3236443102359772 -0.09129954129457474 -0.15108492970466614 0.9295655488967896" type="mesh" material="bone" group="0"/>
+                <geom name="Sesamoid_hand_i_right_bone" mesh="Sesamoid_hand_i_right_bone" pos="7.264199666678905e-05 0.002207196317613125 -0.00034684670390561223" quat="0.3236443102359772 -0.09129954129457474 -0.15108492970466614 0.9295655488967896" type="mesh" material="bone" group="0"/>
+                <geom name="Metacarpal_hand_2_right_bone" mesh="Metacarpal_hand_2_right_bone" pos="4.656612873077393e-10 -1.6298145055770874e-09 -2.08092387765646e-09" quat="0.3236444294452667 -0.09129958599805832 -0.15108466148376465 0.9295656085014343" type="mesh" material="bone" group="0"/>
+              </body>
+              <body name="Metacarpal_hand_3_right" pos="-0.0006394051015377045 0.0008077737293206155 0.0003330486360937357" quat="0.9610357880592346 0.019371971487998962 0.26781222224235535 0.0656629428267479">
+                <joint name="rx_Metacarpal_hand_3_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                <body name="Phalanx_hand_1_3_right" pos="0.0 0.0029940526001155376 2.3283064365386963e-09" quat="0.9113356471061707 -0.3853786289691925 0.11947517842054367 0.08170906454324722">
+                  <joint name="rx_Phalanx_hand_1_3_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                  <body name="Phalanx_hand_2_3_right" pos="7.8580342233181e-10 0.0021216566674411297 -3.790773916989565e-09" quat="0.6829209327697754 -0.7289433479309082 -0.017449578270316124 0.04422789439558983">
+                    <joint name="rx_Phalanx_hand_2_3_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                    <body name="Phalanx_hand_3_3_right" pos="3.6670826375484467e-09 0.0014590879436582327 3.6088749766349792e-09" quat="0.9649937748908997 0.2602382004261017 0.03198396787047386 -0.00633679423481226">
+                      <joint name="rx_Phalanx_hand_3_3_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                      <geom name="Phalanx_hand_3_3_right_bone" mesh="Phalanx_hand_3_3_right_bone" pos="3.725290298461914e-09 1.6298145055770874e-09 -2.9976945370435715e-09" quat="0.3621242940425873 0.013692897744476795 -0.8684067130088806 0.3384499251842499" type="mesh" material="bone" group="0"/>
+                    </body>
+                    <body>
+                      <geom name="Phalanx_hand_2_3_right_bone" mesh="Phalanx_hand_2_3_right_bone" pos="7.0140231400728226e-09 6.948539521545172e-09 6.461050361394882e-09" quat="0.37580403685569763 0.11277425289154053 -0.9145892262458801 0.09787677228450775" type="mesh" material="bone" group="0"/>
+                      <geom name="Sesamoid_hand_m_right_bone" mesh="Sesamoid_hand_m_right_bone" pos="-0.009600837714970112 0.017646538093686104 0.010071932338178158" quat="1.0 -1.86264600188224e-07 -1.9371513815258368e-07 -1.6763866739211153e-08" type="mesh" material="bone" group="0"/>
+                    </body>
+                  </body>
+                  <geom name="Phalanx_hand_1_3_right_bone" mesh="Phalanx_hand_1_3_right_bone" pos="5.704350769519806e-09 1.3969838619232178e-09 2.6193447411060333e-10" quat="0.31856241822242737 -0.1581815779209137 -0.5548154711723328 0.7521146535873413" type="mesh" material="bone" group="0"/>
+                </body>
+                <geom name="Sesamoid_hand_h_right_bone" mesh="Sesamoid_hand_h_right_bone" pos="-0.00023933674674481153 0.0026463146787136793 -0.00015547324437648058" quat="0.23418956995010376 -0.13173097372055054 -0.19063882529735565 0.9441710710525513" type="mesh" material="bone" group="0"/>
+                <geom name="Sesamoid_hand_g_right_bone" mesh="Sesamoid_hand_g_right_bone" pos="9.919144213199615e-05 0.0026378417387604713 -0.0002586571790743619" quat="0.23418956995010376 -0.13173097372055054 -0.19063882529735565 0.9441710710525513" type="mesh" material="bone" group="0"/>
+                <geom name="Metacarpal_hand_3_right_bone" mesh="Metacarpal_hand_3_right_bone" pos="4.190951585769653e-09 3.4924596548080444e-09 -4.307366907596588e-09" quat="0.23418962955474854 -0.13173124194145203 -0.1906386911869049 0.9441710710525513" type="mesh" material="bone" group="0"/>
+              </body>
+              <body name="Metacarpal_hand_4_right" pos="-0.0002939295955002308 0.0008956939564086497 0.00010531593579798937" quat="0.8536434769630432 -0.053417764604091644 0.5180997848510742 -0.003457058686763048">
+                <joint name="rx_Metacarpal_hand_4_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                <body name="Phalanx_hand_1_4_right" pos="-3.6088749766349792e-09 0.002738404553383589 1.7462298274040222e-09" quat="0.8843016624450684 -0.4454006254673004 -0.12204150855541229 -0.06880953162908554">
+                  <joint name="rx_Phalanx_hand_1_4_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                  <body name="Phalanx_hand_2_4_right" pos="9.313225746154785e-10 0.0021024688612669706 1.2514647096395493e-09" quat="0.7246006727218628 -0.6871841549873352 0.035348862409591675 0.038500502705574036">
+                    <joint name="rx_Phalanx_hand_2_4_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                    <body name="Phalanx_hand_3_4_right" pos="3.3760443329811096e-09 0.0014054172206670046 2.735760062932968e-09" quat="0.9227254986763 0.3434157967567444 -0.1570330709218979 0.07735565304756165">
+                      <joint name="rx_Phalanx_hand_3_4_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                      <geom name="Phalanx_hand_3_4_right_bone" mesh="Phalanx_hand_3_4_right_bone" pos="-1.6298145055770874e-09 -1.280568540096283e-09 -4.132743924856186e-09" quat="0.3974566161632538 -0.16386625170707703 -0.8328204154968262 0.3486921787261963" type="mesh" material="bone" group="0"/>
+                    </body>
+                    <body>
+                      <geom name="Phalanx_hand_2_4_right_bone" mesh="Phalanx_hand_2_4_right_bone" pos="2.0372681319713593e-10 -9.1313268058002e-09 -1.1641532182693481e-10" quat="0.2652638256549835 -0.005043393466621637 -0.963300883769989 0.040756773203611374" type="mesh" material="bone" group="0"/>
+                      <geom name="Sesamoid_hand_l_right_bone" mesh="Sesamoid_hand_l_right_bone" pos="-0.00013152202882338315 0.0015615944284945726 3.2363407171942526e-06" quat="1.0 -4.1723222921064007e-07 1.4901248235332787e-08 1.3783565577796253e-07" type="mesh" material="bone" group="0"/>
+                    </body>
+                  </body>
+                  <geom name="Phalanx_hand_1_4_right_bone" mesh="Phalanx_hand_1_4_right_bone" pos="4.6566128730773926e-09 2.2118911147117615e-09 -2.6047928258776665e-09" quat="0.22122715413570404 -0.14741139113903046 -0.6608185768127441 0.7018883228302002" type="mesh" material="bone" group="0"/>
+                </body>
+                <geom name="Sesamoid_hand_f_right_bone" mesh="Sesamoid_hand_f_right_bone" pos="-0.00010717520490288734 0.0023600601125508547 -0.00026555440854281187" quat="0.09762340784072876 -0.3600209057331085 -0.2885972857475281 0.881797194480896" type="mesh" material="bone" group="0"/>
+                <geom name="Sesamoid_hand_e_right_bone" mesh="Sesamoid_hand_e_right_bone" pos="0.00026484497357159853 0.002384277293458581 -0.00015140289906412363" quat="0.09762340784072876 -0.3600209057331085 -0.2885972857475281 0.881797194480896" type="mesh" material="bone" group="0"/>
+                <geom name="Metacarpal_hand_4_right_bone" mesh="Metacarpal_hand_4_right_bone" pos="-3.7834979593753815e-09 2.6775524020195007e-09 9.313225746154785e-10" quat="0.09762366861104965 -0.3600209355354309 -0.288597047328949 0.881797194480896" type="mesh" material="bone" group="0"/>
+                <geom name="Sesamoid_hand_a_right_bone" mesh="Sesamoid_hand_a_right_bone" pos="0.00010335509432479739 9.248079732060432e-05 -0.0005145266186445951" quat="0.09762340784072876 -0.3600209057331085 -0.2885972857475281 0.881797194480896" type="mesh" material="bone" group="0"/>
+              </body>
+              <body name="Metacarpal_hand_5_right" pos="-0.0002781725488603115 0.0007616488146595657 -0.00047981191892176867" quat="0.9006679654121399 -0.07873637974262238 0.42058828473091125 -0.0755203366279602">
+                <joint name="rx_Metacarpal_hand_5_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                <body name="Phalanx_hand_1_5_right" pos="2.7939677238464355e-09 0.0015071528032422066 -7.2177499532699585e-09" quat="0.8920971155166626 -0.2958480715751648 0.21937993168830872 -0.2617424726486206">
+                  <joint name="rx_Phalanx_hand_1_5_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                  <body name="Phalanx_hand_2_5_right" pos="2.7939677238464355e-09 0.0016548956045880914 -2.3283064365386963e-10" quat="0.7701461315155029 -0.6260324120521545 -0.11916793882846832 -0.027521386742591858">
+                    <joint name="rx_Phalanx_hand_2_5_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                    <body name="Phalanx_hand_3_5_right" pos="1.1641532182693481e-09 0.0009782090783119202 -4.743924364447594e-09" quat="0.9202215671539307 0.3800574541091919 0.0036208066157996655 -0.09346402436494827">
+                      <joint name="rx_Phalanx_hand_3_5_right" type="hinge" limited="false" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-180.00000500895632 180.00000500895632" damping="9.999999747378752e-06"/>
+                      <geom name="Phalanx_hand_3_5_right_bone" mesh="Phalanx_hand_3_5_right_bone" pos="9.313225746154785e-10 7.275957614183426e-09 5.238689482212067e-09" quat="0.019678175449371338 0.20763327181339264 0.8132184147834778 -0.5433019995689392" type="mesh" material="bone" group="0"/>
+                    </body>
+                    <body>
+                      <geom name="Phalanx_hand_2_5_right_bone" mesh="Phalanx_hand_2_5_right_bone" pos="-4.656612873077393e-10 1.1641532182693481e-09 -7.0140231400728226e-09" quat="0.11452791839838028 -0.2725869417190552 -0.9354920983314514 0.1934794932603836" type="mesh" material="bone" group="0"/>
+                      <geom name="Sesamoid_hand_k_right_bone" mesh="Sesamoid_hand_k_right_bone" pos="0.0005175815895199776 0.0008939142571762204 -0.00011641428136499599" quat="1.0 -2.4586918812019576e-07 -1.7136335372924805e-07 -4.842880585442799e-08" type="mesh" material="bone" group="0"/>
+                    </body>
+                  </body>
+                  <geom name="Phalanx_hand_1_5_right_bone" mesh="Phalanx_hand_1_5_right_bone" pos="-9.313225746154785e-10 6.984919309616089e-09 1.862645149230957e-09" quat="0.18860068917274475 0.330432653427124 0.6054871678352356 -0.699020266532898" type="mesh" material="bone" group="0"/>
+                </body>
+                <geom name="Sesamoid_hand_d_right_bone" mesh="Sesamoid_hand_d_right_bone" pos="-0.0001430489355698228 0.0012178976321592927 -0.00017739005852490664" quat="0.049786947667598724 -0.24411141872406006 -0.2882368266582489 0.9245812296867371" type="mesh" material="bone" group="0"/>
+                <geom name="Sesamoid_hand_c_right_bone" mesh="Sesamoid_hand_c_right_bone" pos="0.00019097048789262772 0.001162791159003973 -0.0002698748139664531" quat="0.049786947667598724 -0.24411141872406006 -0.2882368266582489 0.9245812296867371" type="mesh" material="bone" group="0"/>
+                <geom name="Metacarpal_hand_5_right_bone" mesh="mesh.260_bone" pos="6.6356733441352844e-09 4.3655745685100555e-09 -5.005858838558197e-09" quat="0.04978715255856514 -0.24411141872406006 -0.2882365584373474 0.9245812892913818" type="mesh" material="bone" group="0"/>
+              </body>
+              <geom name="Triangular_right_bone" mesh="Triangular_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+              <geom name="Pisiform_right_bone" mesh="Pisiform_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+              <geom name="Navicular_lunate_right_bone" mesh="Navicular_lunate_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+              <geom name="Hamate_right_bone" mesh="Hamate_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+              <geom name="Falsiformis_right_bone" mesh="Falsiformis_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+              <geom name="Centrale_right_bone" mesh="Centrale_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+              <geom name="Capitate_right_bone" mesh="Capitate_right_bone" pos="-3.026798367500305e-09 -3.550667315721512e-09 3.725290298461914e-09" quat="0.2166748195886612 0.14331692457199097 -0.1474318653345108 0.9543459415435791" type="mesh" material="bone" group="0"/>
+            </body>
+            <geom name="Sesamoid_elbow_right_bone" mesh="Sesamoid_elbow_right_bone" pos="0.0006637973710894585 0.0005699982866644859 0.0002006471622735262" quat="0.2546878457069397 0.06784351170063019 1.138278207690746e-06 0.9646405577659607" type="mesh" material="bone" group="0"/>
+            <geom name="radius_right_bone" mesh="radius_right_bone" pos="-0.000537727028131485 7.522315718233585e-05 3.185251262038946e-05" quat="0.25468772649765015 0.06784359365701675 8.264343591690704e-07 0.9646406173706055" type="mesh" material="bone" group="0"/>
+          </body>
+          <geom name="ulna_right_bone" mesh="ulna_right_bone" pos="2.3283064365386963e-09 -2.561137080192566e-09 1.4202669262886047e-08" quat="0.19616495072841644 0.17966899275779724 0.007168560288846493 0.9639434814453125" type="mesh" material="bone" group="0"/>
+        </body>
+        <geom name="humerus_right_bone" mesh="humerus_right_bone" pos="2.7939677238464355e-09 -3.259629011154175e-09 2.0954757928848267e-09" quat="0.08093014359474182 0.21296805143356323 -0.6348456144332886 0.7382858991622925" type="mesh" material="bone" group="0"/>
+      </body>
+    </body>
+  </worldbody>
+  <asset>
+    <mesh name="ulna_right_bone" file="ulna_right_bone.obj"/>
+    <material name="bone" specular="0.5" shininess="0.9755868464708328" reflectance="0.0" rgba="0.55861496925354 0.55861496925354 0.55861496925354 1.0"/>
+    <mesh name="Triangular_right_bone" file="Triangular_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_j_right_bone" file="Sesamoid_hand_j_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_i_right_bone" file="Sesamoid_hand_i_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_h_right_bone" file="Sesamoid_hand_h_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_g_right_bone" file="Sesamoid_hand_g_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_f_right_bone" file="Sesamoid_hand_f_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_e_right_bone" file="Sesamoid_hand_e_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_d_right_bone" file="Sesamoid_hand_d_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_c_right_bone" file="Sesamoid_hand_c_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_b_right_bone" file="Sesamoid_hand_b_right_bone.obj"/>
+    <mesh name="Sesamoid_elbow_right_bone" file="Sesamoid_elbow_right_bone.obj"/>
+    <mesh name="radius_right_bone" file="radius_right_bone.obj"/>
+    <mesh name="Pisiform_right_bone" file="Pisiform_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_5_right_bone" file="Phalanx_hand_3_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_4_right_bone" file="Phalanx_hand_3_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_3_right_bone" file="Phalanx_hand_3_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_2_right_bone" file="Phalanx_hand_3_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_5_right_bone" file="Phalanx_hand_2_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_4_right_bone" file="Phalanx_hand_2_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_3_right_bone" file="Phalanx_hand_2_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_2_right_bone" file="Phalanx_hand_2_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_1_right_bone" file="Phalanx_hand_2_1_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_5_right_bone" file="Phalanx_hand_1_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_4_right_bone" file="Phalanx_hand_1_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_3_right_bone" file="Phalanx_hand_1_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_2_right_bone" file="Phalanx_hand_1_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_1_right_bone" file="Phalanx_hand_1_1_right_bone.obj"/>
+    <mesh name="Navicular_lunate_right_bone" file="Navicular_lunate_right_bone.obj"/>
+    <mesh name="Multangular_right_bone" file="Multangular_right_bone.obj"/>
+    <mesh name="mesh.260_bone" file="mesh.260_bone.obj"/>
+    <mesh name="Metacarpal_hand_4_right_bone" file="Metacarpal_hand_4_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_3_right_bone" file="Metacarpal_hand_3_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_2_right_bone" file="Metacarpal_hand_2_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_1_right_bone" file="Metacarpal_hand_1_right_bone.obj"/>
+    <mesh name="humerus_right_bone" file="humerus_right_bone.obj"/>
+    <mesh name="Hamate_right_bone" file="Hamate_right_bone.obj"/>
+    <mesh name="Falsiformis_right_bone" file="Falsiformis_right_bone.obj"/>
+    <mesh name="Centrale_right_bone" file="Centrale_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_a_right_bone" file="Sesamoid_hand_a_right_bone.obj"/>
+    <mesh name="Capitate_right_bone" file="Capitate_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_m_right_bone" file="Sesamoid_hand_m_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_l_right_bone" file="Sesamoid_hand_l_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_k_right_bone" file="Sesamoid_hand_k_right_bone.obj"/>
+  </asset>
+  <compiler boundmass="1e-5" boundinertia="1e-12"/>
+</mujoco>

@@ -61,7 +61,7 @@ def extract_clip_data(registered_file, start_frame, n_frames=100):
 def main(cfg: DictConfig):
     stac_mjx.enable_xla_flags()
 
-    base_path = os.path.abspath("/root/vast/eric/stac-mjx")
+    base_path = os.path.abspath("/mnt/vast/niyo/stac-mjx")
     output_dir = os.path.join(base_path, "refined_STACed_data_janelia_moving_shoulder")
     os.makedirs(output_dir, exist_ok=True)
 
@@ -71,7 +71,7 @@ def main(cfg: DictConfig):
         model_config = OmegaConf.load(os.path.join(base_path, "configs/model/mouse_arm.yaml"))
         cfg.model = model_config
     OmegaConf.set_struct(cfg.model, False)
-    OmegaConf.update(cfg.model, "MJCF_PATH", "/root/vast/eric/stac-mjx/models/mouse_forelimb_right_janelia_moving_shoulder.xml", merge=True)
+    OmegaConf.update(cfg.model, "MJCF_PATH", "/mnt/vast/niyo/stac-mjx/models/mouse_forelimb_right_janelia_moving_shoulder.xml", merge=True)
     OmegaConf.update(cfg.model, "KEYPOINT_MODEL_PAIRS", {"Shoulder": "humerus", "Elbow": "ulna", "Wrist": "wrist"}, merge=True)
     OmegaConf.update(cfg.model, "SCALE_FACTOR", 1.0, merge=True)
     OmegaConf.update(cfg.model, "MOCAP_SCALE_FACTOR", 1.0, merge=True)
@@ -79,7 +79,7 @@ def main(cfg: DictConfig):
     OmegaConf.update(cfg.model, "N_SAMPLE_FRAMES", 50, merge=True)
     OmegaConf.update(cfg.model, "M_REG_COEF", 0, merge=True)
 
-    reg_file = "/root/vast/eric/CVAT_mouse_reach/all_data/A36-1_2023-07-18_16-54-01_lightOff_video/A36-1_2023-07-18_16-54-01_lightOff_video_mujoco_registered_forelimb_right_v6.h5"
+    reg_file = "/mnt/vast/eric/CVAT_mouse_reach/all_data/A36-1_2023-07-18_16-54-01_lightOff_video/A36-1_2023-07-18_16-54-01_lightOff_video_mujoco_registered_forelimb_right_v7.h5"
 
     # Load reach events
     refined_csv_path = os.path.join(base_path, "refined_reaches/A36-1_2023-07-18_16-54-01_lightOff_tone_on_off_trials_edited.csv")

@@ -1,6 +1,7 @@
 # MJCF_PATH: "models/mazen_torque.xml"
-MJCF_PATH: "/root/vast/eric/stac-mjx/models/arm_model_v3_torque.xml"
-
+# MJCF_PATH: "/mnt/vast/niyo/stac-mjx/models/akira_torque.xml"
+# MJCF_PATH: "/mnt/vast/eric/vnl-playground/vnl_playground/tasks/mouse/xmls/mouse_forelimb_right.xml"
+MJCF_PATH: "/mnt/vast/niyo/stac-mjx/models/mouse_forelimb_right_janelia.xml"
 # Tolerance for the optimizations of the full model, limb, and root.
 # TODO: Re-implement optimizer loops to use these tolerances
 FTOL: 1.0e-04
@@ -18,8 +19,8 @@ KP_NAMES:
 # Ambiguity, are keypoints joints or bones? (Nose is not a joint, but MTP is a joint.)
 KEYPOINT_MODEL_PAIRS:
   Shoulder: scapula
-  Elbow: elbow
-  Wrist: wrist_body
+  Elbow: ulna
+  Wrist: wrist
 
 # The initial offsets for each keypoint in meters.
 KEYPOINT_INITIAL_OFFSETS:

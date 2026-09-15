@@ -1,0 +1,107 @@
+old_mesh_name,old_file,new_mesh_name,new_file,new_body,dist_mm,vol_ratio_old_over_new,confidence,status
+humerus_right_mesh,humerus_right.stl,humerus_right_bone,humerus_right_bone.obj,humerus_right,,,anchor (name match),matched
+radius_right_mesh,radius_right.stl,radius_right_bone,radius_right_bone.obj,radius_right,,,anchor (name match),matched
+ulna_right_mesh,ulna_right.stl,ulna_right_bone,ulna_right_bone.obj,ulna_right,,,anchor (name match),matched
+Retopo_32_002_mesh,Retopo_32_002.stl,Navicular_lunate_right_bone,Navicular_lunate_right_bone.obj,N_L_C_right,0.1293,1.004,high,matched
+Retopo_26_002_mesh,Retopo_26_002.stl,Pisiform_right_bone,Pisiform_right_bone.obj,N_L_C_right,0.1412,1.006,high,matched
+Retopo_27_001_mesh,Retopo_27_001.stl,Triangular_right_bone,Triangular_right_bone.obj,N_L_C_right,0.1459,1.004,high,matched
+Retopo_54_002_mesh,Retopo_54_002.stl,Centrale_right_bone,Centrale_right_bone.obj,N_L_C_right,0.1475,1.003,high,matched
+Retopo_50_mesh,Retopo_50.stl,Metacarpal_hand_1_right_bone,Metacarpal_hand_1_right_bone.obj,Metacarpal_hand_1_right,0.1476,1.001,high,matched
+Retopo_56_007_mesh,Retopo_56_007.stl,Multangular_right_bone,Multangular_right_bone.obj,Metacarpal_hand_1_right,0.1479,1.004,high,matched
+Retopo_49_mesh,Retopo_49.stl,Falsiformis_right_bone,Falsiformis_right_bone.obj,N_L_C_right,0.1479,1.007,high,matched
+Retopo_57_001_mesh,Retopo_57_001.stl,Sesamoid_hand_b_right_bone,Sesamoid_hand_b_right_bone.obj,Metacarpal_hand_1_right,0.1555,1.006,high,matched
+Retopo_51_001_mesh,Retopo_51_001.stl,Phalanx_hand_1_1_right_bone,Phalanx_hand_1_1_right_bone.obj,Phalanx_hand_1_1_right,0.1568,1.003,high,matched
+Retopo_61_002_mesh,Retopo_61_002.stl,Sesamoid_hand_c_right_bone,Sesamoid_hand_c_right_bone.obj,Metacarpal_hand_5_right,0.1572,1.016,high,matched
+Retopo_33_003_mesh,Retopo_33_003.stl,Hamate_right_bone,Hamate_right_bone.obj,N_L_C_right,0.1574,1.002,high,matched
+Retopo_62_002_mesh,Retopo_62_002.stl,Sesamoid_hand_a_right_bone,Sesamoid_hand_a_right_bone.obj,Metacarpal_hand_4_right,0.1577,1.026,high,matched
+Retopo_52_001_mesh,Retopo_52_001.stl,Phalanx_hand_2_1_right_bone,Phalanx_hand_2_1_right_bone.obj,Phalanx_hand_2_1_right,0.1595,1.001,high,matched
+Retopo_38_004_mesh,Retopo_38_004.stl,Metacarpal_hand_2_right_bone,Metacarpal_hand_2_right_bone.obj,Metacarpal_hand_2_right,0.1622,1.001,high,matched
+Retopo_28_003_mesh,Retopo_28_003.stl,mesh.260_bone,mesh.260_bone.obj,Metacarpal_hand_5_right,0.1638,1.0,high,matched
+Retopo_48_002_mesh,Retopo_48_002.stl,Sesamoid_hand_d_right_bone,Sesamoid_hand_d_right_bone.obj,Metacarpal_hand_5_right,0.1647,1.011,high,matched
+Retopo_44_003_mesh,Retopo_44_003.stl,Phalanx_hand_2_5_right_bone,Phalanx_hand_2_5_right_bone.obj,__anon_3,0.167,1.002,high,matched
+Retopo_107_001_mesh,Retopo_107_001.stl,Phalanx_hand_3_4_right_bone,Phalanx_hand_3_4_right_bone.obj,Phalanx_hand_3_4_right,0.1679,0.996,high,matched
+Retopo_59_mesh,Retopo_59.stl,Sesamoid_hand_i_right_bone,Sesamoid_hand_i_right_bone.obj,Metacarpal_hand_2_right,0.1681,1.011,high,matched
+Retopo_36_001_mesh,Retopo_36_001.stl,Metacarpal_hand_3_right_bone,Metacarpal_hand_3_right_bone.obj,Metacarpal_hand_3_right,0.1685,1.002,high,matched
+Retopo_45_002_mesh,Retopo_45_002.stl,Phalanx_hand_3_5_right_bone,Phalanx_hand_3_5_right_bone.obj,Phalanx_hand_3_5_right,0.1696,0.999,high,matched
+Retopo_34_mesh,Retopo_34.stl,Metacarpal_hand_4_right_bone,Metacarpal_hand_4_right_bone.obj,Metacarpal_hand_4_right,0.1697,1.001,high,matched
+Retopo_29_003_mesh,Retopo_29_003.stl,Phalanx_hand_1_5_right_bone,Phalanx_hand_1_5_right_bone.obj,Phalanx_hand_1_5_right,0.1712,1.004,high,matched
+Retopo_65_001_mesh,Retopo_65_001.stl,Sesamoid_hand_f_right_bone,Sesamoid_hand_f_right_bone.obj,Metacarpal_hand_4_right,0.172,1.012,high,matched
+Retopo_66_003_mesh,Retopo_66_003.stl,Sesamoid_hand_e_right_bone,Sesamoid_hand_e_right_bone.obj,Metacarpal_hand_4_right,0.1732,1.016,high,matched
+Retopo_64_mesh,Retopo_64.stl,Sesamoid_hand_h_right_bone,Sesamoid_hand_h_right_bone.obj,Metacarpal_hand_3_right,0.1759,1.028,high,matched
+Retopo_60_001_mesh,Retopo_60_001.stl,Sesamoid_hand_j_right_bone,Sesamoid_hand_j_right_bone.obj,Metacarpal_hand_2_right,0.1759,1.006,high,matched
+Retopo_25_031_mesh,Retopo_25_031.stl,Phalanx_hand_1_2_right_bone,Phalanx_hand_1_2_right_bone.obj,Phalanx_hand_1_2_right,0.179,1.003,high,matched
+Retopo_106_mesh,Retopo_106.stl,Sesamoid_hand_l_right_bone,Sesamoid_hand_l_right_bone.obj,__anon_2,0.1829,1.026,high,matched
+Retopo_63_003_mesh,Retopo_63_003.stl,Sesamoid_hand_g_right_bone,Sesamoid_hand_g_right_bone.obj,Metacarpal_hand_3_right,0.1831,1.026,high,matched
+Retopo_25_005_mesh,Retopo_25_005.stl,Phalanx_hand_3_2_right_bone,Phalanx_hand_3_2_right_bone.obj,Phalanx_hand_3_2_right,0.1871,1.002,high,matched
+Retopo_25_015_mesh,Retopo_25_015.stl,Phalanx_hand_3_3_right_bone,Phalanx_hand_3_3_right_bone.obj,Phalanx_hand_3_3_right,0.1872,1.003,high,matched
+Retopo_41_003_mesh,Retopo_41_003.stl,Phalanx_hand_1_4_right_bone,Phalanx_hand_1_4_right_bone.obj,Phalanx_hand_1_4_right,0.1926,1.007,high,matched
+Retopo_25_016_mesh,Retopo_25_016.stl,Phalanx_hand_2_3_right_bone,Phalanx_hand_2_3_right_bone.obj,__anon_1,0.1933,0.998,high,matched
+Retopo_42_004_mesh,Retopo_42_004.stl,Phalanx_hand_2_4_right_bone,Phalanx_hand_2_4_right_bone.obj,__anon_2,0.1948,1.001,high,matched
+Retopo_25_010_mesh,Retopo_25_010.stl,Phalanx_hand_2_2_right_bone,Phalanx_hand_2_2_right_bone.obj,Phalanx_hand_2_2_right,0.1964,1.006,high,matched
+Retopo_40_004_mesh,Retopo_40_004.stl,Phalanx_hand_1_3_right_bone,Phalanx_hand_1_3_right_bone.obj,Phalanx_hand_1_3_right,0.1968,1.003,high,matched
+Retopo_25_014_mesh,Retopo_25_014.stl,Sesamoid_hand_m_right_bone,Sesamoid_hand_m_right_bone.obj,__anon_1,0.2169,1.013,high,matched
+Retopo_46_002_mesh,Retopo_46_002.stl,Sesamoid_hand_k_right_bone,Sesamoid_hand_k_right_bone.obj,__anon_3,0.6468,1.007,medium,matched
+Retopo_3_027_mesh,Retopo_3_027.stl,Capitate_right_bone,Capitate_right_bone.obj,N_L_C_right,1.2474,0.978,medium,matched
+Retopo_102_001_mesh,Retopo_102_001.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_139_mesh,Retopo_139.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_140_mesh,Retopo_140.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_142_mesh,Retopo_142.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_143_mesh,Retopo_143.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_144_mesh,Retopo_144.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_25_017_mesh,Retopo_25_017.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_25_035_mesh,Retopo_25_035.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_25_036_mesh,Retopo_25_036.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_25_039_mesh,Retopo_25_039.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_25_040_mesh,Retopo_25_040.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_004_mesh,Retopo_3_004.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_006_mesh,Retopo_3_006.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_007_mesh,Retopo_3_007.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_008_mesh,Retopo_3_008.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_010_mesh,Retopo_3_010.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_012_mesh,Retopo_3_012.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_013_mesh,Retopo_3_013.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_014_mesh,Retopo_3_014.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_015_mesh,Retopo_3_015.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_016_mesh,Retopo_3_016.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_019_mesh,Retopo_3_019.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_020_mesh,Retopo_3_020.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_022_mesh,Retopo_3_022.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_023_mesh,Retopo_3_023.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_025_mesh,Retopo_3_025.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_026_mesh,Retopo_3_026.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_028_mesh,Retopo_3_028.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_029_mesh,Retopo_3_029.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_030_mesh,Retopo_3_030.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_032_mesh,Retopo_3_032.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_033_mesh,Retopo_3_033.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_034_mesh,Retopo_3_034.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_035_mesh,Retopo_3_035.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_036_mesh,Retopo_3_036.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_037_mesh,Retopo_3_037.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_038_mesh,Retopo_3_038.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_039_mesh,Retopo_3_039.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_043_mesh,Retopo_3_043.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_044_mesh,Retopo_3_044.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_045_mesh,Retopo_3_045.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_046_mesh,Retopo_3_046.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_047_mesh,Retopo_3_047.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_048_mesh,Retopo_3_048.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_049_mesh,Retopo_3_049.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_050_mesh,Retopo_3_050.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_051_mesh,Retopo_3_051.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_052_mesh,Retopo_3_052.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_053_mesh,Retopo_3_053.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_054_mesh,Retopo_3_054.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_055_mesh,Retopo_3_055.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_056_mesh,Retopo_3_056.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_057_mesh,Retopo_3_057.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_059_mesh,Retopo_3_059.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_060_mesh,Retopo_3_060.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_061_mesh,Retopo_3_061.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_062_mesh,Retopo_3_062.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_063_mesh,Retopo_3_063.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_066_mesh,Retopo_3_066.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_067_mesh,Retopo_3_067.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_3_070_mesh,Retopo_3_070.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+Retopo_67_mesh,Retopo_67.stl,,,,,,,"unmatched (candidate tendon/soft-tissue, prunable)"
+,,Sesamoid_elbow_right_bone,Sesamoid_elbow_right_bone.obj,radius_right,,,,no old-model counterpart found

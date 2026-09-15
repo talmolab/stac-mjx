@@ -175,3 +175,31 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+
+# Niyo: ignore large result/output data
+.venv/
+wandb/
+scratch/
+model_checkpoints/
+refined_STACed_data*/
+smoke_test_*/
+final_STACed_5sessions_v16/
+new_STACed_data/
+refined_reaches/
+solver_param_sweep/
+v21_registration_check/
+MUJOCO_LOG.TXT
+*.mp4
+
+# Unreleased Janelia-derived bone meshes - must never be committed
+# (see scott-joystick-forelimb-handoff/NOTICE_ASSETS.md)
+models/shravan_forearm/*.obj
+models/shravan_forearm/*.stl
+models/v19/*.obj
+models/v19/*.stl
+models/v20_joystick/*.obj
+models/v20_joystick/*.stl
+models/v21/*.obj
+models/v21/*.stl
+Bone_Segments_Hand_fixed*.stl
+meshes/stl/Bone_Segments_Hand_fixed*.stl

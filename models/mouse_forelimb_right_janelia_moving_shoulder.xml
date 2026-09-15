@@ -19,7 +19,7 @@
       elbow:        elbow flex/extend,   about X,       [-70, 80] deg
   -->
 
-  <compiler angle="degree" meshdir="/root/vast/eric/janelia_model/skeleton_stls_object_coordinates_hand"/>
+  <compiler angle="degree" meshdir="/mnt/vast/niyo/janelia_model/skeleton_stls_object_coordinates_hand"/>
 
   <option integrator="RK4" timestep="0.001" solver="CG" iterations="6" ls_iterations="6"/>
 
@@ -353,8 +353,17 @@
     </body>
   </worldbody>
 
-  <!-- Tendons and muscle actuators removed for STAC (kinematics only).
-       Original janelia model at /root/vast/eric/janelia_model/skeleton_stls_object_coordinates_hand/mouse_forelimb_right.xml
-       retains the full musculoskeletal definition. -->
+  <actuator>
+    <!-- Shoulder translation (position servos) -->
+    <position name="sh_tx_act" joint="sh_tx" kp="10" ctrlrange="-0.01 0.01"/>
+    <position name="sh_ty_act" joint="sh_ty" kp="10" ctrlrange="-0.01 0.01"/>
+    <position name="sh_tz_act" joint="sh_tz" kp="10" ctrlrange="-0.01 0.01"/>
+    <!-- Shoulder rotation (position servos) -->
+    <position name="sh_rotation_act" joint="sh_rotation" kp="1" ctrlrange="-70 40"/>
+    <position name="sh_extension_act" joint="sh_extension" kp="1" ctrlrange="-70 40"/>
+    <position name="sh_elv_act" joint="sh_elv" kp="1" ctrlrange="-60 89"/>
+    <!-- Elbow (position servo) -->
+    <position name="elbow_act" joint="elbow" kp="1" ctrlrange="-70 80"/>
+  </actuator>
 
 </mujoco>

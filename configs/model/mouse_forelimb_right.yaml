@@ -1,4 +1,4 @@
-MJCF_PATH: "/root/vast/eric/stac-mjx/models/mouse_forelimb_right_janelia.xml"
+MJCF_PATH: "/mnt/vast/niyo/stac-mjx/models/mouse_forelimb_right_janelia.xml"
 
 # Tolerance for the optimizations of the full model, limb, and root.
 # TODO: Re-implement optimizer loops to use these tolerances

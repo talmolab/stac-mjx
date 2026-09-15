@@ -1,0 +1,34 @@
+{
+  "saved_at": "20260501_073151",
+  "session_used_for_cloud": "A36-1_2023-07-18_16-54-01_lightOff_video",
+  "frame_of_reference": "V16 wrist-local (mouse_forelimb_right_janelia_moving_shoulder_v2.xml at qpos=0)",
+  "KnuckleC": {
+    "source_landmark": "right_d2_mid",
+    "local_mm": [
+      -1.8,
+      3.2,
+      -0.9
+    ],
+    "local_m": [
+      -0.0018,
+      0.0032,
+      -0.0009
+    ],
+    "site_pos_xml_attr": "pos=\"-0.001800 0.003200 -0.000900\""
+  },
+  "KnuckleL": {
+    "source_landmark": "right_d5_mid",
+    "local_mm": [
+      -0.1,
+      2.9,
+      -1.9
+    ],
+    "local_m": [
+      -0.0001,
+      0.0029,
+      -0.0019
+    ],
+    "site_pos_xml_attr": "pos=\"-0.000100 0.002900 -0.001900\""
+  },
+  "lateral_spread_mm": 1.7
+}

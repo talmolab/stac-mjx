@@ -7,7 +7,10 @@ grid video. Also overlays mocap keypoints and environmental markers.
 
 import os
 
-os.environ["MUJOCO_GL"] = "egl"
+# setdefault, not a hard override: lets a caller that already needs a
+# different GL backend (e.g. osmesa, where egl isn't available) set
+# MUJOCO_GL before importing this module without it being clobbered here.
+os.environ.setdefault("MUJOCO_GL", "egl")
 
 import csv
 import numpy as np
@@ -77,16 +80,23 @@ def _setup_mujoco_model(cfg, kp_names, cam_params_list=None):
     return mj_model, mj_data
 
 
-def _set_green_background(mj_model):
-    """Configure the MuJoCo model for green-screen rendering."""
+def _set_green_background(mj_model, offwidth=512, offheight=512):
+    """Configure the MuJoCo model for green-screen rendering.
+
+    offwidth/offheight must be >= the actual render_size requested by the
+    caller (mujoco.Renderer's framebuffer is capped by these), so they're
+    parameterized rather than hardcoded to 512x512 -- a caller requesting a
+    larger render_size (e.g. to match a non-512x512 source video's aspect
+    ratio) would otherwise hit "Image width > framebuffer width".
+    """
     # Set RGBA background to green for chroma keying
     # MuJoCo stores rgba_fog as the background color when fog is off
     # We modify the skybox texture and fog color
     mj_model.vis.rgba.fog[:] = [0, 1, 0, 1]
 
     # Disable skybox, grid floor, and headlight effects for clean keying
-    mj_model.vis.global_.offwidth = 512
-    mj_model.vis.global_.offheight = 512
+    mj_model.vis.global_.offwidth = offwidth
+    mj_model.vis.global_.offheight = offheight
 
 
 def _make_scene_option():
@@ -139,8 +149,18 @@ def _compute_calibration_cam_xyaxes(
     R_eff = R_cv @ reg.R_total
     t_eff = R_cv @ shoulder_calib + t_cv
 
-    # Camera position in MuJoCo frame
-    cam_pos_mj = -R_eff.T @ t_eff / 1000.0 + reg.model_shoulder
+    # Camera position in MuJoCo frame. Must apply the SAME per-trial uniform
+    # scale_factor used during registration (register_v21_mocap.py's
+    # shared-rotation_v4 recipe) -- this term is R_total.T @ (cam_pos_calib -
+    # shoulder_calib) / 1000, i.e. the same "centered, unit-converted" vector
+    # that registration multiplies by scale_factor before rotating+
+    # translating. Missing this placed the virtual camera at the wrong
+    # distance from the model, differently per trial (each trial has its own
+    # scale_factor) -- looked like the model changing size between trials
+    # (a pure perspective/depth artifact, not an actual model-size change,
+    # since the MJCF's own geometry never varies) and threw off the
+    # joystick's apparent position along with everything else in the shot.
+    cam_pos_mj = (-R_eff.T @ t_eff / 1000.0) * reg.scale_factor + reg.model_shoulder
 
     # Camera axes in MuJoCo world frame
     # R_eff.T maps camera → MuJoCo world
@@ -320,11 +340,11 @@ def render_reprojection_video(
     stac_h5_path: str,
     calibration_path: str,
     video_dir: str,
-    env_points3d_path: str,
+    env_points3d_path: "str | None",
     registered_h5_path: str,
     raw_points3d_path: str,
-    clip_csv_path: str,
-    trial_number: int,
+    clip_csv_path: "str | None",
+    trial_number: "int | None",
     output_path: str,
     fps: int = 30,
     render_size: tuple = (512, 512),
@@ -335,11 +355,15 @@ def render_reprojection_video(
         stac_h5_path: Path to STAC'd IK H5 file.
         calibration_path: Path to calibration.toml.
         video_dir: Directory with CamA/, CamB/, CamC/ subdirs containing mp4s.
-        env_points3d_path: Path to env points3d.h5 (bars + water spout).
+        env_points3d_path: Path to env points3d.h5 (bars + water spout), or
+            None to skip drawing environmental rig markers entirely (not
+            every dataset tracks them).
         registered_h5_path: Path to *_mujoco_registered_forelimb_right_v4.h5.
         raw_points3d_path: Path to session points3d.h5 (raw triangulated keypoints).
-        clip_csv_path: Path to trial CSV with frame indices.
-        trial_number: Which trial to render.
+        clip_csv_path: Path to trial CSV with frame indices, or None if the
+            video file IS the trial (one fixed-length clip per file).
+        trial_number: Which trial to render, or None (with clip_csv_path=None)
+            to render the whole clip starting at video frame 0.
         output_path: Output MP4 path.
         fps: Output video FPS.
         render_size: (width, height) for MuJoCo rendering per camera.
@@ -365,18 +389,32 @@ def render_reprojection_video(
     # Load raw shoulder positions (calibration frame, mm)
     raw_shoulders = load_raw_shoulder_positions(raw_points3d_path)
 
-    # Load env markers
-    env_data = load_env_points3d(env_points3d_path)
-    env_points = env_data["points"]  # (N, 3) in calibration frame (mm)
-    env_names = env_data["names"]
+    # Load env markers (optional -- pass env_points3d_path=None to skip; not
+    # every dataset tracks fixed rig landmarks like bars/water spout)
+    if env_points3d_path is not None:
+        env_data = load_env_points3d(env_points3d_path)
+        env_points = env_data["points"]  # (N, 3) in calibration frame (mm)
+        env_names = env_data["names"]
+    else:
+        env_points = None
+        env_names = None
 
-    # Load trial info
-    trials = load_trial_csv(clip_csv_path)
-    if trial_number not in trials:
-        raise ValueError(f"Trial {trial_number} not found in CSV")
-    trial_info = trials[trial_number]
-    video_start_frame = trial_info["trial_start"] + trial_info["start"]
-    print(f"  Trial {trial_number}: video frames {video_start_frame} to {video_start_frame + n_frames - 1}")
+    # Load trial info. clip_csv_path/trial_number are only needed to look up a
+    # start-frame offset within a longer multi-trial session recording; if the
+    # video file itself IS the trial (e.g. the js_luc3d_hand CFL_* dataset,
+    # one fixed-length clip per trial dir), pass both as None to skip the CSV
+    # lookup entirely and start from frame 0 of the video.
+    if clip_csv_path is None or trial_number is None:
+        video_start_frame = 0
+        print(f"  No clip CSV (trial_number=None): using whole clip, "
+              f"video frames 0 to {n_frames - 1}")
+    else:
+        trials = load_trial_csv(clip_csv_path)
+        if trial_number not in trials:
+            raise ValueError(f"Trial {trial_number} not found in CSV")
+        trial_info = trials[trial_number]
+        video_start_frame = trial_info["trial_start"] + trial_info["start"]
+        print(f"  Trial {trial_number}: video frames {video_start_frame} to {video_start_frame + n_frames - 1}")
 
     # Open video captures
     video_files = {}
@@ -414,9 +452,9 @@ def render_reprojection_video(
 
     # Set up MuJoCo model with calibration cameras
     mj_model, mj_data = _setup_mujoco_model(cfg, stac_data.kp_names, mj_cam_params)
-    _set_green_background(mj_model)
-    scene_option = _make_scene_option()
     w, h = render_size
+    _set_green_background(mj_model, offwidth=max(512, w), offheight=max(512, h))
+    scene_option = _make_scene_option()
 
     # Map camera names to MuJoCo camera indices
     cam_name_to_idx = {}
@@ -482,8 +520,9 @@ def render_reprojection_video(
                 # Composite model onto video frame
                 frame = _composite(frame, model_rgba, alpha_scale=0.5)
 
-                # Draw env markers
-                frame = _draw_env_markers(frame, env_points, env_names, cam_params)
+                # Draw env markers (if provided)
+                if env_points is not None:
+                    frame = _draw_env_markers(frame, env_points, env_names, cam_params)
 
                 # Draw raw mocap keypoints (open circles)
                 frame = _draw_mocap_keypoints(

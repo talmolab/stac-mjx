@@ -1,0 +1,369 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="mouse_forelimb_right_hand">
+  <!--
+    Mouse right forelimb musculoskeletal model with hand/paw meshes.
+    12 muscles: 9 from reference model + 3 rotator cuff muscles.
+    104 hand/paw mesh pieces attached to ulna (frozen, no joints).
+    All contacts disabled. Hand meshes decimated to max 20K faces each.
+
+    Excluded meshes:
+      Retopo_3_005.stl  - degenerate (near-zero volume)
+      Retopo_3_058.stl  - degenerate (zero surface area)
+      Retopo_38_002.stl - removed by user (geom 33)
+      Retopo_55_003.stl - removed by user (geom 100)
+
+    Joint summary (4 DOF arm):
+      sh_elv:       shoulder elevation,  pitch about Y, [-70, 0] deg
+      sh_extension: shoulder extension,  yaw about Z,   [-70, 40] deg
+      sh_rotation:  shoulder rotation,   roll about X,  [-25, 89] deg
+      elbow:        elbow flex/extend,   about X,       [-70, 80] deg
+  -->
+
+  <compiler angle="degree" meshdir="/mnt/vast/niyo/janelia_model/skeleton_stls_object_coordinates_hand"/>
+
+  <option integrator="RK4" timestep="0.001" solver="CG" iterations="6" ls_iterations="6"/>
+
+  <default>
+    <joint limited="true" solreflimit="0.01 1" solimplimit="0.99 0.9999 0" armature="4e-10" damping="1e-6" stiffness="1e-12"/>
+
+    <geom contype="0" conaffinity="0"/>
+    <default class="hand_visual">
+      <geom contype="0" conaffinity="0"/>
+    </default>
+  </default>
+
+  <size njmax="1000" nconmax="400" nkey="1" nuser_jnt="1"/>
+
+  <visual>
+    <headlight diffuse=".5 .5 .5" specular="1 1 1"/>
+    <global offwidth="2048" offheight="1536"/>
+    <quality shadowsize="8192"/>
+    <scale framelength="0.5" framewidth="0.01"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="0.6 0.8 1" width="256" height="1536"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+    <mesh name="clavicle_right_mesh" file="clavicle_right.stl"/>
+    <mesh name="scapula_right_mesh" file="scapula_right.stl"/>
+    <mesh name="humerus_right_mesh" file="humerus_right.stl"/>
+    <mesh name="radius_right_mesh" file="radius_right.stl"/>
+    <mesh name="ulna_right_mesh" file="ulna_right.stl"/>
+    <!-- Hand/paw meshes (103 pieces, decimated, in radius_ulna_right local coords) -->
+    <mesh name="Retopo_102_001_mesh" file="Retopo_102_001.stl"/>
+    <mesh name="Retopo_106_mesh" file="Retopo_106.stl"/>
+    <mesh name="Retopo_107_001_mesh" file="Retopo_107_001.stl"/>
+    <mesh name="Retopo_139_mesh" file="Retopo_139.stl"/>
+    <mesh name="Retopo_140_mesh" file="Retopo_140.stl"/>
+    <mesh name="Retopo_142_mesh" file="Retopo_142.stl"/>
+    <mesh name="Retopo_143_mesh" file="Retopo_143.stl"/>
+    <mesh name="Retopo_144_mesh" file="Retopo_144.stl"/>
+    <mesh name="Retopo_25_005_mesh" file="Retopo_25_005.stl"/>
+    <mesh name="Retopo_25_010_mesh" file="Retopo_25_010.stl"/>
+    <mesh name="Retopo_25_014_mesh" file="Retopo_25_014.stl"/>
+    <mesh name="Retopo_25_015_mesh" file="Retopo_25_015.stl"/>
+    <mesh name="Retopo_25_016_mesh" file="Retopo_25_016.stl"/>
+    <mesh name="Retopo_25_017_mesh" file="Retopo_25_017.stl"/>
+    <mesh name="Retopo_25_031_mesh" file="Retopo_25_031.stl"/>
+    <mesh name="Retopo_25_035_mesh" file="Retopo_25_035.stl"/>
+    <mesh name="Retopo_25_036_mesh" file="Retopo_25_036.stl"/>
+    <mesh name="Retopo_25_039_mesh" file="Retopo_25_039.stl"/>
+    <mesh name="Retopo_25_040_mesh" file="Retopo_25_040.stl"/>
+    <mesh name="Retopo_26_002_mesh" file="Retopo_26_002.stl"/>
+    <mesh name="Retopo_27_001_mesh" file="Retopo_27_001.stl"/>
+    <mesh name="Retopo_28_003_mesh" file="Retopo_28_003.stl"/>
+    <mesh name="Retopo_29_003_mesh" file="Retopo_29_003.stl"/>
+    <mesh name="Retopo_32_002_mesh" file="Retopo_32_002.stl"/>
+    <mesh name="Retopo_33_003_mesh" file="Retopo_33_003.stl"/>
+    <mesh name="Retopo_34_mesh" file="Retopo_34.stl"/>
+    <mesh name="Retopo_36_001_mesh" file="Retopo_36_001.stl"/>
+    <mesh name="Retopo_38_004_mesh" file="Retopo_38_004.stl"/>
+    <mesh name="Retopo_3_004_mesh" file="Retopo_3_004.stl"/>
+    <mesh name="Retopo_3_006_mesh" file="Retopo_3_006.stl"/>
+    <mesh name="Retopo_3_007_mesh" file="Retopo_3_007.stl"/>
+    <mesh name="Retopo_3_008_mesh" file="Retopo_3_008.stl"/>
+    <mesh name="Retopo_3_010_mesh" file="Retopo_3_010.stl"/>
+    <mesh name="Retopo_3_012_mesh" file="Retopo_3_012.stl"/>
+    <mesh name="Retopo_3_013_mesh" file="Retopo_3_013.stl"/>
+    <mesh name="Retopo_3_014_mesh" file="Retopo_3_014.stl"/>
+    <mesh name="Retopo_3_015_mesh" file="Retopo_3_015.stl"/>
+    <mesh name="Retopo_3_016_mesh" file="Retopo_3_016.stl"/>
+    <mesh name="Retopo_3_019_mesh" file="Retopo_3_019.stl"/>
+    <mesh name="Retopo_3_020_mesh" file="Retopo_3_020.stl"/>
+    <mesh name="Retopo_3_022_mesh" file="Retopo_3_022.stl"/>
+    <mesh name="Retopo_3_023_mesh" file="Retopo_3_023.stl"/>
+    <mesh name="Retopo_3_025_mesh" file="Retopo_3_025.stl"/>
+    <mesh name="Retopo_3_026_mesh" file="Retopo_3_026.stl"/>
+    <mesh name="Retopo_3_027_mesh" file="Retopo_3_027.stl"/>
+    <mesh name="Retopo_3_028_mesh" file="Retopo_3_028.stl"/>
+    <mesh name="Retopo_3_029_mesh" file="Retopo_3_029.stl"/>
+    <mesh name="Retopo_3_030_mesh" file="Retopo_3_030.stl"/>
+    <mesh name="Retopo_3_032_mesh" file="Retopo_3_032.stl"/>
+    <mesh name="Retopo_3_033_mesh" file="Retopo_3_033.stl"/>
+    <mesh name="Retopo_3_034_mesh" file="Retopo_3_034.stl"/>
+    <mesh name="Retopo_3_035_mesh" file="Retopo_3_035.stl"/>
+    <mesh name="Retopo_3_036_mesh" file="Retopo_3_036.stl"/>
+    <mesh name="Retopo_3_037_mesh" file="Retopo_3_037.stl"/>
+    <mesh name="Retopo_3_038_mesh" file="Retopo_3_038.stl"/>
+    <mesh name="Retopo_3_039_mesh" file="Retopo_3_039.stl"/>
+    <mesh name="Retopo_3_043_mesh" file="Retopo_3_043.stl"/>
+    <mesh name="Retopo_3_044_mesh" file="Retopo_3_044.stl"/>
+    <mesh name="Retopo_3_045_mesh" file="Retopo_3_045.stl"/>
+    <mesh name="Retopo_3_046_mesh" file="Retopo_3_046.stl"/>
+    <mesh name="Retopo_3_047_mesh" file="Retopo_3_047.stl"/>
+    <mesh name="Retopo_3_048_mesh" file="Retopo_3_048.stl"/>
+    <mesh name="Retopo_3_049_mesh" file="Retopo_3_049.stl"/>
+    <mesh name="Retopo_3_050_mesh" file="Retopo_3_050.stl"/>
+    <mesh name="Retopo_3_051_mesh" file="Retopo_3_051.stl"/>
+    <mesh name="Retopo_3_052_mesh" file="Retopo_3_052.stl"/>
+    <mesh name="Retopo_3_053_mesh" file="Retopo_3_053.stl"/>
+    <mesh name="Retopo_3_054_mesh" file="Retopo_3_054.stl"/>
+    <mesh name="Retopo_3_055_mesh" file="Retopo_3_055.stl"/>
+    <mesh name="Retopo_3_056_mesh" file="Retopo_3_056.stl"/>
+    <mesh name="Retopo_3_057_mesh" file="Retopo_3_057.stl"/>
+    <mesh name="Retopo_3_059_mesh" file="Retopo_3_059.stl"/>
+    <mesh name="Retopo_3_060_mesh" file="Retopo_3_060.stl"/>
+    <mesh name="Retopo_3_061_mesh" file="Retopo_3_061.stl"/>
+    <mesh name="Retopo_3_062_mesh" file="Retopo_3_062.stl"/>
+    <mesh name="Retopo_3_063_mesh" file="Retopo_3_063.stl"/>
+    <mesh name="Retopo_3_066_mesh" file="Retopo_3_066.stl"/>
+    <mesh name="Retopo_3_067_mesh" file="Retopo_3_067.stl"/>
+    <mesh name="Retopo_3_070_mesh" file="Retopo_3_070.stl"/>
+    <mesh name="Retopo_40_004_mesh" file="Retopo_40_004.stl"/>
+    <mesh name="Retopo_41_003_mesh" file="Retopo_41_003.stl"/>
+    <mesh name="Retopo_42_004_mesh" file="Retopo_42_004.stl"/>
+    <mesh name="Retopo_44_003_mesh" file="Retopo_44_003.stl"/>
+    <mesh name="Retopo_45_002_mesh" file="Retopo_45_002.stl"/>
+    <mesh name="Retopo_46_002_mesh" file="Retopo_46_002.stl"/>
+    <mesh name="Retopo_48_002_mesh" file="Retopo_48_002.stl"/>
+    <mesh name="Retopo_49_mesh" file="Retopo_49.stl"/>
+    <mesh name="Retopo_50_mesh" file="Retopo_50.stl"/>
+    <mesh name="Retopo_51_001_mesh" file="Retopo_51_001.stl"/>
+    <mesh name="Retopo_52_001_mesh" file="Retopo_52_001.stl"/>
+    <mesh name="Retopo_54_002_mesh" file="Retopo_54_002.stl"/>
+    <mesh name="Retopo_56_007_mesh" file="Retopo_56_007.stl"/>
+    <mesh name="Retopo_57_001_mesh" file="Retopo_57_001.stl"/>
+    <mesh name="Retopo_59_mesh" file="Retopo_59.stl"/>
+    <mesh name="Retopo_60_001_mesh" file="Retopo_60_001.stl"/>
+    <mesh name="Retopo_61_002_mesh" file="Retopo_61_002.stl"/>
+    <mesh name="Retopo_62_002_mesh" file="Retopo_62_002.stl"/>
+    <mesh name="Retopo_63_003_mesh" file="Retopo_63_003.stl"/>
+    <mesh name="Retopo_64_mesh" file="Retopo_64.stl"/>
+    <mesh name="Retopo_65_001_mesh" file="Retopo_65_001.stl"/>
+    <mesh name="Retopo_66_003_mesh" file="Retopo_66_003.stl"/>
+    <mesh name="Retopo_67_mesh" file="Retopo_67.stl"/>
+  </asset>
+
+  <worldbody>
+    <light directional="true"/>
+    <body name="ground" euler="0 0 0">
+      <camera name="my_camera" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+      <camera name="close-profile" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+      <camera name="janelia_cam" pos="0.020 -0.035 0.065" xyaxes="1 0 0 0 0 1" fovy="55"/>
+    </body>
+
+    <!-- Shoulder base: allows small translational movement -->
+    <body name="shoulder_base" pos="0 0 0">
+      <joint name="sh_tx" type="slide" axis="1 0 0" range="-0.01 0.01" damping="0.5" stiffness="10" springref="0"/>
+      <joint name="sh_ty" type="slide" axis="0 1 0" range="-0.01 0.01" damping="0.5" stiffness="10" springref="0"/>
+      <joint name="sh_tz" type="slide" axis="0 0 1" range="-0.01 0.01" damping="0.5" stiffness="10" springref="0"/>
+
+    <!-- Clavicle: fixed to shoulder_base -->
+    <body name="clavicle" pos="0.014801 0.015912 0.071520" quat="0.149881 0.982988 -0.104926 0.016135">
+      <geom type="mesh" mesh="clavicle_right_mesh"/>
+      <inertial mass="0.0005" pos="0 0 0" diaginertia="1e-10 1e-10 1e-10"/>
+
+      <!-- Muscle origins on clavicle -->
+      <site name="Pec_C_Origin" pos="0.001685 -0.001215 0.000368" rgba=".1 .2 .6 .5" size="0.0002"/>
+      <site name="AD_Origin" pos="0.001041 0.005061 -0.000018" rgba=".1 .2 .6 .5" size="0.0002"/>
+      <site name="MD_Origin" pos="0.000438 0.007765 0.001086" rgba=".1 .2 .6 .5" size="0.0002"/>
+      <site name="Biceps_Long_Origin" pos="0.000819 0.005480 0.000670" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+      <!-- Scapula: fixed to clavicle (no joints) -->
+      <body name="scapula" pos="-0.008751 0.004141 0.006510" quat="0.639001 0.064200 0.435113 -0.631057">
+        <geom type="mesh" mesh="scapula_right_mesh"/>
+        <inertial mass="0.001" pos="0 0 0" diaginertia="1e-9 1e-9 1e-9"/>
+
+        <!-- Muscle origins on scapula -->
+        <site name="Lat_Origin" pos="-0.002844 0.001022 0.002735" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="PD_Origin" pos="-0.001048 0.003363 -0.001202" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="Triceps_Long_Origin" pos="-0.000384 0.008800 -0.000243" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="Supraspinatus_Origin" pos="0.001304 0.000580 -0.001051" rgba=".1 .6 .2 .5" size="0.0002"/>
+        <site name="Infraspinatus_Origin" pos="-0.001242 -0.000022 0.000952" rgba=".1 .6 .2 .5" size="0.0002"/>
+        <site name="Subscapularis_Origin" pos="0.002313 0.001802 -0.001403" rgba=".1 .6 .2 .5" size="0.0002"/>
+
+        <!-- Humerus: 3 DOF shoulder (elevation, extension, rotation) -->
+        <body name="humerus" pos="0.000000 0.010813 -0.000000" quat="-0.371895 -0.035161 -0.437159 -0.818138">
+          <!-- Joint definitions from vnl-playground eric/janelia branch (source of truth) -->
+          <joint name="sh_rotation" type="hinge" pos="0 0 0" axis="0 1 0" range="-70 40" limited="true"/>
+          <joint name="sh_extension" type="hinge" pos="0 0 0" axis="0 0 1" range="-70 40" limited="true"/>
+          <!-- sh_elv lower limit widened from -25 to -60 for v4 registered data.
+               v5 registration should fix alignment so original -25 limit works. -->
+          <joint name="sh_elv" type="hinge" pos="0 0 0" axis="1 0 0" range="-60 89" limited="true"/>
+          <geom type="mesh" mesh="humerus_right_mesh"/>
+          <inertial pos="0 0.005 0" mass="0.0001258" diaginertia="3e-8 3e-8 3e-8"/>
+
+          <!-- Muscle sites on humerus -->
+          <site name="Pec_C_Insertion" pos="0.001309 0.004713 0.001702" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Lat_Insertion" pos="-0.000707 0.002131 0.000500" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="AD_Insertion" pos="0.001491 0.004709 0.001681" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="PD_Insertion" pos="0.001547 0.004007 0.001475" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="MD_Insertion" pos="0.001468 0.004771 0.001558" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Triceps_Lateral_Origin" pos="0.000793 0.000307 -0.000113" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Brachialis_Origin" pos="0.000321 0.000785 -0.000406" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+          <!-- Elbow wrapping cylinder and side sites -->
+          <!-- <geom name="elbow_wrap" type="cylinder" pos="0 0.010368 0"
+                quat="0.707107 0 0.707107 0" size="0.0012 0.003"
+                group="2" rgba="0.3 0.3 0.8 0.2"/> -->
+          <site name="Flexor_Side" pos="0.000000 0.010368 0.003000" rgba=".2 .8 .2 .3" size="0.0002"/>
+          <site name="Extensor_Side" pos="0.000000 0.010368 -0.003000" rgba=".8 .2 .2 .3" size="0.0002"/>
+
+          <!-- Rotator cuff muscle insertions on humerus -->
+          <site name="Supraspinatus_Insertion" pos="0.000982 -0.000624 -0.000019" rgba=".1 .6 .2 .5" size="0.0002"/>
+          <site name="Infraspinatus_Insertion" pos="0.001128 -0.000025 0.000144" rgba=".1 .6 .2 .5" size="0.0002"/>
+          <site name="Subscapularis_Insertion" pos="-0.001173 -0.000348 -0.000056" rgba=".1 .6 .2 .5" size="0.0002"/>
+
+          <!-- Ulna + Radius: 1 DOF elbow flexion/extension -->
+          <body name="ulna" pos="0.000000 0.010368 -0.000000" quat="0.747902 0.663606 -0.008811 0.013871">
+            <joint name="elbow" pos="0 0 0" axis="1 0 0" range="-70 80" limited="true"/>
+            <geom type="mesh" mesh="ulna_right_mesh"/>
+            <geom type="mesh" mesh="radius_right_mesh"/>
+            <inertial pos="0 0.004 0" mass="0.0001258" diaginertia="3e-8 3e-8 3e-8"/>
+
+            <!-- Muscle insertions on radius/ulna -->
+            <site name="Triceps_Lateral_Insertion" pos="0.000146 -0.001278 -0.000605" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Triceps_Long_Insertion" pos="-0.000725 -0.002276 -0.000782" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Brachialis_Insertion" pos="-0.000158 0.000938 -0.000585" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Biceps_Long_Insertion" pos="0.000295 0.001770 -0.000235" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+            <!-- Wrist landmark (tip of ulna, matching registration model) -->
+            <body name="wrist" pos="0 0.01092 0">
+              <inertial pos="0 0 0" mass="1e-6" diaginertia="1e-12 1e-12 1e-12"/>
+            </body>
+
+            <!-- Hand/paw meshes (frozen, no joints, no collision) -->
+            <geom type="mesh" mesh="Retopo_102_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_106_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_107_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_139_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_140_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_142_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_143_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_144_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_005_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_010_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_014_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_015_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_016_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_017_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_031_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_035_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_036_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_039_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_25_040_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_26_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_27_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_28_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_29_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_32_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_33_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_34_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_36_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_38_004_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_004_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_006_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_007_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_008_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_010_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_012_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_013_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_014_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_015_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_016_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_019_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_020_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_022_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_023_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_025_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_026_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_027_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_028_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_029_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_030_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_032_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_033_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_034_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_035_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_036_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_037_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_038_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_039_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_043_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_044_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_045_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_046_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_047_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_048_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_049_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_050_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_051_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_052_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_053_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_054_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_055_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_056_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_057_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_059_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_060_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_061_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_062_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_063_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_066_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_067_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_3_070_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_40_004_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_41_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_42_004_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_44_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_45_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_46_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_48_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_49_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_50_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_51_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_52_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_54_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_56_007_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_57_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_59_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_60_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_61_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_62_002_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_63_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_64_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_65_001_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_66_003_mesh" class="hand_visual"/>
+            <geom type="mesh" mesh="Retopo_67_mesh" class="hand_visual"/>
+          </body>
+        </body>
+      </body>
+    </body>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <!-- Shoulder translation (position servos) -->
+    <position name="sh_tx_act" joint="sh_tx" kp="10" ctrlrange="-0.01 0.01"/>
+    <position name="sh_ty_act" joint="sh_ty" kp="10" ctrlrange="-0.01 0.01"/>
+    <position name="sh_tz_act" joint="sh_tz" kp="10" ctrlrange="-0.01 0.01"/>
+    <!-- Shoulder rotation (position servos) -->
+    <position name="sh_rotation_act" joint="sh_rotation" kp="1" ctrlrange="-70 40"/>
+    <position name="sh_extension_act" joint="sh_extension" kp="1" ctrlrange="-70 40"/>
+    <position name="sh_elv_act" joint="sh_elv" kp="1" ctrlrange="-60 89"/>
+    <!-- Elbow (position servo) -->
+    <position name="elbow_act" joint="elbow" kp="1" ctrlrange="-70 80"/>
+  </actuator>
+
+</mujoco>

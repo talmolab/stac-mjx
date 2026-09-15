@@ -1,0 +1,498 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="mouse_forelimb_right_hand_v21">
+  <!--
+    Mouse right forelimb musculoskeletal model with an articulated hand.
+    Proximal arm (shoulder/elbow/forearm/wrist) is unchanged from v18:
+    same STL meshes, same muscle sites, same joints/ranges.
+
+    v21: sh_rotation, sh_extension, sh_elv, and elbow are now driven by the
+    12 muscles from mouse_forelimb_right_janelia_moving_shoulder_muscle.xml
+    (Pec_C, Lat, AD, PD, MD, Triceps_Lateral, Triceps_Long, Brachialis,
+    Biceps_Long, Supraspinatus, Infraspinatus, Subscapularis) instead of
+    torque motors. sh_tx/ty/tz, forearm_supination, wrist_flexion,
+    rz_N_L_C_right, and all hand joints remain torque-motor driven.
+
+    v19: the old 104-piece flat, unjointed Retopo_*.stl hand mesh is replaced
+    with Shravan's articulated hand (carpals -> metacarpals -> phalanx
+    chains, OBJ meshes, models/v19/), matched to the old hand via
+    models/shravan_forearm/old_to_new_mesh_mapping.csv. See
+    scratch/plans/PLAN_v19_hand_model.md for the full design rationale.
+
+    Joint summary (4 DOF arm, unchanged from v18):
+      sh_elv:       shoulder elevation,  pitch about Y, [-70, 0] deg
+      sh_extension: shoulder extension,  yaw about Z,   [-70, 40] deg
+      sh_rotation:  shoulder rotation,   roll about X,  [-25, 89] deg
+      elbow:        elbow flex/extend,   about X,       [-70, 80] deg
+
+    Wrist/hand joints (new in v19 except forearm_supination/wrist_flexion):
+      forearm_supination: forearm twist,      about Y, [-90, 90] deg (v17)
+      wrist_flexion:      wrist flex/extend,   about X, [-60, 60] deg (v18)
+      rz_N_L_C_right:     wrist radial/ulnar deviation, about Z, [-15, 15] deg
+      rx_Phalanx_hand_1_x_right: MCP flex,    about X, [-20, 90] deg (x=1..5)
+      rz_Phalanx_hand_1_x_right: MCP spread,  about Z, [-20, 20] deg (x=1..5)
+        (no MCP twist axis: fully rigid, per Eric)
+      rx_Phalanx_hand_2_x_right: PIP flex,    about X, [0, 100] deg (x=1..5)
+      Phalanx_hand_3_x_right (DIP, x=2..5) is frozen: no joint, just marks
+        where the dx_t keypoint sits (digit 1/thumb has no 3rd segment).
+      Metacarpals, carpals, and all sesamoids are rigid (no joints), matching
+      Shravan's own model.
+  -->
+
+  <compiler angle="degree" meshdir="/mnt/vast/niyo/stac-mjx/models/v21">
+    <!-- v21 STAC variant: muscles commented out below, so no muscle length
+         range to compute, lengthrange directive dropped (see actuator/
+         tendon comment-out below for why). -->
+  </compiler>
+
+  <option integrator="RK4" timestep="0.001" solver="CG" iterations="6" ls_iterations="6"/>
+
+  <default>
+    <joint limited="true" solreflimit="0.01 1" solimplimit="0.99 0.9999 0" armature="1e-9" damping="1e-6" stiffness="1e-12"/>
+    <muscle ctrllimited="true" ctrlrange="0 1"/>
+
+    <geom contype="0" conaffinity="0"/>
+    <default class="hand_visual">
+      <geom contype="0" conaffinity="0"/>
+    </default>
+  </default>
+
+  <size njmax="1000" nconmax="400" nuser_jnt="1"/>
+
+  <visual>
+    <headlight diffuse=".5 .5 .5" specular="1 1 1"/>
+    <global offwidth="2048" offheight="1536"/>
+    <quality shadowsize="8192"/>
+    <scale framelength="0.5" framewidth="0.01"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="0.6 0.8 1" width="256" height="1536"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+    <mesh name="clavicle_right_mesh" file="clavicle_right.stl"/>
+    <mesh name="scapula_right_mesh" file="scapula_right.stl"/>
+    <mesh name="humerus_right_mesh" file="humerus_right.stl"/>
+    <mesh name="radius_right_mesh" file="radius_right.stl"/>
+    <mesh name="ulna_right_mesh" file="ulna_right.stl"/>
+    <!-- Hand meshes: Shravan's articulated hand (carpals/metacarpals/phalanges/
+         sesamoids), OBJ format, matched to the old Retopo hand via
+         models/shravan_forearm/old_to_new_mesh_mapping.csv. -->
+    <material name="bone" specular="0.5" shininess="0.9" reflectance="0.0" rgba="0.559 0.559 0.559 1.0"/>
+    <mesh name="Capitate_right_bone" file="Capitate_right_bone.obj"/>
+    <mesh name="Centrale_right_bone" file="Centrale_right_bone.obj"/>
+    <mesh name="Falsiformis_right_bone" file="Falsiformis_right_bone.obj"/>
+    <mesh name="Hamate_right_bone" file="Hamate_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_1_right_bone" file="Metacarpal_hand_1_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_2_right_bone" file="Metacarpal_hand_2_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_3_right_bone" file="Metacarpal_hand_3_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_4_right_bone" file="Metacarpal_hand_4_right_bone.obj"/>
+    <mesh name="Multangular_right_bone" file="Multangular_right_bone.obj"/>
+    <mesh name="Navicular_lunate_right_bone" file="Navicular_lunate_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_1_right_bone" file="Phalanx_hand_1_1_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_2_right_bone" file="Phalanx_hand_1_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_3_right_bone" file="Phalanx_hand_1_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_4_right_bone" file="Phalanx_hand_1_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_5_right_bone" file="Phalanx_hand_1_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_1_right_bone" file="Phalanx_hand_2_1_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_2_right_bone" file="Phalanx_hand_2_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_3_right_bone" file="Phalanx_hand_2_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_4_right_bone" file="Phalanx_hand_2_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_5_right_bone" file="Phalanx_hand_2_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_2_right_bone" file="Phalanx_hand_3_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_3_right_bone" file="Phalanx_hand_3_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_4_right_bone" file="Phalanx_hand_3_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_5_right_bone" file="Phalanx_hand_3_5_right_bone.obj"/>
+    <mesh name="Pisiform_right_bone" file="Pisiform_right_bone.obj"/>
+    <mesh name="Sesamoid_elbow_right_bone" file="Sesamoid_elbow_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_a_right_bone" file="Sesamoid_hand_a_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_b_right_bone" file="Sesamoid_hand_b_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_c_right_bone" file="Sesamoid_hand_c_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_d_right_bone" file="Sesamoid_hand_d_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_e_right_bone" file="Sesamoid_hand_e_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_f_right_bone" file="Sesamoid_hand_f_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_g_right_bone" file="Sesamoid_hand_g_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_h_right_bone" file="Sesamoid_hand_h_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_i_right_bone" file="Sesamoid_hand_i_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_j_right_bone" file="Sesamoid_hand_j_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_k_right_bone" file="Sesamoid_hand_k_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_l_right_bone" file="Sesamoid_hand_l_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_m_right_bone" file="Sesamoid_hand_m_right_bone.obj"/>
+    <mesh name="Triangular_right_bone" file="Triangular_right_bone.obj"/>
+    <mesh name="mesh.260_bone" file="mesh.260_bone.obj"/>
+  </asset>
+
+  <worldbody>
+    <light directional="true"/>
+    <!-- ========================= -->
+    <!-- Joystick geometry from compute_joystick_geometry.py (static
+         base/ball/bottom calibration, not per-trial mocap tracking): shaft
+         14.363mm (bottom to base), ball 1.822mm above base, shaft tilted
+         39.4 degrees off vertical (not upright, per direct measurement).
+         Fixed in world, not attached to the arm. joystick_base sits at the
+         bottom/mount point (translates in world x/y only via
+         x_slide/y_slide); the child "joystick" body carries the fixed tilt
+         rotation so the shaft+ball geometry (unchanged local frame) point
+         the right physical direction. -->
+    <body name="joystick_base" pos="0.02754416 0.00213547 0.04439829">
+      <!-- Real-joystick-measured spring/damping coefficients (per Eric):
+           Kx=0.0148 N/mm, Ky=0.0112 N/mm -> x1000 for MuJoCo's N/m slide-joint
+           stiffness; Cx=0.0099 Ns/m, Cy=0.0082 Ns/m already match MuJoCo's
+           native Ns/m damping convention directly (no scaling needed). These
+           don't matter for STAC (no dynamics) but keep the model consistent/
+           reusable for future dynamics work. -->
+      <joint name="x_slide" type="slide" axis="1 0 0" limited="true" range="-0.006 0.006" damping="0.0099" stiffness="14.8"/>
+      <joint name="y_slide" type="slide" axis="0 1 0" limited="true" range="-0.006 0.006" damping="0.0082" stiffness="11.2"/>
+      <!-- z_slide: NOT a real physical DOF of the joystick rig (which only
+           moves in x/y); added to absorb per-trial registration noise.
+           joystick_base's position is fixed from ONE static calibration
+           measurement transformed via an averaged (across many trials)
+           rotation; each individual trial's own Procrustes rotation fit
+           (computed from that trial's own noisy resting arm pose) differs
+           slightly from that average, and since the joystick sits far from
+           the arm anchor point used for the fit, that small rotational
+           difference is amplified into a position error, observed as a
+           consistent per-trial Z-only bias (~1-4mm, no consistent X/Y bias)
+           between the mocap target and the model's fitted site, since
+           there was no DOF to correct it. A small z_slide lets STAC absorb
+           this the same way x_slide/y_slide already absorb the X/Y version
+           of the same noise, rather than showing up as irreducible
+           misalignment. -->
+      <joint name="z_slide" type="slide" axis="0 0 1" limited="true" range="-0.006 0.006" damping="0.01" stiffness="15"/>
+
+      <!-- small circular base (mount plate) -->
+      <geom name="circular_base" type="cylinder" size="0.0015 0.00025" pos="0 0 0"
+            rgba="0.6 0.6 0.6 1" contype="1" conaffinity="2"/>
+      <!-- cosmetic mount post extending down toward the rig floor, below
+           js_bottom (this body's own origin): purely visual, not a tracked
+           keypoint, doesn't affect fitting. Added because the real rig's
+           post visibly extends further down than js_bottom's own measured
+           point; length is an approximate visual match, not a calibrated
+           measurement. -->
+      <geom name="mount_post" type="cylinder" size="0.001 0.01" pos="0 0 -0.01"
+            rgba="0.5 0.5 0.5 1" contype="1" conaffinity="2"/>
+
+      <!-- shaft + ball, tilted to the measured shaft direction -->
+      <body name="joystick" pos="0 0 0" quat="0.94147265 -0.29173666 -0.16887560 0.00000000">
+        <!-- shaft: radius 0.001 m (2x visual, per Eric, not re-measured,
+             cosmetic only), half-length 0.0071815 m (total 0.014363 m =
+             measured bottom->base, unchanged) -->
+        <geom name="joystick_geom" type="cylinder" size="0.001 0.0071815" pos="0 0 0.0071815"
+              rgba="0 0 1 1" contype="1" conaffinity="2"/>
+        <!-- ball radius 0.002 m (2x visual, per Eric, not re-measured,
+             cosmetic only), center 0.001822 m above the base/top-of-shaft
+             point (measured), i.e. at 0.014363+0.001822, unchanged -->
+        <geom name="joystick_ball" type="sphere" size="0.002" pos="0 0 0.016184"
+              rgba="0 0 1 1" contype="1" conaffinity="2"/>
+        <inertial mass="0.001" pos="0 0 0.0071815" diaginertia="1e-7 1e-7 1e-7"/>
+      </body>
+    </body>
+
+    <body name="ground" euler="0 0 0">
+      <camera name="my_camera" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+      <camera name="close-profile" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+      <camera name="janelia_cam" pos="0.020 -0.035 0.065" xyaxes="1 0 0 0 0 1" fovy="55"/>
+    </body>
+
+    <!-- Shoulder base: allows small translational movement -->
+    <body name="shoulder_base" pos="0 0 0">
+      <joint name="sh_tx" type="slide" axis="1 0 0" range="-0.01 0.01" damping="0.1" stiffness="10" springref="0"/>
+      <joint name="sh_ty" type="slide" axis="0 1 0" range="-0.01 0.01" damping="0.1" stiffness="10" springref="0"/>
+      <joint name="sh_tz" type="slide" axis="0 0 1" range="-0.01 0.01" damping="0.1" stiffness="10" springref="0"/>
+
+    <!-- Clavicle: fixed to shoulder_base -->
+    <body name="clavicle" pos="0.014801 0.015912 0.071520" quat="0.149881 0.982988 -0.104926 0.016135">
+      <!-- v21: inertial computed from mesh geometry via density (was a rough isotropic
+           placeholder: mass=0.0005, diaginertia equal on all 3 axes -> a ~0.77mm equivalent
+           cube, not shaped like the actual bone). density chosen to preserve the same
+           total mass (0.0005 kg) while letting the inertia tensor reflect the real mesh shape. -->
+      <geom type="mesh" mesh="clavicle_right_mesh" density="160885.51"/>
+
+      <!-- Muscle origins on clavicle -->
+      <site name="Pec_C_Origin" pos="0.001685 -0.001215 0.000368" rgba=".1 .2 .6 .5" size="0.0002"/>
+      <site name="AD_Origin" pos="0.001041 0.005061 -0.000018" rgba=".1 .2 .6 .5" size="0.0002"/>
+      <site name="MD_Origin" pos="0.000438 0.007765 0.001086" rgba=".1 .2 .6 .5" size="0.0002"/>
+      <site name="Biceps_Long_Origin" pos="0.000819 0.005480 0.000670" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+      <!-- Scapula: fixed to clavicle (no joints) -->
+      <body name="scapula" pos="-0.008751 0.004141 0.006510" quat="0.639001 0.064200 0.435113 -0.631057">
+        <!-- v21: density chosen to preserve mass=0.001 kg (was an isotropic placeholder
+             inertia, ~1.73mm equivalent cube) while shaping inertia from the real mesh. -->
+        <geom type="mesh" mesh="scapula_right_mesh" density="34044.87"/>
+
+        <!-- Muscle origins on scapula -->
+        <site name="Lat_Origin" pos="-0.002844 0.001022 0.002735" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="PD_Origin" pos="-0.001048 0.003363 -0.001202" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="Triceps_Long_Origin" pos="-0.000384 0.008800 -0.000243" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="Supraspinatus_Origin" pos="0.001304 0.000580 -0.001051" rgba=".1 .6 .2 .5" size="0.0002"/>
+        <site name="Infraspinatus_Origin" pos="-0.001242 -0.000022 0.000952" rgba=".1 .6 .2 .5" size="0.0002"/>
+        <site name="Subscapularis_Origin" pos="0.002313 0.001802 -0.001403" rgba=".1 .6 .2 .5" size="0.0002"/>
+
+        <!-- Humerus: 3 DOF shoulder (elevation, extension, rotation) -->
+        <body name="humerus" pos="0.000000 0.010813 -0.000000" quat="-0.371895 -0.035161 -0.437159 -0.818138">
+          <!-- Joint definitions from vnl-playground eric/janelia branch (source of truth) -->
+          <joint name="sh_rotation" type="hinge" pos="0 0 0" axis="0 1 0" armature="4e-10" damping="1e-6" stiffness="0" range="-70 40" limited="true"/>
+          <joint name="sh_extension" type="hinge" pos="0 0 0" axis="0 0 1" armature="4e-10" damping="1e-6" stiffness="0" range="-80 65" limited="true"/>
+          <!-- v21: sh_rotation/sh_elv/elbow ranges restored to moving_shoulder_muscle.xml's ranges -
+               the muscle force-length calibration (lengthrange) is computed by sweeping each joint through
+               its declared range, so muscle-driven joints must keep the ranges they were tuned against.
+               sh_extension is widened from donor's -70/40 to -80/65 per Eric's request (2026-07-14):
+               -90/90 was tried first but slams to the new limit under Biceps_Long drive (0.44 -> 1.57
+               vs donor), breaking the close match; -80/65 keeps Biceps_Long tracking donor closely
+               (0.494 vs 0.436) while still giving more room than donor's original range. -->
+          <joint name="sh_elv" type="hinge" pos="0 0 0" axis="1 0 0" armature="4e-10" damping="1e-6" stiffness="0" range="-60 89" limited="true"/>
+          <!-- v21: density chosen to preserve mass=0.0001258 kg (donor-matched); was an
+               isotropic placeholder inertia (~26.75mm equivalent cube vs the real ~10mm
+               bone) - now shaped from the actual mesh geometry. -->
+          <geom type="mesh" mesh="humerus_right_mesh" density="4085.61"/>
+
+          <!-- Muscle sites on humerus -->
+          <site name="Pec_C_Insertion" pos="0.001309 0.004713 0.001702" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Lat_Insertion" pos="-0.000707 0.002131 0.000500" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="AD_Insertion" pos="0.001491 0.004709 0.001681" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="PD_Insertion" pos="0.001547 0.004007 0.001475" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="MD_Insertion" pos="0.001468 0.004771 0.001558" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Triceps_Lateral_Origin" pos="0.000793 0.000307 -0.000113" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Brachialis_Origin" pos="0.000321 0.000785 -0.000406" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+          <!-- Elbow wrapping cylinder and side sites -->
+          <!-- <geom name="elbow_wrap" type="cylinder" pos="0 0.010368 0"
+                quat="0.707107 0 0.707107 0" size="0.0012 0.003"
+                group="2" rgba="0.3 0.3 0.8 0.2"/> -->
+          <site name="Flexor_Side" pos="0.000000 0.010368 0.003000" rgba=".2 .8 .2 .3" size="0.0002"/>
+          <site name="Extensor_Side" pos="0.000000 0.010368 -0.003000" rgba=".8 .2 .2 .3" size="0.0002"/>
+
+          <!-- Rotator cuff muscle insertions on humerus -->
+          <site name="Supraspinatus_Insertion" pos="0.000982 -0.000624 -0.000019" rgba=".1 .6 .2 .5" size="0.0002"/>
+          <site name="Infraspinatus_Insertion" pos="0.001128 -0.000025 0.000144" rgba=".1 .6 .2 .5" size="0.0002"/>
+          <site name="Subscapularis_Insertion" pos="-0.001173 -0.000348 -0.000056" rgba=".1 .6 .2 .5" size="0.0002"/>
+
+          <!-- Ulna + Radius: 1 DOF elbow flexion/extension -->
+          <body name="ulna" pos="0.000000 0.010368 -0.000000" quat="0.747902 0.663606 -0.008811 0.013871">
+            <joint name="elbow" pos="0 0 0" axis="1 0 0" armature="4e-10" damping="1e-6" stiffness="0" range="-70 80" limited="true"/>
+            <!-- v21: density chosen to preserve combined mass=0.0001258 kg across all 3
+                 geoms (donor-matched); was an isotropic placeholder inertia (~26.75mm
+                 equivalent cube vs the real ~10mm bone) - now shaped from the actual mesh. -->
+            <geom type="mesh" mesh="ulna_right_mesh" density="6790.82"/>
+            <geom type="mesh" mesh="radius_right_mesh" density="6790.82"/>
+            <geom name="Sesamoid_elbow_right_bone" mesh="Sesamoid_elbow_right_bone" type="mesh" material="bone" class="hand_visual" pos="0.00117067 0.00050090 0.00006615" quat="0.22233319 0.10212072 0.01283039 0.96952292" density="6790.82"/>
+
+            <!-- Muscle insertions on radius/ulna -->
+            <site name="Triceps_Lateral_Insertion" pos="0.000146 -0.001278 -0.000605" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Triceps_Long_Insertion" pos="-0.000725 -0.002276 -0.000782" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Brachialis_Insertion" pos="-0.000158 0.000938 -0.000585" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Biceps_Long_Insertion" pos="0.000295 0.001770 -0.000235" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+            <!-- Wrist landmark (tip of ulna, matching registration model) -->
+            <!-- "wrist" is anatomically Shravan's N_L_C_right (carpal complex); kept as "wrist" for STAC config/script compatibility. -->
+            <body name="wrist" pos="0 0.01092 0">
+              <joint name="forearm_supination" type="hinge" pos="0 0 0" axis="0 1 0" range="-90 90" limited="true" damping="1e-3"/>
+              <joint name="wrist_flexion" type="hinge" pos="0 0 0" axis="1 0 0" range="-60 60" limited="true" damping="1e-3"/>
+              <joint name="rz_N_L_C_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-15 15" limited="true" damping="1e-3"/>
+                <!-- v21: density chosen to preserve combined mass=1e-4 kg across all 7
+                     geoms; was an isotropic placeholder inertia (~17.32mm equivalent cube) -
+                     now shaped from the actual carpal mesh geometry. -->
+                <geom name="Navicular_lunate_right_bone" type="mesh" mesh="Navicular_lunate_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Pisiform_right_bone" type="mesh" mesh="Pisiform_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Triangular_right_bone" type="mesh" mesh="Triangular_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Hamate_right_bone" type="mesh" mesh="Hamate_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Falsiformis_right_bone" type="mesh" mesh="Falsiformis_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Centrale_right_bone" type="mesh" mesh="Centrale_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Capitate_right_bone" type="mesh" mesh="Capitate_right_bone" pos="0.00055734 0.00049810 -0.00055811" quat="0.22233320 0.10212090 0.01282941 0.96952291" material="bone" class="hand_visual" density="58706.12"/>
+                <body name="Metacarpal_hand_1_right" pos="-0.00075285 0.00108784 0.00010223" quat="0.84063821 -0.21217881 0.21002061 0.45188372">
+                  <body name="Phalanx_hand_1_1_right" pos="-2.3283064365386963e-09 0.0006753604393452406 4.3655745685100555e-09" quat="0.9412590861320496 0.25909334421157837 0.2048787921667099 -0.07019030302762985">
+                    <joint name="rx_Phalanx_hand_1_1_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_1_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="5e-6"/>
+                    <body name="Phalanx_hand_2_1_right" pos="-4.190951585769653e-09 0.000659746234305203 1.8044374883174896e-09" quat="0.9700451493263245 -0.22801433503627777 0.06510783731937408 0.052753351628780365">
+                      <joint name="rx_Phalanx_hand_2_1_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <geom name="Phalanx_hand_2_1_right_bone" mesh="Phalanx_hand_2_1_right_bone" pos="-1.3737007975578308e-08 2.2118911147117615e-09 1.5779733075760305e-08" quat="0.5377950072288513 -0.30074453353881836 -0.394574910402298 0.6816450357437134" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    </body>
+                    <geom name="Phalanx_hand_1_1_right_bone" mesh="Phalanx_hand_1_1_right_bone" pos="-1.7462298274040222e-08 7.799826562404633e-09 2.136221155524254e-08" quat="0.44284218549728394 -0.3491652011871338 -0.20818118751049042 0.7991464734077454" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  </body>
+                  <geom name="Sesamoid_hand_b_right_bone" mesh="Sesamoid_hand_b_right_bone" pos="-9.510060772299767e-05 0.0006985221989452839 -0.0003126088413409889" quat="0.6060397028923035 -0.06480149924755096 -0.28776922821998596 0.7387188673019409" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Multangular_right_bone" mesh="Multangular_right_bone" pos="-7.450580596923828e-09 -2.3283064365386963e-10 5.704350769519806e-09" quat="0.6060397624969482 -0.064801424741745 -0.2877688407897949 0.7387189269065857" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_1_right_bone" mesh="Metacarpal_hand_1_right_bone" pos="-1.0419171303510666e-08 4.656612873077393e-10 1.9848812371492386e-08" quat="0.6060397028923035 -0.06480149924755096 -0.28776922821998596 0.7387188673019409" type="mesh" material="bone" group="0" class="hand_visual"/>
+                </body>
+                <body name="Metacarpal_hand_2_right" pos="-0.00050081 0.00102254 -0.00003209" quat="0.96193011 -0.10505592 0.22118831 0.12136493">
+                  <body name="Phalanx_hand_1_2_right" pos="0.0 0.0025264862924814224 2.3355823941528797e-09" quat="0.9702768325805664 -0.2230159491300583 0.013910632580518723 0.09291502088308334">
+                    <joint name="rx_Phalanx_hand_1_2_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_2_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="5e-6"/>
+                    <body name="Phalanx_hand_2_2_right" pos="4.656612873077393e-10 0.001935172127559781 6.100890459492803e-09" quat="0.6904547214508057 -0.7004553079605103 0.16852742433547974 0.06506269425153732">
+                      <joint name="rx_Phalanx_hand_2_2_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <body name="Phalanx_hand_3_2_right" pos="-3.2232492230832577e-09 0.0012717497302219272 -2.4010660126805305e-09" quat="0.9922130703926086 0.12442358583211899 0.005361741408705711 0.0017839273205026984">
+                        <geom name="Phalanx_hand_3_2_right_bone" mesh="Phalanx_hand_3_2_right_bone" pos="-1.2580130714923143e-08 -3.6197889130562544e-09 -6.628397386521101e-09" quat="0.3205825388431549 0.0563364252448082 -0.8533391952514648 0.4072656035423279" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      </body>
+                      <geom name="Phalanx_hand_2_2_right_bone" mesh="Phalanx_hand_2_2_right_bone" pos="2.2264430299401283e-09 6.195250534801744e-09 6.199115887284279e-09" quat="0.3149254024028778 0.09949176758527756 -0.895548403263092 0.2981887459754944" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    </body>
+                    <geom name="Phalanx_hand_1_2_right_bone" mesh="Phalanx_hand_1_2_right_bone" pos="1.7462298274040222e-09 -3.4924596548080444e-10 6.373738870024681e-09" quat="0.41865482926368713 -0.04337691143155098 -0.3499208390712738 0.8369002342224121" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  </body>
+                  <geom name="Sesamoid_hand_j_right_bone" mesh="Sesamoid_hand_j_right_bone" pos="-0.0002882283879444003 0.0023140995763242245 -0.00021051765361335129" quat="0.3236443102359772 -0.09129954129457474 -0.15108492970466614 0.9295655488967896" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_i_right_bone" mesh="Sesamoid_hand_i_right_bone" pos="7.264199666678905e-05 0.002207196317613125 -0.00034684670390561223" quat="0.3236443102359772 -0.09129954129457474 -0.15108492970466614 0.9295655488967896" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_2_right_bone" mesh="Metacarpal_hand_2_right_bone" pos="4.656612873077393e-10 -1.6298145055770874e-09 -2.08092387765646e-09" quat="0.3236444294452667 -0.09129958599805832 -0.15108466148376465 0.9295656085014343" type="mesh" material="bone" group="0" class="hand_visual"/>
+                </body>
+                <body name="Metacarpal_hand_3_right" pos="-0.00010923 0.00134996 -0.00051046" quat="0.95156540 -0.14373771 0.26952565 0.03490982">
+                  <body name="Phalanx_hand_1_3_right" pos="0.0 0.0029940526001155376 2.3283064365386963e-09" quat="0.9113356471061707 -0.3853786289691925 0.11947517842054367 0.08170906454324722">
+                    <joint name="rx_Phalanx_hand_1_3_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_3_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="5e-6"/>
+                    <body name="Phalanx_hand_2_3_right" pos="7.8580342233181e-10 0.0021216566674411297 -3.790773916989565e-09" quat="0.6829209327697754 -0.7289433479309082 -0.017449578270316124 0.04422789439558983">
+                      <joint name="rx_Phalanx_hand_2_3_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <body name="Phalanx_hand_3_3_right" pos="3.6670826375484467e-09 0.0014590879436582327 3.6088749766349792e-09" quat="0.9649937748908997 0.2602382004261017 0.03198396787047386 -0.00633679423481226">
+                        <geom name="Phalanx_hand_3_3_right_bone" mesh="Phalanx_hand_3_3_right_bone" pos="3.725290298461914e-09 1.6298145055770874e-09 -2.9976945370435715e-09" quat="0.3621242940425873 0.013692897744476795 -0.8684067130088806 0.3384499251842499" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      </body>
+                      <geom name="Phalanx_hand_2_3_right_bone" mesh="Phalanx_hand_2_3_right_bone" pos="7.0140231400728226e-09 6.948539521545172e-09 6.461050361394882e-09" quat="0.37580403685569763 0.11277425289154053 -0.9145892262458801 0.09787677228450775" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <geom name="Sesamoid_hand_m_right_bone" mesh="Sesamoid_hand_m_right_bone" pos="-0.009600837714970112 0.017646538093686104 0.010071932338178158" quat="1.0 -1.86264600188224e-07 -1.9371513815258368e-07 -1.6763866739211153e-08" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    </body>
+                    <geom name="Phalanx_hand_1_3_right_bone" mesh="Phalanx_hand_1_3_right_bone" pos="5.704350769519806e-09 1.3969838619232178e-09 2.6193447411060333e-10" quat="0.31856241822242737 -0.1581815779209137 -0.5548154711723328 0.7521146535873413" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  </body>
+                  <geom name="Sesamoid_hand_h_right_bone" mesh="Sesamoid_hand_h_right_bone" pos="-0.00023933674674481153 0.0026463146787136793 -0.00015547324437648058" quat="0.23418956995010376 -0.13173097372055054 -0.19063882529735565 0.9441710710525513" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_g_right_bone" mesh="Sesamoid_hand_g_right_bone" pos="9.919144213199615e-05 0.0026378417387604713 -0.0002586571790743619" quat="0.23418956995010376 -0.13173097372055054 -0.19063882529735565 0.9441710710525513" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_3_right_bone" mesh="Metacarpal_hand_3_right_bone" pos="4.190951585769653e-09 3.4924596548080444e-09 -4.307366907596588e-09" quat="0.23418962955474854 -0.13173124194145203 -0.1906386911869049 0.9441710710525513" type="mesh" material="bone" group="0" class="hand_visual"/>
+                </body>
+                <body name="Metacarpal_hand_4_right" pos="0.00023745 0.00136977 -0.00075204" quat="0.83615941 -0.20110031 0.50451559 -0.07655143">
+                  <body name="Phalanx_hand_1_4_right" pos="-3.6088749766349792e-09 0.002738404553383589 1.7462298274040222e-09" quat="0.8843016624450684 -0.4454006254673004 -0.12204150855541229 -0.06880953162908554">
+                    <joint name="rx_Phalanx_hand_1_4_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_4_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="5e-6"/>
+                    <body name="Phalanx_hand_2_4_right" pos="9.313225746154785e-10 0.0021024688612669706 1.2514647096395493e-09" quat="0.7246006727218628 -0.6871841549873352 0.035348862409591675 0.038500502705574036">
+                      <joint name="rx_Phalanx_hand_2_4_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <body name="Phalanx_hand_3_4_right" pos="3.3760443329811096e-09 0.0014054172206670046 2.735760062932968e-09" quat="0.9227254986763 0.3434157967567444 -0.1570330709218979 0.07735565304756165">
+                        <geom name="Phalanx_hand_3_4_right_bone" mesh="Phalanx_hand_3_4_right_bone" pos="-1.6298145055770874e-09 -1.280568540096283e-09 -4.132743924856186e-09" quat="0.3974566161632538 -0.16386625170707703 -0.8328204154968262 0.3486921787261963" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      </body>
+                      <geom name="Phalanx_hand_2_4_right_bone" mesh="Phalanx_hand_2_4_right_bone" pos="2.0372681319713593e-10 -9.1313268058002e-09 -1.1641532182693481e-10" quat="0.2652638256549835 -0.005043393466621637 -0.963300883769989 0.040756773203611374" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <geom name="Sesamoid_hand_l_right_bone" mesh="Sesamoid_hand_l_right_bone" pos="-0.00013152202882338315 0.0015615944284945726 3.2363407171942526e-06" quat="1.0 -4.1723222921064007e-07 1.4901248235332787e-08 1.3783565577796253e-07" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    </body>
+                    <geom name="Phalanx_hand_1_4_right_bone" mesh="Phalanx_hand_1_4_right_bone" pos="4.6566128730773926e-09 2.2118911147117615e-09 -2.6047928258776665e-09" quat="0.22122715413570404 -0.14741139113903046 -0.6608185768127441 0.7018883228302002" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  </body>
+                  <geom name="Sesamoid_hand_f_right_bone" mesh="Sesamoid_hand_f_right_bone" pos="-0.00010717520490288734 0.0023600601125508547 -0.00026555440854281187" quat="0.09762340784072876 -0.3600209057331085 -0.2885972857475281 0.881797194480896" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_e_right_bone" mesh="Sesamoid_hand_e_right_bone" pos="0.00026484497357159853 0.002384277293458581 -0.00015140289906412363" quat="0.09762340784072876 -0.3600209057331085 -0.2885972857475281 0.881797194480896" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_4_right_bone" mesh="Metacarpal_hand_4_right_bone" pos="-3.7834979593753815e-09 2.6775524020195007e-09 9.313225746154785e-10" quat="0.09762366861104965 -0.3600209355354309 -0.288597047328949 0.881797194480896" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_a_right_bone" mesh="Sesamoid_hand_a_right_bone" pos="0.00010335509432479739 9.248079732060432e-05 -0.0005145266186445951" quat="0.09762340784072876 -0.3600209057331085 -0.2885972857475281 0.881797194480896" type="mesh" material="bone" group="0" class="hand_visual"/>
+                </body>
+                <body name="Metacarpal_hand_5_right" pos="0.00026654 0.00105334 -0.00126157" quat="0.87884531 -0.23195527 0.39581400 -0.13099216">
+                  <body name="Phalanx_hand_1_5_right" pos="2.7939677238464355e-09 0.0015071528032422066 -7.2177499532699585e-09" quat="0.8920971155166626 -0.2958480715751648 0.21937993168830872 -0.2617424726486206">
+                    <joint name="rx_Phalanx_hand_1_5_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_5_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="5e-6"/>
+                    <body name="Phalanx_hand_2_5_right" pos="2.7939677238464355e-09 0.0016548956045880914 -2.3283064365386963e-10" quat="0.7701461315155029 -0.6260324120521545 -0.11916793882846832 -0.027521386742591858">
+                      <joint name="rx_Phalanx_hand_2_5_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <body name="Phalanx_hand_3_5_right" pos="1.1641532182693481e-09 0.0009782090783119202 -4.743924364447594e-09" quat="0.9202215671539307 0.3800574541091919 0.0036208066157996655 -0.09346402436494827">
+                        <geom name="Phalanx_hand_3_5_right_bone" mesh="Phalanx_hand_3_5_right_bone" pos="9.313225746154785e-10 7.275957614183426e-09 5.238689482212067e-09" quat="0.019678175449371338 0.20763327181339264 0.8132184147834778 -0.5433019995689392" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      </body>
+                      <geom name="Phalanx_hand_2_5_right_bone" mesh="Phalanx_hand_2_5_right_bone" pos="-4.656612873077393e-10 1.1641532182693481e-09 -7.0140231400728226e-09" quat="0.11452791839838028 -0.2725869417190552 -0.9354920983314514 0.1934794932603836" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <geom name="Sesamoid_hand_k_right_bone" mesh="Sesamoid_hand_k_right_bone" pos="0.0005175815895199776 0.0008939142571762204 -0.00011641428136499599" quat="1.0 -2.4586918812019576e-07 -1.7136335372924805e-07 -4.842880585442799e-08" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    </body>
+                    <geom name="Phalanx_hand_1_5_right_bone" mesh="Phalanx_hand_1_5_right_bone" pos="-9.313225746154785e-10 6.984919309616089e-09 1.862645149230957e-09" quat="0.18860068917274475 0.330432653427124 0.6054871678352356 -0.699020266532898" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  </body>
+                  <geom name="Sesamoid_hand_d_right_bone" mesh="Sesamoid_hand_d_right_bone" pos="-0.0001430489355698228 0.0012178976321592927 -0.00017739005852490664" quat="0.049786947667598724 -0.24411141872406006 -0.2882368266582489 0.9245812296867371" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_c_right_bone" mesh="Sesamoid_hand_c_right_bone" pos="0.00019097048789262772 0.001162791159003973 -0.0002698748139664531" quat="0.049786947667598724 -0.24411141872406006 -0.2882368266582489 0.9245812296867371" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_5_right_bone" mesh="mesh.260_bone" pos="6.6356733441352844e-09 4.3655745685100555e-09 -5.005858838558197e-09" quat="0.04978715255856514 -0.24411141872406006 -0.2882365584373474 0.9245812892913818" type="mesh" material="bone" group="0" class="hand_visual"/>
+                </body>
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+    </body>
+  </worldbody>
+
+  <!-- v21 STAC variant: tendons commented out (inert for STAC, which only
+       uses mj_forward/mjx.kinematics, never mj_step, so no muscle forces
+       ever apply). Uncomment together with the muscle actuators below to
+       restore real forward-dynamics muscle-driven simulation.
+  <tendon>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Pec_C">
+      <site site="Pec_C_Insertion"/>
+      <site site="Pec_C_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Lat">
+      <site site="Lat_Insertion"/>
+      <site site="Lat_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="AD">
+      <site site="AD_Insertion"/>
+      <site site="AD_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="PD">
+      <site site="PD_Insertion"/>
+      <site site="PD_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="MD">
+      <site site="MD_Insertion"/>
+      <site site="MD_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Triceps_Lateral">
+      <site site="Triceps_Lateral_Insertion"/>
+      
+      <site site="Triceps_Lateral_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Triceps_Long">
+      <site site="Triceps_Long_Insertion"/>
+      
+      <site site="Triceps_Long_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Brachialis">
+      <site site="Brachialis_Insertion"/>
+      
+      <site site="Brachialis_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Biceps_Long">
+      <site site="Biceps_Long_Insertion"/>
+      
+      <site site="Biceps_Long_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba="0 .8 .2 .5" name="Supraspinatus">
+      <site site="Supraspinatus_Insertion"/>
+      <site site="Supraspinatus_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba="0 .8 .2 .5" name="Infraspinatus">
+      <site site="Infraspinatus_Insertion"/>
+      <site site="Infraspinatus_Origin"/>
+    </spatial>
+    <spatial width=".0001" rgba="0 .8 .2 .5" name="Subscapularis">
+      <site site="Subscapularis_Insertion"/>
+      <site site="Subscapularis_Origin"/>
+    </spatial>
+  </tendon>
+  -->
+
+  <actuator>
+    <!-- v21 STAC variant: all motor/muscle actuators commented out (per
+         Eric), inert for STAC (mj_forward/mjx.kinematics only, never
+         mj_step). Uncomment for future forward-dynamics work.
+    
+    <motor name="sh_tx_act" joint="sh_tx" forcerange="-.001 .001"/>
+    <motor name="sh_ty_act" joint="sh_ty" forcerange="-.001 .001"/>
+    <motor name="sh_tz_act" joint="sh_tz" forcerange="-.001 .001"/>
+    
+    <muscle name="Pec_C" tendon="Pec_C" force=".2" vmax="15" range="0.5 1.2"/>
+    <muscle name="Lat" tendon="Lat" force=".2" vmax="15" range="0.75 1.05"/>
+    <muscle name="AD" tendon="AD" force=".4" vmax="15" range="0.5 1"/>
+    <muscle name="PD" tendon="PD" force=".3" vmax="15" range="0.6 1.1"/>
+    <muscle name="MD" tendon="MD" force=".3" vmax="15" range="0.55 1.2"/>
+    <muscle name="Triceps_Lateral" tendon="Triceps_Lateral" force=".1" vmax="15" range="0.82 1.05"/>
+    <muscle name="Triceps_Long" tendon="Triceps_Long" force=".1" vmax="15" range="0.7 1.1"/>
+    <muscle name="Brachialis" tendon="Brachialis" force=".25" vmax="15" range="0.7 1.2"/>
+    <muscle name="Biceps_Long" tendon="Biceps_Long" force=".1" vmax="15" range="0.7 1.05"/>
+    <muscle name="Supraspinatus" tendon="Supraspinatus" force=".5" vmax="15" range="0.5 1.2"/>
+    <muscle name="Infraspinatus" tendon="Infraspinatus" force=".5" vmax="15" range="0.5 1.2"/>
+    <muscle name="Subscapularis" tendon="Subscapularis" force=".6" vmax="15" range="0.5 1.2"/>
+    
+    <motor name="forearm_supination_act" joint="forearm_supination" forcerange="-.001 .001" ctrlrange="-5e-5 5e-5"/>
+    <motor name="wrist_flexion_act" joint="wrist_flexion" forcerange="-.001 .001" ctrlrange="-5e-5 3e-5"/>
+    <motor name="rz_N_L_C_right_act" joint="rz_N_L_C_right" forcerange="-.001 .001" ctrlrange="-5e-5 5e-5"/>
+    <motor name="rx_Phalanx_hand_1_1_right_act" joint="rx_Phalanx_hand_1_1_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rz_Phalanx_hand_1_1_right_act" joint="rz_Phalanx_hand_1_1_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_2_1_right_act" joint="rx_Phalanx_hand_2_1_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_1_2_right_act" joint="rx_Phalanx_hand_1_2_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rz_Phalanx_hand_1_2_right_act" joint="rz_Phalanx_hand_1_2_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_2_2_right_act" joint="rx_Phalanx_hand_2_2_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_1_3_right_act" joint="rx_Phalanx_hand_1_3_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rz_Phalanx_hand_1_3_right_act" joint="rz_Phalanx_hand_1_3_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_2_3_right_act" joint="rx_Phalanx_hand_2_3_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_1_4_right_act" joint="rx_Phalanx_hand_1_4_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rz_Phalanx_hand_1_4_right_act" joint="rz_Phalanx_hand_1_4_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_2_4_right_act" joint="rx_Phalanx_hand_2_4_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_1_5_right_act" joint="rx_Phalanx_hand_1_5_right" forcerange="-.001 .001" ctrlrange="-4e-6 1e-5"/>
+    <motor name="rz_Phalanx_hand_1_5_right_act" joint="rz_Phalanx_hand_1_5_right" forcerange="-.001 .001" ctrlrange="-3e-6 1e-5"/>
+    <motor name="rx_Phalanx_hand_2_5_right_act" joint="rx_Phalanx_hand_2_5_right" forcerange="-.001 .001" ctrlrange="-1e-5 1e-5"/>
+    -->
+  </actuator>
+
+</mujoco>

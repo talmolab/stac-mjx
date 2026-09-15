@@ -1,0 +1,15 @@
+model: mouse_arm_hand_joystick_v21
+
+fit_offsets_path: "v21_fit.h5"
+ik_only_path: "v21_ik.h5"
+data_path: ""    # set per-trial in run script
+num_clips: 1
+n_fit_frames: 126
+skip_fit_offsets: false
+skip_ik_only: false
+infer_qvels: true
+n_frames_per_clip: 126   # CFL trials are fixed-length 126-frame (5.04s @ 25fps) clips
+mujoco:
+  solver: "newton"
+  iterations: 1
+  ls_iterations: 4

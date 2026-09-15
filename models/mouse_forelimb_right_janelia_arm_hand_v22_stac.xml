@@ -1,0 +1,783 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mujoco model="mouse_forelimb_right_hand_v22_stac">
+  <!--
+    v22: multi-point muscle routing + wrist/hand/finger muscles, built from
+    Mouse_arm_rig_markers_curves_for_Jul15.blend (see
+    plan_v22_multipoint_muscle_routing.md for the full extraction plan).
+
+    IMPORTANT DEVIATION FROM A LIGHT v21 PATCH: Task 0 of that plan found
+    the new rig's rest pose differs from whatever pose produced v21's body
+    pos/quat (identical bone-to-bone distances, different relative
+    directions, confirmed not a simple global rotation since the Armature
+    object itself has an identity transform). So v22's entire kinematic
+    tree (every body's pos/quat, every skeletal mesh) was regenerated fresh
+    from the new .blend (build_v22_geometry.py), not copied from v21's XML.
+    Joint names/types/axes/ranges/damping/stiffness, inertial mass/density
+    values, and the joystick/ground bodies are unchanged from v21.
+
+    Muscles: the 12 muscles already driving v21's shoulder/elbow
+    (Pec_C, Lat, AD, PD, MD, Triceps_Lateral, Triceps_Long, Brachialis,
+    Biceps_Long, Supraspinatus, Infraspinatus, Subscapularis) now route
+    through their real multi-point paths instead of a single origin plus
+    insertion pair (several no longer need the old BONE_OVERRIDES hack,
+    since rotator cuff and triceps insertions are now natively on the
+    correct bone). 22 new wrist/hand/finger muscles were added: wrist
+    flexors/extensors plus pronator teres, finger extensors (edcA-D,
+    extensordigitiquatri, epl, epb), finger flexors (fdsA-C, the 4 flexor
+    digitorum profundus heads RH/SH/UH/MH), and one intrinsic hand muscle
+    (Abductor_digiti_quinti_hand). See muscle_scope_v22.py for the full
+    in/out/excluded accounting of all 53 muscles discovered in the rig.
+
+    No new bodies beyond v21: Pec_C's origin (bone T1 in the new rig) is
+    mapped onto the existing "clavicle" body rather than a separate fixed
+    anchor (Task 3 of the plan, option (b), per Eric 2026-07-15); it moves
+    statically with the clavicle, so the sh_tx/ty/tz slider translates it
+    along with the rest of the arm instead of leaving it fixed in place.
+
+    Tendons/actuators are shipped ACTIVE here (not commented out for STAC,
+    unlike v21); flip this if this model is headed back into a STAC run.
+    No torque motors (per Eric, 2026-07-15); muscles only.
+
+    v22 fix, 2026-07-15 (per Eric): forearm pronation/supination used to be
+    a hinge on "wrist" itself, with its axis expressed in wrist's own
+    (non-trivially rotated) local frame, so rotating it didn't cleanly spin
+    in place around the true elbow-to-wrist line; it wobbled/swung instead.
+    Fixed with a new "radius" body (see the ulna/radius/wrist assembly
+    below) sitting at ulna's own rest frame; matches anatomy too, since the
+    radius, not the ulna, is what actually rotates during pronation/
+    supination.
+  -->
+
+  <compiler angle="degree" meshdir="/mnt/vast/niyo/janelia_model/v22"/>
+
+  <option integrator="Euler" timestep="0.001" solver="Newton" iterations="6" ls_iterations="6"/>
+
+  <default>
+    <joint limited="true" solreflimit="0.01 1" solimplimit="0.99 0.9999 0" armature="1e-9" damping="1e-6" stiffness="1e-12"/>
+    <muscle ctrllimited="true" ctrlrange="0 1"/>
+
+    <geom contype="0" conaffinity="0"/>
+    <default class="hand_visual">
+      <geom contype="0" conaffinity="0"/>
+    </default>
+  </default>
+
+  <size njmax="1000" nconmax="400" nuser_jnt="1"/>
+
+  <visual>
+    <headlight diffuse=".5 .5 .5" specular="1 1 1"/>
+    <global offwidth="2048" offheight="1536"/>
+    <quality shadowsize="8192"/>
+    <scale framelength="0.5" framewidth="0.01"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="0.6 0.8 1" width="256" height="1536"/>
+    <texture name="grid" type="2d" builtin="checker" width="512" height="512" rgb1=".1 .2 .3" rgb2=".2 .3 .4"/>
+    <material name="grid" texture="grid" texrepeat="1 1" texuniform="true" reflectance=".2"/>
+    <mesh name="clavicle_right_mesh" file="clavicle_right.stl"/>
+    <mesh name="scapula_right_mesh" file="scapula_right.stl"/>
+    <mesh name="humerus_right_mesh" file="humerus_right.stl"/>
+    <mesh name="radius_right_mesh" file="radius_right.stl"/>
+    <mesh name="ulna_right_mesh" file="ulna_right.stl"/>
+    <material name="bone" specular="0.5" shininess="0.9" reflectance="0.0" rgba="0.559 0.559 0.559 1.0"/>
+    <mesh name="Capitate_right_bone" file="Capitate_right_bone.obj"/>
+    <mesh name="Centrale_right_bone" file="Centrale_right_bone.obj"/>
+    <mesh name="Falsiformis_right_bone" file="Falsiformis_right_bone.obj"/>
+    <mesh name="Hamate_right_bone" file="Hamate_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_1_right_bone" file="Metacarpal_hand_1_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_2_right_bone" file="Metacarpal_hand_2_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_3_right_bone" file="Metacarpal_hand_3_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_4_right_bone" file="Metacarpal_hand_4_right_bone.obj"/>
+    <mesh name="Metacarpal_hand_5_right_bone" file="Metacarpal_hand_5_right_bone.obj"/>
+    <mesh name="Multangular_right_bone" file="Multangular_right_bone.obj"/>
+    <mesh name="Navicular_lunate_right_bone" file="Navicular_lunate_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_1_right_bone" file="Phalanx_hand_1_1_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_2_right_bone" file="Phalanx_hand_1_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_3_right_bone" file="Phalanx_hand_1_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_4_right_bone" file="Phalanx_hand_1_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_1_5_right_bone" file="Phalanx_hand_1_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_1_right_bone" file="Phalanx_hand_2_1_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_2_right_bone" file="Phalanx_hand_2_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_3_right_bone" file="Phalanx_hand_2_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_4_right_bone" file="Phalanx_hand_2_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_2_5_right_bone" file="Phalanx_hand_2_5_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_2_right_bone" file="Phalanx_hand_3_2_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_3_right_bone" file="Phalanx_hand_3_3_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_4_right_bone" file="Phalanx_hand_3_4_right_bone.obj"/>
+    <mesh name="Phalanx_hand_3_5_right_bone" file="Phalanx_hand_3_5_right_bone.obj"/>
+    <mesh name="Pisiform_right_bone" file="Pisiform_right_bone.obj"/>
+    <mesh name="Sesamoid_elbow_right_bone" file="Sesamoid_elbow_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_a_right_bone" file="Sesamoid_hand_a_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_b_right_bone" file="Sesamoid_hand_b_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_c_right_bone" file="Sesamoid_hand_c_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_d_right_bone" file="Sesamoid_hand_d_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_e_right_bone" file="Sesamoid_hand_e_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_f_right_bone" file="Sesamoid_hand_f_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_g_right_bone" file="Sesamoid_hand_g_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_h_right_bone" file="Sesamoid_hand_h_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_i_right_bone" file="Sesamoid_hand_i_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_j_right_bone" file="Sesamoid_hand_j_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_l_right_bone" file="Sesamoid_hand_l_right_bone.obj"/>
+    <mesh name="Sesamoid_hand_m_right_bone" file="Sesamoid_hand_m_right_bone.obj"/>
+    <mesh name="Triangular_right_bone" file="Triangular_right_bone.obj"/>
+  </asset>
+
+  <worldbody>
+    <light directional="true"/>
+    <!-- v22, 2026-07-16: joystick_base re-anchored using STAC-fit data at
+         /Volumes/talmo/eric/stac-mjx/refined_STACed_data_v21 (240 frames,
+         all 3 animals CFL_35/36/37, ~80 each). That data was fit against a
+         model using v21's OWN rest pose (confirmed: its "clavicle" xpos at
+         a near-zero-shoulder-translation frame matches v21's authored
+         clavicle pos to ~1-5mm); since v22's rest pose differs from v21's
+         (Task 0's finding), the joystick's fitted world position in that
+         data can't be copied directly; it's expressed in v21's coordinate
+         frame, not v22's. Instead: at each frame, computed the joystick's
+         position as a local offset from "wrist" using THAT frame's fitted
+         wrist orientation (since the joystick itself is fixed in real
+         space; only the wrist moves relative to it), then re-applied that
+         local offset using v22's OWN wrist xpos/xquat at the same fitted
+         qpos values (joint angles transfer by name; joystick z_slide has no
+         v22 equivalent and was skipped, it only affects the OLD model's own
+         joystick DOF, not the arm chain). Result was stable across all 240
+         frames despite active reaching (per-animal std ~1-3mm, cross-animal
+         means agree within ~1.5mm), good evidence this transfer, despite
+         the rest-pose mismatch, gives a consistent answer. x_slide=0/
+         y_slide=0 at this anchor is now the STAC-aligned rest position;
+         previous anchor here was a geometric guess (near
+         Metacarpal_hand_3_right, then manually adjusted), not measured. -->
+    <body name="joystick_base" pos="-0.01264354 -0.03211015 0.04737563">
+      <joint name="x_slide" type="slide" axis="1 0 0" limited="true" range="-0.006 0.006" damping="0.0099" stiffness="14.8"/>
+      <joint name="y_slide" type="slide" axis="0 1 0" limited="true" range="-0.006 0.006" damping="0.0082" stiffness="11.2"/>
+      <geom name="circular_base" type="cylinder" size="0.0015 0.00025" pos="0 0 0" rgba="0.6 0.6 0.6 1" contype="1" conaffinity="2"/>
+      <body name="joystick" pos="0 0 0" quat="0.94389458 -0.21721094 0.24876180 0.00000000">
+        <geom name="joystick_geom" type="cylinder" size="0.001 0.0071815" pos="0 0 0.0071815" rgba="0 0 1 1" contype="1" conaffinity="2" density="40000"/>
+        <geom name="joystick_ball" type="sphere" size="0.002" pos="0 0 0.016184" rgba="0 0 1 1" contype="1" conaffinity="2"/>
+        <!-- <inertial mass="0.001" pos="0 0 0.0071815" diaginertia="1e-7 1e-7 1e-7"/> -->
+      </body>
+    </body>
+
+    <body name="ground" euler="0 0 0">
+      <camera name="my_camera" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+      <camera name="close-profile" pos="0.04 .004 0.037" fovy="20" quat="0.6532815 0.2705981 0.2705981 0.6532815"/>
+      <camera name="janelia_cam" pos="0.020 -0.035 0.065" xyaxes="1 0 0 0 0 1" fovy="55"/>
+    </body>
+
+    <!-- Shoulder base: allows small translational movement -->
+    <body name="shoulder_base" pos="0 0 0">
+      <joint name="sh_tx" type="slide" axis="1 0 0" range="-0.01 0.01" damping="0.1" stiffness="10" springref="0"/>
+      <joint name="sh_ty" type="slide" axis="0 1 0" range="-0.01 0.01" damping="0.1" stiffness="10" springref="0"/>
+      <joint name="sh_tz" type="slide" axis="0 0 1" range="-0.01 0.01" damping="0.1" stiffness="10" springref="0"/>
+      <body name="clavicle" pos="-0.00077637 -0.01474939 0.07146154" quat="0.08848527 0.63600993 -0.76341355 -0.06972465">
+        <geom type="mesh" mesh="clavicle_right_mesh" density="160885.51"/>
+        <site name="Pec_C_Origin" pos="0.001690 -0.000940 0.000409" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="Pec_C_via1" pos="0.003673 0.001616 0.001337" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="Pec_C_via2" pos="0.004120 0.003535 0.003103" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <site name="MD_Origin" pos="0.001004 0.005114 -0.000030" rgba=".1 .2 .6 .5" size="0.0002"/>
+        <body name="scapula" pos="-0.00875153 0.00414122 0.00650980" quat="0.63900059 0.06419990 0.43511349 -0.63105696">
+          <geom type="mesh" mesh="scapula_right_mesh" density="34044.87"/>
+          <site name="Lat_Origin" pos="-0.002869 0.001007 0.002679" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="AD_Origin" pos="-0.000900 0.011151 -0.001306" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="PD_Origin" pos="-0.000817 0.003348 -0.001317" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="PD_via1" pos="-0.002257 0.007077 -0.001192" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Supraspinatus_Origin" pos="0.001278 0.000565 -0.001107" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Supraspinatus_via1" pos="0.001502 0.004507 -0.001894" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Supraspinatus_via2" pos="0.000748 0.009150 -0.001748" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Infraspinatus_Origin" pos="-0.001268 -0.000038 0.000895" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Infraspinatus_via1" pos="-0.001341 0.005195 -0.000219" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Subscapularis_Origin" pos="0.002287 0.001786 -0.001459" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Triceps_Long_Origin" pos="-0.000411 0.008784 -0.000300" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <site name="Biceps_Long_Origin" pos="0.001163 0.010844 -0.000189" rgba=".1 .2 .6 .5" size="0.0002"/>
+          <body name="humerus" pos="-0.00000000 0.01081324 0.00000000" quat="-0.37189531 -0.03516117 -0.43715933 -0.81813771">
+            <joint name="sh_rotation" type="hinge" pos="0 0 0" axis="0 1 0" armature="4e-10" damping="1e-6" stiffness="0" range="-70 40" limited="true"/>
+            <joint name="sh_extension" type="hinge" pos="0 0 0" axis="0 0 1" armature="4e-10" damping="1e-6" stiffness="0" range="-80 65" limited="true"/>
+            <joint name="sh_elv" type="hinge" pos="0 0 0" axis="1 0 0" armature="4e-10" damping="1e-6" stiffness="0" range="-60 89" limited="true"/>
+            <geom type="mesh" mesh="humerus_right_mesh" density="4085.61"/>
+            <site name="Pec_C_Insertion" pos="0.001332 0.004690 0.001647" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Lat_Insertion" pos="-0.000684 0.002108 0.000445" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="AD_via1" pos="0.001789 0.001936 0.000425" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="AD_Insertion" pos="0.001492 0.004748 0.001502" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="PD_via2" pos="0.001648 0.002286 -0.001687" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="PD_Insertion" pos="0.001571 0.003984 0.001419" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="MD_via1" pos="0.000343 0.000059 0.001787" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="MD_via2" pos="0.001030 0.002253 0.002139" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="MD_Insertion" pos="0.001497 0.004679 0.001585" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Supraspinatus_Insertion" pos="0.001006 -0.000647 -0.000074" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Infraspinatus_Insertion" pos="0.001152 -0.000047 0.000088" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Subscapularis_Insertion" pos="-0.001149 -0.000370 -0.000111" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Triceps_Lateral_Origin" pos="0.000646 0.000398 -0.000569" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Triceps_Lateral_via1" pos="0.001433 0.007766 -0.001157" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Triceps_Long_via1" pos="-0.000392 0.006639 -0.002702" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Triceps_Long_Insertion" pos="-0.000381 0.011173 -0.001855" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Brachialis_Origin" pos="0.000220 0.000737 -0.000499" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Brachialis_via1" pos="0.000734 0.004812 0.000128" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Brachialis_via2" pos="0.000740 0.007163 0.000533" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Biceps_Long_via1" pos="-0.000622 0.000671 0.000946" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="extensordigitiquatri_Origin" pos="0.001321 0.010193 0.000021" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="flexor_digitorum_profundus_UH_Origin" pos="-0.000670 0.010749 0.000565" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="fdsA_Origin" pos="-0.001084 0.010811 0.000063" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="extensorcarpiiulnaris_Origin" pos="0.000898 0.010869 0.000002" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="edcD_Origin" pos="0.001077 0.009851 -0.000241" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="pronatorteres_Origin" pos="-0.001425 0.009892 -0.000142" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="Flexor_digitorum_profundus_SH_Origin" pos="-0.001335 0.010625 0.000347" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="edcA_Origin" pos="0.001077 0.009851 -0.000241" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="flexorcarpiradialis_Origin" pos="-0.001411 0.010203 0.000326" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="fdsB_Origin" pos="-0.001084 0.010811 0.000063" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="extensororcarpiradialisbrevis_Origin" pos="0.001290 0.009898 -0.000297" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="edcC_Origin" pos="0.001077 0.009851 -0.000241" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="palmarislongus_Origin" pos="-0.001628 0.010404 0.000115" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="fdsC_Origin" pos="-0.001084 0.010811 0.000063" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="edcB_Origin" pos="0.001077 0.009851 -0.000241" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <site name="extensorcarpiradialislongus_Origin" pos="0.001221 0.009099 -0.000773" rgba=".1 .2 .6 .5" size="0.0002"/>
+            <body name="ulna" pos="-0.00000000 0.01036825 -0.00000000" quat="0.76125455 0.64448375 -0.05247255 -0.04877482">
+              <joint name="elbow" pos="0 0 0" axis="1 0 0" armature="4e-10" damping="1e-6" stiffness="0" range="-70 80" limited="true"/>
+              <geom type="mesh" mesh="ulna_right_mesh" density="6790.82"/>
+              <geom name="Sesamoid_elbow_right_bone" mesh="Sesamoid_elbow_right_bone" type="mesh" material="bone" class="hand_visual" density="6790.82"/>
+              <site name="Triceps_Lateral_Insertion" pos="0.000036 -0.001602 -0.001044" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="Brachialis_Insertion" pos="-0.000247 0.000898 -0.000497" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="extensordigitiquatri_via1" pos="0.000833 0.006794 0.000048" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="extensordigitiquatri_via2" pos="0.000143 0.011598 0.000121" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexor_digitorum_profundus_UH_via1" pos="-0.000477 0.004988 0.000285" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexor_digitorum_profundus_UH_via3" pos="-0.000981 0.011160 -0.000046" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="extensorcarpiiulnaris_via1" pos="0.000642 0.005914 -0.000394" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="extensorcarpiiulnaris_via2" pos="0.000276 0.011171 -0.000182" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexor_digitorum_profundus_MH_Origin" pos="-0.000318 0.001578 -0.000861" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexor_digitorum_profundus_MH_via1" pos="-0.000401 0.007757 -0.000079" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexor_digitorum_profundus_MH_via2" pos="-0.000971 0.011044 -0.000258" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexorcarpiiulnaris_Origin" pos="-0.000773 -0.001553 -0.000963" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="flexorcarpiiulnaris_via1" pos="-0.000700 0.005547 -0.000785" rgba=".1 .2 .6 .5" size="0.0002"/>
+              <site name="epl_Origin" pos="0.000090 0.000204 -0.001007" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+              <!-- radius body: see the v22 fix note in the header comment above.
+                   wrist's pos/quat unchanged (radius's frame equals ulna's frame at
+                   rest); strictly serial ulna to radius to wrist, no branching, no
+                   kinematic loop. Sites whose source marker was on radius_right
+                   (not ulna_right) moved here so they rotate with the radius. -->
+              <body name="radius" pos="0 0 0">
+                <joint name="forearm_supination" type="hinge" pos="0 0 0" axis="0 1 0" range="-90 90" limited="true" damping="1e-6"/>
+                <geom type="mesh" mesh="radius_right_mesh" density="6790.82"/>
+                <site name="Biceps_Long_Insertion" pos="0.000239 0.001654 -0.000030" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexor_digitorum_profundus_UH_via2" pos="-0.000622 0.008040 0.000386" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_RH_Origin" pos="0.000141 0.002243 0.000419" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_RH_via1" pos="-0.000176 0.005318 0.000627" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_RH_via2" pos="-0.000565 0.008674 0.000337" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_RH_via3" pos="-0.001173 0.011150 0.000162" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsA_via1" pos="-0.000691 0.005261 -0.000140" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsA_via2" pos="-0.000959 0.009375 0.000154" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsA_via3" pos="-0.001331 0.011088 0.000064" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epb_Origin" pos="0.000716 0.002172 0.000049" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epb_via1" pos="0.000705 0.006712 0.000971" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epb_via2" pos="0.000294 0.008528 0.001259" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epb_via3" pos="-0.000490 0.010094 0.001363" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epb_via4" pos="-0.001091 0.011154 0.001264" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcD_via1" pos="0.000963 0.005932 0.000390" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcD_via2" pos="0.000008 0.011454 0.000365" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="pronatorteres_Insertion" pos="0.000240 0.005414 0.001240" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_SH_via1" pos="-0.000804 0.006258 0.000303" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_SH_via2" pos="-0.001379 0.011152 0.000231" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcA_via1" pos="0.000957 0.006017 0.000585" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcA_via2" pos="-0.000112 0.011451 0.000658" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexorcarpiradialis_via1" pos="-0.001263 0.002884 0.001031" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexorcarpiradialis_via2" pos="-0.000564 0.006545 0.000998" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexorcarpiradialis_via3" pos="-0.000439 0.008838 0.000889" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexorcarpiradialis_via4" pos="-0.001052 0.010916 0.000568" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsB_via1" pos="-0.000691 0.005261 -0.000140" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsB_via2" pos="-0.000926 0.009410 -0.000105" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsB_via3" pos="-0.001174 0.011068 -0.000102" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="extensororcarpiradialisbrevis_via1" pos="0.000619 0.005215 0.001389" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="extensororcarpiradialisbrevis_via2" pos="-0.000181 0.011260 0.001248" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcC_via1" pos="0.000957 0.005992 0.000393" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcC_via2" pos="0.000012 0.011376 0.000427" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="palmarislongus_via1" pos="-0.001758 0.002233 -0.000105" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="palmarislongus_via2" pos="-0.001254 0.004841 -0.000371" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="palmarislongus_via3" pos="-0.000963 0.007953 -0.000142" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsC_via1" pos="-0.000691 0.005261 -0.000140" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsC_via2" pos="-0.000781 0.009400 -0.000147" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsC_via3" pos="-0.001092 0.011043 -0.000205" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcB_via1" pos="0.000945 0.005983 0.000460" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcB_via2" pos="-0.000030 0.011400 0.000499" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epl_via1" pos="0.000554 0.003046 -0.000450" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epl_via2" pos="0.000684 0.006759 0.000580" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epl_via3" pos="0.000475 0.008021 0.001151" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epl_via4" pos="-0.000262 0.010047 0.001260" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="epl_via5" pos="-0.001091 0.011154 0.001264" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="extensorcarpiradialislongus_via1" pos="0.000466 0.005447 0.001568" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="extensorcarpiradialislongus_via2" pos="-0.000310 0.011245 0.001351" rgba=".1 .2 .6 .5" size="0.0002"/>
+
+              <body name="wrist" pos="-0.00000000 0.01151812 0.00000000" quat="0.98713225 -0.13814126 0.06379110 0.04916923">
+                <joint name="wrist_flexion" type="hinge" pos="0 0 0" axis="1 0 0" range="-60 60" limited="true" damping="1e-6"/>
+                <joint name="rz_N_L_C_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-15 15" limited="true" damping="1e-6"/>
+                <geom name="Navicular_lunate_right_bone" type="mesh" mesh="Navicular_lunate_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Pisiform_right_bone" type="mesh" mesh="Pisiform_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Triangular_right_bone" type="mesh" mesh="Triangular_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Hamate_right_bone" type="mesh" mesh="Hamate_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Falsiformis_right_bone" type="mesh" mesh="Falsiformis_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Centrale_right_bone" type="mesh" mesh="Centrale_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <geom name="Capitate_right_bone" type="mesh" mesh="Capitate_right_bone" material="bone" class="hand_visual" density="58706.12"/>
+                <site name="extensordigitiquatri_via3" pos="0.000076 0.000688 0.000043" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexor_digitorum_profundus_UH_via4" pos="-0.000930 0.000745 -0.000339" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_RH_via4" pos="-0.001171 0.000648 -0.000136" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsA_via4" pos="-0.001505 0.000398 -0.000122" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcD_via3" pos="-0.000027 0.000636 0.000219" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Abductor_digiti_quinti_hand_Origin" pos="-0.000896 -0.000106 -0.000863" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="Flexor_digitorum_profundus_SH_via3" pos="-0.001540 0.000514 0.000037" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcA_via3" pos="-0.000385 0.000487 0.000789" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexorcarpiradialis_via5" pos="-0.001182 0.000197 0.000293" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexor_digitorum_profundus_MH_via3" pos="-0.000893 0.000640 -0.000590" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsB_via4" pos="-0.001212 0.000366 -0.000250" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="extensororcarpiradialisbrevis_via3" pos="-0.000570 0.000256 0.001014" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="flexorcarpiiulnaris_Insertion" pos="-0.000903 -0.000570 -0.000771" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcC_via3" pos="-0.000127 0.000574 0.000422" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="palmarislongus_Insertion" pos="-0.001516 -0.000549 -0.000649" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="fdsC_via4" pos="-0.001071 0.000378 -0.000419" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="edcB_via3" pos="-0.000213 0.000569 0.000543" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <site name="extensorcarpiradialislongus_via3" pos="-0.000811 0.000182 0.001178" rgba=".1 .2 .6 .5" size="0.0002"/>
+                <body name="Metacarpal_hand_1_right" pos="-0.00128667 0.00037813 0.00083782" quat="0.86944604 -0.06482355 0.14071660 0.46910563">
+                  <geom name="Sesamoid_hand_b_right_bone" mesh="Sesamoid_hand_b_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Multangular_right_bone" mesh="Multangular_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_1_right_bone" mesh="Metacarpal_hand_1_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <site name="epb_Insertion" pos="-0.000433 0.000213 -0.000071" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="epl_Insertion" pos="-0.000433 0.000213 -0.000071" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <body name="Phalanx_hand_1_1_right" pos="-0.00000000 0.00067536 -0.00000000" quat="0.94125921 0.25909334 0.20487878 -0.07019016">
+                    <joint name="rx_Phalanx_hand_1_1_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_1_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="1e-6"/>
+                    <geom name="Phalanx_hand_1_1_right_bone" mesh="Phalanx_hand_1_1_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+
+                    <body name="Phalanx_hand_2_1_right" pos="-0.00000000 0.00065974 -0.00000000" quat="0.97004509 -0.22801436 0.06510796 0.05275321">
+                      <joint name="rx_Phalanx_hand_2_1_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <geom name="Phalanx_hand_2_1_right_bone" mesh="Phalanx_hand_2_1_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+
+                    </body>
+                  </body>
+                </body>
+                <body name="Metacarpal_hand_2_right" pos="-0.00103771 0.00035327 0.00068541" quat="0.96644253 0.05902667 0.20537452 0.14256865">
+                  <geom name="Sesamoid_hand_i_right_bone" mesh="Sesamoid_hand_i_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_j_right_bone" mesh="Sesamoid_hand_j_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_2_right_bone" mesh="Metacarpal_hand_2_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <site name="fdsA_via5" pos="-0.000144 0.001351 -0.000720" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="edcA_via4" pos="0.000120 0.002662 0.000276" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="extensorcarpiradialislongus_Insertion" pos="-0.000082 0.000903 0.000145" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <body name="Phalanx_hand_1_2_right" pos="-0.00000000 0.00252649 -0.00000000" quat="0.97027695 -0.22301582 0.01391076 0.09291495">
+                    <joint name="rx_Phalanx_hand_1_2_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_2_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="1e-6"/>
+                    <geom name="Phalanx_hand_1_2_right_bone" mesh="Phalanx_hand_1_2_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    <site name="fdsA_via6" pos="-0.000131 0.000252 -0.000444" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="Flexor_digitorum_profundus_SH_via4" pos="-0.000125 0.000258 -0.000351" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcA_via5" pos="0.000083 0.000408 0.000324" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcA_via6" pos="0.000076 0.002082 0.000138" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <body name="Phalanx_hand_2_2_right" pos="-0.00000000 0.00193517 -0.00000000" quat="0.69045466 -0.70045555 0.16852748 0.06506267">
+                      <joint name="rx_Phalanx_hand_2_2_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <geom name="Phalanx_hand_2_2_right_bone" mesh="Phalanx_hand_2_2_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <site name="fdsA_Insertion" pos="0.000051 0.000313 -0.000299" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="Flexor_digitorum_profundus_SH_via5" pos="-0.000023 0.000444 -0.000484" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="edcA_via7" pos="0.000033 0.000257 0.000166" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <body name="Phalanx_hand_3_2_right" pos="0.00000000 0.00127175 0.00000000" quat="0.99221313 0.12442344 0.00536170 0.00178403">
+                        <geom name="Phalanx_hand_3_2_right_bone" mesh="Phalanx_hand_3_2_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                        <site name="Flexor_digitorum_profundus_SH_via6" pos="-0.000034 -0.000068 -0.000365" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="Flexor_digitorum_profundus_SH_Insertion" pos="-0.000012 0.000019 -0.000250" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="edcA_Insertion" pos="0.000013 0.000078 0.000172" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+                <body name="Metacarpal_hand_3_right" pos="-0.00063941 0.00080777 0.00033305" quat="0.96103567 0.01937197 0.26781228 0.06566295">
+                  <geom name="Sesamoid_hand_g_right_bone" mesh="Sesamoid_hand_g_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_h_right_bone" mesh="Sesamoid_hand_h_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_3_right_bone" mesh="Metacarpal_hand_3_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <site name="flexorcarpiradialis_Insertion" pos="-0.000148 0.000266 -0.000275" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="fdsB_via5" pos="-0.000250 0.000969 -0.000731" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="extensororcarpiradialisbrevis_Insertion" pos="-0.000190 0.000543 0.000265" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="edcB_via4" pos="0.000045 0.003013 0.000383" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <body name="Phalanx_hand_1_3_right" pos="-0.00000000 0.00299405 -0.00000000" quat="0.91133559 -0.38537866 0.11947534 0.08170896">
+                    <joint name="rx_Phalanx_hand_1_3_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_3_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="1e-6"/>
+                    <geom name="Phalanx_hand_1_3_right_bone" mesh="Phalanx_hand_1_3_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    <site name="Flexor_digitorum_profundus_RH_via5" pos="0.000004 0.000242 -0.000329" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="fdsB_via6" pos="-0.000012 0.000228 -0.000471" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcB_via5" pos="-0.000056 0.000257 0.000330" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcB_via6" pos="0.000040 0.002249 0.000234" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <body name="Phalanx_hand_2_3_right" pos="-0.00000000 0.00212166 -0.00000000" quat="0.68292081 -0.72894341 -0.01744963 0.04422784">
+                      <joint name="rx_Phalanx_hand_2_3_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <geom name="Sesamoid_hand_m_right_bone" mesh="Sesamoid_hand_m_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <geom name="Phalanx_hand_2_3_right_bone" mesh="Phalanx_hand_2_3_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <site name="Flexor_digitorum_profundus_RH_via6" pos="-0.000039 0.000348 -0.000505" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="fdsB_Insertion" pos="-0.000009 0.000293 -0.000309" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="edcB_via7" pos="0.000042 0.000278 0.000195" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <body name="Phalanx_hand_3_3_right" pos="0.00000000 0.00145908 0.00000000" quat="0.96499377 0.26023817 0.03198392 -0.00633682">
+                        <geom name="Phalanx_hand_3_3_right_bone" mesh="Phalanx_hand_3_3_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                        <site name="Flexor_digitorum_profundus_RH_via7" pos="0.000010 -0.000105 -0.000372" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="Flexor_digitorum_profundus_RH_Insertion" pos="0.000003 0.000223 -0.000340" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="edcB_Insertion" pos="0.000013 0.000086 0.000189" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+                <body name="Metacarpal_hand_4_right" pos="-0.00029393 0.00089569 0.00010532" quat="0.85364336 -0.05341774 0.51809978 -0.00345704">
+                  <geom name="Sesamoid_hand_a_right_bone" mesh="Sesamoid_hand_a_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_e_right_bone" mesh="Sesamoid_hand_e_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_f_right_bone" mesh="Sesamoid_hand_f_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_4_right_bone" mesh="Metacarpal_hand_4_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <site name="extensordigitiquatri_via4" pos="0.000309 0.002681 0.000188" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="edcC_via4" pos="-0.000234 0.002801 0.000314" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="fdsC_via5" pos="0.000140 0.000900 -0.000822" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <body name="Phalanx_hand_1_4_right" pos="0.00000000 0.00273840 -0.00000000" quat="0.88430160 -0.44540060 -0.12204157 -0.06880952">
+                    <joint name="rx_Phalanx_hand_1_4_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_4_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="1e-6"/>
+                    <geom name="Phalanx_hand_1_4_right_bone" mesh="Phalanx_hand_1_4_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    <site name="extensordigitiquatri_Insertion" pos="0.000127 0.000284 0.000243" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="flexor_digitorum_profundus_UH_via5" pos="0.000021 0.000311 -0.000299" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcC_via5" pos="-0.000071 0.000332 0.000328" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcC_via6" pos="-0.000063 0.002233 0.000183" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="fdsC_via6" pos="0.000004 0.000380 -0.000284" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <body name="Phalanx_hand_2_4_right" pos="-0.00000000 0.00210247 -0.00000000" quat="0.72460067 -0.68718415 0.03534893 0.03850064">
+                      <joint name="rx_Phalanx_hand_2_4_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <geom name="Sesamoid_hand_l_right_bone" mesh="Sesamoid_hand_l_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <geom name="Phalanx_hand_2_4_right_bone" mesh="Phalanx_hand_2_4_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <site name="flexor_digitorum_profundus_UH_via6" pos="0.000099 0.000358 -0.000498" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="edcC_via7" pos="-0.000057 0.000215 0.000212" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="fdsC_Insertion" pos="0.000018 0.000257 -0.000287" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <body name="Phalanx_hand_3_4_right" pos="0.00000000 0.00140542 0.00000000" quat="0.92272538 0.34341559 -0.15703315 0.07735567">
+                        <geom name="Phalanx_hand_3_4_right_bone" mesh="Phalanx_hand_3_4_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                        <site name="flexor_digitorum_profundus_UH_via7" pos="0.000031 -0.000194 -0.000351" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="flexor_digitorum_profundus_UH_Insertion" pos="0.000018 0.000166 -0.000333" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="edcC_Insertion" pos="-0.000008 0.000118 0.000192" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+                <body name="Metacarpal_hand_5_right" pos="-0.00027817 0.00076165 -0.00047981" quat="0.90066785 -0.07873639 0.42058834 -0.07552031">
+                  <geom name="Sesamoid_hand_c_right_bone" mesh="Sesamoid_hand_c_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Sesamoid_hand_d_right_bone" mesh="Sesamoid_hand_d_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <geom name="Metacarpal_hand_5_right_bone" mesh="Metacarpal_hand_5_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                  <site name="extensorcarpiiulnaris_Insertion" pos="0.000320 0.000077 -0.000051" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <site name="edcD_via4" pos="0.000082 0.001613 0.000316" rgba=".1 .2 .6 .5" size="0.0002"/>
+                  <body name="Phalanx_hand_1_5_right" pos="0.00000000 0.00150715 -0.00000000" quat="-0.89209706 0.29584807 -0.21937993 0.26174244">
+                    <joint name="rx_Phalanx_hand_1_5_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="-20 90" stiffness="0"/>
+                    <joint name="rz_Phalanx_hand_1_5_right" type="hinge" pos="0 0 0" axis="0 0 1" range="-20 20" limited="true" damping="1e-6"/>
+                    <geom name="Phalanx_hand_1_5_right_bone" mesh="Phalanx_hand_1_5_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                    <site name="edcD_via5" pos="-0.000054 0.000317 0.000272" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="edcD_via6" pos="-0.000041 0.001751 0.000183" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="Abductor_digiti_quinti_hand_Insertion" pos="0.000432 0.000296 -0.000142" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <site name="flexor_digitorum_profundus_MH_via4" pos="0.000198 0.000227 -0.000376" rgba=".1 .2 .6 .5" size="0.0002"/>
+                    <body name="Phalanx_hand_2_5_right" pos="0.00000000 0.00165489 -0.00000000" quat="-0.77014613 0.62603247 0.11916792 0.02752157">
+                      <joint name="rx_Phalanx_hand_2_5_right" type="hinge" limited="true" pos="0.0 0.0 0.0" axis="1.0 0.0 0.0" range="0 100" stiffness="0"/>
+                      <geom name="Phalanx_hand_2_5_right_bone" mesh="Phalanx_hand_2_5_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                      <site name="edcD_via7" pos="0.000029 0.000201 0.000198" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <site name="flexor_digitorum_profundus_MH_via5" pos="0.000051 0.000275 -0.000456" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      <body name="Phalanx_hand_3_5_right" pos="-0.00000000 0.00097821 0.00000000" quat="-0.92022163 -0.38005736 -0.00362085 0.09346412">
+                        <geom name="Phalanx_hand_3_5_right_bone" mesh="Phalanx_hand_3_5_right_bone" type="mesh" material="bone" group="0" class="hand_visual"/>
+                        <site name="edcD_Insertion" pos="0.000035 0.000090 0.000154" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="flexor_digitorum_profundus_MH_via6" pos="0.000077 -0.000196 -0.000263" rgba=".1 .2 .6 .5" size="0.0002"/>
+                        <site name="flexor_digitorum_profundus_MH_Insertion" pos="0.000040 0.000184 -0.000339" rgba=".1 .2 .6 .5" size="0.0002"/>
+                      </body>
+                    </body>
+                  </body>
+                </body>
+              </body>
+              </body>  <!-- close radius (new body, 2026-07-15: forearm_supination moved here) -->
+            </body>
+          </body>
+        </body>
+      </body>
+    </body>
+  </worldbody>
+
+  <!-- STAC-safe build: commented out for kinematics-only fitting.
+  <tendon>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Pec_C">
+      <site site="Pec_C_Origin"/>
+      <site site="Pec_C_via1"/>
+      <site site="Pec_C_via2"/>
+      <site site="Pec_C_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Lat">
+      <site site="Lat_Origin"/>
+      <site site="Lat_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="AD">
+      <site site="AD_Origin"/>
+      <site site="AD_via1"/>
+      <site site="AD_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="PD">
+      <site site="PD_Origin"/>
+      <site site="PD_via1"/>
+      <site site="PD_via2"/>
+      <site site="PD_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="MD">
+      <site site="MD_Origin"/>
+      <site site="MD_via1"/>
+      <site site="MD_via2"/>
+      <site site="MD_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Supraspinatus">
+      <site site="Supraspinatus_Origin"/>
+      <site site="Supraspinatus_via1"/>
+      <site site="Supraspinatus_via2"/>
+      <site site="Supraspinatus_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Infraspinatus">
+      <site site="Infraspinatus_Origin"/>
+      <site site="Infraspinatus_via1"/>
+      <site site="Infraspinatus_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Subscapularis">
+      <site site="Subscapularis_Origin"/>
+      <site site="Subscapularis_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Triceps_Lateral">
+      <site site="Triceps_Lateral_Origin"/>
+      <site site="Triceps_Lateral_via1"/>
+      <site site="Triceps_Lateral_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Triceps_Long">
+      <site site="Triceps_Long_Origin"/>
+      <site site="Triceps_Long_via1"/>
+      <site site="Triceps_Long_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Brachialis">
+      <site site="Brachialis_Origin"/>
+      <site site="Brachialis_via1"/>
+      <site site="Brachialis_via2"/>
+      <site site="Brachialis_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Biceps_Long">
+      <site site="Biceps_Long_Origin"/>
+      <site site="Biceps_Long_via1"/>
+      <site site="Biceps_Long_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="extensordigitiquatri">
+      <site site="extensordigitiquatri_Origin"/>
+      <site site="extensordigitiquatri_via1"/>
+      <site site="extensordigitiquatri_via2"/>
+      <site site="extensordigitiquatri_via3"/>
+      <site site="extensordigitiquatri_via4"/>
+      <site site="extensordigitiquatri_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="flexor_digitorum_profundus_UH">
+      <site site="flexor_digitorum_profundus_UH_Origin"/>
+      <site site="flexor_digitorum_profundus_UH_via1"/>
+      <site site="flexor_digitorum_profundus_UH_via2"/>
+      <site site="flexor_digitorum_profundus_UH_via3"/>
+      <site site="flexor_digitorum_profundus_UH_via4"/>
+      <site site="flexor_digitorum_profundus_UH_via5"/>
+      <site site="flexor_digitorum_profundus_UH_via6"/>
+      <site site="flexor_digitorum_profundus_UH_via7"/>
+      <site site="flexor_digitorum_profundus_UH_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Flexor_digitorum_profundus_RH">
+      <site site="Flexor_digitorum_profundus_RH_Origin"/>
+      <site site="Flexor_digitorum_profundus_RH_via1"/>
+      <site site="Flexor_digitorum_profundus_RH_via2"/>
+      <site site="Flexor_digitorum_profundus_RH_via3"/>
+      <site site="Flexor_digitorum_profundus_RH_via4"/>
+      <site site="Flexor_digitorum_profundus_RH_via5"/>
+      <site site="Flexor_digitorum_profundus_RH_via6"/>
+      <site site="Flexor_digitorum_profundus_RH_via7"/>
+      <site site="Flexor_digitorum_profundus_RH_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="fdsA">
+      <site site="fdsA_Origin"/>
+      <site site="fdsA_via1"/>
+      <site site="fdsA_via2"/>
+      <site site="fdsA_via3"/>
+      <site site="fdsA_via4"/>
+      <site site="fdsA_via5"/>
+      <site site="fdsA_via6"/>
+      <site site="fdsA_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="epb">
+      <site site="epb_Origin"/>
+      <site site="epb_via1"/>
+      <site site="epb_via2"/>
+      <site site="epb_via3"/>
+      <site site="epb_via4"/>
+      <site site="epb_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="extensorcarpiiulnaris">
+      <site site="extensorcarpiiulnaris_Origin"/>
+      <site site="extensorcarpiiulnaris_via1"/>
+      <site site="extensorcarpiiulnaris_via2"/>
+      <site site="extensorcarpiiulnaris_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="edcD">
+      <site site="edcD_Origin"/>
+      <site site="edcD_via1"/>
+      <site site="edcD_via2"/>
+      <site site="edcD_via3"/>
+      <site site="edcD_via4"/>
+      <site site="edcD_via5"/>
+      <site site="edcD_via6"/>
+      <site site="edcD_via7"/>
+      <site site="edcD_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Abductor_digiti_quinti_hand">
+      <site site="Abductor_digiti_quinti_hand_Origin"/>
+      <site site="Abductor_digiti_quinti_hand_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="pronatorteres">
+      <site site="pronatorteres_Origin"/>
+      <site site="pronatorteres_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="Flexor_digitorum_profundus_SH">
+      <site site="Flexor_digitorum_profundus_SH_Origin"/>
+      <site site="Flexor_digitorum_profundus_SH_via1"/>
+      <site site="Flexor_digitorum_profundus_SH_via2"/>
+      <site site="Flexor_digitorum_profundus_SH_via3"/>
+      <site site="Flexor_digitorum_profundus_SH_via4"/>
+      <site site="Flexor_digitorum_profundus_SH_via5"/>
+      <site site="Flexor_digitorum_profundus_SH_via6"/>
+      <site site="Flexor_digitorum_profundus_SH_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="edcA">
+      <site site="edcA_Origin"/>
+      <site site="edcA_via1"/>
+      <site site="edcA_via2"/>
+      <site site="edcA_via3"/>
+      <site site="edcA_via4"/>
+      <site site="edcA_via5"/>
+      <site site="edcA_via6"/>
+      <site site="edcA_via7"/>
+      <site site="edcA_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="flexorcarpiradialis">
+      <site site="flexorcarpiradialis_Origin"/>
+      <site site="flexorcarpiradialis_via1"/>
+      <site site="flexorcarpiradialis_via2"/>
+      <site site="flexorcarpiradialis_via3"/>
+      <site site="flexorcarpiradialis_via4"/>
+      <site site="flexorcarpiradialis_via5"/>
+      <site site="flexorcarpiradialis_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="flexor_digitorum_profundus_MH">
+      <site site="flexor_digitorum_profundus_MH_Origin"/>
+      <site site="flexor_digitorum_profundus_MH_via1"/>
+      <site site="flexor_digitorum_profundus_MH_via2"/>
+      <site site="flexor_digitorum_profundus_MH_via3"/>
+      <site site="flexor_digitorum_profundus_MH_via4"/>
+      <site site="flexor_digitorum_profundus_MH_via5"/>
+      <site site="flexor_digitorum_profundus_MH_via6"/>
+      <site site="flexor_digitorum_profundus_MH_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="fdsB">
+      <site site="fdsB_Origin"/>
+      <site site="fdsB_via1"/>
+      <site site="fdsB_via2"/>
+      <site site="fdsB_via3"/>
+      <site site="fdsB_via4"/>
+      <site site="fdsB_via5"/>
+      <site site="fdsB_via6"/>
+      <site site="fdsB_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="extensororcarpiradialisbrevis">
+      <site site="extensororcarpiradialisbrevis_Origin"/>
+      <site site="extensororcarpiradialisbrevis_via1"/>
+      <site site="extensororcarpiradialisbrevis_via2"/>
+      <site site="extensororcarpiradialisbrevis_via3"/>
+      <site site="extensororcarpiradialisbrevis_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="flexorcarpiiulnaris">
+      <site site="flexorcarpiiulnaris_Origin"/>
+      <site site="flexorcarpiiulnaris_via1"/>
+      <site site="flexorcarpiiulnaris_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="edcC">
+      <site site="edcC_Origin"/>
+      <site site="edcC_via1"/>
+      <site site="edcC_via2"/>
+      <site site="edcC_via3"/>
+      <site site="edcC_via4"/>
+      <site site="edcC_via5"/>
+      <site site="edcC_via6"/>
+      <site site="edcC_via7"/>
+      <site site="edcC_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="palmarislongus">
+      <site site="palmarislongus_Origin"/>
+      <site site="palmarislongus_via1"/>
+      <site site="palmarislongus_via2"/>
+      <site site="palmarislongus_via3"/>
+      <site site="palmarislongus_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="fdsC">
+      <site site="fdsC_Origin"/>
+      <site site="fdsC_via1"/>
+      <site site="fdsC_via2"/>
+      <site site="fdsC_via3"/>
+      <site site="fdsC_via4"/>
+      <site site="fdsC_via5"/>
+      <site site="fdsC_via6"/>
+      <site site="fdsC_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="edcB">
+      <site site="edcB_Origin"/>
+      <site site="edcB_via1"/>
+      <site site="edcB_via2"/>
+      <site site="edcB_via3"/>
+      <site site="edcB_via4"/>
+      <site site="edcB_via5"/>
+      <site site="edcB_via6"/>
+      <site site="edcB_via7"/>
+      <site site="edcB_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="epl">
+      <site site="epl_Origin"/>
+      <site site="epl_via1"/>
+      <site site="epl_via2"/>
+      <site site="epl_via3"/>
+      <site site="epl_via4"/>
+      <site site="epl_via5"/>
+      <site site="epl_Insertion"/>
+    </spatial>
+    <spatial width=".0001" rgba=".9 0 0 .5" name="extensorcarpiradialislongus">
+      <site site="extensorcarpiradialislongus_Origin"/>
+      <site site="extensorcarpiradialislongus_via1"/>
+      <site site="extensorcarpiradialislongus_via2"/>
+      <site site="extensorcarpiradialislongus_via3"/>
+      <site site="extensorcarpiradialislongus_Insertion"/>
+    </spatial>
+  </tendon>
+  -->
+
+  <!-- STAC-safe build: commented out for kinematics-only fitting.
+  <actuator>
+    <muscle name="Pec_C" tendon="Pec_C" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.007475 0.013910"/>
+    <muscle name="Lat" tendon="Lat" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.008146 0.012914"/>
+    <muscle name="AD" tendon="AD" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.004709 0.007190"/>
+    <muscle name="PD" tendon="PD" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.009315 0.014537"/>
+    <muscle name="MD" tendon="MD" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.005718 0.008304"/>
+    <muscle name="Supraspinatus" tendon="Supraspinatus" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.010512 0.012295"/>
+    <muscle name="Infraspinatus" tendon="Infraspinatus" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.010454 0.012406"/>
+    <muscle name="Subscapularis" tendon="Subscapularis" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.008122 0.009604"/>
+    <muscle name="Triceps_Lateral" tendon="Triceps_Lateral" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.009232 0.012489"/>
+    <muscle name="Triceps_Long" tendon="Triceps_Long" force=".3" vmax="15" range="0.8 1.2" lengthrange="0.009735 0.013887"/>
+    <muscle name="Brachialis" tendon="Brachialis" force=".3" vmax="15" range="0.8 1.1" lengthrange="0.009141 0.011113"/>
+    <muscle name="Biceps_Long" tendon="Biceps_Long" force=".3" vmax="15" range="0.6 1.1" lengthrange="0.009578 0.013673"/>
+    <muscle name="extensordigitiquatri" tendon="extensordigitiquatri" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.015333 0.016085"/>
+    <muscle name="flexor_digitorum_profundus_UH" tendon="flexor_digitorum_profundus_UH" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.016674 0.020626"/>
+    <muscle name="Flexor_digitorum_profundus_RH" tendon="Flexor_digitorum_profundus_RH" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.015404 0.018692"/>
+    <muscle name="fdsA" tendon="fdsA" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.015131 0.018997"/>
+    <muscle name="epb" tendon="epb" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.010108 0.010508"/>
+    <muscle name="extensorcarpiiulnaris" tendon="extensorcarpiiulnaris" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.011650 0.013248"/>
+    <muscle name="edcD" tendon="edcD" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.016202 0.018007"/>
+    <muscle name="Abductor_digiti_quinti_hand" tendon="Abductor_digiti_quinti_hand" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.001867 0.002823"/>
+    <muscle name="pronatorteres" tendon="pronatorteres" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.004952 0.006620"/>
+    <muscle name="Flexor_digitorum_profundus_SH" tendon="Flexor_digitorum_profundus_SH" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.015715 0.019712"/>
+    <muscle name="edcA" tendon="edcA" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.017996 0.020055"/>
+    <muscle name="flexorcarpiradialis" tendon="flexorcarpiradialis" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.012040 0.014817"/>
+    <muscle name="flexor_digitorum_profundus_MH" tendon="flexor_digitorum_profundus_MH" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.013498 0.016953"/>
+    <muscle name="fdsB" tendon="fdsB" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.015865 0.019742"/>
+    <muscle name="extensororcarpiradialisbrevis" tendon="extensororcarpiradialisbrevis" force=".1" vmax="15" range="0.8 1.2" lengthrange="0.013043 0.015540"/>
+    <muscle name="flexorcarpiiulnaris" tendon="flexorcarpiiulnaris" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.011864 0.013849"/>
+    <muscle name="edcC" tendon="edcC" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.018143 0.020450"/>
+    <muscle name="palmarislongus" tendon="palmarislongus" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.010173 0.012239"/>
+    <muscle name="fdsC" tendon="fdsC" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.015557 0.019313"/>
+    <muscle name="edcB" tendon="edcB" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.018549 0.020913"/>
+    <muscle name="epl" tendon="epl" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.012345 0.012745"/>
+    <muscle name="extensorcarpiradialislongus" tendon="extensorcarpiradialislongus" force=".05" vmax="15" range="0.8 1.2" lengthrange="0.012387 0.016868"/>
+  </actuator>
+  -->
+
+</mujoco>

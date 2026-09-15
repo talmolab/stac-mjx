@@ -84,6 +84,11 @@ class RegistrationTransform:
     R_total: np.ndarray  # (3, 3) compound rotation (Procrustes + nudge)
     model_shoulder: np.ndarray  # (3,) = registration_translation in meters
     shoulder_reference_mm: np.ndarray = None  # (3,) fixed shoulder ref in calibration frame (mm), or None for per-frame
+    scale_factor: float = 1.0  # per-trial uniform calibration-scale correction
+    # (register_v21_mocap.py's shared-rotation_v4 recipe -- see its docstring);
+    # forward registration applies centered_m *= scale_factor before rotating,
+    # so the inverse must divide by it. Defaults to 1.0 (no-op) for older
+    # registrations / other model versions that don't have this field.
 
     def mujoco_to_calibration(
         self,
@@ -103,8 +108,9 @@ class RegistrationTransform:
         """
         centered = points_mj - self.model_shoulder
         rotated = centered @ self.R_total.T
+        unscaled = rotated / self.scale_factor  # undo the per-trial calibration-scale correction
         # Scale from meters to mm
-        scaled = rotated * scale_m_to_mm
+        scaled = unscaled * scale_m_to_mm
         return scaled + shoulder_calib
 
 
@@ -155,12 +161,16 @@ def load_registration_transform(registered_h5_path: str) -> RegistrationTransfor
         shoulder_ref = None
         if "shoulder_reference_mm" in f.attrs:
             shoulder_ref = np.array(f.attrs["shoulder_reference_mm"])
+        # register_v21_mocap.py's shared-rotation_v4 recipe stores a per-trial
+        # uniform calibration-scale correction; absent in older registrations
+        # (defaults to 1.0, a no-op).
+        scale_factor = float(f.attrs["scale_factor"]) if "scale_factor" in f.attrs else 1.0
 
     R_total = R_proc
 
     return RegistrationTransform(
         R_total=R_total, model_shoulder=model_shoulder,
-        shoulder_reference_mm=shoulder_ref,
+        shoulder_reference_mm=shoulder_ref, scale_factor=scale_factor,
     )
 
 

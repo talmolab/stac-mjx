@@ -1,0 +1,138 @@
+MJCF_PATH: "/mnt/vast/niyo/stac-mjx/models/mouse_forelimb_right_janelia_arm_hand_v26_stac.xml"
+
+FTOL: 1.0e-04
+ROOT_FTOL: 1.0e-05
+LIMB_FTOL: 1.0e-06
+N_ITERS: 6
+
+# v26 = v25's rig (build_v25_stac_xml.py) with the joystick_base anchor
+# re-derived from empirical mocap instead of a biased static-calibration
+# pipeline (build_v26_stac_xml.py / compute_joystick_geometry_v26.py) -- see
+# those docstrings for the "joystick doesn't match mocap" root cause.
+# 19 keypoints: v24's own 17 (mouse_arm_hand_v24.yaml) + js_base/js_ball.
+# v24 body names carry an explicit "_right" suffix (humerus_right, ulna_right)
+# not present in v17-v22 (humerus, ulna); wrist maps to N_L_C_right (v24's
+# fused proximal carpal complex) -- see build_v24_stac_xml.py's docstring.
+KP_NAMES:
+  - Shoulder
+  - Elbow
+  - Wrist
+  - D1_K
+  - D1_T
+  - D2_K
+  - D2_M
+  - D2_T
+  - D3_K
+  - D3_M
+  - D3_T
+  - D4_K
+  - D4_M
+  - D4_T
+  - D5_K
+  - D5_M
+  - D5_T
+  - js_base
+  - js_ball
+
+KEYPOINT_MODEL_PAIRS:
+  Shoulder: humerus_right
+  Elbow: ulna_right
+  Wrist: N_L_C_right
+  # dx_k = knuckle/MCP joint = origin of the Phalanx_hand_1_x_right body
+  D1_K: Phalanx_hand_1_1_right
+  D2_K: Phalanx_hand_1_2_right
+  D3_K: Phalanx_hand_1_3_right
+  D4_K: Phalanx_hand_1_4_right
+  D5_K: Phalanx_hand_1_5_right
+  # dx_m = mid/PIP joint = origin of the Phalanx_hand_2_x_right body (x=2..5;
+  # digit 1/thumb has no mid point)
+  D2_M: Phalanx_hand_2_2_right
+  D3_M: Phalanx_hand_2_3_right
+  D4_M: Phalanx_hand_2_4_right
+  D5_M: Phalanx_hand_2_5_right
+  # dx_t = fingertip: terminal phalanx body (3rd segment for x=2..5, 2nd for
+  # x=1/thumb, which has no 3rd segment) -- needs the nonzero
+  # KEYPOINT_INITIAL_OFFSETS below, refined by STAC's fit_offsets.
+  D1_T: Phalanx_hand_2_1_right
+  D2_T: Phalanx_hand_3_2_right
+  D3_T: Phalanx_hand_3_3_right
+  D4_T: Phalanx_hand_3_4_right
+  D5_T: Phalanx_hand_3_5_right
+  # joystick: js_base = shaft/ball junction, js_ball = center of the ball,
+  # both on the "joystick" body (child of joystick_base) -- untilted, same
+  # as v25 (see build_v25_stac_xml.py's docstring for why), so these local
+  # offsets sit along the same +Z axis as v21/v22's tilted-frame offsets did.
+  js_base: joystick
+  js_ball: joystick
+
+KEYPOINT_INITIAL_OFFSETS:
+  Shoulder: 0. 0. 0.
+  Elbow: 0. 0. 0.
+  Wrist: 0. 0. 0.
+  D1_K: 0. 0. 0.
+  D2_K: 0. 0. 0.
+  D3_K: 0. 0. 0.
+  D4_K: 0. 0. 0.
+  D5_K: 0. 0. 0.
+  D2_M: 0. 0. 0.
+  D3_M: 0. 0. 0.
+  D4_M: 0. 0. 0.
+  D5_M: 0. 0. 0.
+  # Carried over from v24 (mouse_arm_hand_v24.yaml) -- same rough initial
+  # guesses along local +Y, refined by STAC's fit_offsets.
+  D1_T: 0. 0.00066 0.
+  D2_T: 0. 0.00127 0.
+  D3_T: 0. 0.00146 0.
+  D4_T: 0. 0.00141 0.
+  D5_T: 0. 0.00098 0.
+  # joystick offsets, in the (untilted) "joystick" body's own local frame --
+  # physical rig constants, unchanged from v25 (only joystick_base's anchor
+  # POSITION changed for v26, see build_v26_stac_xml.py). js_base = top of shaft (bottom->base =
+  # 0.014363m, matches v21/v22 exactly -- same physical rig). js_ball = ball
+  # center (base->ball = 0.001822m further up) = 0.014363+0.001822 = 0.016184.
+  js_base: 0. 0. 0.014363
+  js_ball: 0. 0. 0.016184
+
+ROOT_OPTIMIZATION_KEYPOINT: Wrist
+
+TRUNK_OPTIMIZATION_KEYPOINTS:
+  - "Shoulder"
+  - "Elbow"
+  - "Wrist"
+
+KEYPOINT_COLOR_PAIRS:
+  Shoulder: 1 0 0 1
+  Elbow:    1 0.6 0 1
+  Wrist:    1 1 0 1
+  D1_K: 0.9 0.2 0.9 1
+  D1_T: 0.9 0.2 0.9 1
+  D2_K: 0.2 0.9 0.2 1
+  D2_M: 0.2 0.9 0.2 1
+  D2_T: 0.2 0.9 0.2 1
+  D3_K: 0.2 0.6 0.9 1
+  D3_M: 0.2 0.6 0.9 1
+  D3_T: 0.2 0.6 0.9 1
+  D4_K: 0.9 0.6 0.2 1
+  D4_M: 0.9 0.6 0.2 1
+  D4_T: 0.9 0.6 0.2 1
+  D5_K: 0.6 0.2 0.9 1
+  D5_M: 0.6 0.2 0.9 1
+  D5_T: 0.6 0.2 0.9 1
+  js_base: 0 1 1 1
+  js_ball: 0 0 1 1
+
+SCALE_FACTOR: 1.0
+MOCAP_SCALE_FACTOR: 1.0
+
+SITES_TO_REGULARIZE:
+  - D1_T
+  - D2_T
+  - D3_T
+  - D4_T
+  - D5_T
+  - js_base
+  - js_ball
+
+RENDER_FPS: 25
+N_SAMPLE_FRAMES: 50
+M_REG_COEF: 0

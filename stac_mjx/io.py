@@ -286,7 +286,7 @@ def save_data_to_h5(
     with h5py.File(file_path, "w") as f:
         # Save config as a YAML string
         config_yaml = OmegaConf.to_yaml(OmegaConf.structured(config))
-        f.create_dataset("config", data=np.string_(config_yaml))
+        f.create_dataset("config", data=np.bytes_(config_yaml))
 
         # Save stac output data
         f.create_dataset("kp_names", data=np.array(kp_names, dtype="S"))
