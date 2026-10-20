@@ -1,6 +1,7 @@
 calibration_path: "demo_calibration.h5"
 ik_path: "demo_ik.h5"
 data_path: "tests/data/test_rodent_mocap_1000_frames.mat"
+data_fps: 30 # Hz, declared by the matching rodent NWB fixture timestamps
 n_calibration_frames: 10
 skip_calibration: False
 skip_ik: True

@@ -54,6 +54,7 @@ class StacConfig:
     infer_qvels: bool  # Infer qvels if True
     n_frames_per_clip: int  # Number of frames per IK chunk
     mujoco: MujocoConfig  # Configuration for Mujoco
+    data_fps: float | None = None  # Sampling frequency (Hz) of input keypoint frames
     q_opt: "QOptConfig" = field(default_factory=lambda: QOptConfig())
 
 
