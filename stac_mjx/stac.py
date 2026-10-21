@@ -80,7 +80,7 @@ def _align_joint_dims(
             ub.append(upper * jp.ones(dims))
             part_names += [name] * dims
 
-    return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
+    return jp.concatenate(lb), jp.concatenate(ub), part_names
 
 
 class Stac:
