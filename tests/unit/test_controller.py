@@ -1,7 +1,6 @@
 from pathlib import Path
 
-from stac_mjx import main
-from stac_mjx import io
+from stac_mjx import io, main
 from stac_mjx.stac import Stac, _align_joint_dims
 
 _BASE_PATH = Path.cwd()
@@ -20,8 +19,8 @@ def test_init_stac(mocap_nwb, config):
 
 
 def test_align_joint_dims():
-    from jax import numpy as jp
     import mujoco
+    from jax import numpy as jp
 
     joint_types = [
         mujoco.mjtJoint.mjJNT_FREE,

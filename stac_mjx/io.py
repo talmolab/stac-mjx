@@ -1,16 +1,19 @@
 """Utility functions to load data from .mat .yaml and .h5 files."""
 
-import numpy as np
-import jax.numpy as jp
-from jax import Array
-import scipy.io as spio
-from pynwb import NWBHDF5IO
-from ndx_pose import PoseEstimationSeries, PoseEstimation
-import h5py
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from omegaconf import DictConfig
-from omegaconf import OmegaConf
-from dataclasses import dataclass, asdict, field
+
+import h5py
+import jax.numpy as jp
+import numpy as np
+import scipy.io as spio
+from jax import Array
+from ndx_pose import (  # noqa: F401 -- registers NWB pose types
+    PoseEstimation,
+    PoseEstimationSeries,
+)
+from omegaconf import DictConfig, OmegaConf
+from pynwb import NWBHDF5IO
 
 from stac_mjx.config import Config
 
@@ -163,7 +166,7 @@ def load_h5(filename: str | Path) -> tuple[np.ndarray, None]:
     # TODO tracks is a hardcoded dataset name
     data = {}
     with h5py.File(filename, "r") as f:
-        for key in f.keys():
+        for key in f:
             data[key] = f[key][()]
 
     data = np.array(data["tracks"])

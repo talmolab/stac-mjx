@@ -72,12 +72,12 @@ def _align_joint_dims(
             ub.append(_MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1])
             part_names += [name] * dims
         else:
-            l, u = range
-            if l == 0 and u == 0:  # default joint lims are 0 0, which is unconstrained
-                l = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][0]
-                u = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1]
-            lb.append(l * jp.ones(dims))
-            ub.append(u * jp.ones(dims))
+            lower, upper = range
+            if lower == 0 and upper == 0:  # default 0 0 limits mean unconstrained
+                lower = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][0]
+                upper = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1]
+            lb.append(lower * jp.ones(dims))
+            ub.append(upper * jp.ones(dims))
             part_names += [name] * dims
 
     return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
@@ -182,11 +182,11 @@ class Stac:
 
         site_index_map = {
             site_name: mujoco.mj_name2id(model, mujoco.mjtObj.mjOBJ_SITE, site_name)
-            for site_name in self.cfg.model.KEYPOINT_MODEL_PAIRS.keys()
+            for site_name in self.cfg.model.KEYPOINT_MODEL_PAIRS
         }
 
         is_regularized = []
-        for k in site_index_map.keys():
+        for k in site_index_map:
             if any(n == k for n in self.cfg.model.get("SITES_TO_REGULARIZE", [])):
                 is_regularized.append(jp.array([1.0, 1.0, 1.0]))
             else:
@@ -798,10 +798,10 @@ class Stac:
 
         frames = []
         with imageio.get_writer(save_path, fps=self.cfg.model.RENDER_FPS) as video:
-            for qpos, kps in tqdm(zip(qpos, kp_data)):
+            for frame_qpos, kps in tqdm(zip(qpos, kp_data)):
                 # Set keypoints--they're in cartesian space, but since they're attached to the worldbody they're the same as offsets
                 render_mj_model.site_pos[keypoint_site_idxs] = np.reshape(kps, (-1, 3))
-                mj_data.qpos = qpos
+                mj_data.qpos = frame_qpos
 
                 mujoco.mj_fwdPosition(render_mj_model, mj_data)
 

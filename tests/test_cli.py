@@ -1,6 +1,6 @@
-from pathlib import Path
 import sys
 import types
+from pathlib import Path
 
 # Stub optional dependencies used during import
 sys.modules.setdefault(

@@ -47,12 +47,9 @@ def root_optimization(
     Returns:
         Updated MJX data after root optimization.
     """
-    print(f"Root Optimization:")
+    print("Root Optimization:")
 
-    if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE:  # better way to handle?
-        root_dims = 4
-    else:
-        root_dims = 7
+    root_dims = 4 if mjx_model.jnt_type[0] == mujoco.mjtJoint.mjJNT_SLIDE else 7
     print(f"Optimizing first {root_dims} qpos for root optimization")
     t_start = time.time()
 

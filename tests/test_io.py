@@ -1,7 +1,7 @@
-from stac_mjx import io
-from pathlib import Path
-import pytest
 import hydra
+import pytest
+
+from stac_mjx import io
 
 """
 Test data loaders for supported file types.

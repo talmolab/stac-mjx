@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,32 +9,29 @@ authors = [
 description="TBD"
 requires-python = ">=3.11"
 keywords = ["TBD"]
-license = {text = "BSD-3-Clause"}
+license = "BSD-3-Clause"
 classifiers = [
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"]
 dependencies = [
-    "numpy>=2.0.0",
+    "numpy==2.1.3",
     "tqdm",
-    "matplotlib",
-    "pandas",
-    "black",
-    "mujoco",
-    "mujoco-mjx",
-    "brax",
+    "matplotlib==3.10.0",
+    "pandas==3.0.3",
+    "mujoco==3.11.0",
+    "mujoco-mjx==3.11.0",
     "ipykernel",
-    "hydra-core",
-    "imageio[ffmpeg]",
-    "h5py",
-    "flax",
-    "optax",
-    "mediapy",
+    "hydra-core==1.3.2",
+    "omegaconf",
+    "imageio[ffmpeg]==2.37.0",
+    "h5py==3.12.1",
+    "mediapy==1.2.2",
     "ndx_pose==0.1.1",
-    "tqdm",
-    "jaxopt==0.8.5",
-    "jax>=0.7.2",
-    "jaxtyping",
+    "pynwb",
+    "scipy",
+    "jax==0.10.2",
+    "jaxlib==0.10.2",
+    "jaxtyping>=0.2.34",
     "beartype",
     "jaxls @ git+https://github.com/brentyi/jaxls.git",
     "jaxlie>=1.5.0",
@@ -46,20 +43,16 @@ version = {attr = "stac_mjx.version.__version__"}
 readme = {file = ["README.md"], content-type="text/markdown"}
 
 [project.optional-dependencies]
-cuda12 = ["jax[cuda12]==0.7.2 ; sys_platform == 'linux'"]
-cuda13 = ["jax[cuda13]==0.7.2 ; sys_platform == 'linux'"]
+cuda12 = ["jax[cuda12]==0.10.2 ; sys_platform == 'linux'"]
+cuda13 = ["jax[cuda13]==0.10.2 ; sys_platform == 'linux'"]
+notebooks = ["nwbwidgets"]
 dev = [
     "pytest",
     "pytest-cov",
     "pytest-watch",
-    "black",
-    "pydocstyle",
-    "toml",
+    "ruff>=0.11",
     "twine",
     "build",
-    "matplotlib",
-    "opencv-python",
-    "mediapy",
     ]
 
 [project.urls]
@@ -70,17 +63,42 @@ Repository = "https://github.com/talmolab/stac-mjx"
 stac-mjx = "stac_mjx.cli:main"
 
 [tool.setuptools.packages.find]
-exclude = ["site"]
+include = ["stac_mjx*"]
 
-[tool.black]
+[tool.uv]
+no-sources-package = ["mujoco", "mujoco-mjx"]
+
+[tool.ruff]
 line-length = 88
+target-version = "py311"
 
-[pydocstyle]
-convention = "google"
-match-dir = "stac_mjx"
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "TCH", "RUF"]
+ignore = [
+    "E501",    # line length is handled by the formatter
+    "B008",    # calls in defaults are used for initializers
+    "B905",    # zip without strict is common in JAX code
+    "RUF059",  # unused unpacked values are common in numerical code
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["stac_mjx"]
+
+[tool.ruff.lint.per-file-ignores]
+# jaxtyping array shapes are not Python forward references.
+"stac_mjx/compute_stac.py" = ["F722"]
+"stac_mjx/main.py" = ["F722"]
+"stac_mjx/stac.py" = ["F722"]
+"stac_mjx/stac_core.py" = ["F722"]
+"stac_mjx/utils.py" = ["F722"]
+"tests/conftest.py" = ["F401"]  # imports register shared pytest fixtures
+"tests/test_cli.py" = ["E402"]  # optional dependency stub precedes CLI imports
 
 [tool.coverage.run]
-source = ["livecov"]
+source = ["stac_mjx"]
 
 [tool.pytest.ini_options]
 addopts = "--cov stac_mjx --cov-report=lcov:lcov.info --cov-report=term"

@@ -1,9 +1,9 @@
 import types
 
-from jax import Array
 import jax.numpy as jp
 import numpy as np
 import pytest
+from jax import Array
 
 from stac_mjx import main
 

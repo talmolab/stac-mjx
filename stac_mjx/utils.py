@@ -4,13 +4,12 @@ import os
 import sys
 
 import jax
+import jaxlie
+import mujoco
+from beartype import beartype
 from jax import Array
 from jax import numpy as jp
-import jaxlie
-from jaxtyping import ArrayLike, Float, Int
-from jaxtyping import jaxtyped
-from beartype import beartype
-import mujoco
+from jaxtyping import ArrayLike, Float, Int, jaxtyped
 
 if not hasattr(mujoco, "_enums"):
     for name in list(sys.modules):
@@ -18,11 +17,9 @@ if not hasattr(mujoco, "_enums"):
             del sys.modules[name]
     import mujoco
 
+from jax.extend.backend import get_backend
 from mujoco import mjx
 from mujoco.mjx._src import smooth
-import numpy as np
-from scipy import ndimage
-from jax.extend.backend import get_backend
 
 
 def _enable_jax_compilation_cache() -> None:

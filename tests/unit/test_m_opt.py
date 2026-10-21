@@ -5,11 +5,11 @@ different axes, 3 marker sites) to verify the closed-form offset solver
 against known ground-truth offsets and a reference loss implementation.
 """
 
-import pytest
 import jax
 import jax.numpy as jp
 import mujoco
 import numpy as np
+import pytest
 
 from stac_mjx import utils
 from stac_mjx.stac_core import m_opt

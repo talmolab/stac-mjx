@@ -1,6 +1,6 @@
-from jax import Array
 import jax.numpy as jp
 import numpy as np
+from jax import Array
 
 from stac_mjx import io
 

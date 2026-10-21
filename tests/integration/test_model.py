@@ -1,7 +1,8 @@
 from pathlib import Path
-import pytest
 
 import mujoco
+import pytest
+
 from stac_mjx.utils import mjx_load
 
 # Define path roots
