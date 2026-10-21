@@ -32,8 +32,8 @@ dependencies = [
     "jax==0.10.2",
     "jaxlib==0.10.2",
     "jaxtyping>=0.2.34",
-    "beartype",
-    "jaxls @ git+https://github.com/brentyi/jaxls.git",
+    "beartype>=0.19",
+    "jaxls @ git+https://github.com/brentyi/jaxls.git@50a58be88c5ef74532f09e3f55268b4f02c490e3",
     "jaxlie>=1.5.0",
 ]
     dynamic = ["version", "readme"]
