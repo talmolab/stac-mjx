@@ -1,10 +1,12 @@
 """MuJoCo-MJX visualization utilities."""
 
-import numpy as np
 from pathlib import Path
-from stac_mjx.stac import Stac
-from stac_mjx import io
+
+import numpy as np
 from omegaconf import DictConfig
+
+from stac_mjx import io
+from stac_mjx.stac import Stac
 
 
 def viz_stac(

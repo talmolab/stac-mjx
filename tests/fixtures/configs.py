@@ -1,7 +1,8 @@
 """Fixtures that return paths to data files."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 _BASE_PATH = Path.cwd()
 

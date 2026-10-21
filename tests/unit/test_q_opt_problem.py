@@ -1,9 +1,9 @@
 """Minimal tests for q_opt problem construction and solves."""
 
-import numpy as np
 import jax
-from jax import numpy as jp
 import mujoco
+import numpy as np
+from jax import numpy as jp
 
 from stac_mjx import utils
 from stac_mjx.stac_core import build_q_opt_problem, q_opt

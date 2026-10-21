@@ -1,15 +1,16 @@
 """User-level API to run stac."""
 
-from jax import Array
-import numpy as np
 import time
+from pathlib import Path
+
+import numpy as np
+from jax import Array
+from jaxtyping import Float
 from omegaconf import DictConfig
+
 from stac_mjx import io, utils
 from stac_mjx.config import compose_config
 from stac_mjx.stac import Stac
-from pathlib import Path
-
-from jaxtyping import Float
 
 
 def load_stac_config(
@@ -64,18 +65,21 @@ def run_stac(
     if kp_data.shape[1] != expected_cols:
         raise ValueError(
             f"kp_data has {kp_data.shape[1]} columns but expected {expected_cols} "
-            f"({len(kp_names)} keypoints × 3). "
+            f"({len(kp_names)} keypoints x 3). "
             f"Ensure kp_data is shaped (n_frames, n_keypoints * 3) and that "
             f"kp_names length matches the number of keypoints in kp_data."
         )
 
     data_fps = getattr(cfg.stac, "data_fps", None)
-    if cfg.stac.infer_qvels and not cfg.stac.skip_ik:
-        if data_fps is None or not np.isfinite(data_fps) or data_fps <= 0:
-            raise ValueError(
-                "Set stac.data_fps to the finite, positive sampling frequency (Hz) "
-                "of the input keypoint frames to infer velocities."
-            )
+    if (
+        cfg.stac.infer_qvels
+        and not cfg.stac.skip_ik
+        and (data_fps is None or not np.isfinite(data_fps) or data_fps <= 0)
+    ):
+        raise ValueError(
+            "Set stac.data_fps to the finite, positive sampling frequency (Hz) "
+            "of the input keypoint frames to infer velocities."
+        )
 
     start_time = time.time()
 
@@ -123,7 +127,7 @@ def run_stac(
         print(f"Finished compute velocity in {time.time() - t_vel} seconds")
 
     print(
-        f"Saving data to {ik_path}. Finished in {(time.time() - start_time)/60:.2f} minutes"
+        f"Saving data to {ik_path}. Finished in {(time.time() - start_time) / 60:.2f} minutes"
     )
     io.save_data_to_h5(config=cfg, file_path=ik_path, **ik_data.as_dict())
     return calibration_path, ik_path

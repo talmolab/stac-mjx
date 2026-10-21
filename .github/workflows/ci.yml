@@ -6,6 +6,7 @@ on:
     paths:
       - "stac_mjx/**"
       - "tests/**"
+      - "run_stac.py"
       - ".github/workflows/ci.yml"
       - "pyproject.toml"
   push:
@@ -13,6 +14,7 @@ on:
     paths:
       - "stac_mjx/**"
       - "tests/**"
+      - "run_stac.py"
       - ".github/workflows/ci.yml"
       - "pyproject.toml"
 
@@ -24,22 +26,17 @@ jobs:
 
       - uses: astral-sh/setup-uv@v3
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: |
             pyproject.toml
             uv.toml
 
-      - name: Install deps
-        run: |
-          uv venv --python 3.11
-          uv pip install ".[dev]"
+      - name: Run Ruff format check
+        run: uvx 'ruff>=0.11' format --check stac_mjx/ tests/ run_stac.py
 
-      - name: Black
-        run: uv run black --check stac_mjx tests
-
-      - name: Pydocstyle
-        run: uv run pydocstyle --convention=google stac_mjx/
+      - name: Run Ruff lint
+        run: uvx 'ruff>=0.11' check stac_mjx/ tests/ run_stac.py
 
   tests:
     runs-on: ubuntu-latest
@@ -49,7 +46,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v3
         with:
-          python-version: "3.11"
+          python-version: "3.12"
           enable-cache: true
           cache-dependency-glob: |
             pyproject.toml
@@ -57,11 +54,11 @@ jobs:
 
       - name: Install deps
         run: |
-          uv venv --python 3.11
+          uv venv --python 3.12
           uv pip install ".[dev]"
 
       - name: Pytest
-        run: uv run pytest --cov=stac_mjx --cov-report=xml --durations=-1 -W ignore::PendingDeprecationWarning tests/
+        run: uv run --no-project pytest --cov=stac_mjx --cov-report=xml --durations=-1 -W ignore::PendingDeprecationWarning tests/
 
       - name: Upload coverage
         uses: codecov/codecov-action@v4
@@ -69,4 +66,4 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
 
       - name: Smoke test
-        run: uv run python run_stac.py stac=stac_synth_data model=synth_data
+        run: uv run --no-project python run_stac.py stac=stac_synth_data model=synth_data

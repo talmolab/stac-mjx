@@ -49,6 +49,15 @@ For development, include the `[dev]` extras in addition to the hardware optional
 ```bash
 uv pip install -e ".[cuda13,dev]"
 ```
+The NWB viewer notebook also needs `uv pip install -e ".[notebooks]"`.
+
+Check formatting and lint with the same Ruff rules used by TRACK-MJX and VNL-Playground:
+
+```bash
+ruff format --check stac_mjx/ tests/ run_stac.py
+ruff check stac_mjx/ tests/ run_stac.py
+```
+
 4. Verify the installation:
 ```bash
 python -c "import jax; print(f'JAX version: {jax.__version__}'); print(f'Available devices: {jax.devices()}')"
