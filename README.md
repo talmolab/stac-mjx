@@ -118,6 +118,8 @@ First, configure your body model and STAC parameters in `configs/`:
 
 Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
 
+To infer velocities (`stac.infer_qvels=True`), set `stac.data_fps` to the sampling frequency in Hz of the keypoint frames passed to STAC. For example, use `stac.data_fps=50` for 50 Hz input. STAC produces one `qpos` frame per input frame and computes `qvel` with `dt = 1 / stac.data_fps`. If you keep every second frame from a 100 Hz recording, set `stac.data_fps=50`. Input frames must be evenly spaced in time. `model.RENDER_FPS` controls video playback, and the MuJoCo timestep controls simulation; neither sets the input data frequency.
+
 ### Command Line Interface
 If no customization is needed, you can run the full pipeline from the CLI:
 

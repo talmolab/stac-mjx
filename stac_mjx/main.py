@@ -47,7 +47,7 @@ def run_stac(
 
     Args:
         cfg: STAC configuration.
-        kp_data: Flattened mocap keypoint data.
+        kp_data: Flattened mocap keypoint data sampled uniformly at cfg.stac.data_fps.
         kp_names: Ordered keypoint names matching kp_data columns.
         base_path: Base path for resolving relative file paths. Defaults to cwd.
 
@@ -55,7 +55,8 @@ def run_stac(
         Tuple of (calibration output path, IK output path or None).
 
     Raises:
-        ValueError: If kp_data columns don't match kp_names * 3.
+        ValueError: If kp_data columns don't match kp_names * 3, or velocity
+            inference is requested without a finite, positive stac.data_fps.
     """
     if base_path is None:
         base_path = Path.cwd()
@@ -67,6 +68,17 @@ def run_stac(
             f"({len(kp_names)} keypoints x 3). "
             f"Ensure kp_data is shaped (n_frames, n_keypoints * 3) and that "
             f"kp_names length matches the number of keypoints in kp_data."
+        )
+
+    data_fps = getattr(cfg.stac, "data_fps", None)
+    if (
+        cfg.stac.infer_qvels
+        and not cfg.stac.skip_ik
+        and (data_fps is None or not np.isfinite(data_fps) or data_fps <= 0)
+    ):
+        raise ValueError(
+            "Set stac.data_fps to the finite, positive sampling frequency (Hz) "
+            "of the input keypoint frames to infer velocities."
         )
 
     start_time = time.time()
@@ -108,7 +120,7 @@ def run_stac(
         t_vel = time.time()
         qvels = utils.compute_velocity_from_kinematics(
             qpos_trajectory=ik_data.qpos,
-            dt=stac._mj_model.opt.timestep,
+            dt=1.0 / data_fps,
             freejoint=stac._freejoint,
         )
         ik_data.qvel = np.array(qvels)

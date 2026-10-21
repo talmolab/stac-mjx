@@ -237,7 +237,6 @@ def interpolate_qpos_from_keyframes(
 
 # Constants used to determine when a rotation is close to a pole.
 _POLE_LIMIT = 1.0 - 1e-6
-_TOL = 1e-10
 
 
 def _get_qmat_indices_and_signs() -> tuple[Int[Array, "4 4"], Int[Array, "4 4"]]:
@@ -282,26 +281,6 @@ def quat_mul(
     return (qmat @ quat2[..., None])[..., 0]
 
 
-def _clip_within_precision(
-    number: Float[Array, ""],
-    low: float,
-    high: float,
-    precision: float = _TOL,
-) -> Float[Array, ""]:
-    """Clip input to range, checking precision.
-
-    Args:
-        number: Scalar to clip.
-        low: Lower bound.
-        high: Upper bound.
-        precision: Tolerance for out-of-range values.
-
-    Returns:
-        Input clipped to [low, high].
-    """
-    return jp.clip(number, low, high)
-
-
 def quat_conj(
     quat: Float[Array, "*batch 4"],
 ) -> Float[Array, "*batch 4"]:
@@ -338,60 +317,34 @@ def quat_diff(
     return quat_mul(quat_conj(source), target)
 
 
-def quat_to_axisangle(
-    quat: Float[Array, " 4"],
-) -> Float[Array, " 3"]:
-    """Convert a quaternion to axis-angle representation.
-
-    Args:
-        quat: Quaternion [w, i, j, k].
-
-    Returns:
-        Axis-angle vector with angle encoded by its length.
-    """
-    angle = 2 * jp.arccos(_clip_within_precision(quat[0], -1.0, 1.0))
-
-    def true_fn(angle):
-        return jp.zeros(3)
-
-    def false_fn(angle):
-        qn = jp.sin(angle / 2)
-        angle = (angle + jp.pi) % (2 * jp.pi) - jp.pi
-        axis = quat[1:4] / qn
-        out = axis * angle
-        return out
-
-    return jax.lax.cond(angle < _TOL, true_fn, false_fn, angle)
-
-
 @jaxtyped(typechecker=beartype)
 def compute_velocity_from_kinematics(
     qpos_trajectory: Float[ArrayLike, "n_frames n_qpos"],
     dt: float,
     freejoint: bool = True,
-    max_qvel: float = 20.0,
 ) -> Float[Array, "n_frames n_qvel"]:
     """Compute velocity trajectory from position trajectory for a continuous clip.
 
     Assumes freejoint as the first 7 dimensions of qpos when freejoint=True.
+    Uses forward differences and a backward difference for the final frame.
+    A single-frame clip has zero velocity.
 
     Args:
         qpos_trajectory: Generalized coordinates over time.
         dt: Timestep between qpos entries.
         freejoint: Whether the model has a free joint (first 7 dims).
-        max_qvel: Maximum velocity magnitude for clipping.
 
     Returns:
         Velocity trajectory.
     """
     qpos_trajectory = jp.asarray(qpos_trajectory)
-    qpos_trajectory = jp.concatenate(
-        [qpos_trajectory, qpos_trajectory[-1, jp.newaxis, :]], axis=0
-    )
+    if qpos_trajectory.shape[0] == 1:
+        return jp.zeros(
+            (1, qpos_trajectory.shape[1] - int(freejoint)), dtype=qpos_trajectory.dtype
+        )
 
     if not freejoint:
-        qvel_joints = (qpos_trajectory[1:, :] - qpos_trajectory[:-1, :]) / dt
-        return jp.clip(qvel_joints, -max_qvel, max_qvel)
+        qvel = (qpos_trajectory[1:, :] - qpos_trajectory[:-1, :]) / dt
     else:
         qvel_joints = (qpos_trajectory[1:, 7:] - qpos_trajectory[:-1, 7:]) / dt
         qvel_translation = (qpos_trajectory[1:, :3] - qpos_trajectory[:-1, :3]) / dt
@@ -403,11 +356,8 @@ def compute_velocity_from_kinematics(
         normed_diff /= jp.maximum(
             jp.linalg.norm(normed_diff, axis=-1, keepdims=True), 1e-12
         )
-        qvel_gyro = jax.vmap(quat_to_axisangle)(normed_diff) / dt
+        qvel_gyro = jaxlie.SO3(wxyz=normed_diff).log() / dt
 
-        mocap_qvels = jp.concatenate([qvel_translation, qvel_gyro, qvel_joints], axis=1)
+        qvel = jp.concatenate([qvel_translation, qvel_gyro, qvel_joints], axis=1)
 
-        vels = mocap_qvels[:, 6:]
-        clipped_vels = jp.clip(vels, -max_qvel, max_qvel)
-
-        return mocap_qvels.at[:, 6:].set(clipped_vels)
+    return jp.concatenate([qvel, qvel[-1:]], axis=0)
