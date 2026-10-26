@@ -7,6 +7,10 @@ on:
       - "stac_mjx/**"
       - "tests/**"
       - "run_stac.py"
+      - "configs/**"
+      - "data/**"
+      - "models/**"
+      - "notebooks/**"
       - ".github/workflows/ci.yml"
       - "pyproject.toml"
   push:
@@ -15,6 +19,10 @@ on:
       - "stac_mjx/**"
       - "tests/**"
       - "run_stac.py"
+      - "configs/**"
+      - "data/**"
+      - "models/**"
+      - "notebooks/**"
       - ".github/workflows/ci.yml"
       - "pyproject.toml"
 
@@ -33,10 +41,10 @@ jobs:
             uv.toml
 
       - name: Run Ruff format check
-        run: uvx 'ruff>=0.11' format --check stac_mjx/ tests/ run_stac.py
+        run: uvx 'ruff>=0.11' format --check stac_mjx/ tests/ notebooks/ run_stac.py
 
       - name: Run Ruff lint
-        run: uvx 'ruff>=0.11' check stac_mjx/ tests/ run_stac.py
+        run: uvx 'ruff>=0.11' check stac_mjx/ tests/ notebooks/ run_stac.py
 
   tests:
     runs-on: ubuntu-latest
@@ -60,10 +68,18 @@ jobs:
       - name: Pytest
         run: uv run --no-project pytest --cov=stac_mjx --cov-report=xml --durations=-1 -W ignore::PendingDeprecationWarning tests/
 
+      - name: Real-data CPU smoke test
+        timeout-minutes: 10
+        env:
+          JAX_PLATFORMS: cpu
+          # Avoid compiling the full rodent solver for this tiny integration check.
+          JAX_DISABLE_JIT: "true"
+          JAX_ENABLE_COMPILATION_CACHE: "false"
+          OMP_NUM_THREADS: "2"
+          OPENBLAS_NUM_THREADS: "1"
+        run: uv run --no-project pytest -o addopts='' -q -s tests/smoke.py
+
       - name: Upload coverage
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-
-      - name: Smoke test
-        run: uv run --no-project python run_stac.py stac=stac_synth_data model=synth_data

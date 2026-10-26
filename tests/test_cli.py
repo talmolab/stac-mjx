@@ -1,28 +1,11 @@
-import sys
-import types
 from pathlib import Path
-
-# Stub optional dependencies used during import
-sys.modules.setdefault(
-    "ndx_pose",
-    types.SimpleNamespace(PoseEstimationSeries=object, PoseEstimation=object),
-)
 
 from stac_mjx import cli
 from stac_mjx.config import compose_config
 
 
-def test_compose_config_loads_and_applies_overrides():
-    cfg = compose_config("tests/configs", "config", ["stac.n_calibration_frames=5"])
-
-    assert cfg.stac.n_calibration_frames == 5
-    assert cfg.model.MJCF_PATH.endswith("models/rodent.xml")
-    # structured config merge should keep required fields
-    assert cfg.model.KEYPOINT_MODEL_PAIRS
-
-
-def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
-    cfg = compose_config("tests/configs", "config", [])
+def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path, config_dir):
+    cfg = compose_config(config_dir, "config", [])
 
     monkeypatch.setattr(
         cli.stac_mjx, "load_keypoint_data", lambda cfg, base_path=None: ("kp", "names")

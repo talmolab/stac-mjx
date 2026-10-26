@@ -797,15 +797,15 @@ class Stac:
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_LIGHT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_SKYBOX] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_FOG] = True
         mj_data = mujoco.MjData(render_mj_model)
 
         mujoco.mj_kinematics(render_mj_model, mj_data)
 
         renderer = mujoco.Renderer(render_mj_model, height=height, width=width)
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = True
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = True
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_SKYBOX] = True
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_FOG] = True
 
         kp_data = kp_data[: qpos.shape[0]]
 

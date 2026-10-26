@@ -1,7 +1,7 @@
 import hydra
 import numpy as np
 import pytest
-from omegaconf import OmegaConf
+from omegaconf import OmegaConf, open_dict
 
 from stac_mjx import io
 
@@ -92,81 +92,78 @@ def load_config_with_overrides(
     return cfg
 
 
-def test_load_nwb(config, mocap_nwb):
+def test_load_nwb(config_dir, mocap_nwb):
     """
     Test loading data from .nwb file.
     """
-    cfg = load_config_with_overrides(config, stac_data_path_override=mocap_nwb)
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_nwb)
     data, sorted_kp_names = io.load_keypoint_data(cfg)
     assert data.shape == (1000, 69)
     assert sorted_kp_names == EXPECTED_RODENT_KP_ORDER
 
 
-def test_load_mat_no_label3d(config, mocap_mat):
+def test_load_mat_no_label3d(config_dir, mocap_mat):
     """
     Test loading data from .mat file.
     """
-    cfg = load_config_with_overrides(config, stac_data_path_override=mocap_mat)
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_mat)
     data, sorted_kp_names = io.load_keypoint_data(cfg)
     assert data.shape == (1000, 69)
     assert sorted_kp_names == EXPECTED_RODENT_KP_ORDER
 
 
-def test_load_mat_w_label3d(config, rodent_config_label3d, mocap_mat):
+def test_load_mat_w_label3d(config_dir, mocap_mat):
     """
     Test loading data from a .mat file w/ labels file
     """
-    cfg = load_config_with_overrides(
-        config, stac_data_path_override=mocap_mat, model_override=rodent_config_label3d
-    )
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_mat)
+    with open_dict(cfg.model):
+        del cfg.model.KP_NAMES
+        cfg.model.KP_NAMES_LABEL3D_PATH = "tests/data/rat23.mat"
     data, sorted_kp_names = io.load_keypoint_data(cfg)
     assert data.shape == (1000, 69)
     assert sorted_kp_names == EXPECTED_RODENT_KP_ORDER
 
 
-def test_load_mat_no_kp_names(config, rodent_config_no_kp_names, mocap_mat):
-    cfg = load_config_with_overrides(
-        config,
-        stac_data_path_override=mocap_mat,
-        model_override=rodent_config_no_kp_names,
-    )
+def test_load_mat_no_kp_names(config_dir, mocap_mat):
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_mat)
+    cfg.model.KP_NAMES = None
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Keypoint names not provided"):
         data, sorted_kp_names = io.load_keypoint_data(cfg)
 
 
-def test_load_mat_less_kp_names(config, rodent_config_less_kp_names, mocap_mat):
-    cfg = load_config_with_overrides(
-        config,
-        stac_data_path_override=mocap_mat,
-        model_override=rodent_config_less_kp_names,
-    )
+def test_load_mat_less_kp_names(config_dir, mocap_mat):
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_mat)
+    cfg.model.KP_NAMES = ["Snout"]
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Number of keypoint names"):
         data, sorted_kp_names = io.load_keypoint_data(cfg)
 
 
-def test_load_mat_more_kp_names(config, rodent_config_more_kp_names, mocap_mat):
+def test_load_mat_more_kp_names(config_dir, mocap_mat):
     """ValueError when KP_NAMES has more entries than data keypoints (closes #42)."""
-    cfg = load_config_with_overrides(
-        config,
-        stac_data_path_override=mocap_mat,
-        model_override=rodent_config_more_kp_names,
-    )
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_mat)
+    cfg.model.KP_NAMES.extend(["ExtraKP1", "ExtraKP2"])
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Number of keypoint names"):
         data, sorted_kp_names = io.load_keypoint_data(cfg)
 
 
-def test_load_h5(config, mouse_config, mocap_h5):
-    """
-    Test loading data from a .h5 file
-    """
+def test_load_h5(config_dir, mocap_h5):
+    """Load the shared rodent recording in HDF5 format."""
+    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_h5)
+    data, sorted_kp_names = io.load_keypoint_data(cfg)
+    assert data.shape == (1000, 69)
+    assert sorted_kp_names == EXPECTED_RODENT_KP_ORDER
 
+
+def test_load_mouse_keypoint_order(config_dir, mouse_mocap_h5):
+    """Preserve the mouse model's distinct 34-keypoint mapping."""
     cfg = load_config_with_overrides(
-        config,
-        stac_data_path_override=mocap_h5,
-        model_override=mouse_config,
+        config_dir,
+        stac_data_path_override=mouse_mocap_h5,
+        model_override="mouse",
     )
 
     data, sorted_kp_names = io.load_keypoint_data(cfg)

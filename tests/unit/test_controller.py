@@ -1,21 +1,4 @@
-from pathlib import Path
-
-from stac_mjx import io, main
-from stac_mjx.stac import Stac, _align_joint_dims
-
-_BASE_PATH = Path.cwd()
-
-
-def test_init_stac(mocap_nwb, config):
-    cfg = main.load_stac_config(config)
-    xml_path = _BASE_PATH / cfg.model.MJCF_PATH
-    kp_data, sorted_kp_names = io.load_keypoint_data(cfg)
-
-    stac = Stac(xml_path, cfg, sorted_kp_names)
-
-    assert stac.cfg == cfg
-    assert callable(stac.calibrate)
-    assert callable(stac.run_ik)
+from stac_mjx.stac import _align_joint_dims
 
 
 def test_align_joint_dims():

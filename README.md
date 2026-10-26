@@ -55,13 +55,24 @@ uv pip install -e ".[cuda13,dev]"
 For CPU development, use `uv pip install -e ".[dev]"`.
 
 For Jupyter notebooks, install `uv pip install -e ".[notebooks]"`.
-This extra includes the Jupyter kernel and NWB viewer widgets.
+This extra includes the Jupyter kernel.
 
 Check formatting and lint with the same Ruff rules used by TRACK-MJX and VNL-Playground:
 
 ```bash
-ruff format --check stac_mjx/ tests/ run_stac.py
-ruff check stac_mjx/ tests/ run_stac.py
+ruff format --check stac_mjx/ tests/ notebooks/ run_stac.py
+ruff check stac_mjx/ tests/ notebooks/ run_stac.py
+```
+
+CI also runs a CPU smoke test using `data/rodent_mocap_1000_frames.h5`.
+It calibrates on one frame, fits two consecutive frames, and checks the saved
+poses, velocities, and marker offsets. Solver iterations are limited and JIT is
+disabled to keep this integration check small; it does not measure fit quality
+or compiled performance. Run it separately from the unit tests:
+
+```bash
+JAX_PLATFORMS=cpu JAX_DISABLE_JIT=true JAX_ENABLE_COMPILATION_CACHE=false \
+  uv run --no-project pytest -o addopts='' -q -s tests/smoke.py
 ```
 
 4. Verify the installation:
@@ -136,6 +147,8 @@ First, configure your body model and STAC parameters in `configs/`:
 
 Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
 
+For a compact HDF5 example, use `stac.data_path=data/rodent_mocap_1000_frames.h5 stac.data_fps=30` with the rodent model. Its `tracks` array has shape `(1000, 1, 23, 3)` in millimetres, ordered to match `model.KP_NAMES`. Names, timestamps, confidence, and provenance are also stored; the current loader uses the configuration for names, scale, and sampling rate. The 30 Hz timing is inherited from the NWB fixture and is not independently verified.
+
 To infer velocities (`stac.infer_qvels=True`), set `stac.data_fps` to the sampling frequency in Hz of the keypoint frames passed to STAC. For example, use `stac.data_fps=50` for 50 Hz input. STAC produces one `qpos` frame per input frame and computes `qvel` with `dt = 1 / stac.data_fps`. If you keep every second frame from a 100 Hz recording, set `stac.data_fps=50`. Input frames must be evenly spaced in time. `model.RENDER_FPS` controls video playback, and the MuJoCo timestep controls simulation; neither sets the input data frequency.
 
 ### Command Line Interface
@@ -159,7 +172,7 @@ stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.
 
 You can use a set of high-level functions instead of the end-to-end CLI script to decouple data preparation and configuration loading from execution of the STAC algorithm. This makes it easy to load custom data without adhering to the file structure or content assumptions imposed by the CLI.
 
-> **Try the [demo notebook](https://github.com/talmolab/stac-mjx/blob/main/demos/rodent_demo.ipynb) to see it in action!**
+> **Follow the [rodent guided tour](notebooks/rodent_demo.ipynb) to calibrate markers, fit 150 frames of real motion, compute velocities, render the result, and inspect fitting errors.**
 
 The following is the full CLI script run as a sequence of function calls:
 
@@ -170,14 +183,15 @@ The following is the full CLI script run as a sequence of function calls:
    from pathlib import Path
 
 
-   # Choose parent directory as base path for data files
-   base_path = Path.cwd().parent
+   # Run this example from the repository root.
+   base_path = Path.cwd()
 
    # Load config (uses `configs/config.yaml` defaults)
    cfg = stac_mjx.load_stac_config(base_path / "configs")
 
    # Load keypoint data
    kp_data, sorted_kp_names = stac_mjx.load_keypoint_data(cfg, base_path)
+   kp_data = kp_data[:24]
 
    # Run stac
    calibration_path, ik_path = stac_mjx.run_stac(
@@ -189,18 +203,20 @@ The following is the full CLI script run as a sequence of function calls:
    ```python
    import mediapy as media
 
-   data_path = base_path / "demo_calibration.h5"
-   n_frames = 10
-   save_path = base_path / "videos/direct_render.mp4"
+   n_frames = len(kp_data)
+   save_path = base_path / "outputs/rodent_demo/ik.mp4"
+   save_path.parent.mkdir(parents=True, exist_ok=True)
 
    # Call mujoco_viz
    cfg, frames = stac_mjx.viz_stac(
-       data_path,
+       ik_path,
        n_frames,
        save_path,
        start_frame=0,
        camera="close_profile",
-       base_path=Path.cwd().parent,
+       height=480,
+       width=640,
+       base_path=base_path,
    )
 
    # Show the video in the notebook (it is also saved to the save_path)

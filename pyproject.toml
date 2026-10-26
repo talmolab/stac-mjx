@@ -44,7 +44,7 @@ readme = {file = ["README.md"], content-type="text/markdown"}
 [project.optional-dependencies]
 cuda12 = ["jax[cuda12]==0.10.2 ; sys_platform == 'linux'"]
 cuda13 = ["jax[cuda13]==0.10.2 ; sys_platform == 'linux'"]
-notebooks = ["ipykernel", "nwbwidgets"]
+notebooks = ["ipykernel"]
 dev = [
     "pytest",
     "pytest-cov",
@@ -93,8 +93,6 @@ known-first-party = ["stac_mjx"]
 "stac_mjx/stac.py" = ["F722"]
 "stac_mjx/stac_core.py" = ["F722"]
 "stac_mjx/utils.py" = ["F722"]
-"tests/conftest.py" = ["F401"]  # imports register shared pytest fixtures
-"tests/test_cli.py" = ["E402"]  # optional dependency stub precedes CLI imports
 
 [tool.coverage.run]
 source = ["stac_mjx"]
