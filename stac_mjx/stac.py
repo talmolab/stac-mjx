@@ -87,8 +87,20 @@ class Stac:
         Args:
             xml_path: Path to model MJCF file.
             cfg: STAC configuration.
-            kp_names: Ordered list of mocap keypoint names.
+            kp_names: Mocap keypoint names in KEYPOINT_MODEL_PAIRS order.
+
+        Raises:
+            ValueError: If kp_names differs from KEYPOINT_MODEL_PAIRS order.
         """
+        expected_kp_names = list(cfg.model.KEYPOINT_MODEL_PAIRS)
+        if list(kp_names) != expected_kp_names:
+            raise ValueError(
+                "kp_names must match cfg.model.KEYPOINT_MODEL_PAIRS in order. "
+                f"Expected {expected_kp_names}, got {list(kp_names)}. "
+                "Reorder kp_data columns together with kp_names, "
+                "or use load_keypoint_data()."
+            )
+
         self.cfg = cfg
         self._kp_names = kp_names
         self._xml_path = Path(xml_path)

@@ -48,15 +48,18 @@ def run_stac(
     Args:
         cfg: STAC configuration.
         kp_data: Flattened mocap keypoint data sampled uniformly at cfg.stac.data_fps.
-        kp_names: Ordered keypoint names matching kp_data columns.
+        kp_names: Keypoint names matching kp_data columns and KEYPOINT_MODEL_PAIRS
+            order.
         base_path: Base path for resolving relative file paths. Defaults to cwd.
 
     Returns:
         Tuple of (calibration output path, IK output path or None).
 
     Raises:
-        ValueError: If kp_data columns don't match kp_names * 3, or velocity
-            inference is requested without a finite, positive stac.data_fps.
+        ValueError: If kp_data columns don't match kp_names * 3, input or
+            calibration keypoint names differ from KEYPOINT_MODEL_PAIRS order,
+            or velocity inference is requested without a finite, positive
+            stac.data_fps.
     """
     if base_path is None:
         base_path = Path.cwd()
@@ -109,6 +112,15 @@ def run_stac(
 
     print("Running IK")
     _, calibration_data = io.load_stac_data(calibration_path)
+
+    expected_kp_names = list(kp_names)
+    if calibration_data.kp_names != expected_kp_names:
+        raise ValueError(
+            f"Calibration keypoint names in {calibration_path} must match "
+            "the current keypoint order. "
+            f"Expected {expected_kp_names}, got {calibration_data.kp_names}. "
+            "Use a calibration with matching keypoints or recalibrate."
+        )
 
     offsets = calibration_data.offsets
 

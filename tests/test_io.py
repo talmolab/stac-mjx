@@ -1,5 +1,7 @@
 import hydra
+import numpy as np
 import pytest
+from omegaconf import OmegaConf
 
 from stac_mjx import io
 
@@ -171,3 +173,31 @@ def test_load_h5(config, mouse_config, mocap_h5):
 
     assert data.shape == (3600, 102)
     assert sorted_kp_names == EXPECTED_MOUSE_KP_ORDER
+
+
+def test_load_keypoint_data_reorders_coordinates_with_names(monkeypatch):
+    cfg = OmegaConf.create(
+        {
+            "stac": {"data_path": "markers.mat"},
+            "model": {
+                "KEYPOINT_MODEL_PAIRS": {"a": "body_a", "b": "body_b"},
+                "MOCAP_SCALE_FACTOR": 1.0,
+            },
+        }
+    )
+    data = np.array(
+        [
+            [[10, 70, 1], [20, 80, 2], [30, 90, 3]],
+            [[40, 100, 4], [50, 110, 5], [60, 120, 6]],
+        ]
+    )
+    monkeypatch.setattr(
+        io, "load_dannce", lambda *args, **kwargs: (data, ["b", "extra", "a"])
+    )
+
+    actual, names = io.load_keypoint_data(cfg)
+
+    assert names == ["a", "b"]
+    np.testing.assert_array_equal(
+        actual, [[1, 2, 3, 10, 20, 30], [4, 5, 6, 40, 50, 60]]
+    )

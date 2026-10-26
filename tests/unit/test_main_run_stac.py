@@ -9,9 +9,10 @@ from stac_mjx import main
 
 
 class DummyData:
-    def __init__(self, qpos=None, offsets=None):
+    def __init__(self, qpos=None, offsets=None, kp_names=None):
         self.qpos = qpos if qpos is not None else np.zeros((4, 2))
         self.offsets = offsets if offsets is not None else jp.zeros((2, 3))
+        self.kp_names = kp_names if kp_names is not None else ["a", "b"]
         self.qvel = np.array([])
 
     def as_dict(self):
@@ -50,7 +51,10 @@ def make_cfg(
         n_frames_per_clip=n_frames_per_clip,
         infer_qvels=infer_qvels,
     )
-    model = types.SimpleNamespace(MJCF_PATH="models/rodent.xml")
+    model = types.SimpleNamespace(
+        MJCF_PATH="models/rodent.xml",
+        KEYPOINT_MODEL_PAIRS={"a": "body_a", "b": "body_b"},
+    )
     return types.SimpleNamespace(stac=stac, model=model)
 
 
