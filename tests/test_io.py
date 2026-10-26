@@ -1,9 +1,9 @@
 import hydra
 import numpy as np
 import pytest
-from omegaconf import OmegaConf, open_dict
+from omegaconf import OmegaConf
 
-from stac_mjx import io
+from stac_mjx import io, load_stac_config
 
 """
 Test data loaders for supported file types.
@@ -112,15 +112,25 @@ def test_load_mat_no_label3d(config_dir, mocap_mat):
     assert sorted_kp_names == EXPECTED_RODENT_KP_ORDER
 
 
-def test_load_mat_w_label3d(config_dir, mocap_mat):
-    """
-    Test loading data from a .mat file w/ labels file
-    """
-    cfg = load_config_with_overrides(config_dir, stac_data_path_override=mocap_mat)
-    with open_dict(cfg.model):
-        del cfg.model.KP_NAMES
-        cfg.model.KP_NAMES_LABEL3D_PATH = "tests/data/rat23.mat"
-    data, sorted_kp_names = io.load_keypoint_data(cfg)
+@pytest.mark.parametrize("absolute_label_path", [False, True])
+def test_load_mat_w_label3d(
+    config_dir, mocap_mat, tmp_path, monkeypatch, absolute_label_path
+):
+    """Load Label3D names through the public config API outside the repository."""
+    repo_root = config_dir.parent
+    label_path = "tests/data/rat23.mat"
+    if absolute_label_path:
+        label_path = str(repo_root / label_path)
+    monkeypatch.chdir(tmp_path)
+    cfg = load_stac_config(
+        config_dir,
+        overrides=[
+            f"stac.data_path={mocap_mat}",
+            f"+model.KP_NAMES_LABEL3D_PATH={label_path}",
+            "model.KP_NAMES=[]",
+        ],
+    )
+    data, sorted_kp_names = io.load_keypoint_data(cfg, base_path=repo_root)
     assert data.shape == (1000, 69)
     assert sorted_kp_names == EXPECTED_RODENT_KP_ORDER
 

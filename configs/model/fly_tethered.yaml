@@ -104,7 +104,7 @@ KEYPOINT_INITIAL_OFFSETS:
   R3D: 0. 0. 0.
   R3E: 0. 0. 0.
 
-TRUNK_OPTIMIZATION_KEYPOINTS: {}
+TRUNK_OPTIMIZATION_KEYPOINTS: []
   
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
@@ -150,7 +150,7 @@ MOCAP_SCALE_FACTOR: 1 #.1
 
 # If you have reason to believe that the initial offsets are correct for particular keypoints, 
 # you can regularize those sites using this with M_REG_COEF. 
-SITES_TO_REGULARIZE: {}
+SITES_TO_REGULARIZE: []
 
 RENDER_FPS: 50
 

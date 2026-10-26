@@ -27,6 +27,7 @@ class ModelConfig:
     N_SAMPLE_FRAMES: int  # Number of frames to sample when computing offset residual
     M_REG_COEF: float  # Coefficient for regularization term in offset optimization
     MARKER_SIZE: float = 0.005  # Radius of site marker spheres for visualization
+    KP_NAMES_LABEL3D_PATH: str | None = None  # Optional MAT file containing joint names
 
 
 @dataclass

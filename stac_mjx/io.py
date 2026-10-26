@@ -66,6 +66,8 @@ def load_keypoint_data(
     file_path = base_path / cfg.stac.data_path
     if file_path.suffix == ".mat":
         label3d_path = cfg.model.get("KP_NAMES_LABEL3D_PATH", None)
+        if label3d_path is not None:
+            label3d_path = base_path / label3d_path
         data, kp_names = load_dannce(str(file_path), names_filename=label3d_path)
     elif file_path.suffix == ".nwb":
         data, kp_names = load_nwb(file_path)

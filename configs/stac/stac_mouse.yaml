@@ -7,7 +7,7 @@ data_fps: null # Input keypoint sampling frequency (Hz); required to infer veloc
 n_calibration_frames: 250
 skip_calibration: False
 skip_ik: True
-infer_qvels: True 
+infer_qvels: False # Sampling frequency has not been verified.
 n_frames_per_clip: 360
 
 mujoco:
