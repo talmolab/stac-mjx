@@ -101,43 +101,6 @@ TRUNK_OPTIMIZATION_KEYPOINTS: []
 #  - "cl17"
 #  - "cl18"
 
-INDIVIDUAL_PART_OPTIMIZATION:
-  "head": [
-    "torso1_body",
-    "torso2_body",
-    "torso3_body",
-    "torso4_body",
-    "torso5_body",
-  ]
-  "abdomen1": [
-    "torso6_body",
-    "torso7_body",
-    "torso8_body",
-    "torso9_body",
-    "torso10_body",
-  ]
-  "abdomen2": [
-    "torso11_body",
-    "torso12_body",
-    "torso13_body",
-    "torso14_body",
-    "torso15_body",
-  ]
-  "abdomen3": [
-    "torso16_body",
-    "torso17_body",
-    "torso18_body",
-    "torso19_body",
-    "torso20_body",
-  ]
-  "tail": [
-    "torso21_body", 
-    "torso22_body", 
-    "torso23_body", 
-    "torso24_body",
-    "torso25_body",
-    ]
-
 KEYPOINT_COLOR_PAIRS:
   cl1: 0 .5 1 1
   cl2: 1 0 .3 1

@@ -24,13 +24,6 @@ def test_compose_config_loads_and_applies_overrides():
 def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
     cfg = compose_config("tests/configs", "config", [])
 
-    calls = {"xla": 0}
-
-    monkeypatch.setattr(
-        cli.stac_mjx,
-        "enable_xla_flags",
-        lambda: calls.__setitem__("xla", calls["xla"] + 1),
-    )
     monkeypatch.setattr(
         cli.stac_mjx, "load_keypoint_data", lambda cfg, base_path=None: ("kp", "names")
     )
@@ -43,11 +36,8 @@ def test_run_pipeline_invokes_dependencies(monkeypatch, tmp_path):
         ),
     )
 
-    calibration_path, ik_path = cli.run_pipeline(
-        cfg, base_path=Path(tmp_path), enable_xla=True
-    )
+    calibration_path, ik_path = cli.run_pipeline(cfg, base_path=Path(tmp_path))
 
-    assert calls["xla"] == 1
     assert calibration_path == "calibration_path"
     assert ik_path == "ik_path"
 

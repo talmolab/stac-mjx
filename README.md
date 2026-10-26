@@ -5,9 +5,11 @@ This is part of [MIMIC-MJX](https://mimic-mjx.talmolab.org/).
 
 ## Installation
 
-### Option 1: `uv` (fastest)
+### Using `uv`
 
-**Prerequisites:** Python 3.11 or 3.12, [uv](https://docs.astral.sh/uv/) package manager, and optionally CUDA 12.x or 13.x for GPU support.
+Install STAC and its dependencies from `pyproject.toml`.
+
+**Prerequisites:** Git, Python 3.11 or 3.12, and the [uv](https://docs.astral.sh/uv/) package manager. CUDA support requires Linux and a compatible NVIDIA GPU and driver; see [JAX's GPU installation requirements](https://docs.jax.dev/en/latest/installation.html#nvidia-gpu).
 
 If you don't have uv installed:
 
@@ -22,13 +24,14 @@ pip install uv
 1. Clone the repository:
 ```bash
 git clone https://github.com/talmolab/stac-mjx.git
+cd stac-mjx
 ```
 2. Create and activate a virtual environment:
 ```bash
-uv venv
+uv venv --python 3.12
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
-3. Install the package with optional dependencies based on your hardware. CUDA 12, CUDA 13, and CPU-only configurations are supported. This should take a few minutes:
+3. Choose one installation command for your hardware. The CUDA extras install JAX's CUDA libraries through pip; the NVIDIA driver must already be installed.
 
 For CUDA 12.x:
 ```bash
@@ -49,7 +52,10 @@ For development, include the `[dev]` extras in addition to the hardware optional
 ```bash
 uv pip install -e ".[cuda13,dev]"
 ```
-The NWB viewer notebook also needs `uv pip install -e ".[notebooks]"`.
+For CPU development, use `uv pip install -e ".[dev]"`.
+
+For Jupyter notebooks, install `uv pip install -e ".[notebooks]"`.
+This extra includes the Jupyter kernel and NWB viewer widgets.
 
 Check formatting and lint with the same Ruff rules used by TRACK-MJX and VNL-Playground:
 
@@ -62,47 +68,59 @@ ruff check stac_mjx/ tests/ run_stac.py
 ```bash
 python -c "import jax; print(f'JAX version: {jax.__version__}'); print(f'Available devices: {jax.devices()}')"
 ```
-5. Register the environment as a Jupyter kernel:
+5. For notebooks, register the environment as a Jupyter kernel after installing the `[notebooks]` extra:
 ```bash
 python -m ipykernel install --user --name=stac-mjx --display-name="Python (stac-mjx)"
 ```
 
-### Option 2: `conda`
+### JAX configuration
 
-stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment, using the provided `environment.yaml`:
-[Local installation before package is officially published]
-1. Clone the repository `git clone https://github.com/talmolab/stac-mjx.git` and `cd` into it
-2. Create and activate the `stac-mjx-env` environment:
+STAC uses `~/.cache/stac-mjx/jax` for its persistent compilation cache by default. Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or `JAX_ENABLE_COMPILATION_CACHE=false` to disable it, before starting Python. STAC preserves cache settings configured through the environment or `jax.config.update(...)` before importing `stac_mjx`, including compilation-time and entry-size thresholds.
 
-```
-conda env create -f environment.yaml
-conda activate stac-mjx-env
-```
-
-3. Register the environment as a Jupyter kernel:
-```bash
-conda install ipykernel
-python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
-```
+If you need optional `XLA_FLAGS`, set them before starting Python or Jupyter, as described in the [JAX guidance](https://docs.jax.dev/en/latest/xla_flags.html). STAC leaves these flags unchanged.
 
 ### Headless Rendering Setup
 
-Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. Below is the `osmesa` setup, which supports headless rendering common in remote/cluster environments (currently Linux only).
+Rendering needs an OpenGL backend. Calibration and IK can run without creating a rendering context. The following settings apply to Linux.
 
-Install the required system and conda packages:
+Set the variables **before starting Python or Jupyter**. If MuJoCo is already imported in a notebook, restart its kernel after selecting a backend.
+
+For hardware rendering on an NVIDIA GPU without a display, use EGL. The host needs an NVIDIA driver with EGL support:
+
 ```bash
-sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6
-conda install -c conda-forge glew
-conda install -c conda-forge mesalib
-conda install -c anaconda mesa-libgl-cos6-x86_64
-conda install -c menpo glfw3
+export MUJOCO_GL=egl
+export PYOPENGL_PLATFORM=egl
 ```
 
-Set the following environment variables and reactivate your environment:
+For CPU software rendering without a display, use OSMesa. On Debian or Ubuntu, install its system library:
+
 ```bash
-conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
-conda deactivate && conda activate base
+sudo apt-get install libosmesa6
+export MUJOCO_GL=osmesa
+export PYOPENGL_PLATFORM=osmesa
 ```
+
+Use the equivalent OSMesa package on other Linux distributions. For desktop rendering with a display, use MuJoCo's default backend; unset `MUJOCO_GL` and `PYOPENGL_PLATFORM` if you previously selected a headless backend.
+
+Check that the selected backend can render a frame:
+
+```bash
+python - <<'PY'
+import mujoco
+
+model = mujoco.MjModel.from_xml_string(
+    '<mujoco><worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>'
+)
+data = mujoco.MjData(model)
+mujoco.mj_forward(model, data)
+with mujoco.Renderer(model, height=64, width=64) as renderer:
+    renderer.update_scene(data)
+    frame = renderer.render()
+print(f"Rendered RGB frame: {frame.shape}")
+PY
+```
+
+The expected shape is `(64, 64, 3)`. If EGL fails to initialize, check the host's driver/EGL libraries or use OSMesa. These settings choose the rendering backend; they do not select the device used by JAX for IK.
 
 ## Usage
 
@@ -130,7 +148,6 @@ stac-mjx --config-path configs --config-name config
 Common options:
 - `--base-path`: base directory for data/models (defaults to current working directory)
 - `--print-config`: show the composed Hydra config and exit
-- `--skip-xla-flags`: skip setting XLA environment flags before running
 
 Hydra overrides can be appended after the CLI flags. For example, to change the data path and number of calibration frames:
 
@@ -164,10 +181,7 @@ The following is the full CLI script run as a sequence of function calls:
 
    # Run stac
    calibration_path, ik_path = stac_mjx.run_stac(
-      cfg,
-      kp_data,
-      sorted_kp_names,
-      base_path=base_path
+       cfg, kp_data, sorted_kp_names, base_path=base_path
    )
    ```
 
@@ -181,12 +195,12 @@ The following is the full CLI script run as a sequence of function calls:
 
    # Call mujoco_viz
    cfg, frames = stac_mjx.viz_stac(
-      data_path,
-      n_frames,
-      save_path,
-      start_frame=0,
-      camera="close_profile",
-      base_path=Path.cwd().parent,
+       data_path,
+       n_frames,
+       save_path,
+       start_frame=0,
+       camera="close_profile",
+       base_path=Path.cwd().parent,
    )
 
    # Show the video in the notebook (it is also saved to the save_path)

@@ -48,14 +48,6 @@ TRUNK_OPTIMIZATION_KEYPOINTS:
   - 'thorax'
   - 'abdomen'
   
-INDIVIDUAL_PART_OPTIMIZATION: 
-  "T1R": ["thorax", "claw_T1_right"]
-  "T2R": ["thorax", "claw_T2_right"]
-  "T3R": ["thorax", "claw_T3_right"]
-  "T1L": ["thorax", "claw_T1_left"]
-  "T2L": ["thorax", "claw_T2_left"]
-  "T3L": ["thorax", "claw_T3_left"]
-
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
   head: 0 .5 1 1

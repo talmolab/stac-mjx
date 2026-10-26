@@ -1,5 +1,3 @@
-import os
-
 import numpy as np
 import pytest
 from jax import numpy as jp
@@ -41,13 +39,3 @@ def test_compute_velocity_from_kinematics_no_freejoint():
     np.testing.assert_allclose(
         qvel, [[10.0, 20.0, 30.0], [30.0, 40.0, 50.0], [30.0, 40.0, 50.0]]
     )
-
-
-def test_enable_xla_flags_sets_env_on_gpu(monkeypatch):
-    class FakeBackend:
-        platform = "gpu"
-
-    monkeypatch.setattr(utils, "get_backend", lambda: FakeBackend())
-    monkeypatch.delenv("XLA_FLAGS", raising=False)
-    utils.enable_xla_flags()
-    assert "XLA_FLAGS" in os.environ

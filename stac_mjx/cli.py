@@ -45,11 +45,6 @@ def parse_args(
         action="store_true",
         help="Print the resolved config and exit.",
     )
-    parser.add_argument(
-        "--skip-xla-flags",
-        action="store_true",
-        help="Do not set XLA flags before running.",
-    )
 
     args, overrides = parser.parse_known_args(argv)
     return args, overrides
@@ -58,21 +53,16 @@ def parse_args(
 def run_pipeline(
     cfg: DictConfig,
     base_path: Path,
-    enable_xla: bool = True,
 ) -> tuple[str, str | None]:
     """Execute the STAC pipeline given a composed config.
 
     Args:
         cfg: STAC configuration.
         base_path: Base path for resolving relative paths.
-        enable_xla: Whether to set XLA flags before running.
 
     Returns:
         Tuple of (calibration path, IK path or None).
     """
-    if enable_xla:
-        stac_mjx.enable_xla_flags()
-
     kp_data, sorted_kp_names = stac_mjx.load_keypoint_data(cfg, base_path=base_path)
     return stac_mjx.run_stac(cfg, kp_data, sorted_kp_names, base_path=base_path)
 
@@ -104,7 +94,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     calibration_path, ik_path = run_pipeline(
         cfg=cfg,
         base_path=base_path,
-        enable_xla=not args.skip_xla_flags,
     )
 
     logging.info("Run complete.")

@@ -60,12 +60,7 @@ def test_run_stac_skip_calibration_and_ik(monkeypatch):
 
     monkeypatch.setattr(main, "Stac", DummyStac)
 
-    calls = {"save": 0, "xla": 0}
-    monkeypatch.setattr(
-        main.utils,
-        "enable_xla_flags",
-        lambda: calls.__setitem__("xla", calls["xla"] + 1),
-    )
+    calls = {"save": 0}
     monkeypatch.setattr(
         main.io, "save_data_to_h5", lambda *args, **kwargs: calls.__setitem__("save", 1)
     )
@@ -73,7 +68,6 @@ def test_run_stac_skip_calibration_and_ik(monkeypatch):
     calibration_path, ik_path = main.run_stac(cfg, kp_data, ["a", "b"])
     assert ik_path is None
     assert calls["save"] == 0
-    assert calls["xla"] == 0
 
 
 def test_run_stac_ik_path(monkeypatch):

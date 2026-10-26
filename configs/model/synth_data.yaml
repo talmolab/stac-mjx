@@ -20,9 +20,6 @@ KEYPOINT_INITIAL_OFFSETS:
 TRUNK_OPTIMIZATION_KEYPOINTS:
   - part_0
   
-INDIVIDUAL_PART_OPTIMIZATION:
-  model_base: [base]
-
 # Color to use for each keypoint when visualizing the results
 KEYPOINT_COLOR_PAIRS:
   part_0: 0 .5 1 1
