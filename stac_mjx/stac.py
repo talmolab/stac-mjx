@@ -14,6 +14,7 @@ from omegaconf import DictConfig
 from tqdm import tqdm
 
 from stac_mjx import compute_stac, io, rescale, stac_core, utils
+from stac_mjx.joints import JointLayout
 
 _ROOT_QPOS_LB = jp.concatenate([-jp.inf * jp.ones(3), -1.0 * jp.ones(4)])
 _ROOT_QPOS_UB = jp.concatenate([jp.inf * jp.ones(3), 1.0 * jp.ones(4)])
@@ -35,52 +36,42 @@ _MUJOCO_JOINT_TYPE_UNCONSTRAINED = {
         jp.concatenate([-1.0 * jp.ones(4)]),
         jp.concatenate([1.0 * jp.ones(4)]),
     ),
-    mujoco.mjtJoint.mjJNT_SLIDE: (
-        jp.concatenate([-jp.inf * jp.ones(1)]),
-        jp.concatenate([jp.inf * jp.ones(1)]),
-    ),
-    mujoco.mjtJoint.mjJNT_HINGE: (
-        jp.concatenate([-2 * jp.pi * jp.ones(1)]),
-        jp.concatenate([2 * jp.pi * jp.ones(1)]),
-    ),
 }
 
 
 def _align_joint_dims(
-    types: np.ndarray,
-    ranges: np.ndarray,
-    names: list[str],
+    joint_types: np.ndarray,
+    joint_ranges: np.ndarray,
+    joint_names: list[str],
+    limited: np.ndarray,
 ) -> tuple[Float[Array, " n_qpos"], Float[Array, " n_qpos"], list[str]]:
     """Create bounds and joint names aligned with qpos dimensions.
 
     Args:
-        types: Array of MuJoCo joint type enums.
-        ranges: Array of joint ranges (n_joints, 2).
-        names: Joint names.
+        joint_types: Array of MuJoCo joint type enums.
+        joint_ranges: Array of joint ranges (n_joints, 2).
+        joint_names: Joint names.
+        limited: Whether each joint's model range is enabled.
 
     Returns:
         Tuple of (lower bounds, upper bounds, per-qpos-dim joint names).
     """
-    lb = []
-    ub = []
-    part_names = []
-    for type, range, name in zip(types, ranges, names):
-        dims = _MUJOCO_JOINT_TYPE_DIMS[type]
-        # Set inf bounds for freejoint
-        if type == mujoco.mjtJoint.mjJNT_FREE:
-            lb.append(_MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][0])
-            ub.append(_MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1])
-            part_names += [name] * dims
+    lb, ub, part_names = [], [], []
+    for joint_type, joint_range, joint_name, is_limited in zip(
+        joint_types, joint_ranges, joint_names, limited
+    ):
+        dims = _MUJOCO_JOINT_TYPE_DIMS[joint_type]
+        if not is_limited:
+            lower, upper = -jp.inf, jp.inf
+        elif joint_type in (mujoco.mjtJoint.mjJNT_FREE, mujoco.mjtJoint.mjJNT_BALL):
+            lower, upper = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[joint_type]
         else:
-            lower, upper = range
-            if lower == 0 and upper == 0:  # default 0 0 limits mean unconstrained
-                lower = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][0]
-                upper = _MUJOCO_JOINT_TYPE_UNCONSTRAINED[type][1]
-            lb.append(lower * jp.ones(dims))
-            ub.append(upper * jp.ones(dims))
-            part_names += [name] * dims
+            lower, upper = joint_range
+        lb.append(lower * jp.ones(dims))
+        ub.append(upper * jp.ones(dims))
+        part_names += [joint_name] * dims
 
-    return jp.minimum(jp.concatenate(lb), 0.0), jp.concatenate(ub), part_names
+    return jp.concatenate(lb), jp.concatenate(ub), part_names
 
 
 class Stac:
@@ -120,7 +111,10 @@ class Stac:
         # Set up bounds and part_names based on joint ranges, taking into account the dimensionality of parameters
         joint_names = [self._mj_model.joint(i).name for i in range(self._mj_model.njnt)]
         self._lb, self._ub, self._part_names = _align_joint_dims(
-            self._mj_model.jnt_type, self._mj_model.jnt_range, joint_names
+            self._mj_model.jnt_type,
+            self._mj_model.jnt_range,
+            joint_names,
+            self._mj_model.jnt_limited,
         )
 
         # Generate boolean flags for keypoints included in trunk optimization.
@@ -409,7 +403,9 @@ class Stac:
                     kp_chunk[init_overlap:, root_kp_start : root_kp_start + 3]
                 )
 
-        q_init = utils.normalize_freejoint_quat(q_init, self._freejoint)
+        q_init = JointLayout.from_qpos(
+            q_init.shape[-1], joint_types=mjx_model.jnt_type
+        ).normalize(q_init)
         if coarse_stride <= 0:
             return q_init
 
@@ -454,12 +450,16 @@ class Stac:
                     kp_chunk[segment_idx],
                     n_solver_max_iters=q_opt_cfg.ik_max_iterations,
                     initial_step_damping=q_opt_cfg.initial_step_damping,
-                )
+                ).qpos
                 q_coarse_parts.append(q_segment)
                 q_prev_segment = q_segment
             q_coarse = jp.concatenate(q_coarse_parts, axis=0)
             return utils.interpolate_qpos_from_keyframes(
-                q_coarse, coarse_idx, solve_frames, self._freejoint
+                q_coarse,
+                coarse_idx,
+                solve_frames,
+                self._freejoint,
+                joint_types=mjx_model.jnt_type,
             )
 
         if coarse_frames not in coarse_problems:
@@ -483,10 +483,14 @@ class Stac:
             kp_chunk[coarse_idx],
             n_solver_max_iters=q_opt_cfg.ik_max_iterations,
             initial_step_damping=q_opt_cfg.initial_step_damping,
-        )
+        ).qpos
 
         return utils.interpolate_qpos_from_keyframes(
-            q_coarse, coarse_idx, solve_frames, self._freejoint
+            q_coarse,
+            coarse_idx,
+            solve_frames,
+            self._freejoint,
+            joint_types=mjx_model.jnt_type,
         )
 
     @jaxtyped(typechecker=beartype)

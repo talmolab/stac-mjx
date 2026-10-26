@@ -122,6 +122,7 @@ def run_stac(
             qpos_trajectory=ik_data.qpos,
             dt=1.0 / data_fps,
             freejoint=stac._freejoint,
+            joint_types=stac._mj_model.jnt_type,
         )
         ik_data.qvel = np.array(qvels)
         print(f"Finished compute velocity in {time.time() - t_vel} seconds")
