@@ -6,9 +6,9 @@ build-backend = "setuptools.build_meta"
 name = "stac-mjx"
 authors = [
     {name = "Talmo Pereira", email = "talmo@salk.edu"}]
-description="TBD"
+description = "Marker calibration and inverse kinematics for animal motion capture with MuJoCo MJX and JAX."
 requires-python = ">=3.11"
-keywords = ["TBD"]
+keywords = ["motion-capture", "inverse-kinematics", "animal-motion", "mujoco", "mjx", "jax"]
 license = "BSD-3-Clause"
 classifiers = [
     "Programming Language :: Python :: 3.11",
