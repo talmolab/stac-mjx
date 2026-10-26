@@ -87,8 +87,20 @@ class Stac:
         Args:
             xml_path: Path to model MJCF file.
             cfg: STAC configuration.
-            kp_names: Ordered list of mocap keypoint names.
+            kp_names: Mocap keypoint names in KEYPOINT_MODEL_PAIRS order.
+
+        Raises:
+            ValueError: If kp_names differs from KEYPOINT_MODEL_PAIRS order.
         """
+        expected_kp_names = list(cfg.model.KEYPOINT_MODEL_PAIRS)
+        if list(kp_names) != expected_kp_names:
+            raise ValueError(
+                "kp_names must match cfg.model.KEYPOINT_MODEL_PAIRS in order. "
+                f"Expected {expected_kp_names}, got {list(kp_names)}. "
+                "Reorder kp_data columns together with kp_names, "
+                "or use load_keypoint_data()."
+            )
+
         self.cfg = cfg
         self._kp_names = kp_names
         self._xml_path = Path(xml_path)
@@ -785,15 +797,15 @@ class Stac:
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_LIGHT] = True
         scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONVEXHULL] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_SKYBOX] = True
-        scene_option.flags[mujoco.mjtRndFlag.mjRND_FOG] = True
         mj_data = mujoco.MjData(render_mj_model)
 
         mujoco.mj_kinematics(render_mj_model, mj_data)
 
         renderer = mujoco.Renderer(render_mj_model, height=height, width=width)
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_SHADOW] = True
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_REFLECTION] = True
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_SKYBOX] = True
+        renderer.scene.flags[mujoco.mjtRndFlag.mjRND_FOG] = True
 
         kp_data = kp_data[: qpos.shape[0]]
 

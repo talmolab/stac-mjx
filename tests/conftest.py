@@ -1,12 +1,30 @@
-"""Provide fixtures for the entire parent directory."""
+"""Shared paths for repository configurations and test recordings."""
 
-from tests.fixtures.configs import (
-    config,
-    mouse_config,
-    rodent_config,
-    rodent_config_label3d,
-    rodent_config_less_kp_names,
-    rodent_config_more_kp_names,
-    rodent_config_no_kp_names,
-)
-from tests.fixtures.datasets import label3d_mat_file, mocap_h5, mocap_mat, mocap_nwb
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture
+def config_dir():
+    return Path(__file__).resolve().parents[1] / "configs"
+
+
+@pytest.fixture
+def mocap_mat():
+    return "tests/data/test_rodent_mocap_1000_frames.mat"
+
+
+@pytest.fixture
+def mocap_nwb():
+    return "tests/data/test_rodent_mocap_1000_frames.nwb"
+
+
+@pytest.fixture
+def mocap_h5():
+    return "data/rodent_mocap_1000_frames.h5"
+
+
+@pytest.fixture
+def mouse_mocap_h5():
+    return "data/mouse_mocap_3600_frames.h5"

@@ -3,5 +3,4 @@
 from stac_mjx.io import load_keypoint_data as load_keypoint_data
 from stac_mjx.main import load_stac_config as load_stac_config
 from stac_mjx.main import run_stac as run_stac
-from stac_mjx.utils import enable_xla_flags as enable_xla_flags
 from stac_mjx.viz import viz_stac as viz_stac

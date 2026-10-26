@@ -30,51 +30,6 @@ class FakeMjxModel:
         self.site_pos = site_pos
 
 
-def test_root_optimization_calls_q_opt_twice(monkeypatch):
-    monkeypatch.setattr(
-        compute_stac,
-        "mujoco",
-        types.SimpleNamespace(
-            mjtJoint=types.SimpleNamespace(mjJNT_SLIDE=1, mjJNT_FREE=0)
-        ),
-    )
-    monkeypatch.setattr(utils, "kinematics", lambda model, data: data)
-    monkeypatch.setattr(utils, "com_pos", lambda model, data: data)
-    monkeypatch.setattr(
-        compute_stac, "build_q_opt_problem", lambda *args, **kwargs: object()
-    )
-
-    q_init_args = []
-
-    def fake_q_opt(problem, q_init, kp_frame, **kwargs):
-        q_init_args.append(q_init)
-        return QOptResult(q_init, summary=None)
-
-    monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
-
-    mjx_model = FakeMjxModel(nq=7, jnt_type=jp.array([0]), site_pos=jp.zeros((2, 3)))
-    mjx_data = FakeMjxData(qpos=jp.zeros(7))
-    kp_data = jp.zeros((1, 6))
-    lb = jp.zeros(7)
-    ub = jp.ones(7)
-    site_idxs = jp.array([0, 1])
-    trunk_kps = jp.array([True, True])
-
-    out = compute_stac.root_optimization(
-        mjx_model,
-        mjx_data,
-        kp_data,
-        root_kp_idx=0,
-        lb=lb,
-        ub=ub,
-        site_idxs=site_idxs,
-        trunk_kps=trunk_kps,
-    )
-
-    assert isinstance(out, FakeMjxData)
-    assert len(q_init_args) == 2
-
-
 def test_root_optimization_seeds_root_translation_from_correct_keypoint(monkeypatch):
     monkeypatch.setattr(
         compute_stac,

@@ -57,7 +57,8 @@ def load_keypoint_data(
         Tuple of (flattened mocap array, sorted keypoint names).
 
     Raises:
-        ValueError: If unsupported filetype or keypoint names missing/mismatched.
+        ValueError: If unsupported filetype or keypoint names are missing,
+            duplicated, or mismatched.
     """
     if base_path is None:
         base_path = Path.cwd()
@@ -65,6 +66,8 @@ def load_keypoint_data(
     file_path = base_path / cfg.stac.data_path
     if file_path.suffix == ".mat":
         label3d_path = cfg.model.get("KP_NAMES_LABEL3D_PATH", None)
+        if label3d_path is not None:
+            label3d_path = base_path / label3d_path
         data, kp_names = load_dannce(str(file_path), names_filename=label3d_path)
     elif file_path.suffix == ".nwb":
         data, kp_names = load_nwb(file_path)
@@ -87,6 +90,9 @@ def load_keypoint_data(
         raise ValueError(
             f"Number of keypoint names ({len(kp_names)}) is not the same as the number of keypoints in data ({data.shape[2]})"
         )
+
+    if len(set(kp_names)) != len(kp_names):
+        raise ValueError(f"Keypoint names must be unique; got {list(kp_names)}.")
 
     model_inds = [
         kp_names.index(src) for src, dst in cfg.model.KEYPOINT_MODEL_PAIRS.items()

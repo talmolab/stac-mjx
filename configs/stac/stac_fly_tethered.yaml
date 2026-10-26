@@ -12,6 +12,7 @@ n_frames_per_clip: 300
 
 skip_calibration: True
 skip_ik: False
+infer_qvels: False
 
 mujoco:
   solver: "newton"

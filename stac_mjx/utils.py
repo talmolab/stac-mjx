@@ -17,7 +17,6 @@ if not hasattr(mujoco, "_enums"):
             del sys.modules[name]
     import mujoco
 
-from jax.extend.backend import get_backend
 from mujoco import mjx
 from mujoco.mjx._src import smooth
 
@@ -25,21 +24,19 @@ from stac_mjx.joints import JointLayout
 
 
 def _enable_jax_compilation_cache() -> None:
-    """Enable persistent JAX compilation cache for all entrypoints."""
+    """Set a default cache directory while respecting caller configuration."""
+    if (
+        not jax.config.jax_enable_compilation_cache
+        or jax.config.jax_compilation_cache_dir is not None
+    ):
+        return
+
     cache_dir = os.path.join(os.path.expanduser("~"), ".cache", "stac-mjx", "jax")
     os.makedirs(cache_dir, exist_ok=True)
     jax.config.update("jax_compilation_cache_dir", cache_dir)
-    jax.config.update("jax_persistent_cache_min_entry_size_bytes", 0)
-    jax.config.update("jax_persistent_cache_min_compile_time_secs", 1)
 
 
 _enable_jax_compilation_cache()
-
-
-def enable_xla_flags() -> None:
-    """Enable XLA flags for faster runtime on Nvidia GPUs."""
-    if get_backend().platform == "gpu":
-        os.environ["XLA_FLAGS"] = "--xla_gpu_triton_gemm_any=True "
 
 
 def mjx_load(mj_model) -> tuple[mjx.Model, mjx.Data]:

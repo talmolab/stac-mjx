@@ -5,9 +5,11 @@ This is part of [MIMIC-MJX](https://mimic-mjx.talmolab.org/).
 
 ## Installation
 
-### Option 1: `uv` (fastest)
+### Using `uv`
 
-**Prerequisites:** Python 3.11 or 3.12, [uv](https://docs.astral.sh/uv/) package manager, and optionally CUDA 12.x or 13.x for GPU support.
+Install STAC and its dependencies from `pyproject.toml`.
+
+**Prerequisites:** Git, Python 3.11 or 3.12, and the [uv](https://docs.astral.sh/uv/) package manager. CUDA support requires Linux and a compatible NVIDIA GPU and driver; see [JAX's GPU installation requirements](https://docs.jax.dev/en/latest/installation.html#nvidia-gpu).
 
 If you don't have uv installed:
 
@@ -22,13 +24,14 @@ pip install uv
 1. Clone the repository:
 ```bash
 git clone https://github.com/talmolab/stac-mjx.git
+cd stac-mjx
 ```
 2. Create and activate a virtual environment:
 ```bash
-uv venv
+uv venv --python 3.12
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 ```
-3. Install the package with optional dependencies based on your hardware. CUDA 12, CUDA 13, and CPU-only configurations are supported. This should take a few minutes:
+3. Choose one installation command for your hardware. The CUDA extras install JAX's CUDA libraries through pip; the NVIDIA driver must already be installed.
 
 For CUDA 12.x:
 ```bash
@@ -49,60 +52,86 @@ For development, include the `[dev]` extras in addition to the hardware optional
 ```bash
 uv pip install -e ".[cuda13,dev]"
 ```
-The NWB viewer notebook also needs `uv pip install -e ".[notebooks]"`.
+For CPU development, use `uv pip install -e ".[dev]"`.
+
+For Jupyter notebooks, install `uv pip install -e ".[notebooks]"`.
+This extra includes the Jupyter kernel.
 
 Check formatting and lint with the same Ruff rules used by TRACK-MJX and VNL-Playground:
 
 ```bash
-ruff format --check stac_mjx/ tests/ run_stac.py
-ruff check stac_mjx/ tests/ run_stac.py
+ruff format --check stac_mjx/ tests/ notebooks/ run_stac.py
+ruff check stac_mjx/ tests/ notebooks/ run_stac.py
+```
+
+CI also runs a CPU smoke test using `data/rodent_mocap_1000_frames.h5`.
+It calibrates on one frame, fits two consecutive frames, and checks the saved
+poses, velocities, and marker offsets. Solver iterations are limited and JIT is
+disabled to keep this integration check small; it does not measure fit quality
+or compiled performance. Run it separately from the unit tests:
+
+```bash
+JAX_PLATFORMS=cpu JAX_DISABLE_JIT=true JAX_ENABLE_COMPILATION_CACHE=false \
+  uv run --no-project pytest -o addopts='' -q -s tests/smoke.py
 ```
 
 4. Verify the installation:
 ```bash
 python -c "import jax; print(f'JAX version: {jax.__version__}'); print(f'Available devices: {jax.devices()}')"
 ```
-5. Register the environment as a Jupyter kernel:
+5. For notebooks, register the environment as a Jupyter kernel after installing the `[notebooks]` extra:
 ```bash
 python -m ipykernel install --user --name=stac-mjx --display-name="Python (stac-mjx)"
 ```
 
-### Option 2: `conda`
+### JAX configuration
 
-stac-mjx relies on many prerequisites, therefore we suggest installing in a new conda environment, using the provided `environment.yaml`:
-[Local installation before package is officially published]
-1. Clone the repository `git clone https://github.com/talmolab/stac-mjx.git` and `cd` into it
-2. Create and activate the `stac-mjx-env` environment:
+STAC uses `~/.cache/stac-mjx/jax` for its persistent compilation cache by default. Set `JAX_COMPILATION_CACHE_DIR` to choose another directory, or `JAX_ENABLE_COMPILATION_CACHE=false` to disable it, before starting Python. STAC preserves cache settings configured through the environment or `jax.config.update(...)` before importing `stac_mjx`, including compilation-time and entry-size thresholds.
 
-```
-conda env create -f environment.yaml
-conda activate stac-mjx-env
-```
-
-3. Register the environment as a Jupyter kernel:
-```bash
-conda install ipykernel
-python -m ipykernel install --user --name stac-mjx-env --display-name "Python (stac-mjx-env)"
-```
+If you need optional `XLA_FLAGS`, set them before starting Python or Jupyter, as described in the [JAX guidance](https://docs.jax.dev/en/latest/xla_flags.html). STAC leaves these flags unchanged.
 
 ### Headless Rendering Setup
 
-Our rendering functions support multiple backends: `egl`, `glfw`, and `osmesa`. Below is the `osmesa` setup, which supports headless rendering common in remote/cluster environments (currently Linux only).
+Rendering needs an OpenGL backend. Calibration and IK can run without creating a rendering context. The following settings apply to Linux.
 
-Install the required system and conda packages:
+Set the variables **before starting Python or Jupyter**. If MuJoCo is already imported in a notebook, restart its kernel after selecting a backend.
+
+For hardware rendering on an NVIDIA GPU without a display, use EGL. The host needs an NVIDIA driver with EGL support:
+
 ```bash
-sudo apt-get install libglfw3 libglew2.0 libgl1-mesa-glx libosmesa6
-conda install -c conda-forge glew
-conda install -c conda-forge mesalib
-conda install -c anaconda mesa-libgl-cos6-x86_64
-conda install -c menpo glfw3
+export MUJOCO_GL=egl
+export PYOPENGL_PLATFORM=egl
 ```
 
-Set the following environment variables and reactivate your environment:
+For CPU software rendering without a display, use OSMesa. On Debian or Ubuntu, install its system library:
+
 ```bash
-conda env config vars set MUJOCO_GL=osmesa PYOPENGL_PLATFORM=osmesa
-conda deactivate && conda activate base
+sudo apt-get install libosmesa6
+export MUJOCO_GL=osmesa
+export PYOPENGL_PLATFORM=osmesa
 ```
+
+Use the equivalent OSMesa package on other Linux distributions. For desktop rendering with a display, use MuJoCo's default backend; unset `MUJOCO_GL` and `PYOPENGL_PLATFORM` if you previously selected a headless backend.
+
+Check that the selected backend can render a frame:
+
+```bash
+python - <<'PY'
+import mujoco
+
+model = mujoco.MjModel.from_xml_string(
+    '<mujoco><worldbody><geom type="sphere" size="0.1"/></worldbody></mujoco>'
+)
+data = mujoco.MjData(model)
+mujoco.mj_forward(model, data)
+with mujoco.Renderer(model, height=64, width=64) as renderer:
+    renderer.update_scene(data)
+    frame = renderer.render()
+print(f"Rendered RGB frame: {frame.shape}")
+PY
+```
+
+The expected shape is `(64, 64, 3)`. If EGL fails to initialize, check the host's driver/EGL libraries or use OSMesa. These settings choose the rendering backend; they do not select the device used by JAX for IK.
 
 ## Usage
 
@@ -118,6 +147,8 @@ First, configure your body model and STAC parameters in `configs/`:
 
 Ensure `KEYPOINT_MODEL_PAIRS` covers every keypoint in your mocap data and that `stac.data_path` points to your `.nwb`, `.mat`, or `.h5` file. Use Hydra overrides to experiment without editing files, e.g., `stac-mjx stac.data_path=path/to/data.nwb model.MJCF_PATH=models/rodent.xml`.
 
+For a compact HDF5 example, use `stac.data_path=data/rodent_mocap_1000_frames.h5 stac.data_fps=30` with the rodent model. Its `tracks` array has shape `(1000, 1, 23, 3)` in millimetres, ordered to match `model.KP_NAMES`. Names, timestamps, confidence, and provenance are also stored; the current loader uses the configuration for names, scale, and sampling rate. The 30 Hz timing is inherited from the NWB fixture and is not independently verified.
+
 To infer velocities (`stac.infer_qvels=True`), set `stac.data_fps` to the sampling frequency in Hz of the keypoint frames passed to STAC. For example, use `stac.data_fps=50` for 50 Hz input. STAC produces one `qpos` frame per input frame and computes `qvel` with `dt = 1 / stac.data_fps`. If you keep every second frame from a 100 Hz recording, set `stac.data_fps=50`. Input frames must be evenly spaced in time. `model.RENDER_FPS` controls video playback, and the MuJoCo timestep controls simulation; neither sets the input data frequency.
 
 ### Command Line Interface
@@ -130,7 +161,6 @@ stac-mjx --config-path configs --config-name config
 Common options:
 - `--base-path`: base directory for data/models (defaults to current working directory)
 - `--print-config`: show the composed Hydra config and exit
-- `--skip-xla-flags`: skip setting XLA environment flags before running
 
 Hydra overrides can be appended after the CLI flags. For example, to change the data path and number of calibration frames:
 
@@ -142,7 +172,7 @@ stac-mjx --config-path configs --config-name config stac.data_path=path/to/data.
 
 You can use a set of high-level functions instead of the end-to-end CLI script to decouple data preparation and configuration loading from execution of the STAC algorithm. This makes it easy to load custom data without adhering to the file structure or content assumptions imposed by the CLI.
 
-> **Try the [demo notebook](https://github.com/talmolab/stac-mjx/blob/main/demos/rodent_demo.ipynb) to see it in action!**
+> **Follow the [rodent guided tour](notebooks/rodent_demo.ipynb) to calibrate markers, fit 150 frames of real motion, compute velocities, render the result, and inspect fitting errors.**
 
 The following is the full CLI script run as a sequence of function calls:
 
@@ -153,21 +183,19 @@ The following is the full CLI script run as a sequence of function calls:
    from pathlib import Path
 
 
-   # Choose parent directory as base path for data files
-   base_path = Path.cwd().parent
+   # Run this example from the repository root.
+   base_path = Path.cwd()
 
    # Load config (uses `configs/config.yaml` defaults)
    cfg = stac_mjx.load_stac_config(base_path / "configs")
 
    # Load keypoint data
    kp_data, sorted_kp_names = stac_mjx.load_keypoint_data(cfg, base_path)
+   kp_data = kp_data[:24]
 
    # Run stac
    calibration_path, ik_path = stac_mjx.run_stac(
-      cfg,
-      kp_data,
-      sorted_kp_names,
-      base_path=base_path
+       cfg, kp_data, sorted_kp_names, base_path=base_path
    )
    ```
 
@@ -175,18 +203,20 @@ The following is the full CLI script run as a sequence of function calls:
    ```python
    import mediapy as media
 
-   data_path = base_path / "demo_calibration.h5"
-   n_frames = 10
-   save_path = base_path / "videos/direct_render.mp4"
+   n_frames = len(kp_data)
+   save_path = base_path / "outputs/rodent_demo/ik.mp4"
+   save_path.parent.mkdir(parents=True, exist_ok=True)
 
    # Call mujoco_viz
    cfg, frames = stac_mjx.viz_stac(
-      data_path,
-      n_frames,
-      save_path,
-      start_frame=0,
-      camera="close_profile",
-      base_path=Path.cwd().parent,
+       ik_path,
+       n_frames,
+       save_path,
+       start_frame=0,
+       camera="close_profile",
+       height=480,
+       width=640,
+       base_path=base_path,
    )
 
    # Show the video in the notebook (it is also saved to the save_path)

@@ -19,9 +19,6 @@ class ModelConfig:
     KEYPOINT_INITIAL_OFFSETS: dict[str, str]  # Initial offsets for keypoints
     ROOT_OPTIMIZATION_KEYPOINT: str  # Root optimization keypoint name
     TRUNK_OPTIMIZATION_KEYPOINTS: list[str]  # Trunk optimization keypoint names
-    INDIVIDUAL_PART_OPTIMIZATION: dict[
-        str, list[str]
-    ]  # Part optimization keypoint groups
     KEYPOINT_COLOR_PAIRS: dict[str, str]  # RGBA color values for keypoints
     SCALE_FACTOR: float  # Scale factor for model
     MOCAP_SCALE_FACTOR: float  # Scale factor for mocap data (to convert to meters)
@@ -30,6 +27,7 @@ class ModelConfig:
     N_SAMPLE_FRAMES: int  # Number of frames to sample when computing offset residual
     M_REG_COEF: float  # Coefficient for regularization term in offset optimization
     MARKER_SIZE: float = 0.005  # Radius of site marker spheres for visualization
+    KP_NAMES_LABEL3D_PATH: str | None = None  # Optional MAT file containing joint names
 
 
 @dataclass
