@@ -30,7 +30,9 @@ def test_align_joint_dims():
     ]
     ranges = [[0.0, 0.0], [-0.1, 0.1], [0.0, 1.0], [-0.5, 0.5]]
     names = ["root", "hingejoint", "balljoint", "slidejoint"]
-    lb, ub, part_names = _align_joint_dims(joint_types, ranges, names)
+    lb, ub, part_names = _align_joint_dims(
+        joint_types, ranges, names, [False, True, True, True]
+    )
     print(lb)
 
     true_lb = jp.array(
@@ -38,15 +40,15 @@ def test_align_joint_dims():
             -jp.inf,
             -jp.inf,
             -jp.inf,
-            -1.0,
-            -1.0,
-            -1.0,
-            -1.0,
+            -jp.inf,
+            -jp.inf,
+            -jp.inf,
+            -jp.inf,
             -0.1,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
+            -1.0,
+            -1.0,
+            -1.0,
+            -1.0,
             -0.5,
         ]
     )
@@ -56,10 +58,10 @@ def test_align_joint_dims():
             jp.inf,
             jp.inf,
             jp.inf,
-            1.0,
-            1.0,
-            1.0,
-            1.0,
+            jp.inf,
+            jp.inf,
+            jp.inf,
+            jp.inf,
             0.1,
             1.0,
             1.0,

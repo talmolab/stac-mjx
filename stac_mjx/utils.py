@@ -4,8 +4,8 @@ import os
 import sys
 
 import jax
-import jaxlie
 import mujoco
+import numpy as np
 from beartype import beartype
 from jax import Array
 from jax import numpy as jp
@@ -19,6 +19,8 @@ if not hasattr(mujoco, "_enums"):
 
 from mujoco import mjx
 from mujoco.mjx._src import smooth
+
+from stac_mjx.joints import JointLayout
 
 
 def _enable_jax_compilation_cache() -> None:
@@ -164,31 +166,24 @@ def coarse_keyframe_indices(n_frames: int, stride: int) -> Int[Array, " n_keyfra
     return jp.minimum(jp.arange(n_keyframes, dtype=jp.int32) * stride, n_frames - 1)
 
 
-def normalize_freejoint_quat(
-    qpos: Float[Array, "n_frames n_qpos"],
-    freejoint: bool,
-) -> Float[Array, "n_frames n_qpos"]:
-    """Normalize freejoint quaternions in a batched qpos array."""
-    if not freejoint:
-        return qpos
-    quat = qpos[:, 3:7]
-    quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
-    return qpos.at[:, 3:7].set(quat / jp.where(quat_norm > 0, quat_norm, 1.0))
-
-
 def interpolate_qpos_from_keyframes(
     keyframe_qpos: Float[Array, "n_keyframes n_qpos"],
     keyframe_indices: Int[Array, " n_keyframes"],
     n_frames: int,
     freejoint: bool,
+    *,
+    joint_types: np.ndarray | tuple[int, ...] | None = None,
 ) -> Float[Array, "n_frames n_qpos"]:
     """Interpolate sparse qpos keyframes onto every frame.
 
     For each frame, find the neighboring keyframes and interpolate between them.
-    For free joints, interpolate root xyz and hinge coordinates linearly, but
-    interpolate root rotation on SO(3) using log/exp instead of raw quaternion
-    interpolation.
+    Interpolate scalar coordinates linearly and all model quaternions on SO(3).
+    Without joint_types, assume the legacy free-root-plus-scalars layout.
     """
+    layout = JointLayout.from_qpos(keyframe_qpos.shape[-1], freejoint, joint_types)
+    keyframe_qpos = layout.normalize(keyframe_qpos)
+    if keyframe_qpos.shape[0] == 1:
+        return jp.repeat(keyframe_qpos, n_frames, axis=0)
     frame_ids = jp.arange(n_frames)
 
     # For each frame, find bracketing keyframes: left <= frame < right.
@@ -206,34 +201,7 @@ def interpolate_qpos_from_keyframes(
     q_left = keyframe_qpos[left]
     q_right = keyframe_qpos[right]
 
-    if freejoint:
-        # MuJoCo free-joint qpos layout: [root xyz, root quat wxyz, hinges...].
-        xyz = (1.0 - alpha) * q_left[:, :3] + alpha * q_right[:, :3]
-        left_wxyz = q_left[:, 3:7]
-        right_wxyz = q_right[:, 3:7]
-        left_wxyz = left_wxyz / jp.maximum(
-            jp.linalg.norm(left_wxyz, axis=-1, keepdims=True), 1e-12
-        )
-        right_wxyz = right_wxyz / jp.maximum(
-            jp.linalg.norm(right_wxyz, axis=-1, keepdims=True), 1e-12
-        )
-
-        # Geodesic rotation interpolation:
-        # R = R_left exp(alpha log(R_left^{-1} R_right)).
-        left_rot = jaxlie.SO3(wxyz=left_wxyz)
-        right_rot = jaxlie.SO3(wxyz=right_wxyz)
-        rot = left_rot @ jaxlie.SO3.exp(alpha * (left_rot.inverse() @ right_rot).log())
-        hinges = (1.0 - alpha) * q_left[:, 7:] + alpha * q_right[:, 7:]
-        return normalize_freejoint_quat(
-            jp.concatenate([xyz, rot.wxyz, hinges], axis=-1), freejoint=True
-        )
-
-    # Plain qpos: simple linear interpolation.
-    return (1.0 - alpha) * q_left + alpha * q_right
-
-
-# Constants used to determine when a rotation is close to a pole.
-_POLE_LIMIT = 1.0 - 1e-6
+    return layout.retract(q_left, alpha * layout.difference(q_left, q_right))
 
 
 def _get_qmat_indices_and_signs() -> tuple[Int[Array, "4 4"], Int[Array, "4 4"]]:
@@ -319,10 +287,14 @@ def compute_velocity_from_kinematics(
     qpos_trajectory: Float[ArrayLike, "n_frames n_qpos"],
     dt: float,
     freejoint: bool = True,
+    *,
+    joint_types: np.ndarray | tuple[int, ...] | None = None,
 ) -> Float[Array, "n_frames n_qvel"]:
     """Compute velocity trajectory from position trajectory for a continuous clip.
 
-    Assumes freejoint as the first 7 dimensions of qpos when freejoint=True.
+    Uses model joint types to convert all quaternion differences to angular velocities.
+    Without joint_types, assumes only the first 7 dimensions form a free joint
+    when freejoint=True, with scalar joints afterwards.
     Uses forward differences and a backward difference for the final frame.
     A single-frame clip has zero velocity.
 
@@ -330,31 +302,16 @@ def compute_velocity_from_kinematics(
         qpos_trajectory: Generalized coordinates over time.
         dt: Timestep between qpos entries.
         freejoint: Whether the model has a free joint (first 7 dims).
+        joint_types: MuJoCo joint types in model order; overrides the legacy layout.
 
     Returns:
         Velocity trajectory.
     """
     qpos_trajectory = jp.asarray(qpos_trajectory)
+    layout = JointLayout.from_qpos(qpos_trajectory.shape[1], freejoint, joint_types)
     if qpos_trajectory.shape[0] == 1:
-        return jp.zeros(
-            (1, qpos_trajectory.shape[1] - int(freejoint)), dtype=qpos_trajectory.dtype
-        )
+        return jp.zeros((1, layout.nv), dtype=qpos_trajectory.dtype)
 
-    if not freejoint:
-        qvel = (qpos_trajectory[1:, :] - qpos_trajectory[:-1, :]) / dt
-    else:
-        qvel_joints = (qpos_trajectory[1:, 7:] - qpos_trajectory[:-1, 7:]) / dt
-        qvel_translation = (qpos_trajectory[1:, :3] - qpos_trajectory[:-1, :3]) / dt
-        quat_prev = qpos_trajectory[:-1, 3:7]
-        quat_cur = qpos_trajectory[1:, 3:7]
-        same_sign = jp.sum(quat_prev * quat_cur, axis=-1, keepdims=True) >= 0.0
-        quat_cur = jp.where(same_sign, quat_cur, -quat_cur)
-        normed_diff = quat_diff(quat_prev, quat_cur)
-        normed_diff /= jp.maximum(
-            jp.linalg.norm(normed_diff, axis=-1, keepdims=True), 1e-12
-        )
-        qvel_gyro = jaxlie.SO3(wxyz=normed_diff).log() / dt
-
-        qvel = jp.concatenate([qvel_translation, qvel_gyro, qvel_joints], axis=1)
+    qvel = layout.difference(qpos_trajectory[:-1], qpos_trajectory[1:]) / dt
 
     return jp.concatenate([qvel, qvel[-1:]], axis=0)
