@@ -8,13 +8,15 @@ import jax.numpy as jp
 import jaxlie
 import jaxls
 import mujoco
+import numpy as np
 from jax import Array, jit
 from jaxtyping import Bool, Float, Int
 from mujoco import mjx
 
 from stac_mjx import utils
+from stac_mjx.joints import JointLayout, normalize_quaternions
 
-_FREE_JOINT_NDOF = 7
+_FREE_JOINT_NQ = 7
 _CG_TOLERANCE_MIN = 1e-7
 _CG_TOLERANCE_MAX = 1e-3
 
@@ -27,7 +29,7 @@ class MOptResult(NamedTuple):
 
 
 class QOptResult(NamedTuple):
-    """Optional telemetry result for q optimization."""
+    """Optimized joint poses and solver diagnostics."""
 
     qpos: Float[Array, "n_frames n_qpos"]
     summary: jaxls.SolveSummary
@@ -106,27 +108,22 @@ def m_opt(
     return MOptResult(params=m_star, error=error)
 
 
-# ---------------------------------------------------------------------------
-# JAXLS pose optimizer
-# ---------------------------------------------------------------------------
-
-
 @dataclass
 class QOptProblem:
     """Compiled jaxls least-squares problem for pose optimization."""
 
     analyzed: jaxls.AnalyzedLeastSquaresProblem
-    se3_mode: bool
-    freejoint_root: bool
     n_frames: int
     n_kp_coords: int
     site_offsets: Float[Array, "n_keypoints 3"]
     dynamic_site_offsets: bool
-    _KpVar: type
-    _OffsetVar: type | None = None
-    _SE3Var: type | None = None
-    _JointVar: type | None = None
-    _QVar: type | None = None
+    layout: JointLayout
+    joint_mask: Array
+    qpos_reference: Array
+    _ObservedKeypointsVar: type
+    _JointPoseVar: type
+    _RootPoseVar: type | None = None
+    _MarkerOffsetsVar: type | None = None
 
 
 def build_q_opt_problem(
@@ -149,8 +146,8 @@ def build_q_opt_problem(
     Call once per unique (n_frames, nq, n_kp_coords) shape.
     Reusable for any clip with the same shape.
 
-    Uses SE3 manifold parameterization for the root when all seven
-    free-joint DOFs are optimized, otherwise uses flat Euclidean.
+    Uses one optimizer with SE(3) updates for a fully optimized free root
+    and SO(3) updates for other quaternion joints.
 
     Args:
         n_frames: Number of timesteps.
@@ -172,45 +169,213 @@ def build_q_opt_problem(
     Returns:
         Analyzed problem handle for ``q_opt``.
     """
-    freejoint_root = (
-        int(mjx_model.nq) >= _FREE_JOINT_NDOF
+    free_root = (
+        int(mjx_model.njnt) > 0
         and int(mjx_model.jnt_type[0]) == mujoco.mjtJoint.mjJNT_FREE
+        and bool(jp.all(joint_mask[:_FREE_JOINT_NQ]))
     )
-    se3_mode = freejoint_root and bool(jp.all(joint_mask[:_FREE_JOINT_NDOF]))
     if site_offsets is None:
         site_offsets = mjx_model.site_pos[site_idxs]
 
-    if se3_mode:
-        return _build_se3_problem(
-            n_frames,
-            mjx_model,
-            mjx_data,
-            joint_mask,
-            kp_mask,
-            joint_lb,
-            joint_ub,
-            site_idxs,
-            n_kp_coords,
-            joint_reg_weights,
-            velocity_smoothness_weight,
-            site_offsets,
-            dynamic_site_offsets,
+    layout = JointLayout(mjx_model.jnt_type)
+    qpos_offset = _FREE_JOINT_NQ if free_root else 0
+    joint_layout = JointLayout(mjx_model.jnt_type[1:]) if free_root else layout
+    active_joints = joint_mask[qpos_offset:]
+    # A fully optimized free root has no posture penalty or scalar bounds.
+    reg_weights = joint_reg_weights[qpos_offset:] * active_joints
+    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
+    observed_keypoints_default = jp.zeros((n_kp_coords,))
+
+    joint_layout.validate_mask(active_joints)
+
+    def retract(qpos, delta):
+        return jp.where(active_joints, joint_layout.retract(qpos, delta), qpos)
+
+    class JointPoseVar(
+        jaxls.Var[jp.ndarray],
+        default_factory=joint_layout.identity,
+        retract_fn=retract,
+        tangent_dim=joint_layout.nv,
+    ): ...
+
+    def get_qpos(values, joint_pose, root_pose):
+        if root_pose is None:
+            return values[joint_pose]
+        pose = values[root_pose]
+        return jp.concatenate(
+            [pose.translation(), pose.rotation().wxyz, values[joint_pose]]
         )
-    return _build_flat_problem(
-        n_frames,
-        mjx_model,
-        mjx_data,
-        joint_mask,
-        kp_mask,
-        joint_lb,
-        joint_ub,
-        site_idxs,
-        n_kp_coords,
-        joint_reg_weights,
-        velocity_smoothness_weight,
-        freejoint_root,
-        site_offsets,
-        dynamic_site_offsets,
+
+    class ObservedKeypointsVar(
+        jaxls.Var[jp.ndarray], default_factory=lambda: observed_keypoints_default
+    ): ...
+
+    MarkerOffsetsVar, marker_offsets_vars = None, None
+    if dynamic_site_offsets:
+        marker_offsets_default = jp.zeros((site_offsets.size,))
+
+        class MarkerOffsetsVar(
+            jaxls.Var[jp.ndarray], default_factory=lambda: marker_offsets_default
+        ): ...
+
+        marker_offsets_vars = MarkerOffsetsVar(jp.arange(n_frames))
+
+    joint_pose_vars, observed_keypoints_vars = (
+        JointPoseVar(jp.arange(n_frames)),
+        ObservedKeypointsVar(jp.arange(n_frames)),
+    )
+    root_pose_vars = jaxls.SE3Var(jp.arange(n_frames)) if free_root else None
+    costs: list[jaxls.Cost] = []
+
+    if dynamic_site_offsets:
+
+        @jaxls.Cost.factory
+        def marker_cost(
+            values: jaxls.VarValues,
+            joint_pose: JointPoseVar,
+            observed_keypoints: ObservedKeypointsVar,
+            root_pose: jaxls.SE3Var | None,
+            marker_offsets: MarkerOffsetsVar,
+        ) -> jp.ndarray:
+            observations = jax.lax.stop_gradient(values[observed_keypoints])
+            # Offsets are per-solve data, not optimized state.
+            marker_offset_values = jax.lax.stop_gradient(
+                values[marker_offsets]
+            ).reshape((-1, 3))
+            full_q = jp.where(
+                joint_mask, get_qpos(values, joint_pose, root_pose), mjx_data.qpos
+            )
+            fk_data = mjx_data.replace(qpos=full_q)
+            fk_data = utils.kinematics(mjx_model, fk_data)
+            fk_data = utils.com_pos(mjx_model, fk_data)
+            marker_pos = fk_data.xpos[site_bodyid] + jp.einsum(
+                "kij,kj->ki", fk_data.xmat[site_bodyid], marker_offset_values
+            )
+            return (observations - marker_pos.flatten()) * kp_mask
+
+        costs.append(
+            marker_cost(
+                joint_pose_vars,
+                observed_keypoints_vars,
+                root_pose_vars,
+                marker_offsets_vars,
+            )
+        )
+    else:
+
+        @jaxls.Cost.factory
+        def marker_cost(
+            values: jaxls.VarValues,
+            joint_pose: JointPoseVar,
+            observed_keypoints: ObservedKeypointsVar,
+            root_pose: jaxls.SE3Var | None,
+        ) -> jp.ndarray:
+            observations = jax.lax.stop_gradient(values[observed_keypoints])
+            full_q = jp.where(
+                joint_mask, get_qpos(values, joint_pose, root_pose), mjx_data.qpos
+            )
+            fk_data = mjx_data.replace(qpos=full_q)
+            fk_data = utils.kinematics(mjx_model, fk_data)
+            fk_data = utils.com_pos(mjx_model, fk_data)
+            markers = utils.get_site_xpos(fk_data, site_idxs).flatten()
+            return (observations - markers) * kp_mask
+
+        costs.append(
+            marker_cost(joint_pose_vars, observed_keypoints_vars, root_pose_vars)
+        )
+
+    if jp.any(reg_weights > 0):
+
+        @jaxls.Cost.factory
+        def reg_cost(values: jaxls.VarValues, joint_pose: JointPoseVar) -> jp.ndarray:
+            return joint_layout.regularization(values[joint_pose], reg_weights)
+
+        costs.append(reg_cost(joint_pose_vars))
+
+    lb, ub = joint_lb[qpos_offset:], joint_ub[qpos_offset:]
+    scalar = joint_layout.scalar_qpos
+    active = np.asarray(active_joints)
+    lower_idx = scalar[active[scalar] & np.isfinite(np.asarray(lb)[scalar])]
+    upper_idx = scalar[active[scalar] & np.isfinite(np.asarray(ub)[scalar])]
+    ball_joints = [
+        i
+        for i, joint_type in enumerate(mjx_model.jnt_type)
+        if joint_type == mujoco.mjtJoint.mjJNT_BALL
+        and mjx_model.jnt_limited[i]
+        and int(mjx_model.jnt_qposadr[i]) >= qpos_offset
+        and active[int(mjx_model.jnt_qposadr[i]) - qpos_offset]
+    ]
+    ball_qpos = np.asarray(
+        [
+            np.arange(4) + int(mjx_model.jnt_qposadr[i]) - qpos_offset
+            for i in ball_joints
+        ],
+        dtype=np.int32,
+    ).reshape(-1, 4)
+    ball_max_angle = mjx_model.jnt_range[np.asarray(ball_joints, dtype=np.int32), 1]
+    if lower_idx.size or upper_idx.size or ball_qpos.size:
+
+        @jaxls.Cost.factory(kind="constraint_leq_zero")
+        def limit_cost(values: jaxls.VarValues, joint_pose: JointPoseVar) -> jp.ndarray:
+            qpos = values[joint_pose]
+            parts = [lb[lower_idx] - qpos[lower_idx], qpos[upper_idx] - ub[upper_idx]]
+            if ball_qpos.size:
+                rotation = jaxlie.SO3(normalize_quaternions(qpos[ball_qpos])).log()
+                parts.append(jp.sum(rotation**2, axis=-1) - ball_max_angle**2)
+            return jp.concatenate(parts)
+
+        costs.append(limit_cost(joint_pose_vars))
+
+    if velocity_smoothness_weight > 0.0 and n_frames > 1:
+
+        @jaxls.Cost.factory
+        def smooth_velocity_cost(
+            values: jaxls.VarValues,
+            joint_pose_prev: JointPoseVar,
+            joint_pose_cur: JointPoseVar,
+            root_pose_prev: jaxls.SE3Var | None,
+            root_pose_cur: jaxls.SE3Var | None,
+        ) -> jp.ndarray:
+            displacement = joint_layout.difference(
+                values[joint_pose_prev], values[joint_pose_cur]
+            )
+            if free_root:
+                root_displacement = (
+                    values[root_pose_prev].inverse() @ values[root_pose_cur]
+                ).log()
+                displacement = jp.concatenate([root_displacement, displacement])
+            return displacement * velocity_smoothness_weight
+
+        costs.append(
+            smooth_velocity_cost(
+                JointPoseVar(jp.arange(n_frames - 1)),
+                JointPoseVar(jp.arange(1, n_frames)),
+                jaxls.SE3Var(jp.arange(n_frames - 1)) if free_root else None,
+                jaxls.SE3Var(jp.arange(1, n_frames)) if free_root else None,
+            )
+        )
+
+    problem_vars = [joint_pose_vars, observed_keypoints_vars]
+    if free_root:
+        problem_vars.insert(0, root_pose_vars)
+    if dynamic_site_offsets:
+        problem_vars.append(marker_offsets_vars)
+
+    analyzed = jaxls.LeastSquaresProblem(costs=costs, variables=problem_vars).analyze()
+
+    return QOptProblem(
+        analyzed=analyzed,
+        n_frames=n_frames,
+        n_kp_coords=n_kp_coords,
+        site_offsets=site_offsets,
+        dynamic_site_offsets=dynamic_site_offsets,
+        layout=layout,
+        joint_mask=joint_mask,
+        qpos_reference=mjx_data.qpos,
+        _ObservedKeypointsVar=ObservedKeypointsVar,
+        _MarkerOffsetsVar=MarkerOffsetsVar,
+        _JointPoseVar=JointPoseVar,
+        _RootPoseVar=jaxls.SE3Var if free_root else None,
     )
 
 
@@ -221,8 +386,7 @@ def q_opt(
     n_solver_max_iters: int = 150,
     initial_step_damping: float = 1.0,
     site_offsets: Float[Array, "n_keypoints 3"] | None = None,
-    return_summary: bool = False,
-) -> Float[Array, "n_frames n_qpos"] | QOptResult:
+) -> QOptResult:
     """Solve the analyzed q optimization problem.
 
     Args:
@@ -232,18 +396,19 @@ def q_opt(
         n_solver_max_iters: Maximum solver iterations.
         initial_step_damping: Initial damping on the solver step.
         site_offsets: Marker offsets for this solve.
-        return_summary: Return qpos and jaxls SolveSummary for telemetry.
 
     Returns:
-        Optimized joint angles, or qpos with SolveSummary when requested.
+        Optimized joint poses and the JAXLS solve summary.
     """
     if kp_data.ndim == 3:
         kp_data = kp_data.reshape(kp_data.shape[0], -1)
+    q_init = problem.layout.normalize(jp.asarray(q_init))
+    q_init = jp.where(problem.joint_mask, q_init, problem.qpos_reference)
     if site_offsets is None:
         site_offsets = problem.site_offsets
-    offset_data = None
+    marker_offsets_data = None
     if problem.dynamic_site_offsets:
-        offset_data = jp.broadcast_to(
+        marker_offsets_data = jp.broadcast_to(
             site_offsets.reshape(1, -1), (kp_data.shape[0], site_offsets.size)
         )
 
@@ -257,361 +422,40 @@ def q_opt(
         termination=jaxls.TerminationConfig(max_iterations=n_solver_max_iters),
     )
 
-    if problem.se3_mode:
-        return _solve_se3(
-            problem, q_init, kp_data, offset_data, solver_cfg, return_summary
-        )
-    return _solve_flat(
-        problem, q_init, kp_data, offset_data, solver_cfg, return_summary
+    JointPoseVar, ObservedKeypointsVar = (
+        problem._JointPoseVar,
+        problem._ObservedKeypointsVar,
     )
-
-
-def _build_se3_problem(
-    n_frames,
-    mjx_model,
-    mjx_data,
-    joint_mask,
-    kp_mask,
-    joint_lb,
-    joint_ub,
-    site_idxs,
-    n_kp_coords,
-    joint_reg_weights,
-    velocity_smoothness_weight,
-    site_offsets,
-    dynamic_site_offsets,
-):
-    n_hinges = int(mjx_model.nq) - _FREE_JOINT_NDOF
-    joint_default = jp.zeros((n_hinges,))
-    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
-    kp_default = jp.zeros((n_kp_coords,))
-
-    SE3Var = jaxls.SE3Var
-
-    class JointVar(jaxls.Var[jp.ndarray], default_factory=lambda: joint_default): ...
-
-    class KpVar(jaxls.Var[jp.ndarray], default_factory=lambda: kp_default): ...
-
-    frame_ids = jp.arange(n_frames)
-    OffsetVar = None
-    offset_vars = None
-    if dynamic_site_offsets:
-        offset_default = jp.zeros((site_offsets.size,))
-
-        class OffsetVar(
-            jaxls.Var[jp.ndarray], default_factory=lambda: offset_default
-        ): ...
-
-        offset_vars = OffsetVar(frame_ids)
-
-    root_vars, joint_vars, kp_vars = (
-        SE3Var(frame_ids),
-        JointVar(frame_ids),
-        KpVar(frame_ids),
-    )
-    costs: list[jaxls.Cost] = []
-
-    if dynamic_site_offsets:
-
-        @jaxls.Cost.factory
-        def marker_cost(
-            vals: jaxls.VarValues,
-            root: SE3Var,
-            joints: JointVar,
-            kp: KpVar,
-            offsets: OffsetVar,
-        ) -> jp.ndarray:
-            se3 = vals[root]
-            hinge_angles = vals[joints]
-            obs = jax.lax.stop_gradient(vals[kp])
-            # Offsets are per-solve data, not optimized state.
-            marker_offsets = jax.lax.stop_gradient(vals[offsets]).reshape((-1, 3))
-            q = jp.concatenate([se3.translation(), se3.rotation().wxyz, hinge_angles])
-            full_q = jp.where(joint_mask, q, mjx_data.qpos)
-            fk_data = mjx_data.replace(qpos=full_q)
-            fk_data = utils.kinematics(mjx_model, fk_data)
-            fk_data = utils.com_pos(mjx_model, fk_data)
-            marker_pos = fk_data.xpos[site_bodyid] + jp.einsum(
-                "kij,kj->ki", fk_data.xmat[site_bodyid], marker_offsets
-            )
-            return (obs - marker_pos.flatten()) * kp_mask
-
-        costs.append(marker_cost(root_vars, joint_vars, kp_vars, offset_vars))
-    else:
-
-        @jaxls.Cost.factory
-        def marker_cost(
-            vals: jaxls.VarValues, root: SE3Var, joints: JointVar, kp: KpVar
-        ) -> jp.ndarray:
-            se3 = vals[root]
-            hinge_angles = vals[joints]
-            obs = jax.lax.stop_gradient(vals[kp])
-            q = jp.concatenate([se3.translation(), se3.rotation().wxyz, hinge_angles])
-            full_q = jp.where(joint_mask, q, mjx_data.qpos)
-            fk_data = mjx_data.replace(qpos=full_q)
-            fk_data = utils.kinematics(mjx_model, fk_data)
-            fk_data = utils.com_pos(mjx_model, fk_data)
-            markers = utils.get_site_xpos(fk_data, site_idxs).flatten()
-            return (obs - markers) * kp_mask
-
-        costs.append(marker_cost(root_vars, joint_vars, kp_vars))
-
-    hinge_reg_weights = joint_reg_weights[_FREE_JOINT_NDOF:]
-    hinge_mask = joint_mask[_FREE_JOINT_NDOF:]
-    if jp.any(hinge_reg_weights > 0):
-
-        @jaxls.Cost.factory
-        def reg_cost(vals: jaxls.VarValues, joints: JointVar) -> jp.ndarray:
-            return jp.sqrt(hinge_reg_weights * hinge_mask) * vals[joints]
-
-        costs.append(reg_cost(joint_vars))
-
-    hinge_lb, hinge_ub = joint_lb[_FREE_JOINT_NDOF:], joint_ub[_FREE_JOINT_NDOF:]
-
-    if n_hinges > 0:
-
-        @jaxls.Cost.factory(kind="constraint_leq_zero")
-        def limit_cost(vals: jaxls.VarValues, joints: JointVar) -> jp.ndarray:
-            angles = vals[joints]
-            return jp.concatenate([hinge_lb - angles, angles - hinge_ub])
-
-        costs.append(limit_cost(joint_vars))
-
-    if velocity_smoothness_weight > 0.0 and n_frames > 1:
-
-        @jaxls.Cost.factory
-        def smooth_velocity_cost(
-            vals: jaxls.VarValues,
-            root_prev: SE3Var,
-            root_cur: SE3Var,
-            joint_prev: JointVar,
-            joint_cur: JointVar,
-        ) -> jp.ndarray:
-            root_vel = (vals[root_prev].inverse() @ vals[root_cur]).log()
-            joint_vel = vals[joint_cur] - vals[joint_prev]
-            return jp.concatenate([root_vel, joint_vel]) * velocity_smoothness_weight
-
-        costs.append(
-            smooth_velocity_cost(
-                SE3Var(jp.arange(n_frames - 1)),
-                SE3Var(jp.arange(1, n_frames)),
-                JointVar(jp.arange(n_frames - 1)),
-                JointVar(jp.arange(1, n_frames)),
-            )
-        )
-
-    problem_vars = [root_vars, joint_vars, kp_vars]
-    if dynamic_site_offsets:
-        problem_vars.append(offset_vars)
-
-    analyzed = jaxls.LeastSquaresProblem(
-        costs=costs,
-        variables=problem_vars,
-    ).analyze()
-
-    return QOptProblem(
-        analyzed=analyzed,
-        se3_mode=True,
-        freejoint_root=True,
-        n_frames=n_frames,
-        n_kp_coords=n_kp_coords,
-        site_offsets=site_offsets,
-        dynamic_site_offsets=dynamic_site_offsets,
-        _KpVar=KpVar,
-        _OffsetVar=OffsetVar,
-        _SE3Var=SE3Var,
-        _JointVar=JointVar,
-    )
-
-
-def _solve_se3(problem, q_init, kp_data, offset_data, solver_cfg, return_summary):
-    n_frames = problem.n_frames
-    SE3Var, JointVar, KpVar = problem._SE3Var, problem._JointVar, problem._KpVar
-
-    xyz = q_init[:, :3]
-    wxyz = q_init[:, 3:7]
-    hinges = q_init[:, _FREE_JOINT_NDOF:]
-
-    quat_norm = jp.linalg.norm(wxyz, axis=-1, keepdims=True)
-    wxyz = wxyz / jp.where(quat_norm > 0, quat_norm, 1.0)
-    se3_init = jaxlie.SE3.from_rotation_and_translation(jaxlie.SO3(wxyz=wxyz), xyz)
-
-    frame_ids = jp.arange(n_frames)
+    frame_ids = jp.arange(problem.n_frames)
+    qpos_offset = _FREE_JOINT_NQ if problem._RootPoseVar is not None else 0
     initial_values = [
-        SE3Var(frame_ids).with_value(se3_init),
-        JointVar(frame_ids).with_value(hinges),
-        KpVar(frame_ids).with_value(kp_data),
+        JointPoseVar(frame_ids).with_value(q_init[:, qpos_offset:]),
+        ObservedKeypointsVar(frame_ids).with_value(kp_data),
     ]
-    if problem.dynamic_site_offsets:
-        initial_values.append(problem._OffsetVar(frame_ids).with_value(offset_data))
-
-    solve_out = problem.analyzed.solve(
-        initial_vals=jaxls.VarValues.make(initial_values),
-        return_summary=return_summary,
-        **solver_cfg,
-    )
-    if return_summary:
-        sol, summary = solve_out
-    else:
-        sol, summary = solve_out, None
-
-    roots = sol[SE3Var(frame_ids)]
-    joints = sol[JointVar(frame_ids)]
-    qpos = jp.concatenate([roots.translation(), roots.rotation().wxyz, joints], axis=-1)
-    if return_summary:
-        return QOptResult(qpos, summary)
-    return qpos
-
-
-def _build_flat_problem(
-    n_frames,
-    mjx_model,
-    mjx_data,
-    joint_mask,
-    kp_mask,
-    joint_lb,
-    joint_ub,
-    site_idxs,
-    n_kp_coords,
-    joint_reg_weights,
-    velocity_smoothness_weight,
-    freejoint_root,
-    site_offsets,
-    dynamic_site_offsets,
-):
-    nq = int(mjx_model.nq)
-    qpos_default = jp.zeros((nq,))
-    site_bodyid = jp.array(mjx_model.site_bodyid)[site_idxs]
-    kp_default = jp.zeros((n_kp_coords,))
-
-    class QVar(jaxls.Var[jp.ndarray], default_factory=lambda: qpos_default): ...
-
-    class KpVar(jaxls.Var[jp.ndarray], default_factory=lambda: kp_default): ...
-
-    OffsetVar = None
-    offset_vars = None
-    if dynamic_site_offsets:
-        offset_default = jp.zeros((site_offsets.size,))
-
-        class OffsetVar(
-            jaxls.Var[jp.ndarray], default_factory=lambda: offset_default
-        ): ...
-
-        offset_vars = OffsetVar(jp.arange(n_frames))
-
-    qpos_vars, kp_vars = QVar(jp.arange(n_frames)), KpVar(jp.arange(n_frames))
-    costs: list[jaxls.Cost] = []
-
-    if dynamic_site_offsets:
-
-        @jaxls.Cost.factory
-        def marker_cost(
-            vals: jaxls.VarValues, q: QVar, kp: KpVar, offsets: OffsetVar
-        ) -> jp.ndarray:
-            obs = jax.lax.stop_gradient(vals[kp])
-            # Offsets are per-solve data, not optimized state.
-            marker_offsets = jax.lax.stop_gradient(vals[offsets]).reshape((-1, 3))
-            full_q = jp.where(joint_mask, vals[q], mjx_data.qpos)
-            fk_data = mjx_data.replace(qpos=full_q)
-            fk_data = utils.kinematics(mjx_model, fk_data)
-            fk_data = utils.com_pos(mjx_model, fk_data)
-            marker_pos = fk_data.xpos[site_bodyid] + jp.einsum(
-                "kij,kj->ki", fk_data.xmat[site_bodyid], marker_offsets
-            )
-            return (obs - marker_pos.flatten()) * kp_mask
-
-        costs.append(marker_cost(qpos_vars, kp_vars, offset_vars))
-    else:
-
-        @jaxls.Cost.factory
-        def marker_cost(vals: jaxls.VarValues, q: QVar, kp: KpVar) -> jp.ndarray:
-            obs = jax.lax.stop_gradient(vals[kp])
-            full_q = jp.where(joint_mask, vals[q], mjx_data.qpos)
-            fk_data = mjx_data.replace(qpos=full_q)
-            fk_data = utils.kinematics(mjx_model, fk_data)
-            fk_data = utils.com_pos(mjx_model, fk_data)
-            markers = utils.get_site_xpos(fk_data, site_idxs).flatten()
-            return (obs - markers) * kp_mask
-
-        costs.append(marker_cost(qpos_vars, kp_vars))
-
-    if jp.any(joint_reg_weights > 0):
-
-        @jaxls.Cost.factory
-        def reg_cost(vals: jaxls.VarValues, q: QVar) -> jp.ndarray:
-            return jp.sqrt(joint_reg_weights * joint_mask) * vals[q]
-
-        costs.append(reg_cost(qpos_vars))
-
-    @jaxls.Cost.factory(kind="constraint_leq_zero")
-    def limit_cost(vals: jaxls.VarValues, q: QVar) -> jp.ndarray:
-        q_val = vals[q]
-        return jp.concatenate([joint_lb - q_val, q_val - joint_ub])
-
-    costs.append(limit_cost(qpos_vars))
-
-    if velocity_smoothness_weight > 0.0 and n_frames > 1:
-
-        @jaxls.Cost.factory
-        def smooth_velocity_cost(
-            vals: jaxls.VarValues, q_prev: QVar, q_cur: QVar
-        ) -> jp.ndarray:
-            return (vals[q_cur] - vals[q_prev]) * velocity_smoothness_weight
-
-        costs.append(
-            smooth_velocity_cost(
-                QVar(jp.arange(n_frames - 1)),
-                QVar(jp.arange(1, n_frames)),
-            )
-        )
-
-    problem_vars = [qpos_vars, kp_vars]
-    if dynamic_site_offsets:
-        problem_vars.append(offset_vars)
-
-    analyzed = jaxls.LeastSquaresProblem(costs=costs, variables=problem_vars).analyze()
-
-    return QOptProblem(
-        analyzed=analyzed,
-        se3_mode=False,
-        freejoint_root=freejoint_root,
-        n_frames=n_frames,
-        n_kp_coords=n_kp_coords,
-        site_offsets=site_offsets,
-        dynamic_site_offsets=dynamic_site_offsets,
-        _KpVar=KpVar,
-        _OffsetVar=OffsetVar,
-        _QVar=QVar,
-    )
-
-
-def _solve_flat(problem, q_init, kp_data, offset_data, solver_cfg, return_summary):
-    n_frames = problem.n_frames
-    QVar, KpVar = problem._QVar, problem._KpVar
-
-    frame_ids = jp.arange(n_frames)
-    initial_values = [
-        QVar(frame_ids).with_value(q_init),
-        KpVar(frame_ids).with_value(kp_data),
-    ]
-    if problem.dynamic_site_offsets:
-        initial_values.append(problem._OffsetVar(frame_ids).with_value(offset_data))
-
-    solve_out = problem.analyzed.solve(
-        initial_vals=jaxls.VarValues.make(initial_values),
-        return_summary=return_summary,
-        **solver_cfg,
-    )
-    if return_summary:
-        sol, summary = solve_out
-    else:
-        sol, summary = solve_out, None
-
-    qpos = sol[QVar(frame_ids)]
-    if problem.freejoint_root:
-        quat = qpos[:, 3:7]
+    if problem._RootPoseVar is not None:
+        quat = q_init[:, 3:7]
         quat_norm = jp.linalg.norm(quat, axis=-1, keepdims=True)
-        qpos = qpos.at[:, 3:7].set(quat / jp.where(quat_norm > 0, quat_norm, 1.0))
-    if return_summary:
-        return QOptResult(qpos, summary)
-    return qpos
+        root_init = jaxlie.SE3.from_rotation_and_translation(
+            jaxlie.SO3(quat / jp.where(quat_norm > 0, quat_norm, 1.0)), q_init[:, :3]
+        )
+        initial_values.insert(0, problem._RootPoseVar(frame_ids).with_value(root_init))
+    if problem.dynamic_site_offsets:
+        initial_values.append(
+            problem._MarkerOffsetsVar(frame_ids).with_value(marker_offsets_data)
+        )
+
+    sol, summary = problem.analyzed.solve(
+        initial_vals=jaxls.VarValues.make(initial_values),
+        return_summary=True,
+        **solver_cfg,
+    )
+
+    qpos = sol[JointPoseVar(frame_ids)]
+    if problem._RootPoseVar is not None:
+        roots = sol[problem._RootPoseVar(frame_ids)]
+        qpos = jp.concatenate(
+            [roots.translation(), roots.rotation().wxyz, qpos], axis=-1
+        )
+    else:
+        qpos = problem.layout.normalize(qpos)
+    return QOptResult(qpos, summary)

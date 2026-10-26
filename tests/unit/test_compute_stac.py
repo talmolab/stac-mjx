@@ -4,6 +4,7 @@ import numpy as np
 from jax import numpy as jp
 
 from stac_mjx import compute_stac, utils
+from stac_mjx.stac_core import QOptResult
 
 
 class FakeMjxData:
@@ -47,7 +48,7 @@ def test_root_optimization_calls_q_opt_twice(monkeypatch):
 
     def fake_q_opt(problem, q_init, kp_frame, **kwargs):
         q_init_args.append(q_init)
-        return q_init
+        return QOptResult(q_init, summary=None)
 
     monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
 
@@ -92,7 +93,7 @@ def test_root_optimization_seeds_root_translation_from_correct_keypoint(monkeypa
 
     def fake_q_opt(problem, q_init, kp_frame, **kwargs):
         q_init_args.append(q_init)
-        return q_init
+        return QOptResult(q_init, summary=None)
 
     monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
 
@@ -169,7 +170,7 @@ def test_pose_optimization_runs_all_frames(monkeypatch):
     )
 
     def fake_q_opt(problem, q_init, kp_data, **kwargs):
-        return q_init
+        return QOptResult(q_init, summary=None)
 
     monkeypatch.setattr(compute_stac, "q_opt", fake_q_opt)
 

@@ -83,7 +83,7 @@ def root_optimization(
             kp_frame,
             n_solver_max_iters=n_solver_max_iters,
             initial_step_damping=initial_step_damping,
-        )
+        ).qpos
         q_solved = q_out[0]
         mjx_data = mjx_data.replace(qpos=q_solved)
         mjx_data = utils.kinematics(mjx_model, mjx_data)
@@ -236,7 +236,7 @@ def pose_optimization(
         n_solver_max_iters=n_solver_max_iters,
         initial_step_damping=initial_step_damping,
         site_offsets=site_offsets,
-    )
+    ).qpos
 
     def fk_frame(q):
         fk_data = mjx_data.replace(qpos=q)
